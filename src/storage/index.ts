@@ -159,6 +159,7 @@ const DEFAULT_SETTINGS: Settings = {
     sessionsBeforeLongBreak: 4,
     soundEnabled: true,
   },
+  floatingTimerAutoShow: true,
 }
 
 export async function getSettings(): Promise<Settings> {

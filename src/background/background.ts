@@ -73,6 +73,7 @@ async function getSettings(): Promise<Settings> {
     workingDays: 5, weekStartDay: 1, idleTimeout: 5, theme: 'light-soft' as const,
     language: 'en' as const, notifications: true, dailyTarget: 8, weeklyTarget: 40,
     pomodoro: { workMinutes: 25, shortBreakMinutes: 5, longBreakMinutes: 15, sessionsBeforeLongBreak: 4, soundEnabled: true },
+    floatingTimerAutoShow: true,
     ...stored,
   }
 }
@@ -732,6 +733,12 @@ function setupContextMenus(): void {
       title: 'Pause Timer',
       contexts: ['action'],
     })
+    chrome.contextMenus.create({
+      id: 'show-widget',
+      title: 'Show Floating Widget',
+      contexts: ['action'],
+      enabled: false,
+    })
   })
 }
 
@@ -742,6 +749,9 @@ async function refreshContextMenus(): Promise<void> {
   })
   chrome.contextMenus.update('toggle-pause', {
     title: state.status === 'running' ? 'Pause Timer' : 'Resume Timer',
+    enabled: state.status !== 'idle',
+  })
+  chrome.contextMenus.update('show-widget', {
     enabled: state.status !== 'idle',
   })
 }
@@ -760,6 +770,18 @@ chrome.contextMenus.onClicked.addListener(async (info) => {
       await pauseTimer()
     } else if (state.status === 'paused') {
       await resumeTimer()
+    }
+  } else if (info.menuItemId === 'show-widget') {
+    // Send to active tab — resets position to bottom-right and clears hidden flag
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+    if (tab?.id) {
+      const result = await chrome.storage.local.get('projects')
+      const projects = (result['projects'] as Array<{ id: string; name: string; color: string }> | undefined) ?? []
+      chrome.tabs.sendMessage(tab.id, {
+        action: 'SHOW_FLOATING_TIMER',
+        state,
+        projects,
+      }).catch(() => {/* tab may not have content script */})
     }
   }
 

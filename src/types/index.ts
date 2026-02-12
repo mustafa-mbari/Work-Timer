@@ -38,6 +38,7 @@ export interface Settings {
   dailyTarget: number | null // Hours
   weeklyTarget: number | null // Hours
   pomodoro: PomodoroSettings
+  floatingTimerAutoShow: boolean // Auto-show floating widget when timer starts
 }
 
 export interface TimerState {

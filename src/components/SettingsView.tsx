@@ -377,6 +377,31 @@ export default function SettingsView() {
         </div>
       </div>
 
+      {/* Floating Timer */}
+      <div>
+        <label className={labelClass}>Floating Widget</label>
+        <label className="flex items-center justify-between py-2.5 px-3 rounded-xl border border-stone-100 dark:border-dark-border bg-white dark:bg-dark-card cursor-pointer">
+          <span className="text-sm text-stone-700 dark:text-stone-200">Auto-show when timer starts</span>
+          <div
+            role="switch"
+            aria-checked={settings.floatingTimerAutoShow}
+            onClick={() => handleSettingChange('floatingTimerAutoShow', !settings.floatingTimerAutoShow)}
+            className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 ${
+              settings.floatingTimerAutoShow
+                ? 'bg-indigo-500'
+                : 'bg-stone-200 dark:bg-dark-elevated'
+            }`}
+          >
+            <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${
+              settings.floatingTimerAutoShow ? 'translate-x-4' : 'translate-x-0.5'
+            }`} />
+          </div>
+        </label>
+        <p className="text-[10px] text-stone-400 dark:text-stone-500 mt-1.5 px-1">
+          When disabled, use right-click on the extension icon → "Show Floating Widget" to display it manually.
+        </p>
+      </div>
+
       {/* Version */}
       <div className="text-center text-[10px] text-stone-300 dark:text-stone-600 pt-2">
         Work Timer v1.0.0

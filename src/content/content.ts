@@ -18,16 +18,23 @@ interface Project {
 type ContentMessage =
   | { action: 'TIMER_SYNC'; state: TimerState; projects: Project[] }
   | { action: 'RESTORE_TITLE'; originalTitle: string }
+  | { action: 'SHOW_FLOATING_TIMER'; state: TimerState; projects: Project[] }
 
 const POS_KEY = 'floatingTimerPos'
 const MIN_KEY = 'floatingTimerMin'
+const HIDDEN_KEY = 'floatingTimerHidden'
+
+const MINI_WIDTH = 68
+const FULL_WIDTH = 200
 
 let hostEl: HTMLElement | null = null
 let shadow: ShadowRoot | null = null
 let tickInterval: ReturnType<typeof setInterval> | null = null
 let currentState: TimerState | null = null
 let isMinimized = false
-let posX = -1 // -1 means auto (bottom-right corner)
+let isHidden = false       // user explicitly closed via ×; persisted
+let autoShowEnabled = true // from settings; cached at init
+let posX = -1              // distance from right edge; -1 = auto (bottom-right)
 let posY = -1
 
 // ---- Time Formatting ----
@@ -50,25 +57,58 @@ function formatTime(ms: number): string {
   return `${mm}:${ss}`
 }
 
-// ---- Position Persistence ----
+// ---- Position / State Persistence ----
 
-async function loadPosition(): Promise<void> {
-  const result = await chrome.storage.local.get([POS_KEY, MIN_KEY])
+async function loadPersistedState(): Promise<void> {
+  const result = await chrome.storage.local.get([POS_KEY, MIN_KEY, HIDDEN_KEY, 'settings'])
   const pos = result[POS_KEY] as { x: number; y: number } | undefined
   if (pos) { posX = pos.x; posY = pos.y }
   isMinimized = !!(result[MIN_KEY] as boolean | undefined)
+  isHidden = !!(result[HIDDEN_KEY] as boolean | undefined)
+  const s = result['settings'] as { floatingTimerAutoShow?: boolean } | undefined
+  autoShowEnabled = s?.floatingTimerAutoShow !== false // default true
 }
 
 function savePosition(): void {
-  if (hostEl) {
-    const style = hostEl.getAttribute('style') || ''
-    const right = parseInt((style.match(/right:(\d+)px/) ?? ['', '20'])[1], 10)
-    const bottom = parseInt((style.match(/bottom:(\d+)px/) ?? ['', '20'])[1], 10)
-    chrome.storage.local.set({
-      [POS_KEY]: { x: right, y: bottom },
-      [MIN_KEY]: isMinimized,
-    })
+  if (!hostEl) return
+  const { right, bottom } = getCurrentPos()
+  chrome.storage.local.set({
+    [POS_KEY]: { x: right, y: bottom },
+    [MIN_KEY]: isMinimized,
+  })
+}
+
+function persistHidden(value: boolean): void {
+  isHidden = value
+  chrome.storage.local.set({ [HIDDEN_KEY]: value })
+}
+
+// ---- Host Element Styling ----
+
+function buildHostStyle(right: number, bottom: number): string {
+  const width = isMinimized ? MINI_WIDTH : FULL_WIDTH
+  return [
+    'position:fixed',
+    `right:${right}px`,
+    `bottom:${bottom}px`,
+    'z-index:2147483647',
+    'display:block',
+    `width:${width}px`,
+  ].join(';')
+}
+
+function getCurrentPos(): { right: number; bottom: number } {
+  const style = hostEl?.getAttribute('style') || ''
+  return {
+    right: parseInt((style.match(/right:(\d+)px/) ?? ['', '20'])[1], 10),
+    bottom: parseInt((style.match(/bottom:(\d+)px/) ?? ['', '20'])[1], 10),
   }
+}
+
+function applyHostStyle(): void {
+  if (!hostEl) return
+  const { right, bottom } = getCurrentPos()
+  hostEl.setAttribute('style', buildHostStyle(right, bottom))
 }
 
 // ---- Widget CSS ----
@@ -91,24 +131,15 @@ const STYLES = `
     cursor: default;
     user-select: none;
     overflow: hidden;
-    transition: width 0.15s ease, border-radius 0.15s ease;
-  }
-
-  #widget.full {
-    width: 200px;
-  }
-
-  #widget.mini {
-    width: 68px;
-    border-radius: 20px;
+    transition: border-radius 0.15s ease;
   }
 
   #drag-handle {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 10px 4px;
-    cursor: grab;
+    padding: 10px 10px 4px;
+    cursor: pointer;
   }
 
   #drag-handle:active { cursor: grabbing; }
@@ -139,7 +170,7 @@ const STYLES = `
     font-variant-numeric: tabular-nums;
   }
 
-  #minimize-btn {
+  #close-btn {
     width: 18px;
     height: 18px;
     display: flex;
@@ -151,11 +182,12 @@ const STYLES = `
     color: rgba(224, 231, 255, 0.5);
     cursor: pointer;
     font-size: 11px;
+    line-height: 1;
     padding: 0;
     flex-shrink: 0;
   }
 
-  #minimize-btn:hover { background: rgba(255,255,255,0.1); color: #e0e7ff; }
+  #close-btn:hover { background: rgba(248, 113, 113, 0.2); color: #f87171; }
 
   #body {
     padding: 0 10px 8px;
@@ -198,30 +230,26 @@ const STYLES = `
   .btn-resume { background: rgba(110, 231, 183, 0.2); color: #6ee7b7; }
   .btn-stop   { background: rgba(248, 113, 113, 0.2); color: #f87171; }
 
-  /* Mini mode: just show time + status dot */
-  .mini #drag-handle { padding: 10px 10px; gap: 6px; }
+  /* Mini mode: compact pill — click anywhere on handle to expand */
+  #widget.mini {
+    border-radius: 20px;
+  }
+
+  .mini #drag-handle { padding: 10px 10px; }
   .mini #body { display: none; }
   .mini #timer { font-size: 11px; }
-  .mini #minimize-btn { font-size: 9px; }
+  .mini #close-btn { display: none; }
 `
 
 // ---- Build Widget DOM ----
 
 function buildWidget(): void {
   hostEl = document.createElement('work-timer-widget')
-  // Apply all positioning via inline style — highest specificity, immune to page CSS
   const right = posX >= 0 ? posX : 20
   const bottom = posY >= 0 ? posY : 20
-  hostEl.setAttribute('style', [
-    'position:fixed',
-    `right:${right}px`,
-    `bottom:${bottom}px`,
-    'z-index:2147483647',
-    'display:block',
-    'width:200px',
-  ].join(';'))
+  hostEl.setAttribute('style', buildHostStyle(right, bottom))
 
-  shadow = hostEl.attachShadow({ mode: 'open' }) // open so DevTools can inspect
+  shadow = hostEl.attachShadow({ mode: 'open' })
 
   const style = document.createElement('style')
   style.textContent = STYLES
@@ -234,7 +262,7 @@ function buildWidget(): void {
     <div id="drag-handle">
       <span id="pulse" class="paused"></span>
       <span id="timer">00:00</span>
-      <button id="minimize-btn" title="Minimize">—</button>
+      <button id="close-btn" title="Close widget">✕</button>
     </div>
     <div id="body">
       <div id="project-name">No project</div>
@@ -247,14 +275,21 @@ function buildWidget(): void {
 
   shadow.appendChild(style)
   shadow.appendChild(widget)
-  // Append to body (reliable) or fall back to <html>
   ;(document.body || document.documentElement).appendChild(hostEl)
 
-  // Minimize button
-  shadow.getElementById('minimize-btn')!.addEventListener('click', (e) => {
+  // Close button → hide widget (user dismissed it)
+  shadow.getElementById('close-btn')!.addEventListener('click', (e) => {
     e.stopPropagation()
+    persistHidden(true)
+    removeWidget()
+  })
+
+  // Click on drag-handle (not a button) → toggle mini/full
+  shadow.getElementById('drag-handle')!.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).closest('button')) return
     isMinimized = !isMinimized
     widget.className = isMinimized ? 'mini' : 'full'
+    applyHostStyle()
     savePosition()
   })
 
@@ -272,7 +307,6 @@ function buildWidget(): void {
     await chrome.runtime.sendMessage({ action: 'STOP_TIMER' })
   })
 
-  // Drag
   setupDrag()
 }
 
@@ -291,9 +325,9 @@ function setupDrag(): void {
     isDragging = true
     startMouseX = e.clientX
     startMouseY = e.clientY
-    const attrStyle = hostEl!.getAttribute('style') || ''
-    startRight = parseInt((attrStyle.match(/right:(\d+)px/) ?? ['', '20'])[1], 10)
-    startBottom = parseInt((attrStyle.match(/bottom:(\d+)px/) ?? ['', '20'])[1], 10)
+    const pos = getCurrentPos()
+    startRight = pos.right
+    startBottom = pos.bottom
     e.preventDefault()
   })
 
@@ -301,16 +335,10 @@ function setupDrag(): void {
     if (!isDragging || !hostEl) return
     const dx = startMouseX - e.clientX
     const dy = startMouseY - e.clientY
-    const newRight = Math.max(0, Math.min(window.innerWidth - 70, startRight + dx))
+    const widgetWidth = isMinimized ? MINI_WIDTH : FULL_WIDTH
+    const newRight = Math.max(0, Math.min(window.innerWidth - widgetWidth, startRight + dx))
     const newBottom = Math.max(0, Math.min(window.innerHeight - 50, startBottom + dy))
-    hostEl.setAttribute('style', [
-      'position:fixed',
-      `right:${newRight}px`,
-      `bottom:${newBottom}px`,
-      'z-index:2147483647',
-      'display:block',
-      'width:200px',
-    ].join(';'))
+    hostEl.setAttribute('style', buildHostStyle(newRight, newBottom))
   })
 
   document.addEventListener('mouseup', () => {
@@ -333,7 +361,6 @@ function updateWidget(state: TimerState, projs: Project[]): void {
   const timerEl = shadow.getElementById('timer')!
   const projectEl = shadow.getElementById('project-name')!
   const btnPause = shadow.getElementById('btn-pause')!
-  const btnStop = shadow.getElementById('btn-stop')!
 
   if (state.status === 'idle') {
     removeWidget()
@@ -356,7 +383,7 @@ function updateWidget(state: TimerState, projs: Project[]): void {
     btnPause.textContent = '▶ Resume'
     btnPause.title = 'Resume'
   }
-  btnStop.style.display = ''
+
   widget.className = isMinimized ? 'mini' : 'full'
 }
 
@@ -387,6 +414,25 @@ chrome.runtime.onMessage.addListener((msg: ContentMessage) => {
     return
   }
 
+  if (msg.action === 'SHOW_FLOATING_TIMER') {
+    const { state, projects: projs } = msg
+    // User explicitly requested to show — clear hidden flag and reset position
+    persistHidden(false)
+    posX = 20
+    posY = 20
+    if (state.status !== 'idle') {
+      if (!hostEl) {
+        buildWidget()
+      } else {
+        // Reset position of existing widget to bottom-right
+        hostEl.setAttribute('style', buildHostStyle(20, 20))
+      }
+      updateWidget(state, projs)
+      startTick()
+    }
+    return
+  }
+
   if (msg.action === 'TIMER_SYNC') {
     const { state, projects: projs } = msg
 
@@ -395,27 +441,33 @@ chrome.runtime.onMessage.addListener((msg: ContentMessage) => {
       return
     }
 
-    if (!hostEl) buildWidget()
-    updateWidget(state, projs)
-    startTick()
+    // Build widget only if: not already visible, not hidden by user, and auto-show enabled
+    if (!hostEl && !isHidden && autoShowEnabled) {
+      buildWidget()
+    }
+
+    if (hostEl) {
+      updateWidget(state, projs)
+      startTick()
+    }
   }
 })
 
 // ---- Init: fetch current state on inject ----
 
 async function init(): Promise<void> {
-  await loadPosition()
+  await loadPersistedState()
 
   try {
     const response = await chrome.runtime.sendMessage({ action: 'GET_TIMER_STATE' })
     if (response?.success && response.state && response.state.status !== 'idle') {
-      // Also load projects
-      const projectsResult = await chrome.storage.local.get('projects')
-      const projs: Project[] = (projectsResult['projects'] as Project[] | undefined) ?? []
-
-      buildWidget()
-      updateWidget(response.state as TimerState, projs)
-      startTick()
+      if (!isHidden && autoShowEnabled) {
+        const projectsResult = await chrome.storage.local.get('projects')
+        const projs: Project[] = (projectsResult['projects'] as Project[] | undefined) ?? []
+        buildWidget()
+        updateWidget(response.state as TimerState, projs)
+        startTick()
+      }
     }
   } catch {
     // Extension context may not be available on some pages, ignore
