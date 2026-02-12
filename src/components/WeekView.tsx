@@ -4,9 +4,12 @@ import { useEntriesRange } from '@/hooks/useEntries'
 import { useProjects } from '@/hooks/useProjects'
 import { getWeekDays, getWeekRange, formatDurationShort, formatDate, msToHours } from '@/utils/date'
 import { useSettings } from '@/hooks/useSettings'
+import { updateEntry, deleteEntry } from '@/storage'
 import GoalProgress from './GoalProgress'
 import ExportMenu from './ExportMenu'
-import { ChevronLeftIcon, ChevronRightIcon } from './Icons'
+import EntryEditModal from './EntryEditModal'
+import AddEntryModal from './AddEntryModal'
+import { ChevronLeftIcon, ChevronRightIcon, PlusIcon } from './Icons'
 import type { TimeEntry } from '@/types'
 
 export default function WeekView() {
@@ -21,7 +24,10 @@ export default function WeekView() {
   const { start, end } = getWeekRange(currentDate, weekStartsOn)
   const days = getWeekDays(currentDate, weekStartsOn, workingDays)
 
-  const { entries } = useEntriesRange(formatDate(start), formatDate(end))
+  const { entries, refetch } = useEntriesRange(formatDate(start), formatDate(end))
+
+  const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null)
+  const [addingForDate, setAddingForDate] = useState<string | null>(null)
 
   const entriesByDay = useMemo(() => {
     const map = new Map<string, TimeEntry[]>()
@@ -85,6 +91,36 @@ export default function WeekView() {
         />
       )}
 
+      {/* Edit Entry Modal */}
+      {editingEntry && (
+        <EntryEditModal
+          entry={editingEntry}
+          onSave={async (updated) => {
+            await updateEntry(updated)
+            await refetch()
+            setEditingEntry(null)
+          }}
+          onDelete={async () => {
+            await deleteEntry(editingEntry.id, editingEntry.date)
+            await refetch()
+            setEditingEntry(null)
+          }}
+          onClose={() => setEditingEntry(null)}
+        />
+      )}
+
+      {/* Add Entry Modal */}
+      {addingForDate && (
+        <AddEntryModal
+          date={addingForDate}
+          onSave={async () => {
+            await refetch()
+            setAddingForDate(null)
+          }}
+          onClose={() => setAddingForDate(null)}
+        />
+      )}
+
       {/* Days */}
       <div className="flex flex-col gap-2" role="list" aria-label="Weekly time entries">
         {days.map((day) => {
@@ -115,9 +151,18 @@ export default function WeekView() {
                     </span>
                   )}
                 </div>
-                <span className={`text-xs font-semibold tabular-nums ${dayTotal > 0 ? 'text-stone-700 dark:text-stone-300' : 'text-stone-300 dark:text-stone-600'}`}>
-                  {dayTotal > 0 ? formatDurationShort(dayTotal) : '—'}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className={`text-xs font-semibold tabular-nums ${dayTotal > 0 ? 'text-stone-700 dark:text-stone-300' : 'text-stone-300 dark:text-stone-600'}`}>
+                    {dayTotal > 0 ? formatDurationShort(dayTotal) : '—'}
+                  </span>
+                  <button
+                    onClick={() => setAddingForDate(key)}
+                    className="p-0.5 rounded-md hover:bg-stone-200 dark:hover:bg-dark-elevated text-stone-400 dark:text-stone-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+                    aria-label={`Add entry for ${key}`}
+                  >
+                    <PlusIcon className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
 
               {dayEntries.length > 0 && (
@@ -125,14 +170,15 @@ export default function WeekView() {
                   {dayEntries.map((entry) => {
                     const project = activeProjects.find(p => p.id === entry.projectId)
                     return (
-                      <span
+                      <button
                         key={entry.id}
-                        className="text-[10px] font-medium px-2 py-0.5 rounded-full text-white truncate max-w-[100px]"
+                        onClick={() => setEditingEntry(entry)}
+                        className="text-[10px] font-medium px-2 py-0.5 rounded-full text-white truncate max-w-[100px] hover:opacity-75 transition-opacity"
                         style={{ backgroundColor: project?.color ?? '#A8A29E' }}
-                        title={`${entry.description || project?.name || 'No project'} (${formatDurationShort(entry.duration)})`}
+                        title={`${entry.description || project?.name || 'No project'} (${formatDurationShort(entry.duration)}) — click to edit`}
                       >
                         {formatDurationShort(entry.duration)}
-                      </span>
+                      </button>
                     )
                   })}
                 </div>

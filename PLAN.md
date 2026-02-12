@@ -8,6 +8,14 @@
 
 ## Recent Updates & Bug Fixes
 
+### 2026-02-12 (Entry & Week Enhancements)
+- **Added:** Date picker on manual entry mode — save records to any date (defaults to today)
+- **Added:** Week tab — `+` button on each day card opens `AddEntryModal` for that date
+- **Added:** Week tab — entry pills are now clickable buttons to edit/delete entries via `EntryEditModal`
+- **Added:** `AddEntryModal` component — create manual entries with Time Range or Duration, Project, Work Type, Description, and Link fields; supports inline project/tag creation
+- **Updated:** Monthly heatmap thresholds — 0h / <2h / <5h / <8h / 8h+ (aligned to standard workday)
+- **Updated:** Extension icon — replaced with a clean, simple white-circle/black-clock SVG icon (all 4 sizes regenerated from `public/icons/icon.svg`)
+
 ### 2026-02-12 (UI Redesign)
 - **Redesigned:** Complete UI overhaul — modern, minimal, professional design
   - **Font:** Inter Variable (via @fontsource-variable/inter) replacing system fonts
@@ -319,6 +327,15 @@
   - Tags stored as ID array in `TimeEntry.tags`
   - Selector in Edit Entry modal with inline "+ Add" form
 - [x] **Inline project creation** from Edit Entry modal (auto-assigned color)
+
+### 3.11 Manual Entry Date & Week Enhancements ✅
+
+- [x] Date picker on manual entry form (default today, any past/future date selectable)
+- [x] Week view: `+` button per day card to add a manual entry for that specific date
+- [x] Week view: clickable entry pills to open full edit modal (edit times, project, work type, description, link, delete)
+- [x] `AddEntryModal` — standalone create modal with Time Range / Duration, Project (+ inline create), Work Type (+ inline create), Description, Link fields
+- [x] Monthly heatmap bands updated to 0h / <2h / <5h / <8h / 8h+
+- [x] Extension icon replaced with clean SVG (white circle, black clock hands, all 4 PNG sizes)
 
 ### 3.10 Settings Improvements ✅
 

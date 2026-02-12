@@ -16,17 +16,17 @@ function getHeatColor(ms: number): string {
   const h = ms / 3_600_000
   if (h === 0) return 'bg-stone-100 dark:bg-stone-700/50'
   if (h < 2)   return 'bg-indigo-100 dark:bg-indigo-900/60'
-  if (h < 4)   return 'bg-indigo-300 dark:bg-indigo-700'
-  if (h < 6)   return 'bg-indigo-500 dark:bg-indigo-500'
+  if (h < 5)   return 'bg-indigo-300 dark:bg-indigo-700'
+  if (h < 8)   return 'bg-indigo-500 dark:bg-indigo-500'
   return        'bg-indigo-600 dark:bg-indigo-400'
 }
 
 const LEGEND = [
   { label: '0h',   color: 'bg-stone-100 dark:bg-stone-700/50' },
   { label: '<2h',  color: 'bg-indigo-100 dark:bg-indigo-900/60' },
-  { label: '<4h',  color: 'bg-indigo-300 dark:bg-indigo-700' },
-  { label: '<6h',  color: 'bg-indigo-500 dark:bg-indigo-500' },
-  { label: '6h+',  color: 'bg-indigo-600 dark:bg-indigo-400' },
+  { label: '<5h',  color: 'bg-indigo-300 dark:bg-indigo-700' },
+  { label: '<8h',  color: 'bg-indigo-500 dark:bg-indigo-500' },
+  { label: '8h+',  color: 'bg-indigo-600 dark:bg-indigo-400' },
 ]
 
 export default function CalendarHeatmap({ year, month, onPrev, onNext }: Props) {

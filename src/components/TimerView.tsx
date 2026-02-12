@@ -30,6 +30,7 @@ export default function TimerView() {
 
   // Manual mode fields
   const [manualInputType, setManualInputType] = useState<'timeRange' | 'duration'>('timeRange')
+  const [manualDate, setManualDate] = useState(getToday())
   const [manualFrom, setManualFrom] = useState('')
   const [manualTo, setManualTo] = useState('')
   const [manualHours, setManualHours] = useState('')
@@ -70,10 +71,12 @@ export default function TimerView() {
   }
 
   const handleManualSave = async () => {
-    const today = getToday()
+    if (!manualDate) return
     let startTime: number
     let endTime: number
     let duration: number
+
+    const baseDate = new Date(manualDate + 'T00:00:00')
 
     if (manualInputType === 'timeRange') {
       if (!manualFrom || !manualTo) return
@@ -81,9 +84,9 @@ export default function TimerView() {
       const [fromH, fromM] = manualFrom.split(':').map(Number)
       const [toH, toM] = manualTo.split(':').map(Number)
 
-      const startDate = new Date()
+      const startDate = new Date(baseDate)
       startDate.setHours(fromH, fromM, 0, 0)
-      const endDate = new Date()
+      const endDate = new Date(baseDate)
       endDate.setHours(toH, toM, 0, 0)
 
       if (endDate <= startDate) return
@@ -104,7 +107,7 @@ export default function TimerView() {
 
     await add({
       id: generateId(),
-      date: today,
+      date: manualDate,
       startTime,
       endTime,
       duration,
@@ -115,6 +118,7 @@ export default function TimerView() {
       tags: [],
     })
 
+    setManualDate(getToday())
     setManualFrom('')
     setManualTo('')
     setManualHours('')
@@ -185,6 +189,18 @@ export default function TimerView() {
       {/* Timer Display */}
       {mode === 'manual' ? (
         <div className="py-2">
+          {/* Date */}
+          <div className="mb-4">
+            <label htmlFor="manual-date" className="text-[11px] font-medium text-stone-500 dark:text-stone-400 block mb-1.5">Date</label>
+            <input
+              id="manual-date"
+              type="date"
+              value={manualDate}
+              onChange={(e) => setManualDate(e.target.value || getToday())}
+              className="w-full border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
+            />
+          </div>
+
           {/* Toggle between Time Range and Duration */}
           <div className="flex gap-1 bg-stone-100 dark:bg-dark-card rounded-lg p-0.5 mb-4">
             <button
