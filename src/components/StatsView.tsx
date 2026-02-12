@@ -19,7 +19,6 @@ export default function StatsView() {
   const daysWithEntries = new Set(weekEntries.map(e => e.date)).size
   const avgDaily = daysWithEntries > 0 ? weekTotal / daysWithEntries : 0
 
-  // Bar chart: daily hours this week
   const barData = useMemo(() => {
     return days.map(day => {
       const key = formatDate(day)
@@ -33,7 +32,6 @@ export default function StatsView() {
     })
   }, [days, weekEntries])
 
-  // Pie chart: today by project
   const pieData = useMemo(() => {
     const byProject = new Map<string, number>()
     for (const entry of todayEntries) {
@@ -46,15 +44,15 @@ export default function StatsView() {
       return {
         name: project?.name ?? 'No Project',
         value: msToHours(duration),
-        color: project?.color ?? '#9ca3af',
+        color: project?.color ?? '#A8A29E',
       }
     })
   }, [todayEntries, activeProjects])
 
   return (
-    <div className="flex flex-col p-4 gap-4">
+    <div className="flex flex-col px-5 py-4 gap-5">
       <div className="flex justify-between items-center">
-        <h2 className="text-sm font-semibold text-gray-800">Statistics</h2>
+        <h2 className="text-sm font-semibold text-stone-800 dark:text-stone-200">Statistics</h2>
         <ExportMenu
           entries={weekEntries}
           projects={activeProjects}
@@ -63,34 +61,40 @@ export default function StatsView() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-2">
-        <div className="bg-blue-50 rounded-lg p-2.5 text-center">
-          <div className="text-lg font-bold text-blue-700">{formatDurationShort(todayTotal)}</div>
-          <div className="text-[10px] text-blue-600">Today</div>
+      <div className="grid grid-cols-3 gap-2.5">
+        <div className="bg-indigo-50 dark:bg-indigo-500/10 rounded-xl p-3 text-center">
+          <div className="text-lg font-bold text-indigo-700 dark:text-indigo-300 tabular-nums">{formatDurationShort(todayTotal)}</div>
+          <div className="text-[10px] font-medium text-indigo-500 dark:text-indigo-400 mt-0.5">Today</div>
         </div>
-        <div className="bg-green-50 rounded-lg p-2.5 text-center">
-          <div className="text-lg font-bold text-green-700">{formatDurationShort(weekTotal)}</div>
-          <div className="text-[10px] text-green-600">This Week</div>
+        <div className="bg-emerald-50 dark:bg-emerald-500/10 rounded-xl p-3 text-center">
+          <div className="text-lg font-bold text-emerald-700 dark:text-emerald-300 tabular-nums">{formatDurationShort(weekTotal)}</div>
+          <div className="text-[10px] font-medium text-emerald-500 dark:text-emerald-400 mt-0.5">This Week</div>
         </div>
-        <div className="bg-purple-50 rounded-lg p-2.5 text-center">
-          <div className="text-lg font-bold text-purple-700">{formatDurationShort(avgDaily)}</div>
-          <div className="text-[10px] text-purple-600">Daily Avg</div>
+        <div className="bg-purple-50 dark:bg-purple-500/10 rounded-xl p-3 text-center">
+          <div className="text-lg font-bold text-purple-700 dark:text-purple-300 tabular-nums">{formatDurationShort(avgDaily)}</div>
+          <div className="text-[10px] font-medium text-purple-500 dark:text-purple-400 mt-0.5">Daily Avg</div>
         </div>
       </div>
 
       {/* Weekly Bar Chart */}
       <div>
-        <h3 className="text-xs font-medium text-gray-500 mb-2">This Week</h3>
-        <div className="h-36">
-          <ResponsiveContainer width="100%" height="100%" minHeight={144}>
+        <h3 className="text-[11px] font-medium text-stone-400 dark:text-stone-500 mb-2.5 uppercase tracking-wider">This Week</h3>
+        <div className="h-36 bg-white dark:bg-dark-card rounded-xl p-3 border border-stone-100 dark:border-dark-border">
+          <ResponsiveContainer width="100%" height="100%" minHeight={120}>
             <BarChart data={barData}>
-              <XAxis dataKey="day" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 10 }} width={25} />
+              <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#A8A29E' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: '#A8A29E' }} width={20} axisLine={false} tickLine={false} />
               <Tooltip
                 formatter={(value) => [`${value}h`, 'Hours']}
-                contentStyle={{ fontSize: 12 }}
+                contentStyle={{
+                  fontSize: 12,
+                  borderRadius: 8,
+                  border: '1px solid #E7E5E4',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                  padding: '6px 10px',
+                }}
               />
-              <Bar dataKey="hours" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="hours" fill="#6366F1" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -99,9 +103,9 @@ export default function StatsView() {
       {/* Today by Project */}
       {pieData.length > 0 && (
         <div>
-          <h3 className="text-xs font-medium text-gray-500 mb-2">Today by Project</h3>
-          <div className="flex items-center gap-4">
-            <div className="w-24 h-24">
+          <h3 className="text-[11px] font-medium text-stone-400 dark:text-stone-500 mb-2.5 uppercase tracking-wider">Today by Project</h3>
+          <div className="flex items-center gap-5 bg-white dark:bg-dark-card rounded-xl p-4 border border-stone-100 dark:border-dark-border">
+            <div className="w-24 h-24 flex-shrink-0">
               <ResponsiveContainer width="100%" height="100%" minWidth={96} minHeight={96}>
                 <PieChart>
                   <Pie
@@ -109,9 +113,10 @@ export default function StatsView() {
                     dataKey="value"
                     cx="50%"
                     cy="50%"
-                    innerRadius={20}
-                    outerRadius={40}
-                    paddingAngle={2}
+                    innerRadius={22}
+                    outerRadius={42}
+                    paddingAngle={3}
+                    strokeWidth={0}
                   >
                     {pieData.map((d, i) => (
                       <Cell key={i} fill={d.color} />
@@ -120,16 +125,16 @@ export default function StatsView() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-2">
               {pieData.map((d) => (
-                <div key={d.name} className="flex items-center gap-1.5">
+                <div key={d.name} className="flex items-center gap-2">
                   <span
-                    className="w-2 h-2 rounded-full flex-shrink-0"
+                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                     style={{ backgroundColor: d.color }}
                     aria-hidden="true"
                   />
-                  <span className="text-xs text-gray-600">{d.name}</span>
-                  <span className="text-xs font-medium text-gray-800">{d.value}h</span>
+                  <span className="text-xs text-stone-500 dark:text-stone-400">{d.name}</span>
+                  <span className="text-xs font-semibold text-stone-700 dark:text-stone-300 tabular-nums">{d.value}h</span>
                 </div>
               ))}
             </div>

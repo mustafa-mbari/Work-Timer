@@ -36,7 +36,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <div className="fixed bottom-14 left-2 right-2 flex flex-col gap-1.5 z-50 pointer-events-none">
+      <div className="fixed bottom-14 left-3 right-3 flex flex-col gap-2 z-50 pointer-events-none">
         {toasts.map(toast => (
           <ToastItem key={toast.id} toast={toast} onDismiss={removeToast} />
         ))}
@@ -52,14 +52,14 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
   }, [toast.id, onDismiss])
 
   const bgColor = {
-    success: 'bg-green-600',
-    error: 'bg-red-600',
-    info: 'bg-gray-800',
+    success: 'bg-emerald-600',
+    error: 'bg-rose-600',
+    info: 'bg-stone-800 dark:bg-stone-200 dark:text-stone-900',
   }[toast.type]
 
   return (
     <div
-      className={`${bgColor} text-white text-xs px-3 py-2 rounded-lg shadow-lg pointer-events-auto animate-fade-in`}
+      className={`${bgColor} text-white text-xs font-medium px-4 py-2.5 rounded-xl shadow-lg pointer-events-auto animate-fade-in`}
       role="alert"
       aria-live="polite"
     >

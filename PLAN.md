@@ -8,6 +8,38 @@
 
 ## Recent Updates & Bug Fixes
 
+### 2026-02-12 (UI Redesign)
+- **Redesigned:** Complete UI overhaul — modern, minimal, professional design
+  - **Font:** Inter Variable (via @fontsource-variable/inter) replacing system fonts
+  - **Color palette:** Indigo accent (#6366F1) + warm Stone neutrals replacing generic gray/blue
+  - **Semantic colors:** Emerald (success), Amber (warning), Rose (danger), Purple (pomodoro)
+  - **Dark mode:** Custom surface tokens (dark, dark-card, dark-elevated, dark-border, dark-hover)
+  - **Icons:** 18 custom SVG icon components replacing emoji icons in NavBar and throughout
+  - **NavBar:** SVG line icons, active indicator pill, better spacing
+  - **TimerView:** Larger timer digits, icon+text buttons, subtle colored shadows
+  - **Buttons:** Rounded-xl with shadow-sm and icon+label pattern
+  - **Inputs:** Indigo focus ring, rounded-xl, better padding
+  - **Cards/Entries:** Hover effects, better visual hierarchy, group interactions
+  - **Modal:** Backdrop blur, slide-up animation, rounded-2xl sheet
+  - **Progress bars:** Taller (8px), semantic color coding
+  - **Charts:** Styled tooltip, rounded bars, card containers with borders
+  - **Settings:** Icon+text theme buttons, grid layouts, styled keyboard shortcuts
+  - **Toast:** Rounded-xl, dark-aware info variant
+  - **ErrorBoundary:** Circular error icon, polished CTA
+- **Fixed:** Dark mode Tailwind v4 variant — corrected `@variant dark` selector syntax
+  - Old block form generated impossible selectors (utility as ancestor of :root)
+  - New inline form `(&:is(.dark *, .dark))` generates correct descendant selectors
+
+### 2026-02-12
+- **Added:** Full dark/light theme system with automatic system preference detection
+  - Theme toggle in Settings (Light, Dark, System)
+  - Smooth theme transitions across all views
+  - All components updated with dark mode support
+- **Added:** Timer in tab title feature
+  - Active tab title shows running timer (e.g., `[01:23:45] Page Title`)
+  - Automatically restores original titles when timer stops
+  - Works across all accessible browser tabs
+
 ### 2024-02-12
 - **Fixed:** Recharts dimension error in StatsView - Added explicit `minHeight`/`minWidth` props to `ResponsiveContainer` components to prevent "-1 width/height" errors on popup load
 - **Fixed:** Continue button functionality - Updated timer logic to properly resume existing entries with accurate time tracking:
@@ -219,6 +251,24 @@
   - Example: `github.com/org/repo*` → Project "Work"
 - [ ] Suggestions appear as a chip in the timer view (click to accept)
 
+### 3.1 Browser Integration (Partially Complete)
+
+- [x] **Timer in tab title:**
+  - Use `chrome.tabs` and `chrome.scripting` API to update active tab title
+  - Format: `[01:23:45] Original Tab Title`
+  - Automatically restores original title when timer stops
+- [ ] **Floating mini timer:**
+  - Content script that injects a small draggable timer widget
+  - Shows: elapsed time, project name, pause/stop buttons
+  - Minimizable to a small icon
+  - Position persists across page loads
+  - Toggle on/off in settings
+- [ ] **Toolbar quick actions:**
+  - Right-click context menu on extension icon:
+    - Start/stop timer
+    - Quick switch project
+    - Open week view
+
 ### 3.4 Keyboard Shortcuts ✅
 
 - [x] Define Chrome extension keyboard shortcuts in manifest:
@@ -229,15 +279,25 @@
 - [x] Add shortcut hints to Timer view buttons (title tooltips)
 - [ ] Customizable shortcuts in Settings (future: requires chrome.commands.update API)
 
-### 3.5 Dark/Light Theme
+### 3.5 Dark/Light Theme ✅
 
-- [ ] Full theme system (not just basic toggle):
+- [x] Full theme system (not just basic toggle):
   - Light theme (default)
   - Dark theme
   - System preference auto-detect
-- [ ] TailwindCSS dark mode classes throughout all views
-- [ ] Smooth theme transition animation
-- [ ] Persist theme preference
+- [x] TailwindCSS dark mode classes throughout all views
+- [x] Smooth theme transition animation (200ms ease-in-out)
+- [x] Persist theme preference
+
+### 3.8 UI Redesign ✅
+
+- [x] Inter Variable font (bundled via @fontsource-variable/inter)
+- [x] Indigo accent color palette with warm Stone neutrals
+- [x] Custom SVG icon system (18 icons in `Icons.tsx`)
+- [x] Redesigned all 14 components with modern styling
+- [x] Custom dark mode surface tokens for crafted dark experience
+- [x] Consistent design system: rounded-xl cards, shadow-sm buttons, 8px grid
+- [x] Fixed Tailwind v4 `@variant dark` selector generation
 
 ### 3.6 Rich Notes
 

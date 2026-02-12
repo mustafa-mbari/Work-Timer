@@ -2,15 +2,18 @@ import { useState, useEffect } from 'react'
 import type { Settings } from '@/types'
 import { getSettings, updateSettings } from '@/storage'
 import { useProjects } from '@/hooks/useProjects'
+import { useTheme } from '@/hooks/useTheme'
+import { SunIcon, MoonIcon, MonitorIcon, PlusIcon } from './Icons'
 
 const PROJECT_COLORS = [
-  '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
-  '#ec4899', '#06b6d4', '#f97316', '#6366f1', '#14b8a6',
+  '#6366F1', '#F43F5E', '#10B981', '#F59E0B', '#A855F7',
+  '#EC4899', '#06B6D4', '#F97316', '#3B82F6', '#14B8A6',
 ]
 
 export default function SettingsView() {
   const [settings, setSettings] = useState<Settings | null>(null)
   const { activeProjects, projects, create, update, archive } = useProjects()
+  const { theme, setTheme } = useTheme()
 
   const [newProjectName, setNewProjectName] = useState('')
   const [newProjectColor, setNewProjectColor] = useState(PROJECT_COLORS[0])
@@ -38,23 +41,53 @@ export default function SettingsView() {
 
   const archivedProjects = projects.filter(p => p.archived)
 
+  const inputClass = "w-full border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
+  const labelClass = "text-[11px] font-medium text-stone-500 dark:text-stone-400 block mb-1.5"
+
+  const toggleButton = (isActive: boolean) =>
+    `flex-1 py-2 text-sm font-medium rounded-lg border transition-all ${
+      isActive
+        ? 'bg-indigo-500 text-white border-indigo-500 shadow-sm shadow-indigo-500/20'
+        : 'border-stone-200 dark:border-dark-border text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-dark-hover'
+    }`
+
   return (
-    <div className="flex flex-col p-4 gap-4">
-      <h2 className="text-sm font-semibold text-gray-800">Settings</h2>
+    <div className="flex flex-col px-5 py-4 gap-5">
+      <h2 className="text-sm font-semibold text-stone-800 dark:text-stone-200">Settings</h2>
+
+      {/* Theme */}
+      <div>
+        <label className={labelClass}>Theme</label>
+        <div className="flex gap-1.5">
+          {([
+            { value: 'light' as const, label: 'Light', Icon: SunIcon },
+            { value: 'dark' as const, label: 'Dark', Icon: MoonIcon },
+            { value: 'system' as const, label: 'System', Icon: MonitorIcon },
+          ]).map(({ value, label, Icon }) => (
+            <button
+              key={value}
+              onClick={() => setTheme(value)}
+              className={toggleButton(theme === value)}
+              aria-label={`Set theme to ${value}`}
+            >
+              <span className="flex items-center justify-center gap-1.5">
+                <Icon className="w-3.5 h-3.5" />
+                {label}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Working Days */}
       <div>
-        <label className="text-xs text-gray-500 block mb-1">Working Days</label>
-        <div className="flex gap-1">
+        <label className={labelClass}>Working Days</label>
+        <div className="flex gap-1.5">
           {[5, 6, 7].map((d) => (
             <button
               key={d}
               onClick={() => handleSettingChange('workingDays', d)}
-              className={`flex-1 py-1.5 text-sm rounded-lg border transition-colors ${
-                settings.workingDays === d
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'border-gray-300 text-gray-600 hover:bg-gray-50'
-              }`}
+              className={toggleButton(settings.workingDays === d)}
             >
               {d} days
             </button>
@@ -64,17 +97,13 @@ export default function SettingsView() {
 
       {/* Week Start Day */}
       <div>
-        <label className="text-xs text-gray-500 block mb-1">Week Starts On</label>
-        <div className="flex gap-1">
+        <label className={labelClass}>Week Starts On</label>
+        <div className="flex gap-1.5">
           {([1, 0] as const).map((d) => (
             <button
               key={d}
               onClick={() => handleSettingChange('weekStartDay', d)}
-              className={`flex-1 py-1.5 text-sm rounded-lg border transition-colors ${
-                settings.weekStartDay === d
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'border-gray-300 text-gray-600 hover:bg-gray-50'
-              }`}
+              className={toggleButton(settings.weekStartDay === d)}
             >
               {d === 1 ? 'Monday' : 'Sunday'}
             </button>
@@ -83,103 +112,104 @@ export default function SettingsView() {
       </div>
 
       {/* Daily & Weekly Targets */}
-      <div>
-        <label className="text-xs text-gray-500 block mb-1">Daily Target (hours)</label>
-        <input
-          type="number"
-          min="0"
-          max="24"
-          step="0.5"
-          value={settings.dailyTarget ?? ''}
-          onChange={(e) => handleSettingChange('dailyTarget', e.target.value ? Number(e.target.value) : null)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          aria-label="Daily target hours"
-        />
-      </div>
-
-      <div>
-        <label className="text-xs text-gray-500 block mb-1">Weekly Target (hours)</label>
-        <input
-          type="number"
-          min="0"
-          max="168"
-          step="1"
-          value={settings.weeklyTarget ?? ''}
-          onChange={(e) => handleSettingChange('weeklyTarget', e.target.value ? Number(e.target.value) : null)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          aria-label="Weekly target hours"
-        />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={labelClass}>Daily Target (h)</label>
+          <input
+            type="number"
+            min="0"
+            max="24"
+            step="0.5"
+            value={settings.dailyTarget ?? ''}
+            onChange={(e) => handleSettingChange('dailyTarget', e.target.value ? Number(e.target.value) : null)}
+            className={inputClass}
+            aria-label="Daily target hours"
+          />
+        </div>
+        <div>
+          <label className={labelClass}>Weekly Target (h)</label>
+          <input
+            type="number"
+            min="0"
+            max="168"
+            step="1"
+            value={settings.weeklyTarget ?? ''}
+            onChange={(e) => handleSettingChange('weeklyTarget', e.target.value ? Number(e.target.value) : null)}
+            className={inputClass}
+            aria-label="Weekly target hours"
+          />
+        </div>
       </div>
 
       {/* Idle Detection */}
       <div>
-        <label className="text-xs text-gray-500 block mb-1">Idle Detection (minutes)</label>
+        <label className={labelClass}>Idle Detection (minutes)</label>
         <input
           type="number"
           min="1"
           max="60"
           value={settings.idleTimeout}
           onChange={(e) => handleSettingChange('idleTimeout', Number(e.target.value))}
-          className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className={inputClass}
           aria-label="Idle detection timeout in minutes"
         />
       </div>
 
       {/* Pomodoro Settings */}
       <div>
-        <label className="text-xs text-gray-500 block mb-2">Pomodoro</label>
-        <div className="grid grid-cols-2 gap-2">
+        <label className={labelClass}>Pomodoro</label>
+        <div className="grid grid-cols-2 gap-2.5">
           <div>
-            <label className="text-[10px] text-gray-400 block mb-0.5">Work (min)</label>
+            <label className="text-[10px] text-stone-400 dark:text-stone-500 block mb-1">Work (min)</label>
             <input
               type="number"
               min="1"
               max="120"
               value={settings.pomodoro.workMinutes}
               onChange={(e) => handleSettingChange('pomodoro', { ...settings.pomodoro, workMinutes: Number(e.target.value) })}
-              className="w-full border border-gray-300 rounded-lg px-2.5 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
             />
           </div>
           <div>
-            <label className="text-[10px] text-gray-400 block mb-0.5">Short Break (min)</label>
+            <label className="text-[10px] text-stone-400 dark:text-stone-500 block mb-1">Short Break (min)</label>
             <input
               type="number"
               min="1"
               max="30"
               value={settings.pomodoro.shortBreakMinutes}
               onChange={(e) => handleSettingChange('pomodoro', { ...settings.pomodoro, shortBreakMinutes: Number(e.target.value) })}
-              className="w-full border border-gray-300 rounded-lg px-2.5 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
             />
           </div>
           <div>
-            <label className="text-[10px] text-gray-400 block mb-0.5">Long Break (min)</label>
+            <label className="text-[10px] text-stone-400 dark:text-stone-500 block mb-1">Long Break (min)</label>
             <input
               type="number"
               min="1"
               max="60"
               value={settings.pomodoro.longBreakMinutes}
               onChange={(e) => handleSettingChange('pomodoro', { ...settings.pomodoro, longBreakMinutes: Number(e.target.value) })}
-              className="w-full border border-gray-300 rounded-lg px-2.5 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
             />
           </div>
           <div>
-            <label className="text-[10px] text-gray-400 block mb-0.5">Sessions before long</label>
+            <label className="text-[10px] text-stone-400 dark:text-stone-500 block mb-1">Sessions before long</label>
             <input
               type="number"
               min="1"
               max="10"
               value={settings.pomodoro.sessionsBeforeLongBreak}
               onChange={(e) => handleSettingChange('pomodoro', { ...settings.pomodoro, sessionsBeforeLongBreak: Number(e.target.value) })}
-              className="w-full border border-gray-300 rounded-lg px-2.5 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
             />
           </div>
         </div>
-        <label className="flex items-center gap-2 mt-2 text-xs text-gray-600 cursor-pointer">
+        <label className="flex items-center gap-2 mt-3 text-xs text-stone-600 dark:text-stone-300 cursor-pointer">
           <input
             type="checkbox"
             checked={settings.pomodoro.soundEnabled}
             onChange={(e) => handleSettingChange('pomodoro', { ...settings.pomodoro, soundEnabled: e.target.checked })}
-            className="rounded border-gray-300"
+            className="rounded border-stone-300 dark:border-dark-border text-indigo-500 focus:ring-indigo-500/40"
           />
           Sound notifications
         </label>
@@ -187,58 +217,52 @@ export default function SettingsView() {
 
       {/* Keyboard Shortcuts */}
       <div>
-        <label className="text-xs text-gray-500 block mb-2">Keyboard Shortcuts</label>
+        <label className={labelClass}>Keyboard Shortcuts</label>
         <div className="flex flex-col gap-1.5 text-xs">
-          <div className="flex items-center justify-between py-1 px-2 rounded bg-gray-50">
-            <span className="text-gray-600">Open Popup</span>
-            <kbd className="px-2 py-0.5 rounded bg-white border border-gray-300 text-gray-700 font-mono text-[10px]">
-              Alt+Shift+O
-            </kbd>
-          </div>
-          <div className="flex items-center justify-between py-1 px-2 rounded bg-gray-50">
-            <span className="text-gray-600">Start/Stop Timer</span>
-            <kbd className="px-2 py-0.5 rounded bg-white border border-gray-300 text-gray-700 font-mono text-[10px]">
-              Alt+Shift+↑
-            </kbd>
-          </div>
-          <div className="flex items-center justify-between py-1 px-2 rounded bg-gray-50">
-            <span className="text-gray-600">Pause/Resume Timer</span>
-            <kbd className="px-2 py-0.5 rounded bg-white border border-gray-300 text-gray-700 font-mono text-[10px]">
-              Alt+Shift+↓
-            </kbd>
-          </div>
+          {[
+            { action: 'Open Popup', shortcut: 'Alt+Shift+O' },
+            { action: 'Start/Stop Timer', shortcut: 'Alt+Shift+\u2191' },
+            { action: 'Pause/Resume Timer', shortcut: 'Alt+Shift+\u2193' },
+          ].map(({ action, shortcut }) => (
+            <div key={action} className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-stone-50 dark:bg-dark-card">
+              <span className="text-stone-600 dark:text-stone-300">{action}</span>
+              <kbd className="px-2 py-0.5 rounded-md bg-white dark:bg-dark-elevated border border-stone-200 dark:border-dark-border text-stone-600 dark:text-stone-300 font-mono text-[10px] font-medium">
+                {shortcut}
+              </kbd>
+            </div>
+          ))}
         </div>
-        <p className="text-[10px] text-gray-400 mt-1.5">
+        <p className="text-[10px] text-stone-400 dark:text-stone-500 mt-2">
           Shortcuts work globally in Chrome, even when the popup is closed.
         </p>
       </div>
 
       {/* Projects */}
       <div>
-        <div className="flex justify-between items-center mb-2">
-          <label className="text-xs text-gray-500">Projects</label>
+        <div className="flex justify-between items-center mb-2.5">
+          <label className={labelClass + ' mb-0'}>Projects</label>
           {archivedProjects.length > 0 && (
             <button
               onClick={() => setShowArchived(!showArchived)}
-              className="text-[10px] text-blue-600 hover:underline"
+              className="text-[10px] font-medium text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300"
             >
               {showArchived ? 'Hide archived' : `Show archived (${archivedProjects.length})`}
             </button>
           )}
         </div>
 
-        <div className="flex flex-col gap-1.5 mb-2">
+        <div className="flex flex-col gap-1.5 mb-3">
           {activeProjects.map((project) => (
-            <div key={project.id} className="flex items-center gap-2 p-1.5 rounded-lg border border-gray-100">
+            <div key={project.id} className="flex items-center gap-2.5 p-2.5 rounded-xl border border-stone-100 dark:border-dark-border bg-white dark:bg-dark-card">
               <span
                 className="w-3 h-3 rounded-full flex-shrink-0"
                 style={{ backgroundColor: project.color }}
                 aria-hidden="true"
               />
-              <span className="text-sm text-gray-700 flex-1">{project.name}</span>
+              <span className="text-sm text-stone-700 dark:text-stone-200 flex-1">{project.name}</span>
               <button
                 onClick={() => archive(project.id)}
-                className="text-[10px] text-gray-400 hover:text-red-500 px-1"
+                className="text-[10px] font-medium text-stone-400 dark:text-stone-500 hover:text-rose-500 dark:hover:text-rose-400 px-1.5 py-0.5 rounded transition-colors"
                 aria-label={`Archive ${project.name}`}
               >
                 Archive
@@ -247,16 +271,16 @@ export default function SettingsView() {
           ))}
 
           {showArchived && archivedProjects.map((project) => (
-            <div key={project.id} className="flex items-center gap-2 p-1.5 rounded-lg border border-gray-100 opacity-50">
+            <div key={project.id} className="flex items-center gap-2.5 p-2.5 rounded-xl border border-stone-100 dark:border-dark-border bg-stone-50 dark:bg-dark-card opacity-60">
               <span
                 className="w-3 h-3 rounded-full flex-shrink-0"
                 style={{ backgroundColor: project.color }}
                 aria-hidden="true"
               />
-              <span className="text-sm text-gray-400 flex-1 line-through">{project.name}</span>
+              <span className="text-sm text-stone-400 dark:text-stone-500 flex-1 line-through">{project.name}</span>
               <button
                 onClick={() => update({ ...project, archived: false })}
-                className="text-[10px] text-blue-500 hover:underline px-1"
+                className="text-[10px] font-medium text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 px-1.5 py-0.5 rounded"
                 aria-label={`Restore ${project.name}`}
               >
                 Restore
@@ -266,7 +290,7 @@ export default function SettingsView() {
         </div>
 
         {/* New Project */}
-        <div className="flex gap-1.5 items-end">
+        <div className="flex gap-2 items-end">
           <div className="flex-1">
             <input
               type="text"
@@ -274,17 +298,17 @@ export default function SettingsView() {
               value={newProjectName}
               onChange={(e) => setNewProjectName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleCreateProject()}
-              className="w-full border border-gray-300 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`${inputClass} dark:placeholder-stone-600`}
               aria-label="New project name"
             />
           </div>
-          <div className="flex gap-0.5">
+          <div className="flex gap-1">
             {PROJECT_COLORS.slice(0, 5).map((color) => (
               <button
                 key={color}
                 onClick={() => setNewProjectColor(color)}
-                className={`w-5 h-5 rounded-full border-2 transition-transform ${
-                  newProjectColor === color ? 'border-gray-800 scale-110' : 'border-transparent'
+                className={`w-5 h-5 rounded-full border-2 transition-all ${
+                  newProjectColor === color ? 'border-stone-800 dark:border-stone-200 scale-110' : 'border-transparent'
                 }`}
                 style={{ backgroundColor: color }}
                 aria-label={`Select color ${color}`}
@@ -294,16 +318,16 @@ export default function SettingsView() {
           <button
             onClick={handleCreateProject}
             disabled={!newProjectName.trim()}
-            className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+            className="bg-indigo-500 text-white p-2 rounded-lg hover:bg-indigo-600 disabled:opacity-40 transition-colors shadow-sm shadow-indigo-500/20"
             aria-label="Add project"
           >
-            +
+            <PlusIcon className="w-4 h-4" />
           </button>
         </div>
       </div>
 
       {/* Version */}
-      <div className="text-center text-[10px] text-gray-300 pt-2">
+      <div className="text-center text-[10px] text-stone-300 dark:text-stone-600 pt-2">
         Work Timer v1.0.0
       </div>
     </div>

@@ -6,6 +6,7 @@ import { getWeekDays, getWeekRange, formatDurationShort, formatDate, msToHours }
 import { useSettings } from '@/hooks/useSettings'
 import GoalProgress from './GoalProgress'
 import ExportMenu from './ExportMenu'
+import { ChevronLeftIcon, ChevronRightIcon } from './Icons'
 import type { TimeEntry } from '@/types'
 
 export default function WeekView() {
@@ -37,36 +38,36 @@ export default function WeekView() {
   const today = new Date()
 
   return (
-    <div className="flex flex-col p-4 gap-3">
+    <div className="flex flex-col px-5 py-4 gap-4">
       {/* Week Navigation */}
       <div className="flex items-center justify-between">
         <button
           onClick={() => setWeekOffset(w => w - 1)}
-          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"
+          className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-dark-card text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
           aria-label="Previous week"
         >
-          ◀
+          <ChevronLeftIcon className="w-4 h-4" />
         </button>
         <div className="text-center">
-          <div className="text-sm font-medium text-gray-800">
+          <div className="text-sm font-semibold text-stone-800 dark:text-stone-200">
             {format(start, 'MMM d')} – {format(end, 'MMM d, yyyy')}
           </div>
-          {isCurrentWeek && <div className="text-xs text-blue-600">This week</div>}
+          {isCurrentWeek && <div className="text-[11px] font-medium text-indigo-500 dark:text-indigo-400 mt-0.5">This week</div>}
         </div>
         <button
           onClick={() => setWeekOffset(w => w + 1)}
-          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500"
+          className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-dark-card text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
           aria-label="Next week"
         >
-          ▶
+          <ChevronRightIcon className="w-4 h-4" />
         </button>
       </div>
 
       {/* Week Total */}
-      <div className="bg-blue-50 rounded-lg px-3 py-2 flex justify-between items-center">
-        <span className="text-xs text-blue-600 font-medium">Week Total</span>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-blue-700">{formatDurationShort(weekTotal)}</span>
+      <div className="bg-indigo-50 dark:bg-indigo-500/10 rounded-xl px-4 py-3 flex justify-between items-center">
+        <span className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400">Week Total</span>
+        <div className="flex items-center gap-2.5">
+          <span className="text-sm font-bold text-indigo-700 dark:text-indigo-300 tabular-nums">{formatDurationShort(weekTotal)}</span>
           <ExportMenu
             entries={entries}
             projects={activeProjects}
@@ -95,33 +96,39 @@ export default function WeekView() {
           return (
             <div
               key={key}
-              className={`rounded-lg border p-2.5 ${
-                isToday ? 'border-blue-300 bg-blue-50/50' : 'border-gray-100'
+              className={`rounded-xl border p-3 transition-colors ${
+                isToday
+                  ? 'border-indigo-200 dark:border-indigo-500/30 bg-indigo-50/50 dark:bg-indigo-500/5'
+                  : 'border-stone-100 dark:border-dark-border bg-white dark:bg-dark-card'
               }`}
               role="listitem"
             >
-              <div className="flex justify-between items-center mb-1">
-                <div className="flex items-center gap-1.5">
-                  <span className={`text-sm font-medium ${isToday ? 'text-blue-700' : 'text-gray-700'}`}>
+              <div className="flex justify-between items-center mb-1.5">
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm font-medium ${isToday ? 'text-indigo-700 dark:text-indigo-400' : 'text-stone-700 dark:text-stone-300'}`}>
                     {format(day, 'EEE')}
                   </span>
-                  <span className="text-xs text-gray-400">{format(day, 'MMM d')}</span>
-                  {isToday && <span className="text-[10px] bg-blue-600 text-white px-1.5 py-0.5 rounded-full">Today</span>}
+                  <span className="text-[11px] text-stone-400 dark:text-stone-500">{format(day, 'MMM d')}</span>
+                  {isToday && (
+                    <span className="text-[10px] font-medium bg-indigo-500 text-white px-2 py-0.5 rounded-full">
+                      Today
+                    </span>
+                  )}
                 </div>
-                <span className={`text-xs font-medium ${dayTotal > 0 ? 'text-gray-700' : 'text-gray-300'}`}>
+                <span className={`text-xs font-semibold tabular-nums ${dayTotal > 0 ? 'text-stone-700 dark:text-stone-300' : 'text-stone-300 dark:text-stone-600'}`}>
                   {dayTotal > 0 ? formatDurationShort(dayTotal) : '—'}
                 </span>
               </div>
 
               {dayEntries.length > 0 && (
-                <div className="flex gap-1 flex-wrap mt-1">
+                <div className="flex gap-1 flex-wrap mt-1.5">
                   {dayEntries.map((entry) => {
                     const project = activeProjects.find(p => p.id === entry.projectId)
                     return (
                       <span
                         key={entry.id}
-                        className="text-[10px] px-1.5 py-0.5 rounded-full text-white truncate max-w-[100px]"
-                        style={{ backgroundColor: project?.color ?? '#9ca3af' }}
+                        className="text-[10px] font-medium px-2 py-0.5 rounded-full text-white truncate max-w-[100px]"
+                        style={{ backgroundColor: project?.color ?? '#A8A29E' }}
                         title={`${entry.description || project?.name || 'No project'} (${formatDurationShort(entry.duration)})`}
                       >
                         {formatDurationShort(entry.duration)}

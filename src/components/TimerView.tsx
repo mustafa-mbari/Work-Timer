@@ -10,6 +10,7 @@ import { msToHours } from '@/utils/date'
 import ProjectSelector from './ProjectSelector'
 import EntryList from './EntryList'
 import GoalProgress from './GoalProgress'
+import { PlayIcon, PauseIcon, StopIcon, SkipIcon } from './Icons'
 
 type ExtendedMode = TimerMode | 'pomodoro'
 
@@ -38,7 +39,6 @@ export default function TimerView() {
   const isPaused = state.status === 'paused'
   const isActive = isRunning || isPaused
 
-  // Sync mode with pomodoro state when popup reopens
   useEffect(() => {
     if (pomodoroState.active) {
       setMode('pomodoro')
@@ -92,7 +92,6 @@ export default function TimerView() {
       endTime = endDate.getTime()
       duration = endTime - startTime
     } else {
-      // Duration mode
       const hours = parseInt(manualHours) || 0
       const minutes = parseInt(manualMinutes) || 0
 
@@ -124,8 +123,7 @@ export default function TimerView() {
   }
 
   const handleContinue = async (entryId: string, projectId: string | null, desc: string) => {
-    if (isActive) return // Don't start if timer is already running
-
+    if (isActive) return
     setMode('stopwatch')
     setSelectedProjectId(projectId)
     setDescription(desc)
@@ -139,24 +137,24 @@ export default function TimerView() {
   }
 
   return (
-    <div className="flex flex-col p-4 gap-3">
+    <div className="flex flex-col px-5 py-4 gap-4">
       {/* Idle Detection Banner */}
       {idleInfo.pending && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3" role="alert">
-          <p className="text-xs font-medium text-amber-800 mb-2">
+        <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/40 rounded-xl p-3.5" role="alert">
+          <p className="text-xs font-medium text-amber-800 dark:text-amber-300 mb-2.5">
             You were idle for {formatDurationShort(idleInfo.idleDuration)}
           </p>
-          <div className="flex gap-1.5">
+          <div className="flex gap-2">
             <button
               onClick={idleKeep}
-              className="flex-1 bg-green-600 text-white text-xs py-1.5 rounded-md hover:bg-green-700"
+              className="flex-1 bg-emerald-500 text-white text-xs font-medium py-2 rounded-lg hover:bg-emerald-600 transition-colors"
               aria-label="Keep idle time"
             >
-              Keep
+              Keep Time
             </button>
             <button
               onClick={idleDiscard}
-              className="flex-1 bg-red-500 text-white text-xs py-1.5 rounded-md hover:bg-red-600"
+              className="flex-1 bg-rose-500 text-white text-xs font-medium py-2 rounded-lg hover:bg-rose-600 transition-colors"
               aria-label="Discard idle time"
             >
               Discard
@@ -166,15 +164,17 @@ export default function TimerView() {
       )}
 
       {/* Mode Toggle */}
-      <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">
+      <div className="flex gap-1 bg-stone-100 dark:bg-dark-card rounded-xl p-1">
         {(['stopwatch', 'manual', 'pomodoro'] as ExtendedMode[]).map((m) => (
           <button
             key={m}
             onClick={() => setMode(m)}
             disabled={isActive && m !== mode}
-            className={`flex-1 text-xs py-1.5 rounded-md transition-colors ${
-              mode === m ? 'bg-white text-blue-600 shadow-sm font-medium' : 'text-gray-500'
-            } ${isActive && m !== mode ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`flex-1 text-xs font-medium py-2 rounded-lg transition-all ${
+              mode === m
+                ? 'bg-white dark:bg-dark-elevated text-stone-900 dark:text-stone-100 shadow-sm'
+                : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
+            } ${isActive && m !== mode ? 'opacity-40 cursor-not-allowed' : ''}`}
             aria-label={`${m} mode`}
           >
             {m === 'stopwatch' ? 'Stopwatch' : m === 'manual' ? 'Manual' : 'Pomodoro'}
@@ -184,21 +184,25 @@ export default function TimerView() {
 
       {/* Timer Display */}
       {mode === 'manual' ? (
-        <div className="py-4">
+        <div className="py-2">
           {/* Toggle between Time Range and Duration */}
-          <div className="flex gap-1 bg-gray-50 rounded-lg p-0.5 mb-3">
+          <div className="flex gap-1 bg-stone-100 dark:bg-dark-card rounded-lg p-0.5 mb-4">
             <button
               onClick={() => setManualInputType('timeRange')}
-              className={`flex-1 text-xs py-1.5 rounded-md transition-colors ${
-                manualInputType === 'timeRange' ? 'bg-white text-gray-800 shadow-sm font-medium' : 'text-gray-500'
+              className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-all ${
+                manualInputType === 'timeRange'
+                  ? 'bg-white dark:bg-dark-elevated text-stone-900 dark:text-stone-100 shadow-sm'
+                  : 'text-stone-500 dark:text-stone-400'
               }`}
             >
               Time Range
             </button>
             <button
               onClick={() => setManualInputType('duration')}
-              className={`flex-1 text-xs py-1.5 rounded-md transition-colors ${
-                manualInputType === 'duration' ? 'bg-white text-gray-800 shadow-sm font-medium' : 'text-gray-500'
+              className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-all ${
+                manualInputType === 'duration'
+                  ? 'bg-white dark:bg-dark-elevated text-stone-900 dark:text-stone-100 shadow-sm'
+                  : 'text-stone-500 dark:text-stone-400'
               }`}
             >
               Duration
@@ -206,33 +210,33 @@ export default function TimerView() {
           </div>
 
           {manualInputType === 'timeRange' ? (
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-3 items-center">
               <div className="flex-1">
-                <label htmlFor="manual-from" className="text-xs text-gray-500 block mb-1">From</label>
+                <label htmlFor="manual-from" className="text-[11px] font-medium text-stone-500 dark:text-stone-400 block mb-1.5">From</label>
                 <input
                   id="manual-from"
                   type="time"
                   value={manualFrom}
                   onChange={(e) => setManualFrom(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
                 />
               </div>
-              <span className="text-gray-400 mt-5">→</span>
+              <span className="text-stone-300 dark:text-stone-600 mt-6 text-sm">&rarr;</span>
               <div className="flex-1">
-                <label htmlFor="manual-to" className="text-xs text-gray-500 block mb-1">To</label>
+                <label htmlFor="manual-to" className="text-[11px] font-medium text-stone-500 dark:text-stone-400 block mb-1.5">To</label>
                 <input
                   id="manual-to"
                   type="time"
                   value={manualTo}
                   onChange={(e) => setManualTo(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
                 />
               </div>
             </div>
           ) : (
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-3 items-center">
               <div className="flex-1">
-                <label htmlFor="manual-hours" className="text-xs text-gray-500 block mb-1">Hours</label>
+                <label htmlFor="manual-hours" className="text-[11px] font-medium text-stone-500 dark:text-stone-400 block mb-1.5">Hours</label>
                 <input
                   id="manual-hours"
                   type="number"
@@ -241,11 +245,11 @@ export default function TimerView() {
                   value={manualHours}
                   onChange={(e) => setManualHours(e.target.value)}
                   placeholder="0"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-600 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
                 />
               </div>
               <div className="flex-1">
-                <label htmlFor="manual-minutes" className="text-xs text-gray-500 block mb-1">Minutes</label>
+                <label htmlFor="manual-minutes" className="text-[11px] font-medium text-stone-500 dark:text-stone-400 block mb-1.5">Minutes</label>
                 <input
                   id="manual-minutes"
                   type="number"
@@ -254,7 +258,7 @@ export default function TimerView() {
                   value={manualMinutes}
                   onChange={(e) => setManualMinutes(e.target.value)}
                   placeholder="0"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-600 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
                 />
               </div>
             </div>
@@ -263,32 +267,32 @@ export default function TimerView() {
       ) : mode === 'pomodoro' ? (
         <div className="text-center">
           {/* Pomodoro progress ring */}
-          <div className="relative inline-flex items-center justify-center py-2">
-            <svg className="w-32 h-32 -rotate-90" viewBox="0 0 120 120" aria-hidden="true">
-              <circle cx="60" cy="60" r="52" fill="none" stroke="#e5e7eb" strokeWidth="8" />
+          <div className="relative inline-flex items-center justify-center py-3">
+            <svg className="w-36 h-36 -rotate-90" viewBox="0 0 120 120" aria-hidden="true">
+              <circle cx="60" cy="60" r="52" fill="none" stroke="currentColor" className="text-stone-100 dark:text-dark-elevated" strokeWidth="6" />
               {pomodoroState.active && (() => {
                 const progress = 1 - (pomodoroTimeRemaining / pomodoroState.phaseDuration)
                 const circumference = 2 * Math.PI * 52
                 const offset = circumference * (1 - progress)
-                const color = pomodoroState.phase === 'work' ? '#3b82f6' : '#10b981'
-                return <circle cx="60" cy="60" r="52" fill="none" stroke={color} strokeWidth="8"
+                const color = pomodoroState.phase === 'work' ? '#6366F1' : '#10B981'
+                return <circle cx="60" cy="60" r="52" fill="none" stroke={color} strokeWidth="6"
                   strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
                   className="transition-all duration-1000" />
               })()}
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <div className={`text-3xl font-mono font-bold ${
+              <div className={`text-3xl font-mono font-semibold tracking-tight ${
                 pomodoroState.active
-                  ? pomodoroState.phase === 'work' ? 'text-blue-600' : 'text-green-600'
-                  : 'text-gray-800'
+                  ? pomodoroState.phase === 'work' ? 'text-indigo-600 dark:text-indigo-400' : 'text-emerald-600 dark:text-emerald-400'
+                  : 'text-stone-800 dark:text-stone-200'
               }`}>
                 {pomodoroState.active
                   ? formatDuration(pomodoroTimeRemaining)
                   : formatDuration(elapsed)}
               </div>
               {pomodoroState.active && (
-                <div className={`text-[10px] font-medium mt-0.5 ${
-                  pomodoroState.phase === 'work' ? 'text-blue-500' : 'text-green-500'
+                <div className={`text-[11px] font-medium mt-1 ${
+                  pomodoroState.phase === 'work' ? 'text-indigo-500 dark:text-indigo-400' : 'text-emerald-500 dark:text-emerald-400'
                 }`}>
                   {pomodoroPhaseLabel[pomodoroState.phase]}
                 </div>
@@ -297,17 +301,17 @@ export default function TimerView() {
           </div>
 
           {pomodoroState.active && (
-            <div className="text-xs text-gray-400 mt-1">
+            <div className="text-[11px] text-stone-400 dark:text-stone-500 mt-1">
               Session {pomodoroState.sessionsCompleted + (pomodoroState.phase === 'work' ? 1 : 0)}
               {pomodoroState.totalWorkTime > 0 && ` · ${formatDurationShort(pomodoroState.totalWorkTime)} focused`}
             </div>
           )}
         </div>
       ) : (
-        <div className="text-center">
+        <div className="text-center py-4">
           <div
-            className={`text-5xl font-mono font-bold tracking-wider py-4 ${
-              isRunning ? 'text-blue-600' : isPaused ? 'text-amber-500' : 'text-gray-800'
+            className={`text-[44px] font-mono font-semibold tracking-tight leading-none ${
+              isRunning ? 'text-indigo-600 dark:text-indigo-400' : isPaused ? 'text-amber-500 dark:text-amber-400' : 'text-stone-800 dark:text-stone-200'
             }`}
             aria-live="polite"
             aria-label={`Timer: ${formatDuration(elapsed)}`}
@@ -315,9 +319,14 @@ export default function TimerView() {
             {formatDuration(elapsed)}
           </div>
           {isRunning && (
-            <div className="flex items-center justify-center gap-1.5 text-xs text-blue-600">
-              <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" aria-hidden="true" />
-              Recording
+            <div className="flex items-center justify-center gap-1.5 mt-2">
+              <span className="w-1.5 h-1.5 bg-indigo-500 dark:bg-indigo-400 rounded-full animate-pulse-soft" aria-hidden="true" />
+              <span className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400">Recording</span>
+            </div>
+          )}
+          {isPaused && (
+            <div className="flex items-center justify-center gap-1.5 mt-2">
+              <span className="text-[11px] font-medium text-amber-500 dark:text-amber-400">Paused</span>
             </div>
           )}
         </div>
@@ -338,7 +347,7 @@ export default function TimerView() {
         value={isActive ? state.description : description}
         onChange={(e) => setDescription(e.target.value)}
         disabled={isActive}
-        className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+        className="border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-600 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400 disabled:opacity-50"
         aria-label="Task description"
       />
 
@@ -351,24 +360,25 @@ export default function TimerView() {
               ? !manualFrom || !manualTo
               : (!manualHours && !manualMinutes) || (parseInt(manualHours || '0') === 0 && parseInt(manualMinutes || '0') === 0)
           }
-          className="bg-blue-600 text-white py-2.5 rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="bg-indigo-500 hover:bg-indigo-600 text-white py-2.5 rounded-xl font-medium text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shadow-indigo-500/20"
           aria-label="Save manual entry"
         >
           Save Entry
         </button>
       ) : (
-        <div className="flex gap-2">
+        <div className="flex gap-2.5">
           {!isActive ? (
             <button
               onClick={handleStart}
-              className={`flex-1 text-white py-2.5 rounded-lg font-medium text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+              className={`flex-1 flex items-center justify-center gap-2 text-white py-2.5 rounded-xl font-medium text-sm transition-colors shadow-sm ${
                 mode === 'pomodoro'
-                  ? 'bg-purple-600 hover:bg-purple-700 focus:ring-purple-500'
-                  : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
+                  ? 'bg-purple-500 hover:bg-purple-600 shadow-purple-500/20'
+                  : 'bg-indigo-500 hover:bg-indigo-600 shadow-indigo-500/20'
               }`}
               aria-label={mode === 'pomodoro' ? 'Start Pomodoro' : 'Start timer'}
               title="Start timer (Alt+Shift+Up)"
             >
+              <PlayIcon className="w-4 h-4" />
               {mode === 'pomodoro' ? 'Start Focus' : 'Start'}
             </button>
           ) : (
@@ -379,17 +389,19 @@ export default function TimerView() {
                     <>
                       <button
                         onClick={skipPhase}
-                        className="flex-1 bg-green-600 text-white py-2.5 rounded-lg font-medium text-sm hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                        className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-emerald-600 transition-colors shadow-sm shadow-emerald-500/20"
                         aria-label="Take break now"
                       >
-                        Take Break
+                        <SkipIcon className="w-4 h-4" />
+                        Break
                       </button>
                       <button
                         onClick={handleStop}
-                        className="flex-1 bg-red-500 text-white py-2.5 rounded-lg font-medium text-sm hover:bg-red-600 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                        className="flex-1 flex items-center justify-center gap-2 bg-rose-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-rose-600 transition-colors shadow-sm shadow-rose-500/20"
                         aria-label="Stop Pomodoro"
                         title="Stop timer (Alt+Shift+Up)"
                       >
+                        <StopIcon className="w-4 h-4" />
                         Stop
                       </button>
                     </>
@@ -397,17 +409,19 @@ export default function TimerView() {
                     <>
                       <button
                         onClick={skipPhase}
-                        className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                        className="flex-1 flex items-center justify-center gap-2 bg-indigo-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-indigo-600 transition-colors shadow-sm shadow-indigo-500/20"
                         aria-label="Resume focus"
                       >
-                        Resume Focus
+                        <PlayIcon className="w-4 h-4" />
+                        Focus
                       </button>
                       <button
                         onClick={handleStop}
-                        className="flex-1 bg-red-500 text-white py-2.5 rounded-lg font-medium text-sm hover:bg-red-600 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                        className="flex-1 flex items-center justify-center gap-2 bg-rose-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-rose-600 transition-colors shadow-sm shadow-rose-500/20"
                         aria-label="Stop Pomodoro"
                         title="Stop timer (Alt+Shift+Up)"
                       >
+                        <StopIcon className="w-4 h-4" />
                         Stop
                       </button>
                     </>
@@ -418,28 +432,31 @@ export default function TimerView() {
                   {isRunning ? (
                     <button
                       onClick={pause}
-                      className="flex-1 bg-amber-500 text-white py-2.5 rounded-lg font-medium text-sm hover:bg-amber-600 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+                      className="flex-1 flex items-center justify-center gap-2 bg-amber-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-amber-600 transition-colors shadow-sm shadow-amber-500/20"
                       aria-label="Pause timer"
                       title="Pause timer (Alt+Shift+Down)"
                     >
+                      <PauseIcon className="w-4 h-4" />
                       Pause
                     </button>
                   ) : (
                     <button
                       onClick={resume}
-                      className="flex-1 bg-green-600 text-white py-2.5 rounded-lg font-medium text-sm hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                      className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-emerald-600 transition-colors shadow-sm shadow-emerald-500/20"
                       aria-label="Resume timer"
                       title="Resume timer (Alt+Shift+Down)"
                     >
+                      <PlayIcon className="w-4 h-4" />
                       Resume
                     </button>
                   )}
                   <button
                     onClick={handleStop}
-                    className="flex-1 bg-red-500 text-white py-2.5 rounded-lg font-medium text-sm hover:bg-red-600 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                    className="flex-1 flex items-center justify-center gap-2 bg-rose-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-rose-600 transition-colors shadow-sm shadow-rose-500/20"
                     aria-label="Stop timer"
                     title="Stop timer (Alt+Shift+Up)"
                   >
+                    <StopIcon className="w-4 h-4" />
                     Stop
                   </button>
                 </>
@@ -459,9 +476,9 @@ export default function TimerView() {
       )}
 
       {/* Today's Summary */}
-      <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-        <span className="text-xs text-gray-500">Today</span>
-        <span className="text-sm font-medium text-gray-700">
+      <div className="flex items-center justify-between pt-3 border-t border-stone-100 dark:border-dark-border">
+        <span className="text-[11px] font-medium text-stone-400 dark:text-stone-500 uppercase tracking-wider">Today</span>
+        <span className="text-sm font-semibold text-stone-700 dark:text-stone-200">
           {formatDurationShort(totalDuration + (isActive ? elapsed : 0))}
         </span>
       </div>

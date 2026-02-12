@@ -110,6 +110,77 @@ async function getTimeEntry(entryId: string, date: string): Promise<TimeEntry | 
   return entries.find(e => e.id === entryId) ?? null
 }
 
+function formatTimerForDisplay(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000)
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+}
+
+// Store original tab titles to restore them later
+const originalTabTitles = new Map<number, string>()
+
+async function updateActiveTabTitle(state: TimerState): Promise<void> {
+  if (state.status === 'idle') {
+    // Restore original titles when timer stops
+    const tabs = await chrome.tabs.query({})
+    for (const tab of tabs) {
+      if (tab.id && originalTabTitles.has(tab.id)) {
+        const originalTitle = originalTabTitles.get(tab.id)
+        if (originalTitle) {
+          try {
+            await chrome.tabs.sendMessage(tab.id, {
+              action: 'RESTORE_TITLE',
+              originalTitle
+            }).catch(() => {
+              // Tab might not have content script, ignore error
+            })
+          } catch {
+            // Ignore errors
+          }
+        }
+      }
+    }
+    originalTabTitles.clear()
+    return
+  }
+
+  // Update active tab title with timer
+  const elapsed = getElapsed(state)
+  const timeStr = formatTimerForDisplay(elapsed)
+
+  try {
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
+    if (tabs.length > 0 && tabs[0].id !== undefined) {
+      const tab = tabs[0]
+      const tabId = tab.id as number
+
+      // Store original title if we haven't already
+      if (!originalTabTitles.has(tabId) && tab.title) {
+        originalTabTitles.set(tabId, tab.title)
+      }
+
+      // Update tab title by executing a script
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        func: (timer: string) => {
+          if (!document.title.startsWith('[')) {
+            document.title = `[${timer}] ${document.title}`
+          } else {
+            document.title = document.title.replace(/^\[.*?\]/, `[${timer}]`)
+          }
+        },
+        args: [timeStr]
+      }).catch(() => {
+        // Some tabs (chrome://, chrome-extension://) can't be scripted, ignore
+      })
+    }
+  } catch {
+    // Ignore errors for tabs that can't be accessed
+  }
+}
+
 async function updateBadge(state: TimerState): Promise<void> {
   if (state.status === 'idle') {
     await chrome.action.setBadgeText({ text: '' })
@@ -166,6 +237,7 @@ async function startTimer(projectId: string | null, description: string, continu
   await setIdleInfo(DEFAULT_IDLE_INFO)
   await chrome.alarms.create(TIMER_ALARM, { periodInMinutes: 0.5 })
   await updateBadge(state)
+  await updateActiveTabTitle(state)
 
   // Set idle detection threshold
   const settings = await getSettings()
@@ -273,6 +345,7 @@ async function stopTimer(): Promise<TimerResponse> {
   await setIdleInfo(DEFAULT_IDLE_INFO)
   await chrome.alarms.clear(TIMER_ALARM)
   await updateBadge(DEFAULT_TIMER_STATE)
+  await updateActiveTabTitle(DEFAULT_TIMER_STATE)
 
   return { success: true, state: DEFAULT_TIMER_STATE, entry }
 }
@@ -325,7 +398,7 @@ async function idleKeep(): Promise<TimerResponse> {
   // Keep idle time — just dismiss the notification
   await setIdleInfo(DEFAULT_IDLE_INFO)
   const state = await getTimerState()
-  return { success: true, state: { ...state, elapsed: getElapsed(state) }, idleInfo: DEFAULT_IDLE_INFO }
+  return { success: true, state, idleInfo: DEFAULT_IDLE_INFO }
 }
 
 async function idleDiscard(): Promise<TimerResponse> {
@@ -345,7 +418,7 @@ async function idleDiscard(): Promise<TimerResponse> {
   }
 
   await setIdleInfo(DEFAULT_IDLE_INFO)
-  return { success: true, state: { ...state, elapsed: getElapsed(state) }, idleInfo: DEFAULT_IDLE_INFO }
+  return { success: true, state, idleInfo: DEFAULT_IDLE_INFO }
 }
 
 // ============================================================
@@ -404,7 +477,7 @@ async function skipPomodoroPhase(): Promise<TimerResponse> {
   await advancePomodoroPhase(pomState)
   const updated = await getPomodoroState()
   const timerState = await getTimerState()
-  return { success: true, state: { ...timerState, elapsed: getElapsed(timerState) }, pomodoroState: updated }
+  return { success: true, state: timerState, pomodoroState: updated }
 }
 
 async function advancePomodoroPhase(pomState: PomodoroState): Promise<void> {
@@ -524,7 +597,7 @@ chrome.runtime.onMessage.addListener(
             const state = await getTimerState()
             const idleInfo = await getIdleInfo()
             const pomodoroState = await getPomodoroState()
-            return { success: true, state: { ...state, elapsed: getElapsed(state) }, idleInfo, pomodoroState }
+            return { success: true, state, idleInfo, pomodoroState }
           }
           case 'IDLE_KEEP':
             return idleKeep()
@@ -562,6 +635,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === TIMER_ALARM) {
     const state = await getTimerState()
     await updateBadge(state)
+    await updateActiveTabTitle(state)
   }
 
   if (alarm.name === POMODORO_ALARM) {

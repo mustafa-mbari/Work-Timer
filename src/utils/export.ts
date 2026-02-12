@@ -1,16 +1,20 @@
 import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
 import type { TimeEntry, Project } from '@/types'
-import { formatDurationShort } from './date'
 
 function formatEntryRow(entry: TimeEntry, projects: Project[]) {
   const project = projects.find(p => p.id === entry.projectId)
+  const totalSeconds = Math.floor(entry.duration / 1000)
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
   return {
     Date: entry.date,
     Start: new Date(entry.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     End: new Date(entry.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    Duration: formatDurationShort(entry.duration),
-    'Duration (hours)': Math.round(entry.duration / 3600000 * 100) / 100,
+    Hours: hours,
+    Minutes: minutes,
+    Seconds: seconds,
     Project: project?.name ?? '',
     Description: entry.description,
     Type: entry.type,
