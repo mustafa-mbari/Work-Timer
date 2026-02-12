@@ -1,0 +1,111 @@
+export type View = 'timer' | 'week' | 'stats' | 'settings'
+
+export type TimerMode = 'stopwatch' | 'manual'
+
+export type EntryType = 'manual' | 'stopwatch' | 'pomodoro'
+
+export type TimerStatus = 'idle' | 'running' | 'paused'
+
+export interface TimeEntry {
+  id: string
+  date: string // ISO date string YYYY-MM-DD
+  startTime: number // Unix timestamp ms
+  endTime: number // Unix timestamp ms
+  duration: number // Duration in ms
+  projectId: string | null
+  taskId: string | null
+  description: string
+  type: EntryType
+  tags: string[]
+}
+
+export interface Project {
+  id: string
+  name: string
+  color: string // Hex color
+  targetHours: number | null
+  archived: boolean
+  createdAt: number
+}
+
+export interface Settings {
+  workingDays: number // 5, 6, or 7
+  weekStartDay: 0 | 1 // 0 = Sunday, 1 = Monday
+  idleTimeout: number // Minutes
+  theme: 'light' | 'dark' | 'system'
+  language: 'en' | 'ar'
+  notifications: boolean
+  dailyTarget: number | null // Hours
+  weeklyTarget: number | null // Hours
+  pomodoro: PomodoroSettings
+}
+
+export interface TimerState {
+  status: TimerStatus
+  projectId: string | null
+  description: string
+  startTime: number | null // Unix timestamp when started
+  elapsed: number // Accumulated elapsed time in ms (from previous pauses)
+  pausedAt: number | null // Timestamp when paused
+  continuingEntryId: string | null // Entry ID being continued (to extend instead of creating new)
+}
+
+// Idle detection
+export interface IdleInfo {
+  idleStartedAt: number | null // When user went idle
+  idleDuration: number // How long user was idle (ms)
+  pending: boolean // Waiting for user decision
+}
+
+// Pomodoro
+export type PomodoroPhase = 'work' | 'shortBreak' | 'longBreak'
+
+export interface PomodoroSettings {
+  workMinutes: number
+  shortBreakMinutes: number
+  longBreakMinutes: number
+  sessionsBeforeLongBreak: number
+  soundEnabled: boolean
+}
+
+export interface PomodoroState {
+  active: boolean
+  phase: PomodoroPhase
+  phaseStartedAt: number | null // Unix timestamp when current phase started
+  phaseDuration: number // Total duration of current phase in ms
+  sessionsCompleted: number
+  totalWorkTime: number // ms
+}
+
+// Message types for popup <-> background communication
+export type MessageAction =
+  | 'START_TIMER'
+  | 'PAUSE_TIMER'
+  | 'RESUME_TIMER'
+  | 'STOP_TIMER'
+  | 'GET_TIMER_STATE'
+  | 'IDLE_KEEP'
+  | 'IDLE_DISCARD'
+  | 'IDLE_DISMISS'
+  | 'START_POMODORO'
+  | 'STOP_POMODORO'
+  | 'SKIP_POMODORO_PHASE'
+  | 'GET_POMODORO_STATE'
+
+export interface TimerMessage {
+  action: MessageAction
+  payload?: {
+    projectId?: string | null
+    description?: string
+    continuingEntryId?: string | null
+  }
+}
+
+export interface TimerResponse {
+  success: boolean
+  state?: TimerState
+  entry?: TimeEntry
+  error?: string
+  idleInfo?: IdleInfo
+  pomodoroState?: PomodoroState
+}

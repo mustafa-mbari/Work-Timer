@@ -1,0 +1,677 @@
+import type { TimerMessage, TimerResponse, TimerState, TimeEntry, IdleInfo, PomodoroState, PomodoroPhase, Settings } from '../types'
+import { generateId } from '../utils/id'
+import { getToday } from '../utils/date'
+
+const TIMER_ALARM = 'timer-tick'
+const POMODORO_ALARM = 'pomodoro-tick'
+const STORAGE_KEYS = {
+  timerState: 'timerState',
+  idleInfo: 'idleInfo',
+  pomodoroState: 'pomodoroState',
+  settings: 'settings',
+  entries: (date: string) => `entries_${date}`,
+}
+
+const DEFAULT_TIMER_STATE: TimerState = {
+  status: 'idle',
+  projectId: null,
+  description: '',
+  startTime: null,
+  elapsed: 0,
+  pausedAt: null,
+  continuingEntryId: null,
+}
+
+const DEFAULT_IDLE_INFO: IdleInfo = {
+  idleStartedAt: null,
+  idleDuration: 0,
+  pending: false,
+}
+
+const DEFAULT_POMODORO_STATE: PomodoroState = {
+  active: false,
+  phase: 'work',
+  phaseStartedAt: null,
+  phaseDuration: 25 * 60 * 1000,
+  sessionsCompleted: 0,
+  totalWorkTime: 0,
+}
+
+// --- Storage helpers ---
+
+async function getTimerState(): Promise<TimerState> {
+  const result = await chrome.storage.local.get(STORAGE_KEYS.timerState)
+  return (result[STORAGE_KEYS.timerState] as TimerState | undefined) ?? DEFAULT_TIMER_STATE
+}
+
+async function setTimerState(state: TimerState): Promise<void> {
+  await chrome.storage.local.set({ [STORAGE_KEYS.timerState]: state })
+}
+
+async function getIdleInfo(): Promise<IdleInfo> {
+  const result = await chrome.storage.local.get(STORAGE_KEYS.idleInfo)
+  return (result[STORAGE_KEYS.idleInfo] as IdleInfo | undefined) ?? DEFAULT_IDLE_INFO
+}
+
+async function setIdleInfo(info: IdleInfo): Promise<void> {
+  await chrome.storage.local.set({ [STORAGE_KEYS.idleInfo]: info })
+}
+
+async function getPomodoroState(): Promise<PomodoroState> {
+  const result = await chrome.storage.local.get(STORAGE_KEYS.pomodoroState)
+  return (result[STORAGE_KEYS.pomodoroState] as PomodoroState | undefined) ?? DEFAULT_POMODORO_STATE
+}
+
+async function setPomodoroState(state: PomodoroState): Promise<void> {
+  await chrome.storage.local.set({ [STORAGE_KEYS.pomodoroState]: state })
+}
+
+async function getSettings(): Promise<Settings> {
+  const result = await chrome.storage.local.get(STORAGE_KEYS.settings)
+  const stored = result[STORAGE_KEYS.settings] as Partial<Settings> | undefined
+  return {
+    workingDays: 5, weekStartDay: 1, idleTimeout: 5, theme: 'light' as const,
+    language: 'en' as const, notifications: true, dailyTarget: 8, weeklyTarget: 40,
+    pomodoro: { workMinutes: 25, shortBreakMinutes: 5, longBreakMinutes: 15, sessionsBeforeLongBreak: 4, soundEnabled: true },
+    ...stored,
+  }
+}
+
+function getElapsed(state: TimerState): number {
+  if (state.status === 'running' && state.startTime) {
+    return state.elapsed + (Date.now() - state.startTime)
+  }
+  return state.elapsed
+}
+
+async function saveTimeEntry(entry: TimeEntry): Promise<void> {
+  const key = STORAGE_KEYS.entries(entry.date)
+  const result = await chrome.storage.local.get(key)
+  const entries: TimeEntry[] = (result[key] as TimeEntry[] | undefined) ?? []
+  entries.push(entry)
+  await chrome.storage.local.set({ [key]: entries })
+}
+
+async function updateTimeEntry(entryId: string, date: string, updates: Partial<TimeEntry>): Promise<void> {
+  const key = STORAGE_KEYS.entries(date)
+  const result = await chrome.storage.local.get(key)
+  const entries: TimeEntry[] = (result[key] as TimeEntry[] | undefined) ?? []
+  const index = entries.findIndex(e => e.id === entryId)
+  if (index !== -1) {
+    entries[index] = { ...entries[index], ...updates }
+    await chrome.storage.local.set({ [key]: entries })
+  }
+}
+
+async function getTimeEntry(entryId: string, date: string): Promise<TimeEntry | null> {
+  const key = STORAGE_KEYS.entries(date)
+  const result = await chrome.storage.local.get(key)
+  const entries: TimeEntry[] = (result[key] as TimeEntry[] | undefined) ?? []
+  return entries.find(e => e.id === entryId) ?? null
+}
+
+async function updateBadge(state: TimerState): Promise<void> {
+  if (state.status === 'idle') {
+    await chrome.action.setBadgeText({ text: '' })
+    return
+  }
+
+  // Check if Pomodoro is active and show countdown
+  const pomState = await getPomodoroState()
+  if (pomState.active && pomState.phaseStartedAt && pomState.phase === 'work') {
+    const now = Date.now()
+    const remaining = Math.max(0, pomState.phaseDuration - (now - pomState.phaseStartedAt))
+    const totalSeconds = Math.floor(remaining / 1000)
+    const minutes = Math.floor(totalSeconds / 60)
+    const text = `${minutes}m`
+    await chrome.action.setBadgeText({ text })
+    await chrome.action.setBadgeBackgroundColor({ color: '#9333ea' }) // Purple for Pomodoro
+    return
+  }
+
+  // Regular timer: show elapsed time
+  const elapsed = getElapsed(state)
+  const totalSeconds = Math.floor(elapsed / 1000)
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const text = hours > 0 ? `${hours}:${String(minutes).padStart(2, '0')}` : `${minutes}m`
+  await chrome.action.setBadgeText({ text })
+  await chrome.action.setBadgeBackgroundColor({ color: state.status === 'paused' ? '#f59e0b' : '#3b82f6' })
+}
+
+// ============================================================
+// Timer Actions
+// ============================================================
+
+async function startTimer(projectId: string | null, description: string, continuingEntryId: string | null = null): Promise<TimerResponse> {
+  // If continuing an existing entry, load its duration as the starting elapsed time
+  let initialElapsed = 0
+  if (continuingEntryId) {
+    const existingEntry = await getTimeEntry(continuingEntryId, getToday())
+    if (existingEntry) {
+      initialElapsed = existingEntry.duration
+    }
+  }
+
+  const state: TimerState = {
+    status: 'running',
+    projectId,
+    description,
+    startTime: Date.now(),
+    elapsed: initialElapsed,
+    pausedAt: null,
+    continuingEntryId,
+  }
+  await setTimerState(state)
+  await setIdleInfo(DEFAULT_IDLE_INFO)
+  await chrome.alarms.create(TIMER_ALARM, { periodInMinutes: 0.5 })
+  await updateBadge(state)
+
+  // Set idle detection threshold
+  const settings = await getSettings()
+  chrome.idle.setDetectionInterval(settings.idleTimeout * 60)
+
+  return { success: true, state }
+}
+
+async function pauseTimer(): Promise<TimerResponse> {
+  const state = await getTimerState()
+  if (state.status !== 'running') return { success: false, error: 'Timer is not running' }
+
+  const now = Date.now()
+  const updated: TimerState = {
+    ...state,
+    status: 'paused',
+    elapsed: state.elapsed + (now - (state.startTime ?? now)),
+    startTime: null,
+    pausedAt: now,
+  }
+  await setTimerState(updated)
+  await chrome.alarms.clear(TIMER_ALARM)
+  await updateBadge(updated)
+  return { success: true, state: updated }
+}
+
+async function resumeTimer(): Promise<TimerResponse> {
+  const state = await getTimerState()
+  if (state.status !== 'paused') return { success: false, error: 'Timer is not paused' }
+
+  const updated: TimerState = {
+    ...state,
+    status: 'running',
+    startTime: Date.now(),
+    pausedAt: null,
+  }
+  await setTimerState(updated)
+  await setIdleInfo(DEFAULT_IDLE_INFO)
+  await chrome.alarms.create(TIMER_ALARM, { periodInMinutes: 0.5 })
+  await updateBadge(updated)
+  return { success: true, state: updated }
+}
+
+async function stopTimer(): Promise<TimerResponse> {
+  const state = await getTimerState()
+  if (state.status === 'idle') return { success: false, error: 'Timer is not active' }
+
+  const elapsed = getElapsed(state)
+  const now = Date.now()
+  let entry: TimeEntry
+
+  // Check if continuing an existing entry
+  if (state.continuingEntryId) {
+    const existingEntry = await getTimeEntry(state.continuingEntryId, getToday())
+    if (existingEntry) {
+      // Update existing entry: use total elapsed time and update endTime
+      const newEndTime = now
+
+      await updateTimeEntry(state.continuingEntryId, getToday(), {
+        endTime: newEndTime,
+        duration: elapsed,
+      })
+
+      entry = {
+        ...existingEntry,
+        endTime: newEndTime,
+        duration: elapsed,
+      }
+    } else {
+      // Entry not found, create new one
+      const startTimestamp = now - elapsed
+      entry = {
+        id: generateId(),
+        date: getToday(),
+        startTime: startTimestamp,
+        endTime: now,
+        duration: elapsed,
+        projectId: state.projectId,
+        taskId: null,
+        description: state.description,
+        type: 'stopwatch',
+        tags: [],
+      }
+      await saveTimeEntry(entry)
+    }
+  } else {
+    // Create new entry
+    const startTimestamp = now - elapsed
+    entry = {
+      id: generateId(),
+      date: getToday(),
+      startTime: startTimestamp,
+      endTime: now,
+      duration: elapsed,
+      projectId: state.projectId,
+      taskId: null,
+      description: state.description,
+      type: 'stopwatch',
+      tags: [],
+    }
+    await saveTimeEntry(entry)
+  }
+
+  await setTimerState(DEFAULT_TIMER_STATE)
+  await setIdleInfo(DEFAULT_IDLE_INFO)
+  await chrome.alarms.clear(TIMER_ALARM)
+  await updateBadge(DEFAULT_TIMER_STATE)
+
+  return { success: true, state: DEFAULT_TIMER_STATE, entry }
+}
+
+// ============================================================
+// Idle Detection
+// ============================================================
+
+chrome.idle.onStateChanged.addListener(async (newState) => {
+  const timerState = await getTimerState()
+  if (timerState.status !== 'running') return
+
+  if (newState === 'idle' || newState === 'locked') {
+    // User went idle — record when it started
+    const idleInfo: IdleInfo = {
+      idleStartedAt: Date.now(),
+      idleDuration: 0,
+      pending: false,
+    }
+    await setIdleInfo(idleInfo)
+  } else if (newState === 'active') {
+    // User came back — check if we were tracking idle
+    const idleInfo = await getIdleInfo()
+    if (idleInfo.idleStartedAt) {
+      const idleDuration = Date.now() - idleInfo.idleStartedAt
+      // Only show notification if idle was significant (> 1 minute)
+      if (idleDuration > 60000) {
+        await setIdleInfo({
+          idleStartedAt: idleInfo.idleStartedAt,
+          idleDuration,
+          pending: true,
+        })
+
+        const minutes = Math.round(idleDuration / 60000)
+        chrome.notifications.create('idle-return', {
+          type: 'basic',
+          iconUrl: 'icons/icon-128.png',
+          title: 'Work Timer — You were idle',
+          message: `You were idle for ${minutes} minute${minutes !== 1 ? 's' : ''}. Open the popup to keep or discard idle time.`,
+          priority: 2,
+        })
+      } else {
+        await setIdleInfo(DEFAULT_IDLE_INFO)
+      }
+    }
+  }
+})
+
+async function idleKeep(): Promise<TimerResponse> {
+  // Keep idle time — just dismiss the notification
+  await setIdleInfo(DEFAULT_IDLE_INFO)
+  const state = await getTimerState()
+  return { success: true, state: { ...state, elapsed: getElapsed(state) }, idleInfo: DEFAULT_IDLE_INFO }
+}
+
+async function idleDiscard(): Promise<TimerResponse> {
+  // Discard idle time — subtract it from elapsed
+  const idleInfo = await getIdleInfo()
+  const state = await getTimerState()
+
+  if (idleInfo.idleDuration > 0 && state.status === 'running') {
+    const updated: TimerState = {
+      ...state,
+      elapsed: Math.max(0, getElapsed(state) - idleInfo.idleDuration),
+      startTime: Date.now(),
+    }
+    await setTimerState(updated)
+    await setIdleInfo(DEFAULT_IDLE_INFO)
+    return { success: true, state: { ...updated, elapsed: updated.elapsed }, idleInfo: DEFAULT_IDLE_INFO }
+  }
+
+  await setIdleInfo(DEFAULT_IDLE_INFO)
+  return { success: true, state: { ...state, elapsed: getElapsed(state) }, idleInfo: DEFAULT_IDLE_INFO }
+}
+
+// ============================================================
+// Pomodoro Timer
+// ============================================================
+
+async function startPomodoro(projectId: string | null, description: string): Promise<TimerResponse> {
+  const settings = await getSettings()
+  const now = Date.now()
+  const phaseDuration = settings.pomodoro.workMinutes * 60 * 1000
+
+  const pomState: PomodoroState = {
+    active: true,
+    phase: 'work',
+    phaseStartedAt: now,
+    phaseDuration,
+    sessionsCompleted: 0,
+    totalWorkTime: 0,
+  }
+  await setPomodoroState(pomState)
+
+  // Also start the regular timer for tracking
+  const timerState: TimerState = {
+    status: 'running',
+    projectId,
+    description,
+    startTime: now,
+    elapsed: 0,
+    pausedAt: null,
+    continuingEntryId: null,
+  }
+  await setTimerState(timerState)
+  await chrome.alarms.create(TIMER_ALARM, { periodInMinutes: 0.5 })
+  // Create one-shot alarm for when phase should end
+  await chrome.alarms.create(POMODORO_ALARM, { when: now + phaseDuration })
+  await updateBadge(timerState)
+
+  return { success: true, state: timerState, pomodoroState: pomState }
+}
+
+async function stopPomodoro(): Promise<TimerResponse> {
+  const pomState = await getPomodoroState()
+  if (!pomState.active) return { success: false, error: 'Pomodoro is not active' }
+
+  await setPomodoroState(DEFAULT_POMODORO_STATE)
+  await chrome.alarms.clear(POMODORO_ALARM)
+
+  // Stop the regular timer too
+  return stopTimer()
+}
+
+async function skipPomodoroPhase(): Promise<TimerResponse> {
+  const pomState = await getPomodoroState()
+  if (!pomState.active) return { success: false, error: 'Pomodoro is not active' }
+
+  await advancePomodoroPhase(pomState)
+  const updated = await getPomodoroState()
+  const timerState = await getTimerState()
+  return { success: true, state: { ...timerState, elapsed: getElapsed(timerState) }, pomodoroState: updated }
+}
+
+async function advancePomodoroPhase(pomState: PomodoroState): Promise<void> {
+  const settings = await getSettings()
+  const timerState = await getTimerState()
+  const now = Date.now()
+
+  if (pomState.phase === 'work') {
+    // Work phase ended — save entry and start break
+    const elapsed = getElapsed(timerState)
+    if (elapsed > 0) {
+      const entry: TimeEntry = {
+        id: generateId(),
+        date: getToday(),
+        startTime: now - elapsed,
+        endTime: now,
+        duration: elapsed,
+        projectId: timerState.projectId,
+        taskId: null,
+        description: timerState.description,
+        type: 'pomodoro',
+        tags: [],
+      }
+      await saveTimeEntry(entry)
+    }
+
+    const newSessions = pomState.sessionsCompleted + 1
+    const isLongBreak = newSessions % settings.pomodoro.sessionsBeforeLongBreak === 0
+    const nextPhase: PomodoroPhase = isLongBreak ? 'longBreak' : 'shortBreak'
+    const breakMinutes = isLongBreak ? settings.pomodoro.longBreakMinutes : settings.pomodoro.shortBreakMinutes
+    const breakDuration = breakMinutes * 60 * 1000
+
+    await setPomodoroState({
+      active: true,
+      phase: nextPhase,
+      phaseStartedAt: now,
+      phaseDuration: breakDuration,
+      sessionsCompleted: newSessions,
+      totalWorkTime: pomState.totalWorkTime + elapsed,
+    })
+
+    // Pause timer during break
+    await setTimerState({ ...timerState, status: 'paused', elapsed: 0, startTime: null, pausedAt: now })
+    await chrome.alarms.clear(TIMER_ALARM)
+    // Create alarm for when break ends
+    await chrome.alarms.create(POMODORO_ALARM, { when: now + breakDuration })
+    await chrome.action.setBadgeText({ text: 'BRK' })
+    await chrome.action.setBadgeBackgroundColor({ color: '#10b981' })
+
+    if (settings.pomodoro.soundEnabled) {
+      chrome.notifications.create('pomodoro-break', {
+        type: 'basic',
+        iconUrl: 'icons/icon-128.png',
+        title: `Pomodoro #${newSessions} Complete!`,
+        message: `Time for a ${breakMinutes}-minute ${isLongBreak ? 'long ' : ''}break.`,
+        priority: 2,
+      })
+    }
+  } else {
+    // Break ended — start new work session
+    const workDuration = settings.pomodoro.workMinutes * 60 * 1000
+
+    await setPomodoroState({
+      ...pomState,
+      phase: 'work',
+      phaseStartedAt: now,
+      phaseDuration: workDuration,
+    })
+
+    const updated: TimerState = {
+      ...timerState,
+      status: 'running',
+      startTime: now,
+      elapsed: 0,
+      pausedAt: null,
+    }
+    await setTimerState(updated)
+    await chrome.alarms.create(TIMER_ALARM, { periodInMinutes: 0.5 })
+    // Create alarm for when work phase ends
+    await chrome.alarms.create(POMODORO_ALARM, { when: now + workDuration })
+    await updateBadge(updated)
+
+    if (settings.pomodoro.soundEnabled) {
+      chrome.notifications.create('pomodoro-work', {
+        type: 'basic',
+        iconUrl: 'icons/icon-128.png',
+        title: 'Break Over!',
+        message: 'Time to focus. Starting new work session.',
+        priority: 2,
+      })
+    }
+  }
+}
+
+// ============================================================
+// Message Handler
+// ============================================================
+
+chrome.runtime.onMessage.addListener(
+  (message: TimerMessage, _sender, sendResponse: (response: TimerResponse) => void) => {
+    const handle = async (): Promise<TimerResponse> => {
+      try {
+        switch (message.action) {
+          case 'START_TIMER':
+            return startTimer(
+              message.payload?.projectId ?? null,
+              message.payload?.description ?? '',
+              message.payload?.continuingEntryId ?? null
+            )
+          case 'PAUSE_TIMER':
+            return pauseTimer()
+          case 'RESUME_TIMER':
+            return resumeTimer()
+          case 'STOP_TIMER':
+            return stopTimer()
+          case 'GET_TIMER_STATE': {
+            const state = await getTimerState()
+            const idleInfo = await getIdleInfo()
+            const pomodoroState = await getPomodoroState()
+            return { success: true, state: { ...state, elapsed: getElapsed(state) }, idleInfo, pomodoroState }
+          }
+          case 'IDLE_KEEP':
+            return idleKeep()
+          case 'IDLE_DISCARD':
+            return idleDiscard()
+          case 'IDLE_DISMISS':
+            return idleKeep() // Same as keep — just dismiss
+          case 'START_POMODORO':
+            return startPomodoro(message.payload?.projectId ?? null, message.payload?.description ?? '')
+          case 'STOP_POMODORO':
+            return stopPomodoro()
+          case 'SKIP_POMODORO_PHASE':
+            return skipPomodoroPhase()
+          case 'GET_POMODORO_STATE': {
+            const ps = await getPomodoroState()
+            return { success: true, pomodoroState: ps }
+          }
+          default:
+            return { success: false, error: 'Unknown action' }
+        }
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+      }
+    }
+    handle().then(sendResponse)
+    return true
+  }
+)
+
+// ============================================================
+// Alarm Handlers
+// ============================================================
+
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name === TIMER_ALARM) {
+    const state = await getTimerState()
+    await updateBadge(state)
+  }
+
+  if (alarm.name === POMODORO_ALARM) {
+    const pomState = await getPomodoroState()
+    if (!pomState.active) {
+      await chrome.alarms.clear(POMODORO_ALARM)
+      return
+    }
+
+    // Phase time is up — advance to next phase
+    await advancePomodoroPhase(pomState)
+  }
+})
+
+// ============================================================
+// Startup & Install
+// ============================================================
+
+chrome.runtime.onStartup.addListener(async () => {
+  const state = await getTimerState()
+  if (state.status === 'running') {
+    await chrome.alarms.create(TIMER_ALARM, { periodInMinutes: 0.5 })
+    await updateBadge(state)
+
+    const settings = await getSettings()
+    chrome.idle.setDetectionInterval(settings.idleTimeout * 60)
+  }
+
+  const pomState = await getPomodoroState()
+  if (pomState.active && pomState.phaseStartedAt) {
+    const elapsed = Date.now() - pomState.phaseStartedAt
+    const remaining = pomState.phaseDuration - elapsed
+
+    if (remaining > 0) {
+      // Phase still ongoing — recreate alarm
+      await chrome.alarms.create(POMODORO_ALARM, { when: Date.now() + remaining })
+    } else {
+      // Phase ended while Chrome was closed — advance now
+      await advancePomodoroPhase(pomState)
+    }
+  }
+})
+
+chrome.runtime.onInstalled.addListener(async (details) => {
+  if (details.reason === 'install') {
+    const projects = [
+      {
+        id: generateId(),
+        name: 'Default',
+        color: '#3b82f6',
+        targetHours: null,
+        archived: false,
+        createdAt: Date.now(),
+      },
+    ]
+    await chrome.storage.local.set({ projects })
+  }
+})
+
+// ============================================================
+// Keyboard Shortcuts
+// ============================================================
+
+chrome.commands.onCommand.addListener(async (command) => {
+  const state = await getTimerState()
+
+  if (command === 'toggle-timer') {
+    // Alt+Shift+S: Start/Stop timer
+    if (state.status === 'idle') {
+      // Start timer with last used project/description or default
+      await startTimer(state.projectId, state.description || 'Quick timer')
+      chrome.notifications.create('timer-started', {
+        type: 'basic',
+        iconUrl: 'icons/icon-128.png',
+        title: 'Timer Started',
+        message: 'Timer started via keyboard shortcut',
+        priority: 1,
+      })
+    } else {
+      // Stop timer (running or paused)
+      await stopTimer()
+      chrome.notifications.create('timer-stopped', {
+        type: 'basic',
+        iconUrl: 'icons/icon-128.png',
+        title: 'Timer Stopped',
+        message: 'Timer stopped and entry saved',
+        priority: 1,
+      })
+    }
+  } else if (command === 'toggle-pause') {
+    // Alt+Shift+P: Pause/Resume timer
+    if (state.status === 'running') {
+      await pauseTimer()
+      chrome.notifications.create('timer-paused', {
+        type: 'basic',
+        iconUrl: 'icons/icon-128.png',
+        title: 'Timer Paused',
+        message: 'Timer paused via keyboard shortcut',
+        priority: 1,
+      })
+    } else if (state.status === 'paused') {
+      await resumeTimer()
+      chrome.notifications.create('timer-resumed', {
+        type: 'basic',
+        iconUrl: 'icons/icon-128.png',
+        title: 'Timer Resumed',
+        message: 'Timer resumed via keyboard shortcut',
+        priority: 1,
+      })
+    }
+    // If idle, do nothing
+  }
+})
