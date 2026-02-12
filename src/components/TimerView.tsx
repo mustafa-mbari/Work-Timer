@@ -336,8 +336,8 @@ export default function TimerView() {
           </div>
           {isRunning && (
             <div className="flex items-center justify-center gap-1.5 mt-2">
-              <span className="w-1.5 h-1.5 bg-indigo-500 dark:bg-indigo-400 rounded-full animate-pulse-soft" aria-hidden="true" />
-              <span className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400">Recording</span>
+              <span className="w-1.5 h-1.5 bg-rose-500 dark:bg-rose-400 rounded-full animate-pulse-soft" aria-hidden="true" />
+              <span className="text-[11px] font-medium text-rose-500 dark:text-rose-400">Recording..</span>
             </div>
           )}
           {isPaused && (
