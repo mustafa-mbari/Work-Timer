@@ -1,9 +1,10 @@
-import type { TimeEntry, Project, Settings, TimerState } from '@/types'
+import type { TimeEntry, Project, Settings, TimerState, Tag } from '@/types'
 import { getToday } from '@/utils/date'
 
 const KEYS = {
   entries: (date: string) => `entries_${date}`,
   projects: 'projects',
+  tags: 'tags',
   settings: 'settings',
   timerState: 'timerState',
 } as const
@@ -139,6 +140,24 @@ export async function archiveProject(id: string): Promise<void> {
     projects[index].archived = true
     await storageSet({ [KEYS.projects]: projects })
   }
+}
+
+// --- Tags ---
+
+function isValidTag(t: unknown): t is Tag {
+  if (!t || typeof t !== 'object') return false
+  const tag = t as Record<string, unknown>
+  return typeof tag.id === 'string' && tag.id.length > 0 && typeof tag.name === 'string'
+}
+
+export async function getTags(): Promise<Tag[]> {
+  const result = await chrome.storage.local.get(KEYS.tags)
+  const raw = (result[KEYS.tags] as unknown[] | undefined) ?? []
+  return raw.filter(isValidTag)
+}
+
+export async function saveTags(tags: Tag[]): Promise<void> {
+  await storageSet({ [KEYS.tags]: tags })
 }
 
 // --- Settings ---

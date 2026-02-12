@@ -300,17 +300,37 @@
 
 - [x] Inter Variable font (bundled via @fontsource-variable/inter)
 - [x] Indigo accent color palette with warm Stone neutrals
-- [x] Custom SVG icon system (18 icons in `Icons.tsx`)
+- [x] Custom SVG icon system (19 icons in `Icons.tsx`)
 - [x] Redesigned all 14 components with modern styling
 - [x] Custom dark mode surface tokens for crafted dark experience
 - [x] Consistent design system: rounded-xl cards, shadow-sm buttons, 8px grid
 - [x] Fixed Tailwind v4 `@variant dark` selector generation
+- [x] Entry cards always-visible background (border + bg-white/dark-card)
+- [x] Continue button always visible on entry cards (was hover-only)
+
+### 3.9 Entry Enhancements ✅
+
+- [x] **Link field on entries:** optional URL per entry, stored in `TimeEntry.link`
+  - Clickable link button on entry card (opens in new tab via `chrome.tabs.create`)
+  - URL input in Edit Entry modal
+- [x] **Work Type (Tag) field on entries:** global tag list, single-select per entry
+  - `Tag { id, name }` entity stored in `chrome.storage.local`
+  - `useTags` hook with create / update / remove
+  - Tags stored as ID array in `TimeEntry.tags`
+  - Selector in Edit Entry modal with inline "+ Add" form
+- [x] **Inline project creation** from Edit Entry modal (auto-assigned color)
+
+### 3.10 Settings Improvements ✅
+
+- [x] **Tabbed Settings layout** (General / Timer / Data) with sticky tab bar
+- [x] **Project editing** in Settings → Data: rename + change color inline
+- [x] **Work Types management** in Settings → Data: add / rename / delete
 
 ### 3.6 Rich Notes
 
 - [ ] Add rich text notes to time entries (multi-line description field)
 - [ ] Markdown support for formatting (bold, lists, code blocks)
-- [ ] Attach links to entries (clickable URLs in notes)
+- [x] Attach links to entries (clickable URLs in notes)
 - [ ] Search within notes (full-text search across all entry descriptions)
 
 ### 3.7 Internationalization (i18n)

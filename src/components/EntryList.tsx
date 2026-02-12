@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { TimeEntry, Project } from '@/types'
 import { formatTime, formatDurationShort } from '@/utils/date'
 import EntryEditModal from './EntryEditModal'
-import { PlayIcon } from './Icons'
+import { PlayIcon, LinkIcon } from './Icons'
 
 interface EntryListProps {
   entries: TimeEntry[]
@@ -33,7 +33,7 @@ export default function EntryList({ entries, projects, onUpdate, onDelete, onCon
           return (
             <div
               key={entry.id}
-              className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-white dark:hover:bg-dark-card transition-colors group"
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-white dark:bg-dark-card border border-stone-100 dark:border-dark-border hover:border-stone-200 dark:hover:border-dark-hover transition-colors"
               role="listitem"
             >
               <span
@@ -57,10 +57,20 @@ export default function EntryList({ entries, projects, onUpdate, onDelete, onCon
               <span className="text-xs font-semibold text-stone-500 dark:text-stone-400 flex-shrink-0 tabular-nums">
                 {formatDurationShort(entry.duration)}
               </span>
+              {entry.link && (
+                <button
+                  onClick={() => chrome.tabs.create({ url: entry.link! })}
+                  className="p-1.5 rounded-lg text-stone-400 hover:text-indigo-500 hover:bg-indigo-50 dark:text-stone-500 dark:hover:text-indigo-400 dark:hover:bg-indigo-500/10 flex-shrink-0 transition-colors"
+                  aria-label="Open link"
+                  title={entry.link}
+                >
+                  <LinkIcon className="w-3.5 h-3.5" />
+                </button>
+              )}
               {onContinue && (
                 <button
                   onClick={() => onContinue(entry.id, entry.projectId, entry.description)}
-                  className="p-1.5 rounded-lg text-stone-300 hover:text-indigo-500 hover:bg-indigo-50 dark:text-stone-600 dark:hover:text-indigo-400 dark:hover:bg-indigo-500/10 flex-shrink-0 transition-colors opacity-0 group-hover:opacity-100"
+                  className="p-1.5 rounded-lg text-stone-400 hover:text-indigo-500 hover:bg-indigo-50 dark:text-stone-500 dark:hover:text-indigo-400 dark:hover:bg-indigo-500/10 flex-shrink-0 transition-colors"
                   aria-label="Continue timing this task"
                   title="Continue"
                 >
@@ -75,7 +85,6 @@ export default function EntryList({ entries, projects, onUpdate, onDelete, onCon
       {editingEntry && (
         <EntryEditModal
           entry={editingEntry}
-          projects={projects}
           onSave={async (updated) => {
             await onUpdate(updated)
             setEditingEntry(null)

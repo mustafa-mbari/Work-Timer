@@ -17,6 +17,7 @@ export interface TimeEntry {
   description: string
   type: EntryType
   tags: string[]
+  link?: string
 }
 
 export interface Project {
@@ -26,6 +27,11 @@ export interface Project {
   targetHours: number | null
   archived: boolean
   createdAt: number
+}
+
+export interface Tag {
+  id: string
+  name: string
 }
 
 export interface Settings {

@@ -1,10 +1,16 @@
 import { useState } from 'react'
-import type { TimeEntry, Project } from '@/types'
-import { XIcon } from './Icons'
+import type { TimeEntry } from '@/types'
+import { XIcon, PlusIcon } from './Icons'
+import { useProjects } from '@/hooks/useProjects'
+import { useTags } from '@/hooks/useTags'
+
+const PROJECT_COLORS = [
+  '#6366F1', '#F43F5E', '#10B981', '#F59E0B', '#A855F7',
+  '#EC4899', '#06B6D4', '#F97316', '#3B82F6', '#14B8A6',
+]
 
 interface EntryEditModalProps {
   entry: TimeEntry
-  projects: Project[]
   onSave: (entry: TimeEntry) => Promise<void>
   onDelete: () => Promise<void>
   onClose: () => void
@@ -35,7 +41,10 @@ function msToDurationParts(ms: number): { h: number; m: number; s: number } {
   }
 }
 
-export default function EntryEditModal({ entry, projects, onSave, onDelete, onClose }: EntryEditModalProps) {
+export default function EntryEditModal({ entry, onSave, onDelete, onClose }: EntryEditModalProps) {
+  const { activeProjects, create: createProject } = useProjects()
+  const { tags, create: createTag } = useTags()
+
   const [mode, setMode] = useState<EditMode>('range')
   const [from, setFrom] = useState(timestampToTimeString(entry.startTime))
   const [to, setTo] = useState(timestampToTimeString(entry.endTime))
@@ -45,9 +54,35 @@ export default function EntryEditModal({ entry, projects, onSave, onDelete, onCl
   const [durS, setDurS] = useState(String(initDur.s))
   const [projectId, setProjectId] = useState(entry.projectId ?? '')
   const [description, setDescription] = useState(entry.description)
+  const [link, setLink] = useState(entry.link ?? '')
+  const [selectedTagId, setSelectedTagId] = useState(entry.tags[0] ?? '')
   const [confirmDelete, setConfirmDelete] = useState(false)
 
+  const [showNewProject, setShowNewProject] = useState(false)
+  const [newProjectName, setNewProjectName] = useState('')
+  const [showNewTag, setShowNewTag] = useState(false)
+  const [newTagName, setNewTagName] = useState('')
+
+  const handleAddProject = async () => {
+    if (!newProjectName.trim()) return
+    const color = PROJECT_COLORS[Math.floor(Math.random() * PROJECT_COLORS.length)]
+    const project = await createProject(newProjectName.trim(), color)
+    setProjectId(project.id)
+    setShowNewProject(false)
+    setNewProjectName('')
+  }
+
+  const handleAddTag = async () => {
+    if (!newTagName.trim()) return
+    const tag = await createTag(newTagName.trim())
+    setSelectedTagId(tag.id)
+    setShowNewTag(false)
+    setNewTagName('')
+  }
+
   const handleSave = async () => {
+    const tagsValue = selectedTagId ? [selectedTagId] : []
+
     if (mode === 'range') {
       const startTime = timeStringToTimestamp(from, entry.startTime)
       const endTime = timeStringToTimestamp(to, entry.endTime)
@@ -60,6 +95,8 @@ export default function EntryEditModal({ entry, projects, onSave, onDelete, onCl
         duration: endTime - startTime,
         projectId: projectId || null,
         description,
+        link: link.trim() || undefined,
+        tags: tagsValue,
       })
     } else {
       const h = parseInt(durH) || 0
@@ -74,12 +111,17 @@ export default function EntryEditModal({ entry, projects, onSave, onDelete, onCl
         endTime: entry.startTime + duration,
         projectId: projectId || null,
         description,
+        link: link.trim() || undefined,
+        tags: tagsValue,
       })
     }
   }
 
   const inputClass = "w-full border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-elevated text-stone-900 dark:text-stone-100 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
   const labelClass = "text-[11px] font-medium text-stone-500 dark:text-stone-400 block mb-1.5"
+  const addInputClass = "flex-1 border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-elevated text-stone-900 dark:text-stone-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400 placeholder-stone-400 dark:placeholder-stone-600"
+
+  const selectedProject = activeProjects.find(p => p.id === projectId)
 
   return (
     <div
@@ -90,7 +132,7 @@ export default function EntryEditModal({ entry, projects, onSave, onDelete, onCl
       aria-label="Edit time entry"
     >
       <div
-        className="bg-white dark:bg-dark-elevated rounded-t-2xl w-full max-w-[380px] p-5 flex flex-col gap-4 animate-slide-up"
+        className="bg-white dark:bg-dark-elevated rounded-t-2xl w-full max-w-[380px] p-5 flex flex-col gap-4 animate-slide-up max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center">
@@ -149,19 +191,105 @@ export default function EntryEditModal({ entry, projects, onSave, onDelete, onCl
           </div>
         )}
 
+        {/* Project selector with inline add */}
         <div>
           <label htmlFor="edit-project" className={labelClass}>Project</label>
-          <select
-            id="edit-project"
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
-            className={`${inputClass} appearance-none`}
-          >
-            <option value="">No Project</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <select
+                id="edit-project"
+                value={projectId}
+                onChange={(e) => { setProjectId(e.target.value); setShowNewProject(false) }}
+                className={`${inputClass} appearance-none pl-7`}
+              >
+                <option value="">No Project</option>
+                {activeProjects.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              <span
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full pointer-events-none border border-stone-200 dark:border-dark-border flex-shrink-0"
+                style={selectedProject ? { backgroundColor: selectedProject.color, borderColor: 'transparent' } : undefined}
+                aria-hidden="true"
+              />
+            </div>
+            <button
+              onClick={() => { setShowNewProject(!showNewProject); setShowNewTag(false) }}
+              className={`p-2.5 rounded-lg border transition-colors ${showNewProject ? 'border-indigo-500 text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10' : 'border-stone-200 dark:border-dark-border text-stone-400 dark:text-stone-500 hover:text-indigo-500 hover:border-indigo-400 dark:hover:text-indigo-400 dark:hover:border-indigo-400/60'}`}
+              type="button"
+              aria-label="Add new project"
+              title="Add new project"
+            >
+              <PlusIcon className="w-4 h-4" />
+            </button>
+          </div>
+          {showNewProject && (
+            <div className="flex gap-2 mt-2">
+              <input
+                type="text"
+                value={newProjectName}
+                onChange={(e) => setNewProjectName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddProject()}
+                placeholder="Project name (auto color)"
+                autoFocus
+                className={addInputClass}
+              />
+              <button
+                onClick={handleAddProject}
+                disabled={!newProjectName.trim()}
+                className="px-3 py-2 bg-indigo-500 text-white rounded-lg text-xs font-medium hover:bg-indigo-600 disabled:opacity-40 transition-colors"
+              >
+                Add
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Tag / Work Type selector with inline add */}
+        <div>
+          <label htmlFor="edit-tag" className={labelClass}>Work Type</label>
+          <div className="flex gap-2">
+            <select
+              id="edit-tag"
+              value={selectedTagId}
+              onChange={(e) => { setSelectedTagId(e.target.value); setShowNewTag(false) }}
+              className={`${inputClass} flex-1 appearance-none`}
+            >
+              <option value="">No Type</option>
+              {tags.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+            <button
+              onClick={() => { setShowNewTag(!showNewTag); setShowNewProject(false) }}
+              className={`p-2.5 rounded-lg border transition-colors ${showNewTag ? 'border-indigo-500 text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10' : 'border-stone-200 dark:border-dark-border text-stone-400 dark:text-stone-500 hover:text-indigo-500 hover:border-indigo-400 dark:hover:text-indigo-400 dark:hover:border-indigo-400/60'}`}
+              type="button"
+              aria-label="Add new work type"
+              title="Add new work type"
+            >
+              <PlusIcon className="w-4 h-4" />
+            </button>
+          </div>
+          {showNewTag && (
+            <div className="flex gap-2 mt-2">
+              <input
+                type="text"
+                value={newTagName}
+                onChange={(e) => setNewTagName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
+                placeholder="Work type name"
+                autoFocus
+                className={addInputClass}
+              />
+              <button
+                onClick={handleAddTag}
+                disabled={!newTagName.trim()}
+                className="px-3 py-2 bg-indigo-500 text-white rounded-lg text-xs font-medium hover:bg-indigo-600 disabled:opacity-40 transition-colors"
+              >
+                Add
+              </button>
+            </div>
+          )}
         </div>
 
         <div>
@@ -171,6 +299,18 @@ export default function EntryEditModal({ entry, projects, onSave, onDelete, onCl
             type="text"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            className={inputClass}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="edit-link" className={labelClass}>Link (optional)</label>
+          <input
+            id="edit-link"
+            type="url"
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
+            placeholder="https://..."
             className={inputClass}
           />
         </div>
