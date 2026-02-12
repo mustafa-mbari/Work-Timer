@@ -31,6 +31,7 @@ let hostEl: HTMLElement | null = null
 let shadow: ShadowRoot | null = null
 let tickInterval: ReturnType<typeof setInterval> | null = null
 let currentState: TimerState | null = null
+let lastProjects: Project[] = []   // cached for visibility-change restores
 let isMinimized = false
 let isHidden = false       // user explicitly closed via ×; persisted
 let autoShowEnabled = true // from settings; cached at init
@@ -277,11 +278,11 @@ function buildWidget(): void {
   shadow.appendChild(widget)
   ;(document.body || document.documentElement).appendChild(hostEl)
 
-  // Close button → hide widget (user dismissed it)
+  // Close button → dismiss widget; won't auto-reappear until user shows it again
   shadow.getElementById('close-btn')!.addEventListener('click', (e) => {
     e.stopPropagation()
     persistHidden(true)
-    removeWidget()
+    hideWidget()
   })
 
   // Click on drag-handle (not a button) → toggle mini/full
@@ -387,10 +388,17 @@ function updateWidget(state: TimerState, projs: Project[]): void {
   widget.className = isMinimized ? 'mini' : 'full'
 }
 
-function removeWidget(): void {
+// Hides the widget DOM but keeps currentState/lastProjects (for tab re-activation)
+function hideWidget(): void {
   if (tickInterval) { clearInterval(tickInterval); tickInterval = null }
   if (hostEl) { hostEl.remove(); hostEl = null; shadow = null }
+}
+
+// Fully removes widget and clears state (timer stopped or widget dismissed)
+function removeWidget(): void {
+  hideWidget()
   currentState = null
+  lastProjects = []
 }
 
 // ---- Tick ----
@@ -406,6 +414,30 @@ function startTick(): void {
   }, 1000)
 }
 
+// ---- Show / hide based on tab visibility ----
+
+// Called whenever this tab becomes the active, visible tab
+function onTabVisible(): void {
+  if (!currentState || currentState.status === 'idle') return
+  if (isHidden || !autoShowEnabled) return
+  if (!hostEl) buildWidget()
+  updateWidget(currentState, lastProjects)
+  startTick()
+}
+
+// Called whenever this tab goes to the background
+function onTabHidden(): void {
+  hideWidget() // remove DOM; keep currentState so we can restore on next visit
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    onTabVisible()
+  } else {
+    onTabHidden()
+  }
+})
+
 // ---- Message Listener ----
 
 chrome.runtime.onMessage.addListener((msg: ContentMessage) => {
@@ -420,11 +452,12 @@ chrome.runtime.onMessage.addListener((msg: ContentMessage) => {
     persistHidden(false)
     posX = 20
     posY = 20
-    if (state.status !== 'idle') {
+    currentState = state
+    lastProjects = projs
+    if (state.status !== 'idle' && document.visibilityState === 'visible') {
       if (!hostEl) {
         buildWidget()
       } else {
-        // Reset position of existing widget to bottom-right
         hostEl.setAttribute('style', buildHostStyle(20, 20))
       }
       updateWidget(state, projs)
@@ -436,16 +469,20 @@ chrome.runtime.onMessage.addListener((msg: ContentMessage) => {
   if (msg.action === 'TIMER_SYNC') {
     const { state, projects: projs } = msg
 
+    // Always cache state so tab-visibility restore works correctly
+    lastProjects = projs
     if (state.status === 'idle') {
       removeWidget()
       return
     }
+    currentState = state
 
-    // Build widget only if: not already visible, not hidden by user, and auto-show enabled
+    // Only show in the currently active (visible) tab
+    if (document.visibilityState !== 'visible') return
+
     if (!hostEl && !isHidden && autoShowEnabled) {
       buildWidget()
     }
-
     if (hostEl) {
       updateWidget(state, projs)
       startTick()
@@ -461,11 +498,17 @@ async function init(): Promise<void> {
   try {
     const response = await chrome.runtime.sendMessage({ action: 'GET_TIMER_STATE' })
     if (response?.success && response.state && response.state.status !== 'idle') {
-      if (!isHidden && autoShowEnabled) {
-        const projectsResult = await chrome.storage.local.get('projects')
-        const projs: Project[] = (projectsResult['projects'] as Project[] | undefined) ?? []
+      const projectsResult = await chrome.storage.local.get('projects')
+      const projs: Project[] = (projectsResult['projects'] as Project[] | undefined) ?? []
+
+      // Always cache state (even for background tabs) so visibilitychange can restore it
+      currentState = response.state as TimerState
+      lastProjects = projs
+
+      // Only show immediately if this is the active tab
+      if (!isHidden && autoShowEnabled && document.visibilityState === 'visible') {
         buildWidget()
-        updateWidget(response.state as TimerState, projs)
+        updateWidget(currentState, projs)
         startTick()
       }
     }
