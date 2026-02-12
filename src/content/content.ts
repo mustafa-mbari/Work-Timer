@@ -61,8 +61,11 @@ async function loadPosition(): Promise<void> {
 
 function savePosition(): void {
   if (hostEl) {
+    const style = hostEl.getAttribute('style') || ''
+    const right = parseInt((style.match(/right:(\d+)px/) ?? ['', '20'])[1], 10)
+    const bottom = parseInt((style.match(/bottom:(\d+)px/) ?? ['', '20'])[1], 10)
     chrome.storage.local.set({
-      [POS_KEY]: { x: parseInt(hostEl.style.right, 10), y: parseInt(hostEl.style.bottom, 10) },
+      [POS_KEY]: { x: right, y: bottom },
       [MIN_KEY]: isMinimized,
     })
   }
@@ -72,10 +75,11 @@ function savePosition(): void {
 
 const STYLES = `
   :host {
-    all: initial;
-    position: fixed;
-    z-index: 2147483647;
+    display: block !important;
+    box-sizing: border-box;
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+    line-height: normal;
+    -webkit-font-smoothing: antialiased;
   }
 
   #widget {
@@ -205,17 +209,19 @@ const STYLES = `
 
 function buildWidget(): void {
   hostEl = document.createElement('work-timer-widget')
-  hostEl.style.position = 'fixed'
-  hostEl.style.zIndex = '2147483647'
-  if (posX >= 0) {
-    hostEl.style.right = `${posX}px`
-    hostEl.style.bottom = `${posY}px`
-  } else {
-    hostEl.style.right = '20px'
-    hostEl.style.bottom = '20px'
-  }
+  // Apply all positioning via inline style — highest specificity, immune to page CSS
+  const right = posX >= 0 ? posX : 20
+  const bottom = posY >= 0 ? posY : 20
+  hostEl.setAttribute('style', [
+    'position:fixed',
+    `right:${right}px`,
+    `bottom:${bottom}px`,
+    'z-index:2147483647',
+    'display:block',
+    'width:200px',
+  ].join(';'))
 
-  shadow = hostEl.attachShadow({ mode: 'closed' })
+  shadow = hostEl.attachShadow({ mode: 'open' }) // open so DevTools can inspect
 
   const style = document.createElement('style')
   style.textContent = STYLES
@@ -241,7 +247,8 @@ function buildWidget(): void {
 
   shadow.appendChild(style)
   shadow.appendChild(widget)
-  document.documentElement.appendChild(hostEl)
+  // Append to body (reliable) or fall back to <html>
+  ;(document.body || document.documentElement).appendChild(hostEl)
 
   // Minimize button
   shadow.getElementById('minimize-btn')!.addEventListener('click', (e) => {
@@ -284,8 +291,9 @@ function setupDrag(): void {
     isDragging = true
     startMouseX = e.clientX
     startMouseY = e.clientY
-    startRight = parseInt(hostEl!.style.right, 10) || 20
-    startBottom = parseInt(hostEl!.style.bottom, 10) || 20
+    const attrStyle = hostEl!.getAttribute('style') || ''
+    startRight = parseInt((attrStyle.match(/right:(\d+)px/) ?? ['', '20'])[1], 10)
+    startBottom = parseInt((attrStyle.match(/bottom:(\d+)px/) ?? ['', '20'])[1], 10)
     e.preventDefault()
   })
 
@@ -295,8 +303,14 @@ function setupDrag(): void {
     const dy = startMouseY - e.clientY
     const newRight = Math.max(0, Math.min(window.innerWidth - 70, startRight + dx))
     const newBottom = Math.max(0, Math.min(window.innerHeight - 50, startBottom + dy))
-    hostEl.style.right = `${newRight}px`
-    hostEl.style.bottom = `${newBottom}px`
+    hostEl.setAttribute('style', [
+      'position:fixed',
+      `right:${newRight}px`,
+      `bottom:${newBottom}px`,
+      'z-index:2147483647',
+      'display:block',
+      'width:200px',
+    ].join(';'))
   })
 
   document.addEventListener('mouseup', () => {
