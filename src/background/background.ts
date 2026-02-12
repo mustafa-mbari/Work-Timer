@@ -133,6 +133,8 @@ async function broadcastTimerSync(state: TimerState): Promise<void> {
       })
     }
   }
+  // Keep context menu states in sync with every timer state change
+  void refreshContextMenus()
 }
 
 async function updateActiveTabTitle(state: TimerState): Promise<void> {
@@ -252,6 +254,8 @@ async function startTimer(projectId: string | null, description: string, continu
   await chrome.alarms.create(TIMER_ALARM, { periodInMinutes: 0.5 })
   await updateBadge(state)
   await updateActiveTabTitle(state)
+  // Clear any previous "user dismissed" flag so the widget auto-shows for the new session
+  await chrome.storage.local.remove('floatingTimerHidden')
   void broadcastTimerSync(state)
 
   // Set idle detection threshold
@@ -698,6 +702,7 @@ chrome.runtime.onStartup.addListener(async () => {
   }
 
   setupContextMenus()
+  void refreshContextMenus()
 })
 
 // Push timer state to a tab the moment it becomes active (so widget follows tab switches)
