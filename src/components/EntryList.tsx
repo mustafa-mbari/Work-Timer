@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import type { TimeEntry, Project } from '@/types'
 import { formatTime, formatDurationShort } from '@/utils/date'
 import EntryEditModal from './EntryEditModal'
@@ -15,6 +15,11 @@ interface EntryListProps {
 export default function EntryList({ entries, projects, onUpdate, onDelete, onContinue }: EntryListProps) {
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null)
 
+  const sorted = useMemo(
+    () => [...entries].sort((a, b) => b.startTime - a.startTime),
+    [entries]
+  )
+
   if (entries.length === 0) {
     return (
       <div className="text-center text-stone-400 dark:text-stone-600 text-xs py-6">
@@ -22,8 +27,6 @@ export default function EntryList({ entries, projects, onUpdate, onDelete, onCon
       </div>
     )
   }
-
-  const sorted = [...entries].sort((a, b) => b.startTime - a.startTime)
 
   return (
     <>

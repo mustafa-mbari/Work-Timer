@@ -5,11 +5,8 @@ import { useProjects } from '@/hooks/useProjects'
 import { useTags } from '@/hooks/useTags'
 import { useTheme, THEMES } from '@/hooks/useTheme'
 import { MonitorIcon, PlusIcon, XIcon } from './Icons'
-
-const PROJECT_COLORS = [
-  '#6366F1', '#F43F5E', '#10B981', '#F59E0B', '#A855F7',
-  '#EC4899', '#06B6D4', '#F97316', '#3B82F6', '#14B8A6',
-]
+import { PROJECT_COLORS } from '@/constants/colors'
+import { inputClass, labelClass } from '@/constants/styles'
 
 type SettingsTab = 'general' | 'timer' | 'data'
 
@@ -70,9 +67,6 @@ export default function SettingsView() {
   if (!settings) return null
 
   const archivedProjects = projects.filter(p => p.archived)
-
-  const inputClass = "w-full border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
-  const labelClass = "text-[11px] font-medium text-stone-500 dark:text-stone-400 block mb-1.5"
 
   const toggleButton = (isActive: boolean) =>
     `flex-1 py-2 text-sm font-medium rounded-lg border transition-all ${

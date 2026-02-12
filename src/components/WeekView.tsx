@@ -22,7 +22,10 @@ export default function WeekView() {
   const workingDays = settings?.workingDays ?? 5
 
   const { start, end } = getWeekRange(currentDate, weekStartsOn)
-  const days = getWeekDays(currentDate, weekStartsOn, workingDays)
+  const days = useMemo(
+    () => getWeekDays(currentDate, weekStartsOn, workingDays),
+    [currentDate, weekStartsOn, workingDays]
+  )
 
   const { entries, refetch } = useEntriesRange(formatDate(start), formatDate(end))
 

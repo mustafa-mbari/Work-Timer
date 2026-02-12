@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { TimerState, TimerMessage, TimerResponse, IdleInfo, PomodoroState } from '@/types'
+import { POMODORO_WORK_MS } from '@/constants/timers'
 
 const DEFAULT_STATE: TimerState = {
   status: 'idle',
@@ -21,7 +22,7 @@ const DEFAULT_POMODORO: PomodoroState = {
   active: false,
   phase: 'work',
   phaseStartedAt: null,
-  phaseDuration: 25 * 60 * 1000,
+  phaseDuration: POMODORO_WORK_MS,
   sessionsCompleted: 0,
   totalWorkTime: 0,
 }

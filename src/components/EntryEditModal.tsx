@@ -3,11 +3,8 @@ import type { TimeEntry } from '@/types'
 import { XIcon, PlusIcon } from './Icons'
 import { useProjects } from '@/hooks/useProjects'
 import { useTags } from '@/hooks/useTags'
-
-const PROJECT_COLORS = [
-  '#6366F1', '#F43F5E', '#10B981', '#F59E0B', '#A855F7',
-  '#EC4899', '#06B6D4', '#F97316', '#3B82F6', '#14B8A6',
-]
+import { PROJECT_COLORS } from '@/constants/colors'
+import { inputClassElevated as inputClass, labelClass, addInputClassElevated as addInputClass } from '@/constants/styles'
 
 interface EntryEditModalProps {
   entry: TimeEntry
@@ -57,6 +54,7 @@ export default function EntryEditModal({ entry, onSave, onDelete, onClose }: Ent
   const [link, setLink] = useState(entry.link ?? '')
   const [selectedTagId, setSelectedTagId] = useState(entry.tags[0] ?? '')
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   const [showNewProject, setShowNewProject] = useState(false)
   const [newProjectName, setNewProjectName] = useState('')
@@ -83,43 +81,44 @@ export default function EntryEditModal({ entry, onSave, onDelete, onClose }: Ent
   const handleSave = async () => {
     const tagsValue = selectedTagId ? [selectedTagId] : []
 
-    if (mode === 'range') {
-      const startTime = timeStringToTimestamp(from, entry.startTime)
-      const endTime = timeStringToTimestamp(to, entry.endTime)
-      if (endTime <= startTime) return
+    setSaving(true)
+    try {
+      if (mode === 'range') {
+        const startTime = timeStringToTimestamp(from, entry.startTime)
+        const endTime = timeStringToTimestamp(to, entry.endTime)
+        if (endTime <= startTime) return
 
-      await onSave({
-        ...entry,
-        startTime,
-        endTime,
-        duration: endTime - startTime,
-        projectId: projectId || null,
-        description,
-        link: link.trim() || undefined,
-        tags: tagsValue,
-      })
-    } else {
-      const h = parseInt(durH) || 0
-      const m = parseInt(durM) || 0
-      const s = parseInt(durS) || 0
-      const duration = (h * 3600 + m * 60 + s) * 1000
-      if (duration <= 0) return
+        await onSave({
+          ...entry,
+          startTime,
+          endTime,
+          duration: endTime - startTime,
+          projectId: projectId || null,
+          description,
+          link: link.trim() || undefined,
+          tags: tagsValue,
+        })
+      } else {
+        const h = parseInt(durH) || 0
+        const m = parseInt(durM) || 0
+        const s = parseInt(durS) || 0
+        const duration = (h * 3600 + m * 60 + s) * 1000
+        if (duration <= 0) return
 
-      await onSave({
-        ...entry,
-        duration,
-        endTime: entry.startTime + duration,
-        projectId: projectId || null,
-        description,
-        link: link.trim() || undefined,
-        tags: tagsValue,
-      })
+        await onSave({
+          ...entry,
+          duration,
+          endTime: entry.startTime + duration,
+          projectId: projectId || null,
+          description,
+          link: link.trim() || undefined,
+          tags: tagsValue,
+        })
+      }
+    } finally {
+      setSaving(false)
     }
   }
-
-  const inputClass = "w-full border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-elevated text-stone-900 dark:text-stone-100 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
-  const labelClass = "text-[11px] font-medium text-stone-500 dark:text-stone-400 block mb-1.5"
-  const addInputClass = "flex-1 border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-elevated text-stone-900 dark:text-stone-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400 placeholder-stone-400 dark:placeholder-stone-600"
 
   const selectedProject = activeProjects.find(p => p.id === projectId)
 
@@ -343,10 +342,11 @@ export default function EntryEditModal({ entry, onSave, onDelete, onClose }: Ent
               </button>
               <button
                 onClick={handleSave}
-                className="flex-1 bg-indigo-500 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-indigo-600 transition-colors shadow-sm shadow-indigo-500/20"
+                disabled={saving}
+                className="flex-1 bg-indigo-500 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm shadow-indigo-500/20"
                 aria-label="Save changes"
               >
-                Save
+                {saving ? 'Saving...' : 'Save'}
               </button>
             </>
           )}

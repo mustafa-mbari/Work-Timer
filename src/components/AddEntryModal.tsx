@@ -6,11 +6,8 @@ import { generateId } from '@/utils/id'
 import { saveEntry } from '@/storage'
 import ProjectSelector from './ProjectSelector'
 import { format, parseISO } from 'date-fns'
-
-const PROJECT_COLORS = [
-  '#6366F1', '#F43F5E', '#10B981', '#F59E0B', '#A855F7',
-  '#EC4899', '#06B6D4', '#F97316', '#3B82F6', '#14B8A6',
-]
+import { PROJECT_COLORS } from '@/constants/colors'
+import { inputClass, labelClass, addInputClass } from '@/constants/styles'
 
 interface AddEntryModalProps {
   date: string  // YYYY-MM-DD
@@ -33,6 +30,7 @@ export default function AddEntryModal({ date: initialDate, onSave, onClose }: Ad
   const [description, setDescription] = useState('')
   const [link, setLink] = useState('')
   const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
 
   const [showNewProject, setShowNewProject] = useState(false)
   const [newProjectName, setNewProjectName] = useState('')
@@ -87,29 +85,33 @@ export default function AddEntryModal({ date: initialDate, onSave, onClose }: Ad
       startTime = endTime - duration
     }
 
-    await saveEntry({
-      id: generateId(),
-      date,
-      startTime,
-      endTime,
-      duration,
-      projectId,
-      taskId: null,
-      description,
-      link: link.trim() || undefined,
-      type: 'manual',
-      tags: selectedTagId ? [selectedTagId] : [],
-    })
-    onSave()
+    setSaving(true)
+    try {
+      await saveEntry({
+        id: generateId(),
+        date,
+        startTime,
+        endTime,
+        duration,
+        projectId,
+        taskId: null,
+        description,
+        link: link.trim() || undefined,
+        type: 'manual',
+        tags: selectedTagId ? [selectedTagId] : [],
+      })
+      onSave()
+    } catch {
+      setError('Failed to save entry. Please try again.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const isValid = inputType === 'timeRange'
     ? Boolean(from && to)
     : (parseInt(hours) || 0) > 0 || (parseInt(minutes) || 0) > 0
 
-  const inputClass = "w-full border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
-  const labelClass = "text-[11px] font-medium text-stone-500 dark:text-stone-400 block mb-1.5"
-  const addInputClass = "flex-1 border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400 placeholder-stone-400 dark:placeholder-stone-600"
   const plusBtnClass = (active: boolean) =>
     `p-2.5 rounded-lg border transition-colors ${active ? 'border-indigo-500 text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10' : 'border-stone-200 dark:border-dark-border text-stone-400 dark:text-stone-500 hover:text-indigo-500 hover:border-indigo-400 dark:hover:text-indigo-400 dark:hover:border-indigo-400/60'}`
 
@@ -333,10 +335,10 @@ export default function AddEntryModal({ date: initialDate, onSave, onClose }: Ad
           </button>
           <button
             onClick={handleSave}
-            disabled={!isValid}
+            disabled={!isValid || saving}
             className="flex-1 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors shadow-sm shadow-indigo-500/20"
           >
-            Save Entry
+            {saving ? 'Saving...' : 'Save Entry'}
           </button>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import type { TimerMessage, TimerResponse, TimerState, TimeEntry, IdleInfo, PomodoroState, PomodoroPhase, Settings } from '../types'
 import { generateId } from '../utils/id'
 import { getToday } from '../utils/date'
+import { POMODORO_WORK_MS, IDLE_THRESHOLD_MS } from '../constants/timers'
 
 const TIMER_ALARM = 'timer-tick'
 const POMODORO_ALARM = 'pomodoro-tick'
@@ -32,7 +33,7 @@ const DEFAULT_POMODORO_STATE: PomodoroState = {
   active: false,
   phase: 'work',
   phaseStartedAt: null,
-  phaseDuration: 25 * 60 * 1000,
+  phaseDuration: POMODORO_WORK_MS,
   sessionsCompleted: 0,
   totalWorkTime: 0,
 }
@@ -394,14 +395,14 @@ chrome.idle.onStateChanged.addListener(async (newState) => {
     if (idleInfo.idleStartedAt) {
       const idleDuration = Date.now() - idleInfo.idleStartedAt
       // Only show notification if idle was significant (> 1 minute)
-      if (idleDuration > 60000) {
+      if (idleDuration > IDLE_THRESHOLD_MS) {
         await setIdleInfo({
           idleStartedAt: idleInfo.idleStartedAt,
           idleDuration,
           pending: true,
         })
 
-        const minutes = Math.round(idleDuration / 60000)
+        const minutes = Math.round(idleDuration / IDLE_THRESHOLD_MS)
         chrome.notifications.create('idle-return', {
           type: 'basic',
           iconUrl: 'icons/icon-128.png',
