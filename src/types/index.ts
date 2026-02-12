@@ -32,7 +32,7 @@ export interface Settings {
   workingDays: number // 5, 6, or 7
   weekStartDay: 0 | 1 // 0 = Sunday, 1 = Monday
   idleTimeout: number // Minutes
-  theme: 'light' | 'dark' | 'system'
+  theme: 'light-soft' | 'light-paper' | 'light-sepia' | 'dark-charcoal' | 'dark-mocha' | 'dark-midnight' | 'system'
   language: 'en' | 'ar'
   notifications: boolean
   dailyTarget: number | null // Hours

@@ -2,58 +2,67 @@ import { useState, useEffect } from 'react'
 import { getSettings, updateSettings } from '@/storage'
 import type { Settings } from '@/types'
 
-type Theme = Settings['theme']
+type ThemeId = Settings['theme']
+
+export interface ThemeMeta {
+  id: ThemeId
+  label: string
+  isDark: boolean
+  swatchBg: string
+  swatchAccent: string
+}
+
+export const THEMES: ThemeMeta[] = [
+  { id: 'light-soft',    label: 'Soft',     isDark: false, swatchBg: '#F2F2F0', swatchAccent: '#6366F1' },
+  { id: 'light-paper',   label: 'Paper',    isDark: false, swatchBg: '#F4EFE6', swatchAccent: '#6366F1' },
+  { id: 'light-sepia',   label: 'Sepia',    isDark: false, swatchBg: '#EDE3D5', swatchAccent: '#8B6A4A' },
+  { id: 'dark-charcoal', label: 'Charcoal', isDark: true,  swatchBg: '#2C2C2C', swatchAccent: '#818CF8' },
+  { id: 'dark-mocha',    label: 'Mocha',    isDark: true,  swatchBg: '#221A16', swatchAccent: '#818CF8' },
+  { id: 'dark-midnight', label: 'Midnight', isDark: true,  swatchBg: '#141820', swatchAccent: '#818CF8' },
+]
+
+function migrateTheme(stored: string): ThemeId {
+  if (stored === 'light') return 'light-soft'
+  if (stored === 'dark') return 'dark-charcoal'
+  return stored as ThemeId
+}
+
+function applyTheme(themeId: ThemeId, systemIsDark: boolean) {
+  const resolved = themeId === 'system'
+    ? (systemIsDark ? 'dark-charcoal' : 'light-soft')
+    : themeId
+
+  const isDark = resolved.startsWith('dark-')
+  document.documentElement.classList.toggle('dark', isDark)
+  document.documentElement.classList.toggle('light', !isDark)
+  document.documentElement.setAttribute('data-theme', resolved)
+}
 
 export function useTheme() {
-  const [theme, setThemeState] = useState<Theme>('light')
-  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light')
+  const [theme, setThemeState] = useState<ThemeId>('light-soft')
 
-  // Load theme from storage on mount
   useEffect(() => {
     getSettings().then(settings => {
-      setThemeState(settings.theme)
+      setThemeState(migrateTheme(settings.theme))
     })
   }, [])
 
-  // Resolve theme (handle 'system' preference)
   useEffect(() => {
-    const getResolvedTheme = (): 'light' | 'dark' => {
-      if (theme === 'system') {
-        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-      }
-      return theme
-    }
+    const systemIsDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    applyTheme(theme, systemIsDark)
 
-    const applyTheme = () => {
-      const resolved = getResolvedTheme()
-      setResolvedTheme(resolved)
-
-      // Apply theme to document
-      if (resolved === 'dark') {
-        document.documentElement.classList.add('dark')
-        document.documentElement.classList.remove('light')
-      } else {
-        document.documentElement.classList.add('light')
-        document.documentElement.classList.remove('dark')
-      }
-    }
-
-    applyTheme()
-
-    // Listen for system theme changes
     if (theme === 'system') {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-      const handler = () => applyTheme()
-      mediaQuery.addEventListener('change', handler)
-      return () => mediaQuery.removeEventListener('change', handler)
+      const mq = window.matchMedia('(prefers-color-scheme: dark)')
+      const handler = () => applyTheme(theme, mq.matches)
+      mq.addEventListener('change', handler)
+      return () => mq.removeEventListener('change', handler)
     }
   }, [theme])
 
-  // Update theme (persist to storage)
-  const setTheme = async (newTheme: Theme) => {
+  const setTheme = async (newTheme: ThemeId) => {
     setThemeState(newTheme)
     await updateSettings({ theme: newTheme })
   }
 
-  return { theme, resolvedTheme, setTheme }
+  return { theme, setTheme }
 }

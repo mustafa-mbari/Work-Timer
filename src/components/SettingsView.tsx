@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import type { Settings } from '@/types'
 import { getSettings, updateSettings } from '@/storage'
 import { useProjects } from '@/hooks/useProjects'
-import { useTheme } from '@/hooks/useTheme'
-import { SunIcon, MoonIcon, MonitorIcon, PlusIcon } from './Icons'
+import { useTheme, THEMES } from '@/hooks/useTheme'
+import { MonitorIcon, PlusIcon } from './Icons'
 
 const PROJECT_COLORS = [
   '#6366F1', '#F43F5E', '#10B981', '#F59E0B', '#A855F7',
@@ -58,25 +58,76 @@ export default function SettingsView() {
       {/* Theme */}
       <div>
         <label className={labelClass}>Theme</label>
-        <div className="flex gap-1.5">
-          {([
-            { value: 'light' as const, label: 'Light', Icon: SunIcon },
-            { value: 'dark' as const, label: 'Dark', Icon: MoonIcon },
-            { value: 'system' as const, label: 'System', Icon: MonitorIcon },
-          ]).map(({ value, label, Icon }) => (
-            <button
-              key={value}
-              onClick={() => setTheme(value)}
-              className={toggleButton(theme === value)}
-              aria-label={`Set theme to ${value}`}
-            >
-              <span className="flex items-center justify-center gap-1.5">
-                <Icon className="w-3.5 h-3.5" />
-                {label}
-              </span>
-            </button>
-          ))}
+
+        {/* Light themes row */}
+        <p className="text-[10px] text-stone-400 dark:text-stone-500 mb-1.5">Light</p>
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          {THEMES.filter(t => !t.isDark).map(({ id, label, swatchBg, swatchAccent }) => {
+            const isActive = theme === id
+            return (
+              <button
+                key={id}
+                onClick={() => setTheme(id)}
+                aria-label={`Set theme to ${label}`}
+                className={`flex flex-col items-center gap-1.5 py-2.5 rounded-xl border-2 transition-all ${
+                  isActive
+                    ? 'border-indigo-500 dark:border-indigo-400 shadow-sm shadow-indigo-500/20'
+                    : 'border-stone-200 dark:border-dark-border hover:border-stone-300 dark:hover:border-dark-hover'
+                }`}
+              >
+                <span
+                  className="w-8 h-8 rounded-full border border-black/10 relative flex items-center justify-center"
+                  style={{ backgroundColor: swatchBg }}
+                >
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: swatchAccent }} />
+                </span>
+                <span className="text-[11px] font-medium text-stone-600 dark:text-stone-300">{label}</span>
+              </button>
+            )
+          })}
         </div>
+
+        {/* Dark themes row */}
+        <p className="text-[10px] text-stone-400 dark:text-stone-500 mb-1.5">Dark</p>
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          {THEMES.filter(t => t.isDark).map(({ id, label, swatchBg, swatchAccent }) => {
+            const isActive = theme === id
+            return (
+              <button
+                key={id}
+                onClick={() => setTheme(id)}
+                aria-label={`Set theme to ${label}`}
+                className={`flex flex-col items-center gap-1.5 py-2.5 rounded-xl border-2 transition-all ${
+                  isActive
+                    ? 'border-indigo-500 dark:border-indigo-400 shadow-sm shadow-indigo-500/20'
+                    : 'border-stone-200 dark:border-dark-border hover:border-stone-300 dark:hover:border-dark-hover'
+                }`}
+              >
+                <span
+                  className="w-8 h-8 rounded-full border border-white/10 relative flex items-center justify-center"
+                  style={{ backgroundColor: swatchBg }}
+                >
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: swatchAccent }} />
+                </span>
+                <span className="text-[11px] font-medium text-stone-600 dark:text-stone-300">{label}</span>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* System */}
+        <button
+          onClick={() => setTheme('system')}
+          aria-label="Set theme to system"
+          className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl border-2 transition-all text-sm font-medium ${
+            theme === 'system'
+              ? 'border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400 shadow-sm shadow-indigo-500/20'
+              : 'border-stone-200 dark:border-dark-border text-stone-500 dark:text-stone-400 hover:border-stone-300 dark:hover:border-dark-hover'
+          }`}
+        >
+          <MonitorIcon className="w-3.5 h-3.5" />
+          System (follows OS)
+        </button>
       </div>
 
       {/* Working Days */}

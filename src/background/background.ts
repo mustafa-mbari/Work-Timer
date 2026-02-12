@@ -70,7 +70,7 @@ async function getSettings(): Promise<Settings> {
   const result = await chrome.storage.local.get(STORAGE_KEYS.settings)
   const stored = result[STORAGE_KEYS.settings] as Partial<Settings> | undefined
   return {
-    workingDays: 5, weekStartDay: 1, idleTimeout: 5, theme: 'light' as const,
+    workingDays: 5, weekStartDay: 1, idleTimeout: 5, theme: 'light-soft' as const,
     language: 'en' as const, notifications: true, dailyTarget: 8, weeklyTarget: 40,
     pomodoro: { workMinutes: 25, shortBreakMinutes: 5, longBreakMinutes: 15, sessionsBeforeLongBreak: 4, soundEnabled: true },
     ...stored,

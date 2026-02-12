@@ -91,7 +91,7 @@ const DEFAULT_SETTINGS: Settings = {
   workingDays: 5,
   weekStartDay: 1,
   idleTimeout: 5,
-  theme: 'light',
+  theme: 'light-soft',
   language: 'en',
   notifications: true,
   dailyTarget: 8,

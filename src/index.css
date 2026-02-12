@@ -193,3 +193,66 @@ input[type="number"]::-webkit-outer-spin-button {
 select {
   cursor: pointer;
 }
+
+/* ============================================================
+   Theme variants — override CSS custom properties per theme.
+   Dark/light class on <html> stays for Tailwind's dark: variant.
+   data-theme attribute drives the specific palette.
+   ============================================================ */
+
+/* --- Dark: Charcoal (medium gray, easier on eyes than pure black) --- */
+[data-theme="dark-charcoal"] {
+  --color-dark:          #242424;
+  --color-dark-card:     #2C2C2C;
+  --color-dark-elevated: #343434;
+  --color-dark-border:   #424242;
+  --color-dark-hover:    #383838;
+}
+[data-theme="dark-charcoal"] body { background-color: #242424; }
+
+/* --- Dark: Mocha (warm dark brown/charcoal) --- */
+[data-theme="dark-mocha"] {
+  --color-dark:          #1A1512;
+  --color-dark-card:     #221A16;
+  --color-dark-elevated: #2A2018;
+  --color-dark-border:   #3A2E26;
+  --color-dark-hover:    #2E2318;
+}
+[data-theme="dark-mocha"] body { background-color: #1A1512; }
+
+/* --- Dark: Midnight (dark navy / blue-black) --- */
+[data-theme="dark-midnight"] {
+  --color-dark:          #0E1119;
+  --color-dark-card:     #141820;
+  --color-dark-elevated: #1B2030;
+  --color-dark-border:   #26304A;
+  --color-dark-hover:    #1D2638;
+}
+[data-theme="dark-midnight"] body { background-color: #0E1119; }
+
+/* --- Light: Soft (gentle off-white, less glare) --- */
+[data-theme="light-soft"] {
+  --color-white:       #FAFAFA;
+  --color-stone-50:    #F2F2F0;
+  --color-stone-100:   #E8E8E6;
+  --color-stone-200:   #DCDCDA;
+}
+[data-theme="light-soft"] body { background-color: #F2F2F0; }
+
+/* --- Light: Paper (warm cream / parchment) --- */
+[data-theme="light-paper"] {
+  --color-white:       #F9F4EB;
+  --color-stone-50:    #F4EFE6;
+  --color-stone-100:   #EAE3D8;
+  --color-stone-200:   #DDD5C8;
+}
+[data-theme="light-paper"] body { background-color: #F4EFE6; }
+
+/* --- Light: Sepia (warm brownish / magazine feel) --- */
+[data-theme="light-sepia"] {
+  --color-white:       #F2E8DA;
+  --color-stone-50:    #EDE3D5;
+  --color-stone-100:   #E2D8C8;
+  --color-stone-200:   #D4C9B7;
+}
+[data-theme="light-sepia"] body { background-color: #EDE3D5; }
