@@ -30,6 +30,18 @@
   - Old block form generated impossible selectors (utility as ancestor of :root)
   - New inline form `(&:is(.dark *, .dark))` generates correct descendant selectors
 
+### 2026-02-12 (Phase 3.1 — Browser Integration)
+- **Added:** Toolbar quick actions via right-click context menu on extension icon
+  - "Start Timer" / "Stop Timer" toggle (label updates after each click)
+  - "Pause Timer" / "Resume Timer" toggle (disabled when idle)
+  - `contextMenus` permission added to manifest
+- **Added:** Floating mini timer content script (6.8 kB, Shadow DOM isolated)
+  - Appears automatically on any page when timer starts
+  - Shows elapsed time, project name/color, Pause/Resume and Stop buttons
+  - Draggable (mouse drag) with position persisted in `chrome.storage.local`
+  - Minimizable to a compact pill showing just elapsed time + status dot
+  - Background broadcasts `TIMER_SYNC` to all tabs on timer state change
+
 ### 2026-02-12 (Phase 2 — Monthly Heatmap)
 - **Added:** Monthly calendar heatmap in Stats view (GitHub-style contribution graph)
   - Month navigation (← →), next disabled at current month
@@ -248,17 +260,16 @@
   - Use `chrome.tabs` and `chrome.scripting` API to update active tab title
   - Format: `[01:23:45] Original Tab Title`
   - Automatically restores original title when timer stops
-- [ ] **Floating mini timer:**
-  - Content script that injects a small draggable timer widget
-  - Shows: elapsed time, project name, pause/stop buttons
-  - Minimizable to a small icon
-  - Position persists across page loads
-  - Toggle on/off in settings
-- [ ] **Toolbar quick actions:**
-  - Right-click context menu on extension icon:
-    - Start/stop timer
-    - Pause/resume timer
-    - Open popup
+- [x] **Floating mini timer:**
+  - Shadow DOM content script injected on all pages
+  - Shows: elapsed time, project name/color, Pause/Resume + Stop buttons
+  - Minimizable to compact pill with elapsed time
+  - Position persists across page loads (chrome.storage.local)
+  - Background broadcasts TIMER_SYNC on state change
+- [x] **Toolbar quick actions:**
+  - Right-click context menu on extension icon
+  - Start Timer / Stop Timer (toggles)
+  - Pause Timer / Resume Timer (disabled when idle)
 
 ### 3.4 Keyboard Shortcuts ✅
 

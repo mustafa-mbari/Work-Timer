@@ -121,6 +121,19 @@ function formatTimerForDisplay(ms: number): string {
 // Store original tab titles to restore them later
 const originalTabTitles = new Map<number, string>()
 
+async function broadcastTimerSync(state: TimerState): Promise<void> {
+  const result = await chrome.storage.local.get('projects')
+  const projects = (result['projects'] as Array<{ id: string; name: string; color: string }> | undefined) ?? []
+  const tabs = await chrome.tabs.query({})
+  for (const tab of tabs) {
+    if (tab.id) {
+      chrome.tabs.sendMessage(tab.id, { action: 'TIMER_SYNC', state, projects }).catch(() => {
+        // Tab may not have content script loaded, ignore
+      })
+    }
+  }
+}
+
 async function updateActiveTabTitle(state: TimerState): Promise<void> {
   if (state.status === 'idle') {
     // Restore original titles when timer stops
@@ -238,6 +251,7 @@ async function startTimer(projectId: string | null, description: string, continu
   await chrome.alarms.create(TIMER_ALARM, { periodInMinutes: 0.5 })
   await updateBadge(state)
   await updateActiveTabTitle(state)
+  void broadcastTimerSync(state)
 
   // Set idle detection threshold
   const settings = await getSettings()
@@ -261,6 +275,7 @@ async function pauseTimer(): Promise<TimerResponse> {
   await setTimerState(updated)
   await chrome.alarms.clear(TIMER_ALARM)
   await updateBadge(updated)
+  void broadcastTimerSync(updated)
   return { success: true, state: updated }
 }
 
@@ -278,6 +293,7 @@ async function resumeTimer(): Promise<TimerResponse> {
   await setIdleInfo(DEFAULT_IDLE_INFO)
   await chrome.alarms.create(TIMER_ALARM, { periodInMinutes: 0.5 })
   await updateBadge(updated)
+  void broadcastTimerSync(updated)
   return { success: true, state: updated }
 }
 
@@ -346,6 +362,7 @@ async function stopTimer(): Promise<TimerResponse> {
   await chrome.alarms.clear(TIMER_ALARM)
   await updateBadge(DEFAULT_TIMER_STATE)
   await updateActiveTabTitle(DEFAULT_TIMER_STATE)
+  void broadcastTimerSync(DEFAULT_TIMER_STATE)
 
   return { success: true, state: DEFAULT_TIMER_STATE, entry }
 }
@@ -636,6 +653,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     const state = await getTimerState()
     await updateBadge(state)
     await updateActiveTabTitle(state)
+    void broadcastTimerSync(state)
   }
 
   if (alarm.name === POMODORO_ALARM) {
@@ -677,6 +695,8 @@ chrome.runtime.onStartup.addListener(async () => {
       await advancePomodoroPhase(pomState)
     }
   }
+
+  setupContextMenus()
 })
 
 chrome.runtime.onInstalled.addListener(async (details) => {
@@ -693,6 +713,57 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     ]
     await chrome.storage.local.set({ projects })
   }
+  setupContextMenus()
+})
+
+// ============================================================
+// Context Menu (Toolbar Quick Actions)
+// ============================================================
+
+function setupContextMenus(): void {
+  chrome.contextMenus.removeAll(() => {
+    chrome.contextMenus.create({
+      id: 'toggle-timer',
+      title: 'Start Timer',
+      contexts: ['action'],
+    })
+    chrome.contextMenus.create({
+      id: 'toggle-pause',
+      title: 'Pause Timer',
+      contexts: ['action'],
+    })
+  })
+}
+
+async function refreshContextMenus(): Promise<void> {
+  const state = await getTimerState()
+  chrome.contextMenus.update('toggle-timer', {
+    title: state.status === 'idle' ? 'Start Timer' : 'Stop Timer',
+  })
+  chrome.contextMenus.update('toggle-pause', {
+    title: state.status === 'running' ? 'Pause Timer' : 'Resume Timer',
+    enabled: state.status !== 'idle',
+  })
+}
+
+chrome.contextMenus.onClicked.addListener(async (info) => {
+  const state = await getTimerState()
+
+  if (info.menuItemId === 'toggle-timer') {
+    if (state.status === 'idle') {
+      await startTimer(state.projectId, state.description || 'Quick timer')
+    } else {
+      await stopTimer()
+    }
+  } else if (info.menuItemId === 'toggle-pause') {
+    if (state.status === 'running') {
+      await pauseTimer()
+    } else if (state.status === 'paused') {
+      await resumeTimer()
+    }
+  }
+
+  await refreshContextMenus()
 })
 
 // ============================================================
