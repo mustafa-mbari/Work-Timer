@@ -30,6 +30,15 @@
   - Old block form generated impossible selectors (utility as ancestor of :root)
   - New inline form `(&:is(.dark *, .dark))` generates correct descendant selectors
 
+### 2026-02-12 (Phase 2 — Monthly Heatmap)
+- **Added:** Monthly calendar heatmap in Stats view (GitHub-style contribution graph)
+  - Month navigation (← →), next disabled at current month
+  - Day cells colored by hours logged (indigo intensity scale: 0h → 6h+)
+  - Today highlighted with indigo ring
+  - Tooltip: date + duration on hover
+  - Color legend row at bottom
+  - Correct Mon-based weekday alignment
+
 ### 2026-02-12
 - **Added:** Full dark/light theme system with automatic system preference detection
   - Theme toggle in Settings (Light, Dark, System)
@@ -188,7 +197,7 @@
 - [x] Summary cards (today, weekly total, daily average)
 - [x] Weekly bar chart (Recharts)
 - [x] Per-project donut chart for today
-- [ ] Monthly overview / calendar heatmap (future)
+- [x] Monthly overview / calendar heatmap (GitHub-style, month navigation, today highlight)
 - [ ] Project-level reports (future)
 
 ### 2.5 Export ✅
@@ -202,24 +211,6 @@
 ---
 
 ## Phase 3 — Smart Features
-
-### 3.1 Browser Integration
-
-- [ ] **Timer in tab title:**
-  - Use `chrome.tabs` API to prepend running timer to active tab title
-  - Format: `[01:23:45] Original Tab Title`
-  - Toggle on/off in settings
-- [ ] **Floating mini timer (Floating Draggable Overlay Widget):**
-  - Content script that injects a small draggable timer widget
-  - Shows: elapsed time, project name, pause/stop buttons
-  - Minimizable to a small icon
-  - Position persists across page loads
-  - Toggle on/off in settings
-- [ ] **Toolbar quick actions:**
-  - Right-click context menu on extension icon:
-    - Start/stop timer
-    - Quick switch project
-    - Open week view
 
 ### 3.2 Smart Reminders
 
@@ -251,7 +242,7 @@
   - Example: `github.com/org/repo*` → Project "Work"
 - [ ] Suggestions appear as a chip in the timer view (click to accept)
 
-### 3.1 Browser Integration (Partially Complete)
+### 3.1 Browser Integration
 
 - [x] **Timer in tab title:**
   - Use `chrome.tabs` and `chrome.scripting` API to update active tab title
@@ -266,8 +257,8 @@
 - [ ] **Toolbar quick actions:**
   - Right-click context menu on extension icon:
     - Start/stop timer
-    - Quick switch project
-    - Open week view
+    - Pause/resume timer
+    - Open popup
 
 ### 3.4 Keyboard Shortcuts ✅
 

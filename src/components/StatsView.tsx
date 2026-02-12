@@ -1,14 +1,19 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { useEntries, useEntriesRange } from '@/hooks/useEntries'
 import { useProjects } from '@/hooks/useProjects'
 import { getWeekRange, getWeekDays, formatDate, formatDurationShort, msToHours } from '@/utils/date'
-import { format } from 'date-fns'
+import { format, addMonths } from 'date-fns'
 import ExportMenu from './ExportMenu'
+import CalendarHeatmap from './CalendarHeatmap'
 
 export default function StatsView() {
   const { entries: todayEntries, totalDuration: todayTotal } = useEntries()
   const { activeProjects } = useProjects()
+  const [monthOffset, setMonthOffset] = useState(0)
+  const displayDate = addMonths(new Date(), monthOffset)
+  const displayYear = displayDate.getFullYear()
+  const displayMonth = displayDate.getMonth()
 
   const weekStartsOn = 1 as const
   const { start, end } = getWeekRange(new Date(), weekStartsOn)
@@ -141,6 +146,17 @@ export default function StatsView() {
           </div>
         </div>
       )}
+
+      {/* Monthly Overview Heatmap */}
+      <div>
+        <h3 className="text-[11px] font-medium text-stone-400 dark:text-stone-500 mb-2.5 uppercase tracking-wider">Monthly Overview</h3>
+        <CalendarHeatmap
+          year={displayYear}
+          month={displayMonth}
+          onPrev={() => setMonthOffset(o => o - 1)}
+          onNext={() => setMonthOffset(o => o + 1)}
+        />
+      </div>
     </div>
   )
 }

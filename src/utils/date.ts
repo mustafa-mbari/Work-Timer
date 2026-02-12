@@ -1,4 +1,4 @@
-import { format, startOfWeek, endOfWeek, addDays, differenceInMilliseconds, parseISO } from 'date-fns'
+import { format, startOfWeek, endOfWeek, addDays, differenceInMilliseconds, parseISO, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns'
 
 export function getToday(): string {
   return format(new Date(), 'yyyy-MM-dd')
@@ -50,4 +50,9 @@ export function durationBetween(startTime: number, endTime: number): number {
 
 export function msToHours(ms: number): number {
   return Math.round((ms / 3600000) * 100) / 100
+}
+
+export function getMonthDays(year: number, month: number): Date[] {
+  const d = new Date(year, month, 1)
+  return eachDayOfInterval({ start: startOfMonth(d), end: endOfMonth(d) })
 }
