@@ -263,13 +263,18 @@
 - [x] **Floating mini timer:**
   - Shadow DOM content script injected on all pages
   - Shows: elapsed time, project name/color, Pause/Resume + Stop buttons
-  - Minimizable to compact pill with elapsed time
+  - Click drag-handle to toggle mini pill / full mode
+  - × button dismisses widget (persisted; clears on next timer start)
   - Position persists across page loads (chrome.storage.local)
-  - Background broadcasts TIMER_SYNC on state change
+  - Viewport boundary clamping (both axes, respects widget dimensions)
+  - Only visible in the active tab (Page Visibility API + chrome.tabs.onActivated)
+  - Theme-aware: follows extension light/dark theme setting
+  - Auto-show on timer start configurable in Settings → Floating Widget
 - [x] **Toolbar quick actions:**
   - Right-click context menu on extension icon
   - Start Timer / Stop Timer (toggles)
   - Pause Timer / Resume Timer (disabled when idle)
+  - Show Floating Widget (enabled when timer is active)
 
 ### 3.4 Keyboard Shortcuts ✅
 

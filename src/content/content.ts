@@ -24,8 +24,10 @@ const POS_KEY = 'floatingTimerPos'
 const MIN_KEY = 'floatingTimerMin'
 const HIDDEN_KEY = 'floatingTimerHidden'
 
-const MINI_WIDTH = 96  // wide enough for H:MM:SS at tabular-nums
+const MINI_WIDTH = 96   // wide enough for H:MM:SS at tabular-nums
 const FULL_WIDTH = 200
+const MINI_HEIGHT = 40  // drag-handle only
+const FULL_HEIGHT = 100 // drag-handle + project name + action buttons + padding
 
 let hostEl: HTMLElement | null = null
 let shadow: ShadowRoot | null = null
@@ -35,6 +37,7 @@ let lastProjects: Project[] = []   // cached for visibility-change restores
 let isMinimized = false
 let isHidden = false       // user explicitly closed via ×; persisted
 let autoShowEnabled = true // from settings; cached at init
+let themeIsDark = true     // derived from extension theme setting
 let posX = -1              // distance from right edge; -1 = auto (bottom-right)
 let posY = -1
 
@@ -66,8 +69,9 @@ async function loadPersistedState(): Promise<void> {
   if (pos) { posX = pos.x; posY = pos.y }
   isMinimized = !!(result[MIN_KEY] as boolean | undefined)
   isHidden = !!(result[HIDDEN_KEY] as boolean | undefined)
-  const s = result['settings'] as { floatingTimerAutoShow?: boolean } | undefined
+  const s = result['settings'] as { floatingTimerAutoShow?: boolean; theme?: string } | undefined
   autoShowEnabled = s?.floatingTimerAutoShow !== false // default true
+  themeIsDark = !s?.theme?.startsWith('light') // 'light-*' → false; 'dark-*' / undefined → true
 }
 
 function savePosition(): void {
@@ -112,27 +116,68 @@ function applyHostStyle(): void {
   // Clamp to viewport using the NEW size (called after isMinimized has been toggled)
   const widgetWidth = isMinimized ? MINI_WIDTH : FULL_WIDTH
   const clampedRight = Math.max(0, Math.min(window.innerWidth - widgetWidth, right))
-  const clampedBottom = Math.max(0, Math.min(window.innerHeight - 50, bottom))
+  const widgetHeight = isMinimized ? MINI_HEIGHT : FULL_HEIGHT
+  const clampedBottom = Math.max(0, Math.min(window.innerHeight - widgetHeight, bottom))
   hostEl.setAttribute('style', buildHostStyle(clampedRight, clampedBottom))
 }
 
 // ---- Widget CSS ----
 
 const STYLES = `
+  /* --- Dark mode (default) --- */
   :host {
     display: block !important;
     box-sizing: border-box;
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
     line-height: normal;
     -webkit-font-smoothing: antialiased;
+
+    --wt-bg:            #1e1b4b;
+    --wt-border:        rgba(129, 140, 248, 0.3);
+    --wt-shadow:        rgba(0, 0, 0, 0.4);
+    --wt-text:          #e0e7ff;
+    --wt-timer:         #ffffff;
+    --wt-project:       rgba(165, 180, 252, 0.8);
+    --wt-close:         rgba(224, 231, 255, 0.5);
+    --wt-close-hbg:     rgba(248, 113, 113, 0.2);
+    --wt-close-hfg:     #f87171;
+    --wt-pulse-run:     #6ee7b7;
+    --wt-pulse-pause:   #fbbf24;
+    --wt-btn-pause-bg:  rgba(251, 191, 36, 0.2);
+    --wt-btn-pause-fg:  #fbbf24;
+    --wt-btn-resume-bg: rgba(110, 231, 183, 0.2);
+    --wt-btn-resume-fg: #6ee7b7;
+    --wt-btn-stop-bg:   rgba(248, 113, 113, 0.2);
+    --wt-btn-stop-fg:   #f87171;
+  }
+
+  /* --- Light mode override (when extension theme is a light-* variant) --- */
+  :host([data-scheme="light"]) {
+    --wt-bg:            #ffffff;
+    --wt-border:        rgba(99, 102, 241, 0.25);
+    --wt-shadow:        rgba(99, 102, 241, 0.15);
+    --wt-text:          #312e81;
+    --wt-timer:         #1e1b4b;
+    --wt-project:       #6366f1;
+    --wt-close:         rgba(67, 56, 202, 0.45);
+    --wt-close-hbg:     rgba(239, 68, 68, 0.12);
+    --wt-close-hfg:     #dc2626;
+    --wt-pulse-run:     #059669;
+    --wt-pulse-pause:   #d97706;
+    --wt-btn-pause-bg:  rgba(217, 119, 6, 0.12);
+    --wt-btn-pause-fg:  #b45309;
+    --wt-btn-resume-bg: rgba(5, 150, 105, 0.12);
+    --wt-btn-resume-fg: #047857;
+    --wt-btn-stop-bg:   rgba(239, 68, 68, 0.12);
+    --wt-btn-stop-fg:   #dc2626;
   }
 
   #widget {
-    background: #1e1b4b;
-    border: 1px solid rgba(129, 140, 248, 0.3);
+    background: var(--wt-bg);
+    border: 1px solid var(--wt-border);
     border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-    color: #e0e7ff;
+    box-shadow: 0 8px 24px var(--wt-shadow);
+    color: var(--wt-text);
     cursor: default;
     user-select: none;
     overflow: hidden;
@@ -157,8 +202,8 @@ const STYLES = `
     animation: pulse 1.5s infinite;
   }
 
-  #pulse.running { background: #6ee7b7; }
-  #pulse.paused  { background: #fbbf24; animation: none; }
+  #pulse.running { background: var(--wt-pulse-run); }
+  #pulse.paused  { background: var(--wt-pulse-pause); animation: none; }
 
   @keyframes pulse {
     0%   { opacity: 1; }
@@ -170,7 +215,7 @@ const STYLES = `
     font-size: 13px;
     font-weight: 700;
     letter-spacing: 0.04em;
-    color: #fff;
+    color: var(--wt-timer);
     flex: 1;
     font-variant-numeric: tabular-nums;
   }
@@ -184,7 +229,7 @@ const STYLES = `
     border-radius: 50%;
     border: none;
     background: transparent;
-    color: rgba(224, 231, 255, 0.5);
+    color: var(--wt-close);
     cursor: pointer;
     font-size: 11px;
     line-height: 1;
@@ -192,7 +237,7 @@ const STYLES = `
     flex-shrink: 0;
   }
 
-  #close-btn:hover { background: rgba(248, 113, 113, 0.2); color: #f87171; }
+  #close-btn:hover { background: var(--wt-close-hbg); color: var(--wt-close-hfg); }
 
   #body {
     padding: 0 10px 8px;
@@ -200,7 +245,7 @@ const STYLES = `
 
   #project-name {
     font-size: 10px;
-    color: rgba(165, 180, 252, 0.8);
+    color: var(--wt-project);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -231,9 +276,9 @@ const STYLES = `
   .action-btn:hover { opacity: 0.85; }
   .action-btn:active { transform: scale(0.96); }
 
-  .btn-pause  { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
-  .btn-resume { background: rgba(110, 231, 183, 0.2); color: #6ee7b7; }
-  .btn-stop   { background: rgba(248, 113, 113, 0.2); color: #f87171; }
+  .btn-pause  { background: var(--wt-btn-pause-bg);  color: var(--wt-btn-pause-fg); }
+  .btn-resume { background: var(--wt-btn-resume-bg); color: var(--wt-btn-resume-fg); }
+  .btn-stop   { background: var(--wt-btn-stop-bg);   color: var(--wt-btn-stop-fg); }
 
   /* Mini mode: compact pill — click anywhere on handle to expand */
   #widget.mini {
@@ -250,6 +295,7 @@ const STYLES = `
 
 function buildWidget(): void {
   hostEl = document.createElement('work-timer-widget')
+  hostEl.setAttribute('data-scheme', themeIsDark ? 'dark' : 'light')
   const right = posX >= 0 ? posX : 20
   const bottom = posY >= 0 ? posY : 20
   hostEl.setAttribute('style', buildHostStyle(right, bottom))
@@ -342,7 +388,8 @@ function setupDrag(): void {
     const dy = startMouseY - e.clientY
     const widgetWidth = isMinimized ? MINI_WIDTH : FULL_WIDTH
     const newRight = Math.max(0, Math.min(window.innerWidth - widgetWidth, startRight + dx))
-    const newBottom = Math.max(0, Math.min(window.innerHeight - 50, startBottom + dy))
+    const widgetHeight = isMinimized ? MINI_HEIGHT : FULL_HEIGHT
+    const newBottom = Math.max(0, Math.min(window.innerHeight - widgetHeight, startBottom + dy))
     hostEl.setAttribute('style', buildHostStyle(newRight, newBottom))
   })
 
