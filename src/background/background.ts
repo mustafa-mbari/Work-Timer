@@ -700,6 +700,14 @@ chrome.runtime.onStartup.addListener(async () => {
   setupContextMenus()
 })
 
+// Push timer state to a tab the moment it becomes active (so widget follows tab switches)
+chrome.tabs.onActivated.addListener(async ({ tabId }) => {
+  const state = await getTimerState()
+  const result = await chrome.storage.local.get('projects')
+  const projects = (result['projects'] as Array<{ id: string; name: string; color: string }> | undefined) ?? []
+  chrome.tabs.sendMessage(tabId, { action: 'TIMER_SYNC', state, projects }).catch(() => {})
+})
+
 chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === 'install') {
     const projects = [
