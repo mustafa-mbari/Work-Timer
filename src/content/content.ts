@@ -24,7 +24,7 @@ const POS_KEY = 'floatingTimerPos'
 const MIN_KEY = 'floatingTimerMin'
 const HIDDEN_KEY = 'floatingTimerHidden'
 
-const MINI_WIDTH = 68
+const MINI_WIDTH = 96  // wide enough for H:MM:SS at tabular-nums
 const FULL_WIDTH = 200
 
 let hostEl: HTMLElement | null = null
@@ -109,7 +109,11 @@ function getCurrentPos(): { right: number; bottom: number } {
 function applyHostStyle(): void {
   if (!hostEl) return
   const { right, bottom } = getCurrentPos()
-  hostEl.setAttribute('style', buildHostStyle(right, bottom))
+  // Clamp to viewport using the NEW size (called after isMinimized has been toggled)
+  const widgetWidth = isMinimized ? MINI_WIDTH : FULL_WIDTH
+  const clampedRight = Math.max(0, Math.min(window.innerWidth - widgetWidth, right))
+  const clampedBottom = Math.max(0, Math.min(window.innerHeight - 50, bottom))
+  hostEl.setAttribute('style', buildHostStyle(clampedRight, clampedBottom))
 }
 
 // ---- Widget CSS ----
@@ -236,9 +240,9 @@ const STYLES = `
     border-radius: 20px;
   }
 
-  .mini #drag-handle { padding: 10px 10px; }
+  .mini #drag-handle { padding: 10px 12px; }
   .mini #body { display: none; }
-  .mini #timer { font-size: 11px; }
+  .mini #timer { font-size: 12px; }
   .mini #close-btn { display: none; }
 `
 
