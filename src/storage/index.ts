@@ -8,12 +8,64 @@ const KEYS = {
   timerState: 'timerState',
 } as const
 
+// --- Retry + quota detection ---
+
+function isQuotaError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false
+  return err.message.includes('QUOTA_BYTES') || err.message.includes('quota') || err.name === 'QuotaExceededError'
+}
+
+async function storageSet(data: Record<string, unknown>): Promise<void> {
+  const MAX = 3
+  for (let attempt = 0; attempt < MAX; attempt++) {
+    try {
+      await chrome.storage.local.set(data)
+      return
+    } catch (err) {
+      if (isQuotaError(err)) {
+        window.dispatchEvent(new CustomEvent('storage-quota-exceeded'))
+        throw err
+      }
+      if (attempt === MAX - 1) throw err
+      await new Promise(r => setTimeout(r, 100 * Math.pow(2, attempt)))
+    }
+  }
+}
+
+// --- Data validation ---
+
+function isValidEntry(e: unknown): e is TimeEntry {
+  if (!e || typeof e !== 'object') return false
+  const entry = e as Record<string, unknown>
+  return (
+    typeof entry.id === 'string' && entry.id.length > 0 &&
+    typeof entry.date === 'string' &&
+    typeof entry.startTime === 'number' &&
+    typeof entry.endTime === 'number' &&
+    typeof entry.duration === 'number' && entry.duration >= 0 &&
+    (entry.type === 'manual' || entry.type === 'stopwatch' || entry.type === 'pomodoro') &&
+    Array.isArray(entry.tags)
+  )
+}
+
+function isValidProject(p: unknown): p is Project {
+  if (!p || typeof p !== 'object') return false
+  const proj = p as Record<string, unknown>
+  return (
+    typeof proj.id === 'string' && proj.id.length > 0 &&
+    typeof proj.name === 'string' &&
+    typeof proj.color === 'string' &&
+    typeof proj.archived === 'boolean'
+  )
+}
+
 // --- Time Entries ---
 
 export async function getEntries(date: string = getToday()): Promise<TimeEntry[]> {
   const key = KEYS.entries(date)
   const result = await chrome.storage.local.get(key)
-  return (result[key] as TimeEntry[] | undefined) ?? []
+  const raw = (result[key] as unknown[] | undefined) ?? []
+  return raw.filter(isValidEntry)
 }
 
 export async function getEntriesByRange(startDate: string, endDate: string): Promise<TimeEntry[]> {
@@ -27,14 +79,17 @@ export async function getEntriesByRange(startDate: string, endDate: string): Pro
 
   const keys = dates.map(KEYS.entries)
   const result = await chrome.storage.local.get(keys)
-  return dates.flatMap(date => (result[KEYS.entries(date)] as TimeEntry[] | undefined) ?? [])
+  return dates.flatMap(date => {
+    const raw = (result[KEYS.entries(date)] as unknown[] | undefined) ?? []
+    return raw.filter(isValidEntry)
+  })
 }
 
 export async function saveEntry(entry: TimeEntry): Promise<void> {
   const key = KEYS.entries(entry.date)
   const entries = await getEntries(entry.date)
   entries.push(entry)
-  await chrome.storage.local.set({ [key]: entries })
+  await storageSet({ [key]: entries })
 }
 
 export async function updateEntry(entry: TimeEntry): Promise<void> {
@@ -43,7 +98,7 @@ export async function updateEntry(entry: TimeEntry): Promise<void> {
   const index = entries.findIndex(e => e.id === entry.id)
   if (index !== -1) {
     entries[index] = entry
-    await chrome.storage.local.set({ [key]: entries })
+    await storageSet({ [key]: entries })
   }
 }
 
@@ -51,20 +106,21 @@ export async function deleteEntry(id: string, date: string): Promise<void> {
   const key = KEYS.entries(date)
   const entries = await getEntries(date)
   const filtered = entries.filter(e => e.id !== id)
-  await chrome.storage.local.set({ [key]: filtered })
+  await storageSet({ [key]: filtered })
 }
 
 // --- Projects ---
 
 export async function getProjects(): Promise<Project[]> {
   const result = await chrome.storage.local.get(KEYS.projects)
-  return (result[KEYS.projects] as Project[] | undefined) ?? []
+  const raw = (result[KEYS.projects] as unknown[] | undefined) ?? []
+  return raw.filter(isValidProject)
 }
 
 export async function saveProject(project: Project): Promise<void> {
   const projects = await getProjects()
   projects.push(project)
-  await chrome.storage.local.set({ [KEYS.projects]: projects })
+  await storageSet({ [KEYS.projects]: projects })
 }
 
 export async function updateProject(project: Project): Promise<void> {
@@ -72,7 +128,7 @@ export async function updateProject(project: Project): Promise<void> {
   const index = projects.findIndex(p => p.id === project.id)
   if (index !== -1) {
     projects[index] = project
-    await chrome.storage.local.set({ [KEYS.projects]: projects })
+    await storageSet({ [KEYS.projects]: projects })
   }
 }
 
@@ -81,7 +137,7 @@ export async function archiveProject(id: string): Promise<void> {
   const index = projects.findIndex(p => p.id === id)
   if (index !== -1) {
     projects[index].archived = true
-    await chrome.storage.local.set({ [KEYS.projects]: projects })
+    await storageSet({ [KEYS.projects]: projects })
   }
 }
 
@@ -113,7 +169,7 @@ export async function getSettings(): Promise<Settings> {
 
 export async function updateSettings(partial: Partial<Settings>): Promise<void> {
   const current = await getSettings()
-  await chrome.storage.local.set({ [KEYS.settings]: { ...current, ...partial } })
+  await storageSet({ [KEYS.settings]: { ...current, ...partial } })
 }
 
 // --- Timer State ---
@@ -134,9 +190,9 @@ export async function getTimerState(): Promise<TimerState> {
 }
 
 export async function setTimerState(state: TimerState): Promise<void> {
-  await chrome.storage.local.set({ [KEYS.timerState]: state })
+  await storageSet({ [KEYS.timerState]: state })
 }
 
 export async function clearTimerState(): Promise<void> {
-  await chrome.storage.local.set({ [KEYS.timerState]: DEFAULT_TIMER_STATE })
+  await storageSet({ [KEYS.timerState]: DEFAULT_TIMER_STATE })
 }

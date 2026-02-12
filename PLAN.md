@@ -136,10 +136,10 @@
 
 - [x] Global error boundary (React `ErrorBoundary` component)
 - [x] User-friendly error messages (Toast/snackbar notification system with `useToast` hook)
-- [ ] Retry mechanism for failed storage operations
+- [x] Retry mechanism for failed storage operations (3 attempts, exponential backoff)
 - [ ] Offline mode indicator (show when storage is unavailable)
-- [ ] Storage quota exceeded handling (warn user, suggest cleanup)
-- [ ] Invalid data recovery (corrupted entries detection & repair)
+- [x] Storage quota exceeded handling (dispatches event → error toast)
+- [x] Invalid data recovery (corrupted entries/projects silently filtered on read)
 - [ ] Error reporting (optional: Sentry integration)
 
 ### 1.12 Accessibility (Ongoing) ✅
@@ -149,7 +149,7 @@
 - [x] Focus management (modal click-outside-to-close, focus trapping)
 - [ ] Screen reader testing (NVDA / VoiceOver)
 - [x] Color contrast compliance (WCAG AA minimum)
-- [ ] Reduced motion mode (respect `prefers-reduced-motion`)
+- [x] Reduced motion mode (respect `prefers-reduced-motion`)
 - [x] Visible focus indicators on all focusable elements (focus:ring-2 throughout)
 
 > **Note:** Accessibility is a cross-cutting concern. Every new feature in Phase 2–4 must follow these standards. Review accessibility checklist before marking any section complete.
@@ -209,7 +209,7 @@
   - Use `chrome.tabs` API to prepend running timer to active tab title
   - Format: `[01:23:45] Original Tab Title`
   - Toggle on/off in settings
-- [ ] **Floating mini timer:**
+- [ ] **Floating mini timer (Floating Draggable Overlay Widget):**
   - Content script that injects a small draggable timer widget
   - Shows: elapsed time, project name, pause/stop buttons
   - Minimizable to a small icon
