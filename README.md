@@ -237,6 +237,15 @@ See [PLAN.md](PLAN.md) and [PLAN_2.md](PLAN_2.md) for full development plans.
 - ✅ Promo codes and domain whitelisting
 - ✅ Extension ↔ Website messaging bridge
 
+**Recent Polish & Improvements** (Phase 4H)
+- ✅ **Instant sync** — All entry/project edits now sync immediately (no 5-minute delay)
+- ✅ **Sync status UI** — Manual "Sync now" button with last-synced timestamp in Settings
+- ✅ **Initial sync dialog** — Prompts to upload existing local data after first login
+- ✅ **Entry card redesign** — Project name now prominent, description secondary
+- ✅ **Default "No Project"** — Timer starts with no project selected (cleaner UX)
+- ✅ **Environment URLs** — Local dev uses `http://localhost:3000` via env variables
+- ✅ **Race condition fix** — Sync queue items fully written before push triggers
+
 ### 🔜 Next (Future Enhancements)
 - Smart reminders (no time logged, break reminders, end-of-day)
 - Auto-categorization (URL → project mapping)

@@ -27,7 +27,7 @@ export default function ExtensionBridge({ accessToken, refreshToken }: Extension
 
     const timer = setTimeout(() => {
       setStatus('timeout')
-    }, 3000)
+    }, 5000)
 
     try {
       chrome.runtime.sendMessage(

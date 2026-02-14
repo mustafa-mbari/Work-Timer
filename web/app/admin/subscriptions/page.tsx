@@ -1,60 +1,53 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
 
 export default function AdminSubscriptionsPage() {
   const [subscriptions, setSubscriptions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-
-  const supabase = createClient()
+  const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     fetchSubscriptions()
   }, [])
 
   async function fetchSubscriptions() {
-    const { data } = await (supabase
-      .from('subscriptions') as any)
-      .select(`
-        *,
-        profiles (
-          email
-        )
-      `)
-      .order('updated_at', { ascending: false })
-    setSubscriptions(data ?? [])
+    const res = await fetch('/api/admin/subscriptions')
+    const data = await res.json()
+    setSubscriptions(data.subscriptions ?? [])
     setLoading(false)
   }
 
   async function grantPremium(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    setError(null)
+    setSubmitting(true)
+
     const formData = new FormData(e.currentTarget)
-    const email = formData.get('email') as string
+    const email = (formData.get('email') as string).trim()
     const plan = formData.get('plan') as string
 
-    // Find user by email
-    const { data: profile } = await (supabase
-      .from('profiles') as any)
-      .select('id')
-      .eq('email', email)
-      .single()
-
-    if (!profile) {
-      alert('User not found')
+    if (!email) {
+      setError('Email is required')
+      setSubmitting(false)
       return
     }
 
-    // Update subscription
-    await (supabase.from('subscriptions') as any).upsert({
-      user_id: profile.id,
-      plan,
-      status: 'active',
-      granted_by: 'admin_manual',
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'user_id' })
+    const res = await fetch('/api/admin/subscriptions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, plan }),
+    })
+    const data = await res.json()
 
-    e.currentTarget.reset()
+    if (!res.ok) {
+      setError(data.error || 'Failed to grant premium')
+    } else {
+      e.currentTarget.reset()
+    }
+
+    setSubmitting(false)
     await fetchSubscriptions()
   }
 
@@ -83,11 +76,13 @@ export default function AdminSubscriptionsPage() {
           </select>
           <button
             type="submit"
-            className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium rounded-lg transition-colors"
+            disabled={submitting}
+            className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
           >
-            Grant
+            {submitting ? 'Granting…' : 'Grant'}
           </button>
         </form>
+        {error && <p className="text-sm text-rose-600 mt-2">{error}</p>}
       </div>
 
       <div className="rounded-2xl border border-stone-200 bg-white overflow-hidden">

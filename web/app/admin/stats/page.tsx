@@ -3,25 +3,67 @@ import { createServiceClient } from '@/lib/supabase/server'
 export default async function AdminStatsPage() {
   const supabase = await createServiceClient()
 
-  // Fetch all data for analytics
-  const { data: profiles } = await (supabase.from('profiles') as any).select('id, created_at')
-  const { data: subscriptions } = await (supabase.from('subscriptions') as any).select('plan, status, granted_by')
-  const { data: entries } = await (supabase.from('time_entries') as any).select('duration, date, user_id, created_at')
-  const { data: promoCodes } = await (supabase.from('promo_codes') as any).select('code, current_uses, max_uses, active')
-  const { data: domains } = await (supabase.from('whitelisted_domains') as any).select('domain, active')
+  // Fetch lightweight data (profiles, subscriptions, promos, domains are small tables)
+  const [
+    { count: totalUsers },
+    { data: subscriptions },
+    { data: promoCodes },
+    { data: domains },
+  ] = await Promise.all([
+    (supabase.from('profiles') as any).select('*', { count: 'exact', head: true }),
+    (supabase.from('subscriptions') as any).select('plan, status, granted_by'),
+    (supabase.from('promo_codes') as any).select('code, current_uses, max_uses, active'),
+    (supabase.from('whitelisted_domains') as any).select('domain, active'),
+  ])
 
-  // Calculate metrics
-  const totalUsers = profiles?.length || 0
+  const userCount = totalUsers || 0
   const now = new Date()
 
-  // Active users (DAU/WAU/MAU)
+  // Time-based thresholds
   const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
   const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  const thirtyDaysAgoDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
-  const dau = new Set(entries?.filter((e: any) => e.created_at >= dayAgo).map((e: any) => e.user_id)).size
-  const wau = new Set(entries?.filter((e: any) => e.created_at >= weekAgo).map((e: any) => e.user_id)).size
-  const mau = new Set(entries?.filter((e: any) => e.created_at >= monthAgo).map((e: any) => e.user_id)).size
+  // Active users — fetch only distinct user_ids for each time window, not all entries
+  const [
+    { data: dauData },
+    { data: wauData },
+    { data: mauData },
+  ] = await Promise.all([
+    (supabase.from('time_entries') as any)
+      .select('user_id')
+      .gte('created_at', dayAgo),
+    (supabase.from('time_entries') as any)
+      .select('user_id')
+      .gte('created_at', weekAgo),
+    (supabase.from('time_entries') as any)
+      .select('user_id')
+      .gte('created_at', monthAgo),
+  ])
+
+  const dau = new Set(dauData?.map((e: any) => e.user_id)).size
+  const wau = new Set(wauData?.map((e: any) => e.user_id)).size
+  const mau = new Set(mauData?.map((e: any) => e.user_id)).size
+
+  // Total entries count (head-only, no data transfer)
+  const { count: totalEntries } = await (supabase.from('time_entries') as any)
+    .select('*', { count: 'exact', head: true })
+  const entryCount = totalEntries || 0
+
+  // Total hours — fetch only duration column
+  const { data: durationData } = await (supabase.from('time_entries') as any)
+    .select('duration')
+
+  const totalHours = durationData?.reduce((sum: number, e: any) => sum + (e.duration / 3600000), 0) || 0
+  const avgEntriesPerUser = userCount > 0 ? (entryCount / userCount).toFixed(1) : '0'
+  const avgHoursPerUser = userCount > 0 ? (totalHours / userCount).toFixed(1) : '0'
+
+  // Recent entries count (last 30 days)
+  const { count: recentCount } = await (supabase.from('time_entries') as any)
+    .select('*', { count: 'exact', head: true })
+    .gte('date', thirtyDaysAgoDate)
+  const avgEntriesPerDay = recentCount ? (recentCount / 30).toFixed(1) : '0'
 
   // Premium breakdown
   const premiumSubs = subscriptions?.filter((s: any) => s.plan !== 'free' && s.status === 'active') || []
@@ -38,16 +80,10 @@ export default async function AdminStatsPage() {
     manual: premiumSubs.filter((s: any) => s.granted_by === 'admin_manual').length,
   }
 
-  // Total hours tracked
-  const totalHours = entries?.reduce((sum: number, e: any) => sum + (e.duration / 3600000), 0) || 0
-  const totalEntries = entries?.length || 0
-  const avgEntriesPerUser = totalUsers > 0 ? (totalEntries / totalUsers).toFixed(1) : '0'
-  const avgHoursPerUser = totalUsers > 0 ? (totalHours / totalUsers).toFixed(1) : '0'
-
-  // Entries per day (last 30 days)
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-  const recentEntries = entries?.filter((e: any) => e.date >= thirtyDaysAgo) || []
-  const avgEntriesPerDay = recentEntries.length > 0 ? (recentEntries.length / 30).toFixed(1) : '0'
+  // New users this week
+  const { count: newUsersThisWeek } = await (supabase.from('profiles') as any)
+    .select('*', { count: 'exact', head: true })
+    .gte('created_at', weekAgo)
 
   // Promo code stats
   const activePromos = promoCodes?.filter((p: any) => p.active).length || 0
@@ -55,10 +91,6 @@ export default async function AdminStatsPage() {
 
   // Domain whitelist
   const activeDomains = domains?.filter((d: any) => d.active).length || 0
-
-  // User growth (last 7 days)
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
-  const newUsersThisWeek = profiles?.filter((p: any) => p.created_at >= sevenDaysAgo).length || 0
 
   return (
     <div>
@@ -73,8 +105,8 @@ export default async function AdminStatsPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-2xl border border-stone-200 p-5">
             <div className="text-xs text-stone-500 mb-1">Total Users</div>
-            <div className="text-2xl font-bold text-stone-900">{totalUsers}</div>
-            <div className="text-xs text-emerald-600 mt-1">+{newUsersThisWeek} this week</div>
+            <div className="text-2xl font-bold text-stone-900">{userCount}</div>
+            <div className="text-xs text-emerald-600 mt-1">+{newUsersThisWeek || 0} this week</div>
           </div>
           <div className="bg-white rounded-2xl border border-stone-200 p-5">
             <div className="text-xs text-stone-500 mb-1">DAU</div>
@@ -155,7 +187,7 @@ export default async function AdminStatsPage() {
           </div>
           <div className="bg-white rounded-2xl border border-stone-200 p-5">
             <div className="text-xs text-stone-500 mb-1">Total Entries</div>
-            <div className="text-2xl font-bold text-stone-900">{totalEntries}</div>
+            <div className="text-2xl font-bold text-stone-900">{entryCount}</div>
             <div className="text-xs text-stone-500 mt-1">{avgEntriesPerUser} per user</div>
           </div>
           <div className="bg-white rounded-2xl border border-stone-200 p-5">
@@ -165,8 +197,8 @@ export default async function AdminStatsPage() {
           </div>
           <div className="bg-white rounded-2xl border border-stone-200 p-5">
             <div className="text-xs text-stone-500 mb-1">Free vs Premium</div>
-            <div className="text-2xl font-bold text-stone-900">{totalUsers - premiumCount} / {premiumCount}</div>
-            <div className="text-xs text-stone-500 mt-1">{premiumCount > 0 ? ((premiumCount / totalUsers) * 100).toFixed(1) : 0}% conversion</div>
+            <div className="text-2xl font-bold text-stone-900">{userCount - premiumCount} / {premiumCount}</div>
+            <div className="text-xs text-stone-500 mt-1">{premiumCount > 0 ? ((premiumCount / userCount) * 100).toFixed(1) : 0}% conversion</div>
           </div>
         </div>
       </div>

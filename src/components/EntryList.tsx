@@ -47,14 +47,14 @@ export default function EntryList({ entries, projects, onUpdate, onDelete, onCon
               <button
                 onClick={() => setEditingEntry(entry)}
                 className="flex-1 min-w-0 text-left"
-                aria-label={`Edit ${entry.description || 'No description'}, ${formatDurationShort(entry.duration)}`}
+                aria-label={`Edit ${project?.name ?? 'No Project'}, ${formatDurationShort(entry.duration)}`}
               >
                 <div className="text-[13px] font-medium text-stone-800 dark:text-stone-200 truncate">
-                  {entry.description || <span className="text-stone-400 dark:text-stone-600 italic">No description</span>}
+                  {project?.name ?? <span className="text-stone-400 dark:text-stone-500">No Project</span>}
                 </div>
-                <div className="text-[11px] text-stone-400 dark:text-stone-500 mt-0.5">
+                <div className="text-[11px] text-stone-400 dark:text-stone-500 mt-0.5 truncate">
                   {formatTime(entry.startTime)} – {formatTime(entry.endTime)}
-                  {project && <span className="ml-1.5 text-stone-500 dark:text-stone-400">· {project.name}</span>}
+                  {entry.description && <span className="ml-1.5">· {entry.description}</span>}
                 </div>
               </button>
               <span className="text-xs font-semibold text-stone-500 dark:text-stone-400 flex-shrink-0 tabular-nums">

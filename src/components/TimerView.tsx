@@ -28,7 +28,7 @@ export default function TimerView() {
   const { settings } = useSettings()
 
   const [mode, setMode] = useState<ExtendedMode>('stopwatch')
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(state.projectId)
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [description, setDescription] = useState(state.description)
   const [selectedTagId, setSelectedTagId] = useState<string>('')
   const [link, setLink] = useState<string>('')

@@ -89,7 +89,7 @@ export default function StatsView() {
       <div>
         <h3 className="text-[11px] font-medium text-stone-400 dark:text-stone-500 mb-2.5 uppercase tracking-wider">This Week</h3>
         <div className="h-36 bg-white dark:bg-dark-card rounded-xl p-3 border border-stone-100 dark:border-dark-border">
-          <ResponsiveContainer width="100%" height="100%" minHeight={120}>
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={120}>
             <BarChart data={barData}>
               <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#A8A29E' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10, fill: '#A8A29E' }} width={20} axisLine={false} tickLine={false} />
@@ -115,24 +115,22 @@ export default function StatsView() {
           <h3 className="text-[11px] font-medium text-stone-400 dark:text-stone-500 mb-2.5 uppercase tracking-wider">Today by Project</h3>
           <div className="flex items-center gap-5 bg-white dark:bg-dark-card rounded-xl p-4 border border-stone-100 dark:border-dark-border">
             <div className="w-24 h-24 flex-shrink-0">
-              <ResponsiveContainer width="100%" height="100%" minWidth={96} minHeight={96}>
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    dataKey="value"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={22}
-                    outerRadius={42}
-                    paddingAngle={3}
-                    strokeWidth={0}
-                  >
-                    {pieData.map((d, i) => (
-                      <Cell key={i} fill={d.color} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
+              <PieChart width={96} height={96}>
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={22}
+                  outerRadius={42}
+                  paddingAngle={3}
+                  strokeWidth={0}
+                >
+                  {pieData.map((d, i) => (
+                    <Cell key={i} fill={d.color} />
+                  ))}
+                </Pie>
+              </PieChart>
             </div>
             <div className="flex flex-col gap-2">
               {pieData.map((d) => (

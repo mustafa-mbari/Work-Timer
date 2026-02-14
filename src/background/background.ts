@@ -1,8 +1,8 @@
-import type { TimerMessage, TimerResponse, TimerState, TimeEntry, IdleInfo, PomodoroState, PomodoroPhase, Settings } from '../types'
+import type { TimerMessage, TimerResponse, TimerState, TimeEntry, IdleInfo, PomodoroState, PomodoroPhase } from '../types'
 import { generateId } from '../utils/id'
 import { getToday } from '../utils/date'
 import { POMODORO_WORK_MS, IDLE_THRESHOLD_MS } from '../constants/timers'
-import { DEFAULT_SETTINGS } from '../storage'
+import { getSettings, getTimerState, setTimerState, saveEntry, updateEntry, getEntries } from '../storage'
 import { applyExternalSession, signOut as authSignOut, refreshSubscription, getSession } from '../auth/authState'
 import { syncAll, getSyncState } from '../sync/syncEngine'
 import { setupRealtime, teardownRealtime } from '../sync/realtimeSubscription'
@@ -46,14 +46,7 @@ const DEFAULT_POMODORO_STATE: PomodoroState = {
 
 // --- Storage helpers ---
 
-async function getTimerState(): Promise<TimerState> {
-  const result = await chrome.storage.local.get(STORAGE_KEYS.timerState)
-  return (result[STORAGE_KEYS.timerState] as TimerState | undefined) ?? DEFAULT_TIMER_STATE
-}
-
-async function setTimerState(state: TimerState): Promise<void> {
-  await chrome.storage.local.set({ [STORAGE_KEYS.timerState]: state })
-}
+// Removed getTimerState, setTimerState (imported)
 
 async function getIdleInfo(): Promise<IdleInfo> {
   const result = await chrome.storage.local.get(STORAGE_KEYS.idleInfo)
@@ -64,6 +57,11 @@ async function setIdleInfo(info: IdleInfo): Promise<void> {
   await chrome.storage.local.set({ [STORAGE_KEYS.idleInfo]: info })
 }
 
+// Removed getPomodoroState, setPomodoroState (kept local as not exported from storage?), wait these are local.
+// Removed getSettings (imported)
+
+// Removed saveTimeEntry, updateTimeEntry, getTimeEntry (using imported)
+
 async function getPomodoroState(): Promise<PomodoroState> {
   const result = await chrome.storage.local.get(STORAGE_KEYS.pomodoroState)
   return (result[STORAGE_KEYS.pomodoroState] as PomodoroState | undefined) ?? DEFAULT_POMODORO_STATE
@@ -73,11 +71,7 @@ async function setPomodoroState(state: PomodoroState): Promise<void> {
   await chrome.storage.local.set({ [STORAGE_KEYS.pomodoroState]: state })
 }
 
-async function getSettings(): Promise<Settings> {
-  const result = await chrome.storage.local.get(STORAGE_KEYS.settings)
-  const stored = result[STORAGE_KEYS.settings] as Partial<Settings> | undefined
-  return { ...DEFAULT_SETTINGS, ...stored }
-}
+// --- Time Entry Helpers ---
 
 function getElapsed(state: TimerState): number {
   if (state.status === 'running' && state.startTime) {
@@ -86,30 +80,23 @@ function getElapsed(state: TimerState): number {
   return state.elapsed
 }
 
+async function getTimeEntry(entryId: string, date: string): Promise<TimeEntry | null> {
+  const entries = await getEntries(date)
+  return entries.find(e => e.id === entryId) ?? null
+}
+
 async function saveTimeEntry(entry: TimeEntry): Promise<void> {
-  const key = STORAGE_KEYS.entries(entry.date)
-  const result = await chrome.storage.local.get(key)
-  const entries: TimeEntry[] = (result[key] as TimeEntry[] | undefined) ?? []
-  entries.push(entry)
-  await chrome.storage.local.set({ [key]: entries })
+  await saveEntry(entry)
+  void syncAll()
 }
 
 async function updateTimeEntry(entryId: string, date: string, updates: Partial<TimeEntry>): Promise<void> {
-  const key = STORAGE_KEYS.entries(date)
-  const result = await chrome.storage.local.get(key)
-  const entries: TimeEntry[] = (result[key] as TimeEntry[] | undefined) ?? []
-  const index = entries.findIndex(e => e.id === entryId)
-  if (index !== -1) {
-    entries[index] = { ...entries[index], ...updates }
-    await chrome.storage.local.set({ [key]: entries })
+  const entry = await getTimeEntry(entryId, date)
+  if (entry) {
+    const updated = { ...entry, ...updates }
+    await updateEntry(updated)
+    void syncAll()
   }
-}
-
-async function getTimeEntry(entryId: string, date: string): Promise<TimeEntry | null> {
-  const key = STORAGE_KEYS.entries(date)
-  const result = await chrome.storage.local.get(key)
-  const entries: TimeEntry[] = (result[key] as TimeEntry[] | undefined) ?? []
-  return entries.find(e => e.id === entryId) ?? null
 }
 
 function formatTimerForDisplay(ms: number): string {
@@ -774,7 +761,7 @@ chrome.tabs.onActivated.addListener(async ({ tabId }) => {
   const state = await getTimerState()
   const result = await chrome.storage.local.get('projects')
   const projects = (result['projects'] as Array<{ id: string; name: string; color: string }> | undefined) ?? []
-  chrome.tabs.sendMessage(tabId, { action: 'TIMER_SYNC', state, projects }).catch(() => {})
+  chrome.tabs.sendMessage(tabId, { action: 'TIMER_SYNC', state, projects }).catch(() => { })
 })
 
 chrome.runtime.onInstalled.addListener(async (details) => {
@@ -858,7 +845,7 @@ chrome.contextMenus.onClicked.addListener(async (info) => {
         action: 'SHOW_FLOATING_TIMER',
         state,
         projects,
-      }).catch(() => {/* tab may not have content script */})
+      }).catch(() => {/* tab may not have content script */ })
     }
   }
 

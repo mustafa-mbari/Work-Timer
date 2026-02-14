@@ -3,6 +3,7 @@ import { getToday } from '@/utils/date'
 import { getSession } from '@/auth/authState'
 import { isCurrentUserPremium } from '@/premium/featureGate'
 import { enqueue } from '@/sync/syncQueue'
+import { syncAll } from '@/sync/syncEngine'
 
 // Set to true during pull operations (pullDelta, Realtime handlers) to prevent
 // re-enqueueing changes that originated from the server (would cause sync loops).
@@ -115,7 +116,7 @@ export async function saveEntry(entry: TimeEntry): Promise<void> {
   const entries = await getEntries(entry.date)
   entries.push(entry)
   await storageSet({ [key]: entries })
-  void enqueueSyncItem('time_entries', entry.id, 'upsert', entry.date)
+  await enqueueSyncItem('time_entries', entry.id, 'upsert', entry.date)
 }
 
 export async function updateEntry(entry: TimeEntry): Promise<void> {
@@ -125,16 +126,19 @@ export async function updateEntry(entry: TimeEntry): Promise<void> {
   if (index !== -1) {
     entries[index] = entry
     await storageSet({ [key]: entries })
-    void enqueueSyncItem('time_entries', entry.id, 'upsert', entry.date)
+    await enqueueSyncItem('time_entries', entry.id, 'upsert', entry.date)
   }
 }
+
+
 
 export async function deleteEntry(id: string, date: string): Promise<void> {
   const key = KEYS.entries(date)
   const entries = await getEntries(date)
   const filtered = entries.filter(e => e.id !== id)
   await storageSet({ [key]: filtered })
-  void enqueueSyncItem('time_entries', id, 'delete', date)
+  await enqueueSyncItem('time_entries', id, 'delete', date)
+  void syncAll()
 }
 
 // --- Projects ---
@@ -149,7 +153,7 @@ export async function saveProject(project: Project): Promise<void> {
   const projects = await getProjects()
   projects.push(project)
   await storageSet({ [KEYS.projects]: projects })
-  void enqueueSyncItem('projects', project.id, 'upsert')
+  await enqueueSyncItem('projects', project.id, 'upsert')
 }
 
 export async function updateProject(project: Project): Promise<void> {
@@ -158,7 +162,7 @@ export async function updateProject(project: Project): Promise<void> {
   if (index !== -1) {
     projects[index] = project
     await storageSet({ [KEYS.projects]: projects })
-    void enqueueSyncItem('projects', project.id, 'upsert')
+    await enqueueSyncItem('projects', project.id, 'upsert')
   }
 }
 
@@ -168,7 +172,7 @@ export async function archiveProject(id: string): Promise<void> {
   if (index !== -1) {
     projects[index].archived = true
     await storageSet({ [KEYS.projects]: projects })
-    void enqueueSyncItem('projects', id, 'upsert')
+    await enqueueSyncItem('projects', id, 'upsert')
   }
 }
 
@@ -190,7 +194,7 @@ export async function saveTags(tags: Tag[]): Promise<void> {
   await storageSet({ [KEYS.tags]: tags })
   // Enqueue all tag IDs as upserts (tags are small, enqueue all on each save)
   for (const tag of tags) {
-    void enqueueSyncItem('tags', tag.id, 'upsert')
+    await enqueueSyncItem('tags', tag.id, 'upsert')
   }
 }
 

@@ -46,4 +46,6 @@ export const PRICING = {
   lifetime: 29.99,
 } as const
 
-export const WEBSITE_URL = 'https://w-timer.com'
+export const WEBSITE_URL =
+  (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_WEBSITE_URL) ||
+  'https://w-timer.com'

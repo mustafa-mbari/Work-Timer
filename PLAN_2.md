@@ -638,7 +638,7 @@ Protected section at `/admin/*`, accessible only when `profiles.role = 'admin'`.
 | **4E: Sync Engine** | Extension | ✅ Done | Sync queue, push/pull, conflict resolution, storage layer hooks, periodic sync alarm, online/offline listeners, initial sync dialog |
 | **4F: Realtime** | Extension | ✅ Done | Supabase Realtime channels, instant cross-device sync, connection lifecycle |
 | **4G: Admin** | Website | ✅ Done | Admin layout (6 pages), stats overview, user management, domain whitelist, promo codes, subscription management, global statistics |
-| **4H: Polish** | Both | ⏳ Deferred | Offline testing, large dataset sync, concurrent edits, subscription flows, promo/domain tests, performance audit |
+| **4H: Polish** | Both | ✅ Done | Sync race condition fix (await enqueue), immediate sync on mutations, sync status UI with manual trigger, initial sync dialog wired, entry card UX improvements (project-first), default "No Project" selection, env-driven URLs for local dev, pricing fixes |
 
 ---
 

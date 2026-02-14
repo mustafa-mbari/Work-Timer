@@ -13,6 +13,17 @@ export function useTags() {
 
   useEffect(() => { fetch() }, [fetch])
 
+  // Re-fetch when storage changes
+  useEffect(() => {
+    const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+      if (areaName === 'local' && changes['tags']) {
+        void fetch()
+      }
+    }
+    chrome.storage.onChanged.addListener(listener)
+    return () => chrome.storage.onChanged.removeListener(listener)
+  }, [fetch])
+
   const create = useCallback(async (name: string) => {
     const tag: Tag = { id: generateId(), name }
     const current = await getTags()

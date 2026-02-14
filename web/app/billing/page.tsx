@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import CheckoutButton from './CheckoutButton'
+import PortalButton from './PortalButton'
+import PromoCodeInput from './PromoCodeInput'
 import { PRICING } from '@shared/constants'
 
 export default async function BillingPage() {
@@ -85,16 +87,23 @@ export default async function BillingPage() {
         )}
       </div>
 
-      {/* Upgrade options (if free or wants to change plan) */}
+      {/* Upgrade options (if free) */}
       {!isPremium && (
-        <div className="rounded-2xl border border-stone-200 bg-white p-6 mb-6">
-          <h2 className="font-semibold text-stone-900 mb-4">Upgrade to Premium</h2>
-          <div className="space-y-3">
-            <CheckoutButton plan="monthly" label={`Monthly — $${PRICING.monthly}/mo`} />
-            <CheckoutButton plan="yearly" label={`Yearly — $${PRICING.yearly}/yr (Best value)`} />
-            <CheckoutButton plan="lifetime" label={`Lifetime — $${PRICING.lifetime} one-time`} />
+        <>
+          <div className="rounded-2xl border border-stone-200 bg-white p-6 mb-6">
+            <h2 className="font-semibold text-stone-900 mb-4">Upgrade to Premium</h2>
+            <div className="space-y-3">
+              <CheckoutButton plan="monthly" label={`Monthly — $${PRICING.monthly}/mo`} />
+              <CheckoutButton plan="yearly" label={`Yearly — $${PRICING.yearly}/yr (Best value)`} />
+              <CheckoutButton plan="lifetime" label={`Lifetime — $${PRICING.lifetime} one-time`} />
+            </div>
           </div>
-        </div>
+
+          <div className="rounded-2xl border border-stone-200 bg-white p-6 mb-6">
+            <h2 className="font-semibold text-stone-900 mb-4">Have a promo code?</h2>
+            <PromoCodeInput />
+          </div>
+        </>
       )}
 
       {/* Manage subscription */}
@@ -104,14 +113,7 @@ export default async function BillingPage() {
           <p className="text-sm text-stone-500 mb-4">
             Update payment method, view invoices, or cancel your subscription.
           </p>
-          <form action={`https://billing.stripe.com/p/login/test_${subscription.stripe_customer_id}`} method="POST">
-            <button
-              type="submit"
-              className="px-4 py-2 border border-stone-200 hover:bg-stone-50 text-stone-700 text-sm font-medium rounded-lg transition-colors"
-            >
-              Open Stripe Portal
-            </button>
-          </form>
+          <PortalButton />
         </div>
       )}
     </div>

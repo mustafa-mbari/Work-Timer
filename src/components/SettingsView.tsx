@@ -11,7 +11,7 @@ import ConfirmDialog from './ConfirmDialog'
 import UpgradePrompt from './UpgradePrompt'
 import { useAuth } from '@/hooks/useAuth'
 import { usePremium } from '@/hooks/usePremium'
-import { WEBSITE_URL } from '@shared/constants'
+import { WEBSITE_URL, PRICING } from '@shared/constants'
 
 type SettingsTab = 'general' | 'timer' | 'data' | 'account'
 
@@ -37,9 +37,33 @@ export default function SettingsView() {
   const [confirmArchive, setConfirmArchive] = useState<{ id: string; name: string } | null>(null)
   const [confirmDeleteTag, setConfirmDeleteTag] = useState<{ id: string; name: string } | null>(null)
 
+  const [syncing, setSyncing] = useState(false)
+  const [lastSyncAt, setLastSyncAt] = useState<string | null>(null)
+
   useEffect(() => {
     getSettings().then(setSettings)
   }, [])
+
+  // Load last sync time when on account tab
+  useEffect(() => {
+    if (tab !== 'account' || !isPremium) return
+    chrome.runtime.sendMessage({ action: 'SYNC_STATUS' }, (res) => {
+      if (res?.syncState?.lastSyncAt) setLastSyncAt(res.syncState.lastSyncAt)
+    })
+  }, [tab, isPremium])
+
+  const handleSyncNow = async () => {
+    setSyncing(true)
+    chrome.runtime.sendMessage({ action: 'SYNC_NOW' }, () => {
+      // Re-fetch status after a short delay to let sync complete
+      setTimeout(() => {
+        chrome.runtime.sendMessage({ action: 'SYNC_STATUS' }, (res) => {
+          if (res?.syncState?.lastSyncAt) setLastSyncAt(res.syncState.lastSyncAt)
+          setSyncing(false)
+        })
+      }, 3000)
+    })
+  }
 
   const handleSettingChange = async <K extends keyof Settings>(key: K, value: Settings[K]) => {
     if (!settings) return
@@ -591,7 +615,7 @@ export default function SettingsView() {
                       onClick={() => chrome.tabs.create({ url: `${WEBSITE_URL}/billing` })}
                       className="w-full bg-indigo-500 hover:bg-indigo-600 text-white py-2 rounded-xl text-sm font-medium transition-colors shadow-sm"
                     >
-                      Upgrade — $4.99/mo
+                      Upgrade — ${PRICING.monthly}/mo
                     </button>
                   </div>
                 )}
@@ -612,6 +636,30 @@ export default function SettingsView() {
                       className="mt-3 text-xs text-indigo-500 dark:text-indigo-400 hover:underline"
                     >
                       Manage billing
+                    </button>
+                  </div>
+                )}
+
+                {/* Sync Now */}
+                {isPremium && (
+                  <div className="flex items-center justify-between rounded-xl border border-stone-100 dark:border-dark-border px-4 py-3">
+                    <div>
+                      <p className="text-xs font-medium text-stone-700 dark:text-stone-300">Cloud sync</p>
+                      {lastSyncAt ? (
+                        <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-0.5">
+                          Last synced {new Date(lastSyncAt).toLocaleTimeString()}
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-0.5">Not synced yet</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={handleSyncNow}
+                      disabled={syncing}
+                      className="text-xs font-medium text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 disabled:opacity-50 flex items-center gap-1"
+                    >
+                      {syncing && <span className="w-3 h-3 border border-indigo-500 border-t-transparent rounded-full animate-spin" />}
+                      {syncing ? 'Syncing…' : 'Sync now'}
                     </button>
                   </div>
                 )}

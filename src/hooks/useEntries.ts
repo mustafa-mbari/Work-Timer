@@ -19,32 +19,39 @@ export function useEntries(date?: string) {
 
   useEffect(() => { fetch() }, [fetch])
 
-  // Re-fetch when a remote sync updates entries (Realtime or pull sync)
+  // Re-fetch when storage changes (local or remote)
   useEffect(() => {
-    const listener = (message: { action?: string; table?: string }) => {
-      if (message.action === 'SYNC_REMOTE_UPDATE' && message.table === 'time_entries') {
+    const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+      if (areaName === 'local' && changes[`entries_${targetDate}`]) {
         void fetch()
       }
     }
-    chrome.runtime.onMessage.addListener(listener)
-    return () => chrome.runtime.onMessage.removeListener(listener)
-  }, [fetch])
+    chrome.storage.onChanged.addListener(listener)
+    return () => chrome.storage.onChanged.removeListener(listener)
+  }, [targetDate, fetch])
 
   const totalDuration = entries.reduce((sum, e) => sum + e.duration, 0)
+
+  const syncNow = () => {
+    chrome.runtime.sendMessage({ action: 'SYNC_NOW' }).catch(() => { })
+  }
 
   const add = useCallback(async (entry: TimeEntry) => {
     await saveEntry(entry)
     await fetch()
+    syncNow()
   }, [fetch])
 
   const update = useCallback(async (entry: TimeEntry) => {
     await updateEntry(entry)
     await fetch()
+    syncNow()
   }, [fetch])
 
   const remove = useCallback(async (id: string) => {
     await deleteEntry(id, targetDate)
     await fetch()
+    syncNow()
   }, [fetch, targetDate])
 
   return { entries, loading, totalDuration, add, update, remove, refetch: fetch }
@@ -69,6 +76,19 @@ export function useEntriesRange(startDate: string, endDate: string) {
   }, [startDate, endDate])
 
   useEffect(() => { fetch() }, [fetch])
+
+  // Re-fetch when storage changes
+  useEffect(() => {
+    const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+      if (areaName === 'local') {
+        // If any entry key changed, refresh (simplistic but safe)
+        const hasEntryChange = Object.keys(changes).some(k => k.startsWith('entries_'))
+        if (hasEntryChange) void fetch()
+      }
+    }
+    chrome.storage.onChanged.addListener(listener)
+    return () => chrome.storage.onChanged.removeListener(listener)
+  }, [fetch])
 
   return { entries, loading, refetch: fetch }
 }

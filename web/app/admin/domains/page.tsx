@@ -1,40 +1,69 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
 
 export default function AdminDomainsPage() {
   const [domains, setDomains] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-
-  const supabase = createClient()
+  const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     fetchDomains()
   }, [])
 
   async function fetchDomains() {
-    const { data } = await supabase
-      .from('whitelisted_domains')
-      .select('*')
-      .order('created_at', { ascending: false })
-    setDomains(data ?? [])
+    const res = await fetch('/api/admin/domains')
+    const data = await res.json()
+    setDomains(data.domains ?? [])
     setLoading(false)
   }
 
   async function addDomain(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    setError(null)
+    setSubmitting(true)
+
     const formData = new FormData(e.currentTarget)
-    const domain = formData.get('domain') as string
+    const domain = (formData.get('domain') as string).trim().toLowerCase()
     const plan = formData.get('plan') as string
 
-    await (supabase.from('whitelisted_domains') as any).insert({ domain, plan, active: true })
-    e.currentTarget.reset()
+    // Client-side validation
+    if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(domain)) {
+      setError('Invalid domain format (e.g. example.com)')
+      setSubmitting(false)
+      return
+    }
+
+    if (domains.some(d => d.domain === domain)) {
+      setError('This domain is already whitelisted')
+      setSubmitting(false)
+      return
+    }
+
+    const res = await fetch('/api/admin/domains', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ domain, plan }),
+    })
+    const data = await res.json()
+
+    if (!res.ok) {
+      setError(data.error || 'Failed to add domain')
+    } else {
+      e.currentTarget.reset()
+    }
+
+    setSubmitting(false)
     await fetchDomains()
   }
 
   async function toggleActive(id: string, active: boolean) {
-    await (supabase.from('whitelisted_domains') as any).update({ active: !active }).eq('id', id)
+    await fetch('/api/admin/domains', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, active: !active }),
+    })
     await fetchDomains()
   }
 
@@ -62,11 +91,13 @@ export default function AdminDomainsPage() {
           </select>
           <button
             type="submit"
-            className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium rounded-lg transition-colors"
+            disabled={submitting}
+            className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
           >
-            Add
+            {submitting ? 'Adding…' : 'Add'}
           </button>
         </form>
+        {error && <p className="text-sm text-rose-600 mt-2">{error}</p>}
       </div>
 
       <div className="rounded-2xl border border-stone-200 bg-white overflow-hidden">

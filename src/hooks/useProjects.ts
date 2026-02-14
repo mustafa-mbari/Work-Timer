@@ -24,18 +24,22 @@ export function useProjects() {
 
   useEffect(() => { fetch() }, [fetch])
 
-  // Re-fetch when a remote sync updates projects
+  // Re-fetch when storage changes
   useEffect(() => {
-    const listener = (message: { action?: string; table?: string }) => {
-      if (message.action === 'SYNC_REMOTE_UPDATE' && message.table === 'projects') {
+    const listener = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+      if (areaName === 'local' && changes['projects']) {
         void fetch()
       }
     }
-    chrome.runtime.onMessage.addListener(listener)
-    return () => chrome.runtime.onMessage.removeListener(listener)
+    chrome.storage.onChanged.addListener(listener)
+    return () => chrome.storage.onChanged.removeListener(listener)
   }, [fetch])
 
   const activeProjects = projects.filter(p => !p.archived)
+
+  const syncNow = () => {
+    chrome.runtime.sendMessage({ action: 'SYNC_NOW' }).catch(() => { })
+  }
 
   const create = useCallback(async (name: string, color: string) => {
     const sub = await getCachedSubscription()
@@ -54,17 +58,20 @@ export function useProjects() {
     }
     await saveProject(project)
     await fetch()
+    syncNow()
     return project
   }, [fetch, projects])
 
   const update = useCallback(async (project: Project) => {
     await updateProject(project)
     await fetch()
+    syncNow()
   }, [fetch])
 
   const archive = useCallback(async (id: string) => {
     await archiveProject(id)
     await fetch()
+    syncNow()
   }, [fetch])
 
   return { projects, activeProjects, loading, create, update, archive, refetch: fetch }
