@@ -11,7 +11,8 @@ export async function getQueue(): Promise<SyncQueueItem[]> {
 export async function enqueue(
   table: SyncQueueItem['table'],
   recordId: string,
-  action: SyncQueueItem['action']
+  action: SyncQueueItem['action'],
+  date?: string
 ): Promise<void> {
   const queue = await getQueue()
 
@@ -28,6 +29,7 @@ export async function enqueue(
       table,
       recordId,
       action,
+      date,
       updatedAt: Date.now(),
     })
   }

@@ -10,6 +10,7 @@ import {
   getEntries, updateEntry, saveEntry,
   getProjects, updateProject, saveProject,
   getTags, saveTags,
+  setSuppressEnqueue,
 } from '@/storage'
 import type { SyncState } from '@/types'
 import type { DbTimeEntry, DbProject, DbTag } from '@shared/types'
@@ -87,20 +88,24 @@ export async function pushQueue(): Promise<void> {
     if (entryUpserts.length > 0) {
       const rows: Partial<DbTimeEntry>[] = []
       for (const item of entryUpserts) {
-        const found = await getAllEntriesForId(item.recordId)
+        if (!item.date) continue // skip items without date (old queue entries)
+        const entries = await getEntries(item.date)
+        const found = entries.find(e => e.id === item.recordId)
         if (found) rows.push(localEntryToDb(found, session.userId))
       }
       if (rows.length > 0) {
-        await supabase.from('time_entries').upsert(rows as any)
+        const { error } = await supabase.from('time_entries').upsert(rows as any)
+        if (error) throw new Error(`Sync push failed (entries upsert): ${error.message}`)
       }
     }
 
     // Push time entry deletes (soft delete)
     if (entryDeletes.length > 0) {
-      await (supabase.from('time_entries') as any)
+      const { error } = await (supabase.from('time_entries') as any)
         .update({ deleted_at: new Date().toISOString() })
         .in('id', entryDeletes.map(item => item.recordId))
         .eq('user_id', session.userId)
+      if (error) throw new Error(`Sync push failed (entries delete): ${error.message}`)
     }
 
     // Push project upserts
@@ -111,16 +116,18 @@ export async function pushQueue(): Promise<void> {
         .filter(Boolean)
         .map(p => localProjectToDb(p!, session.userId))
       if (rows.length > 0) {
-        await supabase.from('projects').upsert(rows as any)
+        const { error } = await supabase.from('projects').upsert(rows as any)
+        if (error) throw new Error(`Sync push failed (projects upsert): ${error.message}`)
       }
     }
 
     // Push project deletes (soft delete)
     if (projectDeletes.length > 0) {
-      await (supabase.from('projects') as any)
+      const { error } = await (supabase.from('projects') as any)
         .update({ deleted_at: new Date().toISOString() })
         .in('id', projectDeletes.map(item => item.recordId))
         .eq('user_id', session.userId)
+      if (error) throw new Error(`Sync push failed (projects delete): ${error.message}`)
     }
 
     // Push tag upserts
@@ -133,28 +140,13 @@ export async function pushQueue(): Promise<void> {
         updated_at: new Date().toISOString(),
       }))
       if (rows.length > 0) {
-        await supabase.from('tags').upsert(rows as any)
+        const { error } = await supabase.from('tags').upsert(rows as any)
+        if (error) throw new Error(`Sync push failed (tags upsert): ${error.message}`)
       }
     }
 
     await dequeue(batch.map(item => item.id))
   }
-}
-
-// Helper: find a time entry by ID across all dates
-async function getAllEntriesForId(recordId: string) {
-  // Entry IDs are nanoids, not date-prefixed. We need to search by getting all
-  // entries for the relevant date from the queue item's stored date.
-  // Since the queue item stores only the recordId (entry ID), we search storage.
-  const result = await chrome.storage.local.get(null)
-  for (const [key, value] of Object.entries(result)) {
-    if (!key.startsWith('entries_')) continue
-    const entries = value as Array<{ id: string }> | undefined
-    if (!entries) continue
-    const found = entries.find(e => e.id === recordId)
-    if (found) return found as Parameters<typeof localEntryToDb>[0]
-  }
-  return null
 }
 
 // --- Pull (Supabase → local) ---
@@ -174,71 +166,84 @@ export async function pullDelta(): Promise<void> {
     .eq('user_id', session.userId)
     .gt('updated_at', since)
 
-  if (remoteEntries) {
-    for (const remote of remoteEntries as DbTimeEntry[]) {
-      if (remote.deleted_at) {
-        // Soft-deleted remotely — remove from local
-        const local = await getEntries(remote.date)
-        const filtered = local.filter(e => e.id !== remote.id)
-        if (filtered.length !== local.length) {
-          await chrome.storage.local.set({ [`entries_${remote.date}`]: filtered })
-        }
-      } else {
-        // Upsert locally
-        const localEntry = dbEntryToLocal(remote)
-        const existing = (await getEntries(localEntry.date)).find(e => e.id === localEntry.id)
-        if (existing) {
-          await updateEntry(localEntry)
+  // Suppress enqueue during pull — remote changes must not loop back to the queue
+  setSuppressEnqueue(true)
+  try {
+    if (remoteEntries) {
+      for (const remote of remoteEntries as DbTimeEntry[]) {
+        if (remote.deleted_at) {
+          // Soft-deleted remotely — remove from local
+          const local = await getEntries(remote.date)
+          const filtered = local.filter(e => e.id !== remote.id)
+          if (filtered.length !== local.length) {
+            await chrome.storage.local.set({ [`entries_${remote.date}`]: filtered })
+          }
         } else {
-          await saveEntry(localEntry)
+          // Upsert locally
+          const localEntry = dbEntryToLocal(remote)
+          const existing = (await getEntries(localEntry.date)).find(e => e.id === localEntry.id)
+          if (existing) {
+            await updateEntry(localEntry)
+          } else {
+            await saveEntry(localEntry)
+          }
         }
       }
     }
-  }
 
-  // Pull projects
-  const { data: remoteProjects } = await supabase
-    .from('projects')
-    .select('*')
-    .eq('user_id', session.userId)
-    .gt('updated_at', since)
+    // Pull projects
+    const { data: remoteProjects } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('user_id', session.userId)
+      .gt('updated_at', since)
 
-  if (remoteProjects) {
-    const localProjects = await getProjects()
-    for (const remote of remoteProjects as DbProject[]) {
-      if (remote.deleted_at) continue // archived via deleted_at; we use archived flag
-      const localProject = dbProjectToLocal(remote)
-      const existing = localProjects.find(p => p.id === localProject.id)
-      if (existing) {
-        await updateProject(localProject)
-      } else {
-        await saveProject(localProject)
+    if (remoteProjects) {
+      const localProjects = await getProjects()
+      for (const remote of remoteProjects as DbProject[]) {
+        if (remote.deleted_at) {
+          // Project deleted on another device — archive locally
+          const existing = localProjects.find(p => p.id === remote.id)
+          if (existing && !existing.archived) {
+            await updateProject({ ...existing, archived: true })
+          }
+          continue
+        }
+        const localProject = dbProjectToLocal(remote)
+        const existing = localProjects.find(p => p.id === localProject.id)
+        if (existing) {
+          await updateProject(localProject)
+        } else {
+          await saveProject(localProject)
+        }
       }
     }
-  }
 
-  // Pull tags
-  const { data: remoteTags } = await supabase
-    .from('tags')
-    .select('*')
-    .eq('user_id', session.userId)
-    .gt('updated_at', since)
+    // Pull tags
+    const { data: remoteTags } = await supabase
+      .from('tags')
+      .select('*')
+      .eq('user_id', session.userId)
+      .gt('updated_at', since)
 
-  if (remoteTags) {
-    const localTags = await getTags()
-    const mergedTags = [...localTags]
-    for (const remote of remoteTags as DbTag[]) {
-      if (remote.deleted_at) {
-        const idx = mergedTags.findIndex(t => t.id === remote.id)
-        if (idx !== -1) mergedTags.splice(idx, 1)
-      } else {
-        const localTag = dbTagToLocal(remote)
-        const existing = mergedTags.find(t => t.id === localTag.id)
-        if (!existing) mergedTags.push(localTag)
-        else existing.name = localTag.name
+    if (remoteTags) {
+      const localTags = await getTags()
+      const mergedTags = [...localTags]
+      for (const remote of remoteTags as DbTag[]) {
+        if (remote.deleted_at) {
+          const idx = mergedTags.findIndex(t => t.id === remote.id)
+          if (idx !== -1) mergedTags.splice(idx, 1)
+        } else {
+          const localTag = dbTagToLocal(remote)
+          const existing = mergedTags.find(t => t.id === localTag.id)
+          if (!existing) mergedTags.push(localTag)
+          else existing.name = localTag.name
+        }
       }
+      await saveTags(mergedTags)
     }
-    await saveTags(mergedTags)
+  } finally {
+    setSuppressEnqueue(false)
   }
 
   await setLastSync(now)

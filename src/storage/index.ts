@@ -4,15 +4,25 @@ import { getSession } from '@/auth/authState'
 import { isCurrentUserPremium } from '@/premium/featureGate'
 import { enqueue } from '@/sync/syncQueue'
 
+// Set to true during pull operations (pullDelta, Realtime handlers) to prevent
+// re-enqueueing changes that originated from the server (would cause sync loops).
+let suppressEnqueue = false
+
+export function setSuppressEnqueue(val: boolean): void {
+  suppressEnqueue = val
+}
+
 async function enqueueSyncItem(
   table: 'time_entries' | 'projects' | 'tags',
   recordId: string,
-  action: 'upsert' | 'delete'
+  action: 'upsert' | 'delete',
+  date?: string
 ): Promise<void> {
+  if (suppressEnqueue) return
   // Only enqueue if user is authenticated and on premium plan
   const [session, premium] = await Promise.all([getSession(), isCurrentUserPremium()])
   if (!session || !premium) return
-  await enqueue(table, recordId, action)
+  await enqueue(table, recordId, action, date)
 }
 
 const KEYS = {
@@ -38,7 +48,7 @@ async function storageSet(data: Record<string, unknown>): Promise<void> {
       return
     } catch (err) {
       if (isQuotaError(err)) {
-        window.dispatchEvent(new CustomEvent('storage-quota-exceeded'))
+        self.dispatchEvent(new CustomEvent('storage-quota-exceeded'))
         throw err
       }
       if (attempt === MAX - 1) throw err
@@ -105,7 +115,7 @@ export async function saveEntry(entry: TimeEntry): Promise<void> {
   const entries = await getEntries(entry.date)
   entries.push(entry)
   await storageSet({ [key]: entries })
-  void enqueueSyncItem('time_entries', entry.id, 'upsert')
+  void enqueueSyncItem('time_entries', entry.id, 'upsert', entry.date)
 }
 
 export async function updateEntry(entry: TimeEntry): Promise<void> {
@@ -115,7 +125,7 @@ export async function updateEntry(entry: TimeEntry): Promise<void> {
   if (index !== -1) {
     entries[index] = entry
     await storageSet({ [key]: entries })
-    void enqueueSyncItem('time_entries', entry.id, 'upsert')
+    void enqueueSyncItem('time_entries', entry.id, 'upsert', entry.date)
   }
 }
 
@@ -124,7 +134,7 @@ export async function deleteEntry(id: string, date: string): Promise<void> {
   const entries = await getEntries(date)
   const filtered = entries.filter(e => e.id !== id)
   await storageSet({ [key]: filtered })
-  void enqueueSyncItem('time_entries', id, 'delete')
+  void enqueueSyncItem('time_entries', id, 'delete', date)
 }
 
 // --- Projects ---

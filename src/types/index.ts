@@ -108,6 +108,7 @@ export interface SyncQueueItem {
   recordId: string     // Local entity ID
   action: 'upsert' | 'delete'
   updatedAt: number    // Unix ms timestamp
+  date?: string        // YYYY-MM-DD — for time_entries, enables O(1) lookup instead of full scan
 }
 
 export type SyncStatus = 'idle' | 'syncing' | 'error' | 'offline'

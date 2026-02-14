@@ -99,7 +99,7 @@ export interface DbPromoCode {
   id: string
   code: string
   discount_pct: number
-  plan: 'premium_monthly' | 'premium_yearly'
+  plan: 'premium_monthly' | 'premium_yearly' | 'premium_lifetime'
   max_uses: number | null
   current_uses: number
   valid_from: string
@@ -109,10 +109,17 @@ export interface DbPromoCode {
   created_by: string | null
 }
 
+export interface DbPromoRedemption {
+  id: string
+  promo_code_id: string
+  user_id: string
+  redeemed_at: string
+}
+
 export interface DbWhitelistedDomain {
   id: string
   domain: string
-  plan: 'premium_monthly' | 'premium_yearly'
+  plan: 'premium_monthly' | 'premium_yearly' | 'premium_lifetime'
   notes: string | null
   active: boolean
   created_at: string
@@ -131,6 +138,7 @@ export type Database = {
       user_settings: { Row: DbUserSettings; Insert: Partial<DbUserSettings>; Update: Partial<DbUserSettings> }
       sync_cursors: { Row: DbSyncCursor; Insert: Partial<DbSyncCursor>; Update: Partial<DbSyncCursor> }
       promo_codes: { Row: DbPromoCode; Insert: Partial<DbPromoCode>; Update: Partial<DbPromoCode> }
+      promo_redemptions: { Row: DbPromoRedemption; Insert: Partial<DbPromoRedemption>; Update: Partial<DbPromoRedemption> }
       whitelisted_domains: { Row: DbWhitelistedDomain; Insert: Partial<DbWhitelistedDomain>; Update: Partial<DbWhitelistedDomain> }
     }
     Views: Record<string, never>

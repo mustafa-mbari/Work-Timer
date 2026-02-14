@@ -4,6 +4,7 @@ import { dbEntryToLocal, dbProjectToLocal } from './conflictResolver'
 import {
   getEntries, saveEntry, updateEntry,
   getProjects, saveProject, updateProject,
+  setSuppressEnqueue,
 } from '@/storage'
 import type { DbTimeEntry, DbProject } from '@shared/types'
 
@@ -19,21 +20,26 @@ async function handleTimeEntryChange(payload: ChangePayload<DbTimeEntry>): Promi
   const remote = payload.new
   if (!remote?.id) return
 
-  if (remote.deleted_at) {
-    // Soft-deleted: remove from local storage
-    const local = await getEntries(remote.date)
-    const filtered = local.filter(e => e.id !== remote.id)
-    if (filtered.length !== local.length) {
-      await chrome.storage.local.set({ [`entries_${remote.date}`]: filtered })
-    }
-  } else {
-    const localEntry = dbEntryToLocal(remote)
-    const existing = (await getEntries(localEntry.date)).find(e => e.id === localEntry.id)
-    if (existing) {
-      await updateEntry(localEntry)
+  setSuppressEnqueue(true)
+  try {
+    if (remote.deleted_at) {
+      // Soft-deleted: remove from local storage
+      const local = await getEntries(remote.date)
+      const filtered = local.filter(e => e.id !== remote.id)
+      if (filtered.length !== local.length) {
+        await chrome.storage.local.set({ [`entries_${remote.date}`]: filtered })
+      }
     } else {
-      await saveEntry(localEntry)
+      const localEntry = dbEntryToLocal(remote)
+      const existing = (await getEntries(localEntry.date)).find(e => e.id === localEntry.id)
+      if (existing) {
+        await updateEntry(localEntry)
+      } else {
+        await saveEntry(localEntry)
+      }
     }
+  } finally {
+    setSuppressEnqueue(false)
   }
 
   // Notify popup to re-fetch
@@ -44,14 +50,26 @@ async function handleProjectChange(payload: ChangePayload<DbProject>): Promise<v
   const remote = payload.new
   if (!remote?.id) return
 
-  if (!remote.deleted_at) {
-    const localProject = dbProjectToLocal(remote)
-    const existing = (await getProjects()).find(p => p.id === localProject.id)
-    if (existing) {
-      await updateProject(localProject)
+  setSuppressEnqueue(true)
+  try {
+    if (remote.deleted_at) {
+      // Project deleted on another device — archive locally
+      const localProjects = await getProjects()
+      const existing = localProjects.find(p => p.id === remote.id)
+      if (existing && !existing.archived) {
+        await updateProject({ ...existing, archived: true })
+      }
     } else {
-      await saveProject(localProject)
+      const localProject = dbProjectToLocal(remote)
+      const existing = (await getProjects()).find(p => p.id === localProject.id)
+      if (existing) {
+        await updateProject(localProject)
+      } else {
+        await saveProject(localProject)
+      }
     }
+  } finally {
+    setSuppressEnqueue(false)
   }
 
   // Notify popup to re-fetch
