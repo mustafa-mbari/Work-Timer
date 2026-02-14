@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AnalyticsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -24,6 +26,7 @@ export default async function AnalyticsPage() {
   const { data: entries } = await (supabase.from('time_entries') as any)
     .select('*')
     .eq('user_id', user.id)
+    .is('deleted_at', null)
     .order('date', { ascending: false })
     .limit(1000)
 

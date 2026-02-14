@@ -101,8 +101,9 @@ export async function pushQueue(): Promise<void> {
 
     // Push time entry deletes (soft delete)
     if (entryDeletes.length > 0) {
+      const now = new Date().toISOString()
       const { error } = await (supabase.from('time_entries') as any)
-        .update({ deleted_at: new Date().toISOString() })
+        .update({ deleted_at: now, updated_at: now })
         .in('id', entryDeletes.map(item => item.recordId))
         .eq('user_id', session.userId)
       if (error) throw new Error(`Sync push failed (entries delete): ${error.message}`)
@@ -123,8 +124,9 @@ export async function pushQueue(): Promise<void> {
 
     // Push project deletes (soft delete)
     if (projectDeletes.length > 0) {
+      const now = new Date().toISOString()
       const { error } = await (supabase.from('projects') as any)
-        .update({ deleted_at: new Date().toISOString() })
+        .update({ deleted_at: now, updated_at: now })
         .in('id', projectDeletes.map(item => item.recordId))
         .eq('user_id', session.userId)
       if (error) throw new Error(`Sync push failed (projects delete): ${error.message}`)

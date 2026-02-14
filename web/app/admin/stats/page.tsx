@@ -1,5 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/server'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminStatsPage() {
   const supabase = await createServiceClient()
 
@@ -33,12 +35,15 @@ export default async function AdminStatsPage() {
   ] = await Promise.all([
     (supabase.from('time_entries') as any)
       .select('user_id')
+      .is('deleted_at', null)
       .gte('created_at', dayAgo),
     (supabase.from('time_entries') as any)
       .select('user_id')
+      .is('deleted_at', null)
       .gte('created_at', weekAgo),
     (supabase.from('time_entries') as any)
       .select('user_id')
+      .is('deleted_at', null)
       .gte('created_at', monthAgo),
   ])
 
@@ -49,11 +54,13 @@ export default async function AdminStatsPage() {
   // Total entries count (head-only, no data transfer)
   const { count: totalEntries } = await (supabase.from('time_entries') as any)
     .select('*', { count: 'exact', head: true })
+    .is('deleted_at', null)
   const entryCount = totalEntries || 0
 
   // Total hours — fetch only duration column
   const { data: durationData } = await (supabase.from('time_entries') as any)
     .select('duration')
+    .is('deleted_at', null)
 
   const totalHours = durationData?.reduce((sum: number, e: any) => sum + (e.duration / 3600000), 0) || 0
   const avgEntriesPerUser = userCount > 0 ? (entryCount / userCount).toFixed(1) : '0'
@@ -62,6 +69,7 @@ export default async function AdminStatsPage() {
   // Recent entries count (last 30 days)
   const { count: recentCount } = await (supabase.from('time_entries') as any)
     .select('*', { count: 'exact', head: true })
+    .is('deleted_at', null)
     .gte('date', thirtyDaysAgoDate)
   const avgEntriesPerDay = recentCount ? (recentCount / 30).toFixed(1) : '0'
 

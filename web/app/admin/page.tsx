@@ -1,5 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/server'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminOverviewPage() {
   const supabase = await createServiceClient()
 
@@ -10,7 +12,7 @@ export default async function AdminOverviewPage() {
     { data: recentUsers },
   ] = await Promise.all([
     (supabase.from('profiles') as any).select('*', { count: 'exact', head: true }),
-    (supabase.from('subscriptions') as any).select('*', { count: 'exact', head: true }).neq('plan', 'free'),
+    (supabase.from('subscriptions') as any).select('*', { count: 'exact', head: true }).neq('plan', 'free').eq('status', 'active'),
     (supabase.from('profiles') as any).select('email, created_at').order('created_at', { ascending: false }).limit(5),
   ])
 
