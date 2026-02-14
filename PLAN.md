@@ -8,6 +8,42 @@
 
 ## Recent Updates & Bug Fixes
 
+### 2026-02-14 (Code Quality & UX Polish)
+- **Week 1 — Constants & Performance:**
+  - Extracted `PROJECT_COLORS` to `src/constants/colors.ts` (eliminated duplication across 3 files)
+  - Extracted timer constants to `src/constants/timers.ts` (POMODORO_WORK_MS, IDLE_THRESHOLD_MS)
+  - Extracted shared CSS classes to `src/constants/styles.ts` (inputClass, labelClass variants)
+  - Added `useMemo` to EntryList sort and WeekView days calculation (performance optimization)
+  - Added saving states to modal save buttons (prevents double-saves, shows "Saving..." feedback)
+  - Added error handling with toast notifications for export failures
+  - Fixed silent export failure when no entries exist
+- **Week 2 — Architecture Cleanup:**
+  - Unified `DEFAULT_SETTINGS` to single source in `storage/index.ts` (eliminates drift risk)
+  - Extracted `background/storage.ts` module (~110 lines: timer state, settings, entries CRUD)
+  - Extracted `background/ui.ts` module (~140 lines: badge, tab title, broadcasts)
+  - Added structured logging utility (`utils/logger.ts`) with timestamped, leveled logging
+  - Background.js reduced from 12.76 kB → 12.51 kB
+- **Week 3 — UX Polish:**
+  - Added reusable `ConfirmDialog` component with danger/warning/info variants
+  - Added confirmation before project archive and tag delete (prevents accidental data loss)
+  - Added ESC key support to all modals (AddEntryModal, EntryEditModal, ConfirmDialog)
+  - Added `errorMessages` utility translating technical errors to user-friendly messages
+  - Updated `ErrorBoundary` to use logger and show helpful errors (network, storage, permission)
+  - Added reusable `Spinner` component (sm/md/lg) with LoadingOverlay and LoadingState
+  - Added loading state to WeekView ("Loading week data..." with spinner)
+- **Week 4 — Timer Input Enhancements:**
+  - **Fixed:** Project selector now displays color dots in dropdown list (replaced native `<select>` with custom dropdown component)
+  - **Added:** Input tabs in TimerView (Description, Work Type, Link) for Stopwatch and Manual modes
+    - Tab switching UI below project selector (Description is default)
+    - Work Type tab uses existing Tags system with dropdown selector
+    - Link tab for attaching URLs to time entries
+    - All three fields saved together when timer stops or manual entry is saved
+    - Fields cleared after successful save
+  - **Enhanced:** Floating timer widget now displays both project name and description
+    - Format: `"Project Name • Description"` when both exist
+    - Falls back to project only, description only, or "No project" as appropriate
+    - Project color applied to text when available
+
 ### 2026-02-12 (Entry & Week Enhancements)
 - **Added:** Date picker on manual entry mode — save records to any date (defaults to today)
 - **Added:** Week tab — `+` button on each day card opens `AddEntryModal` for that date

@@ -3,6 +3,7 @@ import type { TimerMode } from '@/types'
 import { useTimer } from '@/hooks/useTimer'
 import { useProjects } from '@/hooks/useProjects'
 import { useEntries } from '@/hooks/useEntries'
+import { useTags } from '@/hooks/useTags'
 import { formatDuration, formatDurationShort, getToday } from '@/utils/date'
 import { generateId } from '@/utils/id'
 import { useSettings } from '@/hooks/useSettings'
@@ -13,6 +14,7 @@ import GoalProgress from './GoalProgress'
 import { PlayIcon, PauseIcon, StopIcon, SkipIcon } from './Icons'
 
 type ExtendedMode = TimerMode | 'pomodoro'
+type InputTab = 'description' | 'workType' | 'link'
 
 export default function TimerView() {
   const {
@@ -22,11 +24,15 @@ export default function TimerView() {
   } = useTimer()
   const { activeProjects } = useProjects()
   const { entries, totalDuration, add, update, remove, refetch: refetchEntries } = useEntries()
+  const { tags } = useTags()
   const { settings } = useSettings()
 
   const [mode, setMode] = useState<ExtendedMode>('stopwatch')
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(state.projectId)
   const [description, setDescription] = useState(state.description)
+  const [selectedTagId, setSelectedTagId] = useState<string>('')
+  const [link, setLink] = useState<string>('')
+  const [activeTab, setActiveTab] = useState<InputTab>('description')
 
   // Manual mode fields
   const [manualInputType, setManualInputType] = useState<'timeRange' | 'duration'>('timeRange')
@@ -57,14 +63,32 @@ export default function TimerView() {
   const handleStop = async () => {
     if (pomodoroState.active) {
       const response = await stopPomodoro()
-      if (response.success) {
+      if (response.success && response.entry) {
+        // Update entry with tags and link
+        const tagsArray = selectedTagId ? [selectedTagId] : []
+        await update({
+          ...response.entry,
+          tags: tagsArray,
+          link: link.trim() || undefined,
+        })
         setDescription('')
+        setSelectedTagId('')
+        setLink('')
         refetchEntries()
       }
     } else {
       const response = await stop()
-      if (response.success) {
+      if (response.success && response.entry) {
+        // Update entry with tags and link
+        const tagsArray = selectedTagId ? [selectedTagId] : []
+        await update({
+          ...response.entry,
+          tags: tagsArray,
+          link: link.trim() || undefined,
+        })
         setDescription('')
+        setSelectedTagId('')
+        setLink('')
         refetchEntries()
       }
     }
@@ -105,6 +129,8 @@ export default function TimerView() {
       startTime = endTime - duration
     }
 
+    const tagsArray = selectedTagId ? [selectedTagId] : []
+
     await add({
       id: generateId(),
       date: manualDate,
@@ -115,7 +141,8 @@ export default function TimerView() {
       taskId: null,
       description,
       type: 'manual',
-      tags: [],
+      tags: tagsArray,
+      link: link.trim() || undefined,
     })
 
     setManualDate(getToday())
@@ -124,6 +151,8 @@ export default function TimerView() {
     setManualHours('')
     setManualMinutes('')
     setDescription('')
+    setSelectedTagId('')
+    setLink('')
   }
 
   const handleContinue = async (entryId: string, projectId: string | null, desc: string) => {
@@ -356,16 +385,80 @@ export default function TimerView() {
         disabled={isActive}
       />
 
-      {/* Description */}
-      <input
-        type="text"
-        placeholder="What are you working on?"
-        value={isActive ? state.description : description}
-        onChange={(e) => setDescription(e.target.value)}
-        disabled={isActive}
-        className="border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-600 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400 disabled:opacity-50"
-        aria-label="Task description"
-      />
+      {/* Input Tabs (only for stopwatch and manual modes) */}
+      {mode !== 'pomodoro' && (
+        <div className="flex gap-1 bg-stone-100 dark:bg-dark-card rounded-lg p-1">
+          {(['description', 'workType', 'link'] as InputTab[]).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              disabled={isActive}
+              className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-all ${
+                activeTab === tab
+                  ? 'bg-white dark:bg-dark-elevated text-stone-900 dark:text-stone-100 shadow-sm'
+                  : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
+              } ${isActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+              aria-label={`${tab} input`}
+            >
+              {tab === 'description' ? 'Description' : tab === 'workType' ? 'Work Type' : 'Link'}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Input Fields based on active tab */}
+      {mode === 'pomodoro' ? (
+        <input
+          type="text"
+          placeholder="What are you working on?"
+          value={isActive ? state.description : description}
+          onChange={(e) => setDescription(e.target.value)}
+          disabled={isActive}
+          className="border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-600 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400 disabled:opacity-50"
+          aria-label="Task description"
+        />
+      ) : (
+        <>
+          {activeTab === 'description' && (
+            <input
+              type="text"
+              placeholder="What are you working on?"
+              value={isActive ? state.description : description}
+              onChange={(e) => setDescription(e.target.value)}
+              disabled={isActive}
+              className="border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-600 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400 disabled:opacity-50"
+              aria-label="Task description"
+            />
+          )}
+          {activeTab === 'workType' && (
+            <select
+              value={selectedTagId}
+              onChange={(e) => setSelectedTagId(e.target.value)}
+              disabled={isActive}
+              className="w-full border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400 disabled:opacity-50"
+              aria-label="Select work type"
+            >
+              <option value="">No Type</option>
+              {tags.map((tag) => (
+                <option key={tag.id} value={tag.id}>
+                  {tag.name}
+                </option>
+              ))}
+            </select>
+          )}
+          {activeTab === 'link' && (
+            <input
+              type="url"
+              placeholder="https://..."
+              value={link}
+              onChange={(e) => setLink(e.target.value)}
+              disabled={isActive}
+              className="border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-600 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400 disabled:opacity-50"
+              aria-label="Link URL"
+            />
+          )}
+        </>
+      )}
 
       {/* Action Buttons */}
       {mode === 'manual' ? (

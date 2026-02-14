@@ -423,7 +423,20 @@ function updateWidget(state: TimerState, projs: Project[]): void {
   timerEl.textContent = formatTime(getElapsed(state))
 
   const project = projs.find(p => p.id === state.projectId)
-  projectEl.textContent = state.description || project?.name || 'No project'
+
+  // Show both project and description when available
+  let displayText = ''
+  if (project && state.description) {
+    displayText = `${project.name} • ${state.description}`
+  } else if (state.description) {
+    displayText = state.description
+  } else if (project) {
+    displayText = project.name
+  } else {
+    displayText = 'No project'
+  }
+
+  projectEl.textContent = displayText
   projectEl.style.color = project ? project.color : 'rgba(165, 180, 252, 0.8)'
 
   if (state.status === 'running') {
