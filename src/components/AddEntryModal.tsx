@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { XIcon, PlusIcon } from './Icons'
 import { useProjects } from '@/hooks/useProjects'
 import { useTags } from '@/hooks/useTags'
@@ -36,6 +36,15 @@ export default function AddEntryModal({ date: initialDate, onSave, onClose }: Ad
   const [newProjectName, setNewProjectName] = useState('')
   const [showNewTag, setShowNewTag] = useState(false)
   const [newTagName, setNewTagName] = useState('')
+
+  // ESC key to close
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
 
   const handleAddProject = async () => {
     if (!newProjectName.trim()) return

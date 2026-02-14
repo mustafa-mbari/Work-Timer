@@ -7,6 +7,7 @@ import { useTheme, THEMES } from '@/hooks/useTheme'
 import { MonitorIcon, PlusIcon, XIcon } from './Icons'
 import { PROJECT_COLORS } from '@/constants/colors'
 import { inputClass, labelClass } from '@/constants/styles'
+import ConfirmDialog from './ConfirmDialog'
 
 type SettingsTab = 'general' | 'timer' | 'data'
 
@@ -25,6 +26,9 @@ export default function SettingsView() {
 
   const [newTagName, setNewTagName] = useState('')
   const [editingTag, setEditingTag] = useState<{ id: string; name: string } | null>(null)
+
+  const [confirmArchive, setConfirmArchive] = useState<{ id: string; name: string } | null>(null)
+  const [confirmDeleteTag, setConfirmDeleteTag] = useState<{ id: string; name: string } | null>(null)
 
   useEffect(() => {
     getSettings().then(setSettings)
@@ -384,7 +388,7 @@ export default function SettingsView() {
                         Edit
                       </button>
                       <button
-                        onClick={() => archive(project.id)}
+                        onClick={() => setConfirmArchive({ id: project.id, name: project.name })}
                         className="text-[10px] font-medium text-stone-400 dark:text-stone-500 hover:text-rose-500 dark:hover:text-rose-400 px-1.5 py-0.5 rounded transition-colors"
                         aria-label={`Archive ${project.name}`}
                       >
@@ -493,7 +497,7 @@ export default function SettingsView() {
                         Edit
                       </button>
                       <button
-                        onClick={() => removeTag(tag.id)}
+                        onClick={() => setConfirmDeleteTag({ id: tag.id, name: tag.name })}
                         className="text-[10px] font-medium text-stone-400 dark:text-stone-500 hover:text-rose-500 dark:hover:text-rose-400 px-1.5 py-0.5 rounded transition-colors"
                         aria-label={`Delete ${tag.name}`}
                       >
@@ -533,6 +537,38 @@ export default function SettingsView() {
         )}
 
       </div>
+
+      <ConfirmDialog
+        isOpen={!!confirmArchive}
+        title="Archive Project?"
+        message={`Are you sure you want to archive "${confirmArchive?.name}"? You can restore it later from the archived projects section.`}
+        confirmText="Archive"
+        cancelText="Cancel"
+        variant="warning"
+        onConfirm={() => {
+          if (confirmArchive) {
+            archive(confirmArchive.id)
+            setConfirmArchive(null)
+          }
+        }}
+        onCancel={() => setConfirmArchive(null)}
+      />
+
+      <ConfirmDialog
+        isOpen={!!confirmDeleteTag}
+        title="Delete Work Type?"
+        message={`Are you sure you want to delete "${confirmDeleteTag?.name}"? This will remove it from all entries that use it.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={() => {
+          if (confirmDeleteTag) {
+            removeTag(confirmDeleteTag.id)
+            setConfirmDeleteTag(null)
+          }
+        }}
+        onCancel={() => setConfirmDeleteTag(null)}
+      />
     </div>
   )
 }

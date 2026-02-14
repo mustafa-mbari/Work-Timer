@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { TimeEntry } from '@/types'
 import { XIcon, PlusIcon } from './Icons'
 import { useProjects } from '@/hooks/useProjects'
@@ -60,6 +60,15 @@ export default function EntryEditModal({ entry, onSave, onDelete, onClose }: Ent
   const [newProjectName, setNewProjectName] = useState('')
   const [showNewTag, setShowNewTag] = useState(false)
   const [newTagName, setNewTagName] = useState('')
+
+  // ESC key to close
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !confirmDelete) onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose, confirmDelete])
 
   const handleAddProject = async () => {
     if (!newProjectName.trim()) return
