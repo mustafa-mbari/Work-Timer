@@ -6,11 +6,15 @@ import { getWeekRange, getWeekDays, formatDate, formatDurationShort, msToHours }
 import { format, addMonths } from 'date-fns'
 import ExportMenu from './ExportMenu'
 import CalendarHeatmap from './CalendarHeatmap'
+import { usePremium } from '@/hooks/usePremium'
+import UpgradePrompt from './UpgradePrompt'
 
 export default function StatsView() {
   const { entries: todayEntries, totalDuration: todayTotal } = useEntries()
   const { activeProjects } = useProjects()
   const [monthOffset, setMonthOffset] = useState(0)
+  const [showUpgrade, setShowUpgrade] = useState(false)
+  const { isPremium } = usePremium()
   const displayDate = addMonths(new Date(), monthOffset)
   const displayYear = displayDate.getFullYear()
   const displayMonth = displayDate.getMonth()
@@ -147,16 +151,36 @@ export default function StatsView() {
         </div>
       )}
 
-      {/* Monthly Overview Heatmap */}
-      <div>
-        <h3 className="text-[11px] font-medium text-stone-400 dark:text-stone-500 mb-2.5 uppercase tracking-wider">Monthly Overview</h3>
-        <CalendarHeatmap
-          year={displayYear}
-          month={displayMonth}
-          onPrev={() => setMonthOffset(o => o - 1)}
-          onNext={() => setMonthOffset(o => o + 1)}
-        />
-      </div>
+      {/* Monthly Overview Heatmap — Premium only */}
+      {isPremium ? (
+        <div>
+          <h3 className="text-[11px] font-medium text-stone-400 dark:text-stone-500 mb-2.5 uppercase tracking-wider">Monthly Overview</h3>
+          <CalendarHeatmap
+            year={displayYear}
+            month={displayMonth}
+            onPrev={() => setMonthOffset(o => o - 1)}
+            onNext={() => setMonthOffset(o => o + 1)}
+          />
+        </div>
+      ) : (
+        <div>
+          <h3 className="text-[11px] font-medium text-stone-400 dark:text-stone-500 mb-2.5 uppercase tracking-wider">Monthly Overview</h3>
+          <button
+            onClick={() => setShowUpgrade(true)}
+            className="w-full rounded-xl border border-dashed border-stone-200 dark:border-dark-border p-4 flex flex-col items-center gap-2 text-center hover:bg-stone-50 dark:hover:bg-dark-hover transition-colors"
+          >
+            <svg className="w-5 h-5 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            <span className="text-xs font-medium text-stone-500 dark:text-stone-400">Advanced analytics available with Premium</span>
+          </button>
+          <UpgradePrompt
+            isOpen={showUpgrade}
+            feature="Monthly heatmap & advanced analytics"
+            onClose={() => setShowUpgrade(false)}
+          />
+        </div>
+      )}
     </div>
   )
 }

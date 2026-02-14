@@ -84,6 +84,41 @@ export interface PomodoroState {
   totalWorkTime: number // ms
 }
 
+// Auth
+export interface AuthSession {
+  userId: string
+  email: string
+  accessToken: string
+  refreshToken: string
+  expiresAt: number // Unix timestamp seconds
+}
+
+export interface SubscriptionInfo {
+  plan: 'free' | 'premium_monthly' | 'premium_yearly' | 'premium_lifetime'
+  status: 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete'
+  currentPeriodEnd: string | null // ISO datetime
+  cancelAtPeriodEnd: boolean
+  grantedBy: 'stripe' | 'domain' | 'promo' | 'admin_manual' | null
+}
+
+// Cloud sync
+export interface SyncQueueItem {
+  id: string           // nanoid
+  table: 'time_entries' | 'projects' | 'tags' | 'user_settings'
+  recordId: string     // Local entity ID
+  action: 'upsert' | 'delete'
+  updatedAt: number    // Unix ms timestamp
+}
+
+export type SyncStatus = 'idle' | 'syncing' | 'error' | 'offline'
+
+export interface SyncState {
+  status: SyncStatus
+  lastSyncAt: string | null    // ISO datetime
+  pendingCount: number
+  errorMessage: string | null
+}
+
 // Message types for popup <-> background communication
 export type MessageAction =
   | 'START_TIMER'
@@ -98,6 +133,13 @@ export type MessageAction =
   | 'STOP_POMODORO'
   | 'SKIP_POMODORO_PHASE'
   | 'GET_POMODORO_STATE'
+  | 'AUTH_LOGIN'
+  | 'AUTH_LOGOUT'
+  | 'AUTH_STATE'
+  | 'SYNC_NOW'
+  | 'SYNC_STATUS'
+  | 'GET_SUBSCRIPTION'
+  | 'SYNC_REMOTE_UPDATE'
 
 export interface TimerMessage {
   action: MessageAction
@@ -115,4 +157,7 @@ export interface TimerResponse {
   error?: string
   idleInfo?: IdleInfo
   pomodoroState?: PomodoroState
+  session?: AuthSession
+  subscription?: SubscriptionInfo
+  syncState?: SyncState
 }

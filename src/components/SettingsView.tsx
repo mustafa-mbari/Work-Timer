@@ -1,23 +1,30 @@
 import { useState, useEffect } from 'react'
 import type { Settings } from '@/types'
 import { getSettings, updateSettings } from '@/storage'
-import { useProjects } from '@/hooks/useProjects'
+import { useProjects, ProjectLimitError } from '@/hooks/useProjects'
 import { useTags } from '@/hooks/useTags'
 import { useTheme, THEMES } from '@/hooks/useTheme'
 import { MonitorIcon, PlusIcon, XIcon } from './Icons'
 import { PROJECT_COLORS } from '@/constants/colors'
 import { inputClass, labelClass } from '@/constants/styles'
 import ConfirmDialog from './ConfirmDialog'
+import UpgradePrompt from './UpgradePrompt'
+import { useAuth } from '@/hooks/useAuth'
+import { usePremium } from '@/hooks/usePremium'
+import { WEBSITE_URL } from '@shared/constants'
 
-type SettingsTab = 'general' | 'timer' | 'data'
+type SettingsTab = 'general' | 'timer' | 'data' | 'account'
 
 export default function SettingsView() {
   const [settings, setSettings] = useState<Settings | null>(null)
   const { activeProjects, projects, create, update, archive } = useProjects()
   const { tags, create: createTag, update: updateTag, remove: removeTag } = useTags()
   const { theme, setTheme } = useTheme()
+  const { session, loading: authLoading, signIn, signOut } = useAuth()
+  const { isPremium, subscription } = usePremium()
 
   const [tab, setTab] = useState<SettingsTab>('general')
+  const [showUpgradeForProject, setShowUpgradeForProject] = useState(false)
 
   const [newProjectName, setNewProjectName] = useState('')
   const [newProjectColor, setNewProjectColor] = useState(PROJECT_COLORS[0])
@@ -43,9 +50,15 @@ export default function SettingsView() {
 
   const handleCreateProject = async () => {
     if (!newProjectName.trim()) return
-    await create(newProjectName.trim(), newProjectColor)
-    setNewProjectName('')
-    setNewProjectColor(PROJECT_COLORS[Math.floor(Math.random() * PROJECT_COLORS.length)])
+    try {
+      await create(newProjectName.trim(), newProjectColor)
+      setNewProjectName('')
+      setNewProjectColor(PROJECT_COLORS[Math.floor(Math.random() * PROJECT_COLORS.length)])
+    } catch (err) {
+      if (err instanceof ProjectLimitError) {
+        setShowUpgradeForProject(true)
+      }
+    }
   }
 
   const handleSaveProject = async () => {
@@ -84,7 +97,7 @@ export default function SettingsView() {
       {/* Header + Tab Bar — sticky within parent scroll */}
       <div className="sticky top-0 z-10 bg-stone-50 dark:bg-dark px-5 py-3 border-b border-stone-100 dark:border-dark-border">
         <div className="flex gap-1 bg-stone-100 dark:bg-dark-card rounded-xl p-1">
-          {(['general', 'timer', 'data'] as SettingsTab[]).map((t) => (
+          {(['general', 'timer', 'data', 'account'] as SettingsTab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -536,7 +549,113 @@ export default function SettingsView() {
           </>
         )}
 
+        {/* ── ACCOUNT TAB ── */}
+        {tab === 'account' && (
+          <>
+            {authLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : session ? (
+              <>
+                {/* User info */}
+                <div className="bg-white dark:bg-dark-card rounded-xl border border-stone-100 dark:border-dark-border p-4 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                      {session.email.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-stone-800 dark:text-stone-100 truncate">{session.email}</p>
+                    <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-0.5">
+                      {isPremium ? 'Premium' : 'Free plan'}
+                    </p>
+                  </div>
+                  {isPremium && (
+                    <span className="text-[10px] font-semibold bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-full">
+                      PRO
+                    </span>
+                  )}
+                </div>
+
+                {/* Plan details */}
+                {!isPremium && (
+                  <div className="bg-indigo-50 dark:bg-indigo-500/10 rounded-xl p-4 flex flex-col gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">Upgrade to Premium</p>
+                      <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-0.5">
+                        Unlimited projects, full history, export, cloud sync & advanced analytics.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => chrome.tabs.create({ url: `${WEBSITE_URL}/billing` })}
+                      className="w-full bg-indigo-500 hover:bg-indigo-600 text-white py-2 rounded-xl text-sm font-medium transition-colors shadow-sm"
+                    >
+                      Upgrade — $4.99/mo
+                    </button>
+                  </div>
+                )}
+
+                {subscription && isPremium && (
+                  <div className="rounded-xl border border-stone-100 dark:border-dark-border p-4">
+                    <p className="text-xs font-medium text-stone-500 dark:text-stone-400 mb-1">
+                      {subscription.plan === 'premium_monthly' ? 'Monthly plan' : 'Yearly plan'}
+                      {subscription.cancelAtPeriodEnd && ' · cancels at period end'}
+                    </p>
+                    {subscription.currentPeriodEnd && (
+                      <p className="text-xs text-stone-400 dark:text-stone-500">
+                        Renews {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+                      </p>
+                    )}
+                    <button
+                      onClick={() => chrome.tabs.create({ url: `${WEBSITE_URL}/billing` })}
+                      className="mt-3 text-xs text-indigo-500 dark:text-indigo-400 hover:underline"
+                    >
+                      Manage billing
+                    </button>
+                  </div>
+                )}
+
+                {/* Sign out */}
+                <button
+                  onClick={signOut}
+                  className="w-full border border-stone-200 dark:border-dark-border text-stone-600 dark:text-stone-300 py-2.5 rounded-xl text-sm font-medium hover:bg-stone-50 dark:hover:bg-dark-hover transition-colors"
+                >
+                  Sign out
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-col gap-2 text-center py-2">
+                  <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Sign in to Work Timer</p>
+                  <p className="text-xs text-stone-400 dark:text-stone-500">
+                    Enable cloud sync across devices and unlock Premium features.
+                  </p>
+                </div>
+                <button
+                  onClick={signIn}
+                  className="w-full bg-indigo-500 hover:bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm"
+                >
+                  Sign in
+                </button>
+                <button
+                  onClick={() => chrome.tabs.create({ url: `${WEBSITE_URL}/register` })}
+                  className="w-full border border-stone-200 dark:border-dark-border text-stone-600 dark:text-stone-300 py-2.5 rounded-xl text-sm font-medium hover:bg-stone-50 dark:hover:bg-dark-hover transition-colors"
+                >
+                  Create account
+                </button>
+              </>
+            )}
+          </>
+        )}
+
       </div>
+
+      <UpgradePrompt
+        isOpen={showUpgradeForProject}
+        feature="Unlimited projects"
+        onClose={() => setShowUpgradeForProject(false)}
+      />
 
       <ConfirmDialog
         isOpen={!!confirmArchive}

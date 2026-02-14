@@ -3,6 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "onlyBuiltDependencies": ["esbuild"],
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -11,6 +12,7 @@
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
+    "@supabase/supabase-js": "^2.48.1",
     "date-fns": "^4.1.0",
     "file-saver": "^2.0.5",
     "nanoid": "^5.1.6",

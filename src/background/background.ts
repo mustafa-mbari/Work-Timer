@@ -3,9 +3,14 @@ import { generateId } from '../utils/id'
 import { getToday } from '../utils/date'
 import { POMODORO_WORK_MS, IDLE_THRESHOLD_MS } from '../constants/timers'
 import { DEFAULT_SETTINGS } from '../storage'
+import { applyExternalSession, signOut as authSignOut, refreshSubscription, getSession } from '../auth/authState'
+import { syncAll, getSyncState } from '../sync/syncEngine'
+import { setupRealtime, teardownRealtime } from '../sync/realtimeSubscription'
 
 const TIMER_ALARM = 'timer-tick'
 const POMODORO_ALARM = 'pomodoro-tick'
+const SUBSCRIPTION_ALARM = 'subscription-refresh'
+const SYNC_ALARM = 'sync-periodic'
 const STORAGE_KEYS = {
   timerState: 'timerState',
   idleInfo: 'idleInfo',
@@ -633,6 +638,26 @@ chrome.runtime.onMessage.addListener(
             const ps = await getPomodoroState()
             return { success: true, pomodoroState: ps }
           }
+          case 'AUTH_STATE': {
+            const session = await getSession()
+            return { success: true, session: session ?? undefined }
+          }
+          case 'AUTH_LOGOUT': {
+            await authSignOut()
+            return { success: true }
+          }
+          case 'GET_SUBSCRIPTION': {
+            const sub = await refreshSubscription()
+            return { success: true, subscription: sub ?? undefined }
+          }
+          case 'SYNC_NOW': {
+            void syncAll()
+            return { success: true }
+          }
+          case 'SYNC_STATUS': {
+            const syncState = await getSyncState()
+            return { success: true, syncState }
+          }
           default:
             return { success: false, error: 'Unknown action' }
         }
@@ -667,6 +692,22 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     // Phase time is up — advance to next phase
     await advancePomodoroPhase(pomState)
   }
+
+  if (alarm.name === SUBSCRIPTION_ALARM) {
+    // Refresh subscription status from Supabase every 60 minutes
+    const session = await getSession()
+    if (session) {
+      await refreshSubscription().catch(err => {
+        console.warn('[work-timer] Subscription refresh failed:', err)
+      })
+    }
+  }
+
+  if (alarm.name === SYNC_ALARM) {
+    void syncAll().catch(err => {
+      console.warn('[work-timer] Periodic sync failed:', err)
+    })
+  }
 })
 
 // ============================================================
@@ -699,6 +740,33 @@ chrome.runtime.onStartup.addListener(async () => {
 
   setupContextMenus()
   void refreshContextMenus()
+
+  // Schedule subscription refresh every 60 minutes
+  await chrome.alarms.create(SUBSCRIPTION_ALARM, { periodInMinutes: 60 })
+
+  // Schedule periodic sync every 5 minutes
+  await chrome.alarms.create(SYNC_ALARM, { periodInMinutes: 5 })
+
+  // Re-fetch subscription on startup if user is logged in
+  const session = await getSession()
+  if (session) {
+    void refreshSubscription().catch(err => {
+      console.warn('[work-timer] Startup subscription refresh failed:', err)
+    })
+    // Sync on startup to pick up changes from other devices
+    void syncAll().catch(err => {
+      console.warn('[work-timer] Startup sync failed:', err)
+    })
+    // Re-establish Realtime subscriptions (worker may have restarted)
+    setupRealtime(session.userId)
+  }
+})
+
+// Sync when coming back online
+self.addEventListener('online', () => {
+  void syncAll().catch(err => {
+    console.warn('[work-timer] Online sync failed:', err)
+  })
 })
 
 // Push timer state to a tab the moment it becomes active (so widget follows tab switches)
@@ -851,3 +919,43 @@ chrome.commands.onCommand.addListener(async (command) => {
     // If idle, do nothing
   }
 })
+
+// ============================================================
+// External Messaging — Website ↔ Extension Auth Bridge
+// ============================================================
+
+// The companion website sends the Supabase session here after login.
+// The website must be listed in manifest.json "externally_connectable.matches".
+chrome.runtime.onMessageExternal.addListener(
+  (message: { action: string; accessToken?: string; refreshToken?: string }, _sender, sendResponse) => {
+    const handle = async () => {
+      if (message.action === 'AUTH_LOGIN' && message.accessToken && message.refreshToken) {
+        const session = await applyExternalSession(message.accessToken, message.refreshToken)
+        if (session) {
+          // Fetch and cache subscription immediately after login
+          await refreshSubscription().catch(() => null)
+          // Schedule alarms
+          await chrome.alarms.create(SUBSCRIPTION_ALARM, { periodInMinutes: 60 })
+          await chrome.alarms.create(SYNC_ALARM, { periodInMinutes: 5 })
+          // Initial sync
+          void syncAll().catch(() => null)
+          // Start Realtime subscriptions
+          setupRealtime(session.userId)
+          sendResponse({ success: true })
+        } else {
+          sendResponse({ success: false, error: 'Failed to apply session' })
+        }
+      } else if (message.action === 'AUTH_LOGOUT') {
+        teardownRealtime()
+        await chrome.alarms.clear(SYNC_ALARM)
+        await authSignOut()
+        await chrome.alarms.clear(SUBSCRIPTION_ALARM)
+        sendResponse({ success: true })
+      } else {
+        sendResponse({ success: false, error: 'Unknown external action' })
+      }
+    }
+    void handle()
+    return true // Keep message channel open for async response
+  }
+)

@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import type { TimeEntry } from '@/types'
 import { getEntries, getEntriesByRange, saveEntry, updateEntry, deleteEntry } from '@/storage'
 import { getToday } from '@/utils/date'
+import { getCachedSubscription } from '@/auth/authState'
+import { getLimits } from '@/premium/featureGate'
+import { subDays, parseISO, max, format } from 'date-fns'
 
 export function useEntries(date?: string) {
   const [entries, setEntries] = useState<TimeEntry[]>([])
@@ -15,6 +18,17 @@ export function useEntries(date?: string) {
   }, [targetDate])
 
   useEffect(() => { fetch() }, [fetch])
+
+  // Re-fetch when a remote sync updates entries (Realtime or pull sync)
+  useEffect(() => {
+    const listener = (message: { action?: string; table?: string }) => {
+      if (message.action === 'SYNC_REMOTE_UPDATE' && message.table === 'time_entries') {
+        void fetch()
+      }
+    }
+    chrome.runtime.onMessage.addListener(listener)
+    return () => chrome.runtime.onMessage.removeListener(listener)
+  }, [fetch])
 
   const totalDuration = entries.reduce((sum, e) => sum + e.duration, 0)
 
@@ -41,7 +55,15 @@ export function useEntriesRange(startDate: string, endDate: string) {
   const [loading, setLoading] = useState(true)
 
   const fetch = useCallback(async () => {
-    const data = await getEntriesByRange(startDate, endDate)
+    // Clamp start date to 30 days ago for free users (local data preserved, just hidden)
+    const sub = await getCachedSubscription()
+    const limits = getLimits(sub)
+    let effectiveStart = startDate
+    if (isFinite(limits.historyDays)) {
+      const earliest = format(subDays(new Date(), limits.historyDays), 'yyyy-MM-dd')
+      effectiveStart = format(max([parseISO(startDate), parseISO(earliest)]), 'yyyy-MM-dd')
+    }
+    const data = await getEntriesByRange(effectiveStart, endDate)
     setEntries(data)
     setLoading(false)
   }, [startDate, endDate])
