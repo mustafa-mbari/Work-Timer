@@ -1,0 +1,15 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+
+:root {
+  --font-sans: 'Inter Variable', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}

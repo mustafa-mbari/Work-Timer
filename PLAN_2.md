@@ -632,12 +632,12 @@ Protected section at `/admin/*`, accessible only when `profiles.role = 'admin'`.
 | Phase | Where | Status | Scope |
 |-------|-------|--------|-------|
 | **4A: Foundation** | Shared + Extension | ✅ Done | Supabase project setup, SQL migrations, `@supabase/supabase-js` in extension, auth scaffolding, `externally_connectable` in manifest |
-| **4B: Website MVP** | Website | ⏳ Deferred | Scaffold Next.js, landing page, login/register, auth callback → extension messaging, minimal dashboard |
-| **4C: Stripe** | Website + Extension | ⏳ Deferred | Stripe products/prices, checkout route, webhook handler, billing page, subscription fetching in extension |
+| **4B: Website MVP** | Website | ✅ Done | Scaffold Next.js, landing page, login/register, auth callback → extension messaging, dashboard, analytics |
+| **4C: Stripe** | Website | ✅ Done | Stripe products/prices, checkout route, webhook handler, billing page, promo validation API |
 | **4D: Feature Gating** | Extension | ✅ Done | `UpgradePrompt`, lock export/projects/stats/work-types for free, "Account" tab in Settings, 30-day history limit |
 | **4E: Sync Engine** | Extension | ✅ Done | Sync queue, push/pull, conflict resolution, storage layer hooks, periodic sync alarm, online/offline listeners, initial sync dialog |
 | **4F: Realtime** | Extension | ✅ Done | Supabase Realtime channels, instant cross-device sync, connection lifecycle |
-| **4G: Admin** | Website | ⏳ Deferred | Admin layout, stats overview, user management, domain whitelist, promo codes, subscription management |
+| **4G: Admin** | Website | ✅ Done | Admin layout (6 pages), stats overview, user management, domain whitelist, promo codes, subscription management, global statistics |
 | **4H: Polish** | Both | ⏳ Deferred | Offline testing, large dataset sync, concurrent edits, subscription flows, promo/domain tests, performance audit |
 
 ---
