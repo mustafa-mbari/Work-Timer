@@ -1,5 +1,7 @@
 import { Component } from 'react'
 import type { ReactNode, ErrorInfo } from 'react'
+import { logger } from '@/utils/logger'
+import { getUserFriendlyError } from '@/utils/errorMessages'
 
 interface Props {
   children: ReactNode
@@ -18,7 +20,10 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('[Work Timer] Uncaught error:', error, info.componentStack)
+    logger.error('Uncaught error in component tree', error, {
+      component: 'ErrorBoundary',
+      componentStack: info.componentStack
+    })
   }
 
   render() {
@@ -30,7 +35,7 @@ export default class ErrorBoundary extends Component<Props, State> {
           </div>
           <h1 className="text-sm font-semibold text-stone-800 dark:text-stone-200 mb-2">Something went wrong</h1>
           <p className="text-xs text-stone-500 dark:text-stone-400 mb-5 max-w-[260px]">
-            {this.state.error?.message ?? 'An unexpected error occurred.'}
+            {getUserFriendlyError(this.state.error)}
           </p>
           <button
             onClick={() => this.setState({ hasError: false, error: null })}

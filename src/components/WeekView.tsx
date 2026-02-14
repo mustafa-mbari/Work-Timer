@@ -10,6 +10,7 @@ import ExportMenu from './ExportMenu'
 import EntryEditModal from './EntryEditModal'
 import AddEntryModal from './AddEntryModal'
 import { ChevronLeftIcon, ChevronRightIcon, PlusIcon } from './Icons'
+import { LoadingState } from './Spinner'
 import type { TimeEntry } from '@/types'
 
 export default function WeekView() {
@@ -27,7 +28,7 @@ export default function WeekView() {
     [currentDate, weekStartsOn, workingDays]
   )
 
-  const { entries, refetch } = useEntriesRange(formatDate(start), formatDate(end))
+  const { entries, loading, refetch } = useEntriesRange(formatDate(start), formatDate(end))
 
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null)
   const [addingForDate, setAddingForDate] = useState<string | null>(null)
@@ -45,6 +46,14 @@ export default function WeekView() {
 
   const isCurrentWeek = weekOffset === 0
   const today = new Date()
+
+  if (loading) {
+    return (
+      <div className="flex flex-col px-5 py-4 gap-4">
+        <LoadingState message="Loading week data..." />
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col px-5 py-4 gap-4">
