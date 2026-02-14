@@ -162,7 +162,7 @@ export async function saveTags(tags: Tag[]): Promise<void> {
 
 // --- Settings ---
 
-const DEFAULT_SETTINGS: Settings = {
+export const DEFAULT_SETTINGS: Settings = {
   workingDays: 5,
   weekStartDay: 1,
   idleTimeout: 5,
