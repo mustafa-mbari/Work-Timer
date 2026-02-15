@@ -122,6 +122,45 @@
   50% { opacity: 0.5; }
 }
 
+/* Rolling timer digit faces */
+.rolling-face {
+  background: #d8d8d8;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+html.dark .rolling-face {
+  background: #727272;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.rolling-face-gradient {
+  background: linear-gradient(
+    180deg,
+    #d8d8d8 0%,
+    rgba(216, 216, 216, 0.6) 20%,
+    transparent 35%,
+    transparent 65%,
+    rgba(216, 216, 216, 0.6) 80%,
+    #d8d8d8 100%
+  );
+}
+
+html.dark .rolling-face-gradient {
+  background: linear-gradient(
+    180deg,
+    #727272 0%,
+    rgba(114, 114, 114, 0.6) 20%,
+    transparent 35%,
+    transparent 65%,
+    rgba(114, 114, 114, 0.6) 80%,
+    #727272 100%
+  );
+}
+
 /* Smooth theme transitions */
 * {
   transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, box-shadow 150ms ease;

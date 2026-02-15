@@ -8,6 +8,7 @@ const StatsView = lazy(() => import('@/components/StatsView'))
 const SettingsView = lazy(() => import('@/components/SettingsView'))
 import NavBar from '@/components/NavBar'
 import InitialSyncDialog from '@/components/InitialSyncDialog'
+import AuthGate from '@/components/AuthGate'
 import { useTheme } from '@/hooks/useTheme'
 import { useToast } from '@/components/Toast'
 import { useAuth } from '@/hooks/useAuth'
@@ -18,7 +19,7 @@ export default function App() {
   const { showToast } = useToast()
   useTheme()
 
-  const { session } = useAuth()
+  const { session, loading: authLoading, signIn } = useAuth()
   const { isPremium } = usePremium()
 
   const [showInitialSync, setShowInitialSync] = useState(false)
@@ -60,6 +61,19 @@ export default function App() {
     window.addEventListener('storage-quota-exceeded', handler)
     return () => window.removeEventListener('storage-quota-exceeded', handler)
   }, [showToast])
+
+  // Auth gate: show loading spinner or login screen when not authenticated
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center h-[520px] bg-stone-50 dark:bg-dark">
+        <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (!session) {
+    return <AuthGate signIn={signIn} />
+  }
 
   return (
     <div className="flex flex-col h-[520px] bg-stone-50 dark:bg-dark">

@@ -35,6 +35,7 @@ export default function AdminSubscriptionsPage() {
   const [submitting, setSubmitting] = useState(false)
   const [email, setEmail] = useState('')
   const [plan, setPlan] = useState('premium_monthly')
+  const [endDate, setEndDate] = useState('')
 
   useEffect(() => {
     fetchSubscriptions()
@@ -62,7 +63,11 @@ export default function AdminSubscriptionsPage() {
     const res = await fetch('/api/admin/subscriptions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: trimmedEmail, plan }),
+      body: JSON.stringify({
+        email: trimmedEmail,
+        plan,
+        current_period_end: endDate ? new Date(endDate).toISOString() : null,
+      }),
     })
     const data = await res.json()
 
@@ -120,6 +125,16 @@ export default function AdminSubscriptionsPage() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1.5">
+              <Label>End Date</Label>
+              <Input
+                type="date"
+                value={endDate}
+                onChange={e => setEndDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                placeholder="Optional"
+              />
+            </div>
             <div className="flex items-end">
               <Button type="submit" disabled={submitting}>
                 <UserPlus className="h-4 w-4 mr-1" />
@@ -146,15 +161,18 @@ export default function AdminSubscriptionsPage() {
                 <TableHead>Plan</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Source</TableHead>
+                <TableHead>Period End</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {subscriptions.length > 0 ? subscriptions.map(s => {
-                const profile = Array.isArray(s.profiles) ? s.profiles[0] : s.profiles
                 return (
                   <TableRow key={s.id}>
                     <TableCell className="font-medium text-stone-900 dark:text-stone-100">
-                      {profile?.email || 'Unknown'}
+                      <div>
+                        <p className="text-sm font-medium">{s.display_name || s.email?.split('@')[0] || 'Unknown'}</p>
+                        {s.email && <p className="text-xs text-stone-500 dark:text-stone-400">{s.email}</p>}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant={s.plan === 'free' ? 'secondary' : 'default'}>
@@ -169,11 +187,16 @@ export default function AdminSubscriptionsPage() {
                     <TableCell className="text-sm text-stone-500 dark:text-stone-400">
                       {SOURCE_LABELS[s.granted_by] || s.granted_by || '—'}
                     </TableCell>
+                    <TableCell className="text-sm text-stone-500 dark:text-stone-400">
+                      {s.current_period_end
+                        ? new Date(s.current_period_end).toLocaleDateString()
+                        : '—'}
+                    </TableCell>
                   </TableRow>
                 )
               }) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-stone-500 dark:text-stone-400">
+                  <TableCell colSpan={5} className="text-center py-8 text-stone-500 dark:text-stone-400">
                     No subscriptions found
                   </TableCell>
                 </TableRow>

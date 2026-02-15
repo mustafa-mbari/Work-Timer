@@ -34,6 +34,13 @@ export interface Tag {
   name: string
 }
 
+export interface ReminderSettings {
+  enabled: boolean       // default: true
+  dayOfWeek: number      // 0-6 (0=Sunday), default: 5 (Friday)
+  hour: number           // 0-23, default: 14
+  minute: number         // 0-59, default: 0
+}
+
 export interface Settings {
   workingDays: number // 5, 6, or 7
   weekStartDay: 0 | 1 // 0 = Sunday, 1 = Monday
@@ -45,6 +52,7 @@ export interface Settings {
   weeklyTarget: number | null // Hours
   pomodoro: PomodoroSettings
   floatingTimerAutoShow: boolean // Auto-show floating widget when timer starts
+  reminder: ReminderSettings
 }
 
 export interface TimerState {

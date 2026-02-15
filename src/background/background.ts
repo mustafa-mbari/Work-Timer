@@ -6,11 +6,15 @@ import { getSettings, getTimerState, setTimerState, saveEntry, updateEntry, getE
 import { applyExternalSession, signOut as authSignOut, refreshSubscription, getSession } from '../auth/authState'
 import { syncAll, getSyncState, uploadAllLocalData } from '../sync/syncEngine'
 import { setupRealtime, teardownRealtime } from '../sync/realtimeSubscription'
+import { pushUserStats } from '../sync/statsSync'
 
 const TIMER_ALARM = 'timer-tick'
 const POMODORO_ALARM = 'pomodoro-tick'
 const SUBSCRIPTION_ALARM = 'subscription-refresh'
 const SYNC_ALARM = 'sync-periodic'
+const REMINDER_ALARM = 'weekly-reminder'
+const REMINDER_RETRY_ALARM = 'reminder-retry'
+const STATS_SYNC_ALARM = 'stats-sync'
 const STORAGE_KEYS = {
   timerState: 'timerState',
   idleInfo: 'idleInfo',
@@ -71,6 +75,33 @@ async function setPomodoroState(state: PomodoroState): Promise<void> {
   await chrome.storage.local.set({ [STORAGE_KEYS.pomodoroState]: state })
 }
 
+// --- Reminder Helpers ---
+
+function getNextReminderTime(dayOfWeek: number, hour: number, minute: number): number {
+  const now = new Date()
+  const target = new Date()
+  target.setHours(hour, minute, 0, 0)
+
+  const currentDay = now.getDay()
+  let daysUntil = dayOfWeek - currentDay
+  if (daysUntil < 0) daysUntil += 7
+  if (daysUntil === 0 && now >= target) daysUntil = 7
+
+  target.setDate(target.getDate() + daysUntil)
+  return target.getTime()
+}
+
+async function scheduleReminder(): Promise<void> {
+  const settings = await getSettings()
+  const reminder = settings.reminder
+  if (!reminder || !reminder.enabled) {
+    await chrome.alarms.clear(REMINDER_ALARM)
+    return
+  }
+  const when = getNextReminderTime(reminder.dayOfWeek, reminder.hour, reminder.minute)
+  await chrome.alarms.create(REMINDER_ALARM, { when })
+}
+
 // --- Time Entry Helpers ---
 
 function getElapsed(state: TimerState): number {
@@ -99,17 +130,6 @@ async function updateTimeEntry(entryId: string, date: string, updates: Partial<T
   }
 }
 
-function formatTimerForDisplay(ms: number): string {
-  const totalSeconds = Math.floor(ms / 1000)
-  const hours = Math.floor(totalSeconds / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const seconds = totalSeconds % 60
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-}
-
-// Store original tab titles to restore them later
-const originalTabTitles = new Map<number, string>()
-
 async function broadcastTimerSync(state: TimerState): Promise<void> {
   const result = await chrome.storage.local.get('projects')
   const projects = (result['projects'] as Array<{ id: string; name: string; color: string }> | undefined) ?? []
@@ -123,66 +143,6 @@ async function broadcastTimerSync(state: TimerState): Promise<void> {
   }
   // Keep context menu states in sync with every timer state change
   void refreshContextMenus()
-}
-
-async function updateActiveTabTitle(state: TimerState): Promise<void> {
-  if (state.status === 'idle') {
-    // Restore original titles when timer stops
-    const tabs = await chrome.tabs.query({})
-    for (const tab of tabs) {
-      if (tab.id && originalTabTitles.has(tab.id)) {
-        const originalTitle = originalTabTitles.get(tab.id)
-        if (originalTitle) {
-          try {
-            await chrome.tabs.sendMessage(tab.id, {
-              action: 'RESTORE_TITLE',
-              originalTitle
-            }).catch(() => {
-              // Tab might not have content script, ignore error
-            })
-          } catch {
-            // Ignore errors
-          }
-        }
-      }
-    }
-    originalTabTitles.clear()
-    return
-  }
-
-  // Update active tab title with timer
-  const elapsed = getElapsed(state)
-  const timeStr = formatTimerForDisplay(elapsed)
-
-  try {
-    const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
-    if (tabs.length > 0 && tabs[0].id !== undefined) {
-      const tab = tabs[0]
-      const tabId = tab.id as number
-
-      // Store original title if we haven't already
-      if (!originalTabTitles.has(tabId) && tab.title) {
-        originalTabTitles.set(tabId, tab.title)
-      }
-
-      // Update tab title by executing a script
-      await chrome.scripting.executeScript({
-        target: { tabId },
-        func: (timer: string) => {
-          if (!document.title.startsWith('[')) {
-            document.title = `[${timer}] ${document.title}`
-          } else {
-            document.title = document.title.replace(/^\[.*?\]/, `[${timer}]`)
-          }
-        },
-        args: [timeStr]
-      }).catch(() => {
-        // Some tabs (chrome://, chrome-extension://) can't be scripted, ignore
-      })
-    }
-  } catch {
-    // Ignore errors for tabs that can't be accessed
-  }
 }
 
 async function updateBadge(state: TimerState): Promise<void> {
@@ -241,7 +201,6 @@ async function startTimer(projectId: string | null, description: string, continu
   await setIdleInfo(DEFAULT_IDLE_INFO)
   await chrome.alarms.create(TIMER_ALARM, { periodInMinutes: 0.5 })
   await updateBadge(state)
-  await updateActiveTabTitle(state)
   // Clear any previous "user dismissed" flag so the widget auto-shows for the new session
   await chrome.storage.local.remove('floatingTimerHidden')
   void broadcastTimerSync(state)
@@ -354,7 +313,6 @@ async function stopTimer(): Promise<TimerResponse> {
   await setIdleInfo(DEFAULT_IDLE_INFO)
   await chrome.alarms.clear(TIMER_ALARM)
   await updateBadge(DEFAULT_TIMER_STATE)
-  await updateActiveTabTitle(DEFAULT_TIMER_STATE)
   void broadcastTimerSync(DEFAULT_TIMER_STATE)
 
   return { success: true, state: DEFAULT_TIMER_STATE, entry }
@@ -670,7 +628,6 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === TIMER_ALARM) {
     const state = await getTimerState()
     await updateBadge(state)
-    await updateActiveTabTitle(state)
     void broadcastTimerSync(state)
   }
 
@@ -699,6 +656,91 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     void syncAll().catch(err => {
       console.warn('[work-timer] Periodic sync failed:', err)
     })
+  }
+
+  if (alarm.name === STATS_SYNC_ALARM) {
+    void pushUserStats().catch(err => {
+      console.warn('[work-timer] Stats sync failed:', err)
+    })
+  }
+
+  if (alarm.name === REMINDER_ALARM) {
+    const settings = await getSettings()
+    if (settings.reminder?.enabled) {
+      chrome.notifications.create('weekly-reminder', {
+        type: 'basic',
+        iconUrl: 'icons/icon-128.png',
+        title: 'Work Timer — Weekly Reminder',
+        message: 'Have you exported or recorded your work this week? Click "Done" to confirm, or we\'ll remind you again in 1 hour.',
+        priority: 2,
+        buttons: [
+          { title: '✓ Done' },
+          { title: 'Remind me later' },
+        ],
+        requireInteraction: true,
+      })
+      // Mark as pending confirmation
+      await chrome.storage.local.set({ reminderPending: true })
+    }
+  }
+
+  if (alarm.name === REMINDER_RETRY_ALARM) {
+    // Re-fire the reminder if user hasn't confirmed yet
+    const { reminderPending } = await chrome.storage.local.get('reminderPending')
+    if (reminderPending) {
+      chrome.notifications.create('weekly-reminder', {
+        type: 'basic',
+        iconUrl: 'icons/icon-128.png',
+        title: 'Work Timer — Reminder (again)',
+        message: 'You haven\'t confirmed yet. Have you exported or recorded your work this week?',
+        priority: 2,
+        buttons: [
+          { title: '✓ Done' },
+          { title: 'Remind me later' },
+        ],
+        requireInteraction: true,
+      })
+    }
+  }
+})
+
+// ============================================================
+// Reminder Notification Button Handlers
+// ============================================================
+
+chrome.notifications.onButtonClicked.addListener(async (notificationId, buttonIndex) => {
+  if (notificationId !== 'weekly-reminder') return
+
+  chrome.notifications.clear('weekly-reminder')
+  await chrome.alarms.clear(REMINDER_RETRY_ALARM)
+
+  if (buttonIndex === 0) {
+    // "Done" — confirmed, clear pending and schedule next week
+    await chrome.storage.local.remove('reminderPending')
+    void scheduleReminder()
+  } else {
+    // "Remind me later" — retry in 1 hour
+    await chrome.alarms.create(REMINDER_RETRY_ALARM, { delayInMinutes: 60 })
+  }
+})
+
+// Also handle clicking the notification body (not a button) — treat as "remind later"
+chrome.notifications.onClicked.addListener(async (notificationId) => {
+  if (notificationId !== 'weekly-reminder') return
+  chrome.notifications.clear('weekly-reminder')
+  // Don't clear pending — retry alarm will re-fire if set, or schedule next week
+  const { reminderPending } = await chrome.storage.local.get('reminderPending')
+  if (reminderPending) {
+    await chrome.alarms.create(REMINDER_RETRY_ALARM, { delayInMinutes: 60 })
+  }
+})
+
+// Handle notification dismissed (closed without action) — retry in 1 hour
+chrome.notifications.onClosed.addListener(async (notificationId, _byUser) => {
+  if (notificationId !== 'weekly-reminder') return
+  const { reminderPending } = await chrome.storage.local.get('reminderPending')
+  if (reminderPending) {
+    await chrome.alarms.create(REMINDER_RETRY_ALARM, { delayInMinutes: 60 })
   }
 })
 
@@ -739,6 +781,12 @@ chrome.runtime.onStartup.addListener(async () => {
   // Schedule periodic sync every 5 minutes
   await chrome.alarms.create(SYNC_ALARM, { periodInMinutes: 5 })
 
+  // Schedule weekly reminder
+  void scheduleReminder()
+
+  // Schedule hourly stats sync for all authenticated users
+  await chrome.alarms.create(STATS_SYNC_ALARM, { periodInMinutes: 60 })
+
   // Re-fetch subscription on startup if user is logged in
   const session = await getSession()
   if (session) {
@@ -759,6 +807,13 @@ self.addEventListener('online', () => {
   void syncAll().catch(err => {
     console.warn('[work-timer] Online sync failed:', err)
   })
+})
+
+// Reschedule reminder when settings change
+chrome.storage.onChanged.addListener((changes) => {
+  if (changes['settings']) {
+    void scheduleReminder()
+  }
 })
 
 // Push timer state to a tab the moment it becomes active (so widget follows tab switches)
@@ -784,6 +839,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     await chrome.storage.local.set({ projects })
   }
   setupContextMenus()
+  void scheduleReminder()
 })
 
 // ============================================================
@@ -929,8 +985,11 @@ chrome.runtime.onMessageExternal.addListener(
           // Schedule alarms
           await chrome.alarms.create(SUBSCRIPTION_ALARM, { periodInMinutes: 60 })
           await chrome.alarms.create(SYNC_ALARM, { periodInMinutes: 5 })
+          await chrome.alarms.create(STATS_SYNC_ALARM, { periodInMinutes: 60 })
           // Initial sync
           void syncAll().catch(() => null)
+          // Push aggregate stats on login
+          void pushUserStats().catch(() => null)
           // Start Realtime subscriptions
           setupRealtime(session.userId)
           sendResponse({ success: true })

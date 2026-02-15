@@ -116,6 +116,16 @@ export interface DbPromoRedemption {
   redeemed_at: string
 }
 
+export interface DbUserStats {
+  user_id: string
+  total_hours: number
+  total_entries: number
+  total_projects: number
+  active_days: number
+  last_active_date: string | null
+  updated_at: string
+}
+
 export interface DbWhitelistedDomain {
   id: string
   domain: string
@@ -341,6 +351,25 @@ interface DbPromoRedemptionUpdate {
   redeemed_at?: string
 }
 
+interface DbUserStatsInsert {
+  user_id: string
+  total_hours?: number
+  total_entries?: number
+  total_projects?: number
+  active_days?: number
+  last_active_date?: string | null
+  updated_at?: string
+}
+interface DbUserStatsUpdate {
+  user_id?: string
+  total_hours?: number
+  total_entries?: number
+  total_projects?: number
+  active_days?: number
+  last_active_date?: string | null
+  updated_at?: string
+}
+
 interface DbWhitelistedDomainInsert {
   domain: string
   plan: 'premium_monthly' | 'premium_yearly' | 'premium_lifetime'
@@ -374,6 +403,7 @@ export type Database = {
       promo_codes: { Row: DbPromoCode; Insert: DbPromoCodeInsert; Update: DbPromoCodeUpdate; Relationships: [] }
       promo_redemptions: { Row: DbPromoRedemption; Insert: DbPromoRedemptionInsert; Update: DbPromoRedemptionUpdate; Relationships: [] }
       whitelisted_domains: { Row: DbWhitelistedDomain; Insert: DbWhitelistedDomainInsert; Update: DbWhitelistedDomainUpdate; Relationships: [] }
+      user_stats: { Row: DbUserStats; Insert: DbUserStatsInsert; Update: DbUserStatsUpdate; Relationships: [] }
     }
     Views: Record<string, never>
     Functions: {

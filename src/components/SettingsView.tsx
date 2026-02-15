@@ -356,6 +356,79 @@ export default function SettingsView() {
               </label>
             </div>
 
+            {/* Weekly Reminder */}
+            <div>
+              <label className={labelClass}>Weekly Reminder</label>
+              <div className="rounded-xl border border-stone-100 dark:border-dark-border px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-stone-700 dark:text-stone-300">Export reminder</p>
+                    <p className="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">
+                      Remind to export/review work records
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={settings.reminder?.enabled ?? true}
+                    onClick={() => handleSettingChange('reminder', {
+                      ...(settings.reminder ?? { enabled: true, dayOfWeek: 5, hour: 14, minute: 0 }),
+                      enabled: !(settings.reminder?.enabled ?? true),
+                    })}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                      (settings.reminder?.enabled ?? true) ? 'bg-indigo-500' : 'bg-stone-300 dark:bg-dark-border'
+                    }`}
+                  >
+                    <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${
+                      (settings.reminder?.enabled ?? true) ? 'translate-x-[18px]' : 'translate-x-[3px]'
+                    }`} />
+                  </button>
+                </div>
+
+                {(settings.reminder?.enabled ?? true) && (
+                  <div className="mt-3 pt-3 border-t border-stone-100 dark:border-dark-border space-y-2.5">
+                    <div className="flex items-center gap-3">
+                      <label className="text-[10px] text-stone-500 dark:text-stone-400 w-10 shrink-0">Day</label>
+                      <select
+                        value={settings.reminder?.dayOfWeek ?? 5}
+                        onChange={e => handleSettingChange('reminder', {
+                          ...(settings.reminder ?? { enabled: true, dayOfWeek: 5, hour: 14, minute: 0 }),
+                          dayOfWeek: Number(e.target.value),
+                        })}
+                        className={inputClass}
+                        disabled={!isPremium}
+                      >
+                        {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+                          .map((name, i) => <option key={i} value={i}>{name}</option>)}
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <label className="text-[10px] text-stone-500 dark:text-stone-400 w-10 shrink-0">Time</label>
+                      <input
+                        type="time"
+                        value={`${String(settings.reminder?.hour ?? 14).padStart(2, '0')}:${String(settings.reminder?.minute ?? 0).padStart(2, '0')}`}
+                        onChange={e => {
+                          const [h, m] = e.target.value.split(':').map(Number)
+                          handleSettingChange('reminder', {
+                            ...(settings.reminder ?? { enabled: true, dayOfWeek: 5, hour: 14, minute: 0 }),
+                            hour: h,
+                            minute: m,
+                          })
+                        }}
+                        className={inputClass}
+                        disabled={!isPremium}
+                      />
+                    </div>
+                    {!isPremium && (
+                      <p className="text-[10px] text-stone-400 dark:text-stone-500">
+                        Upgrade to Premium to customize the reminder day and time.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Keyboard Shortcuts */}
             <div>
               <label className={labelClass}>Keyboard Shortcuts</label>
@@ -658,39 +731,52 @@ export default function SettingsView() {
                   </div>
                 )}
 
-                {/* Sync Now */}
+                {/* Open Dashboard */}
+                <button
+                  onClick={() => chrome.tabs.create({ url: `${WEBSITE_URL}/dashboard` })}
+                  className="w-full border border-stone-200 dark:border-dark-border text-stone-700 dark:text-stone-200 py-2.5 rounded-xl text-sm font-medium hover:bg-stone-50 dark:hover:bg-dark-hover transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
+                    <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
+                  </svg>
+                  Open Dashboard
+                </button>
+
+                {/* Cloud Sync */}
                 {isPremium && (
-                  <div className="rounded-xl border border-stone-100 dark:border-dark-border px-4 py-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-medium text-stone-700 dark:text-stone-300">Cloud sync</p>
-                        {lastSyncAt ? (
-                          <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-0.5">
-                            Last synced {new Date(lastSyncAt).toLocaleTimeString()}
-                          </p>
-                        ) : (
-                          <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-0.5">Not synced yet</p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={handleReuploadAll}
-                          disabled={uploading || syncing}
-                          className="text-xs font-medium text-amber-500 dark:text-amber-400 hover:text-amber-600 disabled:opacity-50 flex items-center gap-1"
-                        >
-                          {uploading && <span className="w-3 h-3 border border-amber-500 border-t-transparent rounded-full animate-spin" />}
-                          {uploading ? 'Uploading…' : 'Re-upload all'}
-                        </button>
-                        <button
-                          onClick={handleSyncNow}
-                          disabled={syncing || uploading}
-                          className="text-xs font-medium text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 disabled:opacity-50 flex items-center gap-1"
-                        >
-                          {syncing && <span className="w-3 h-3 border border-indigo-500 border-t-transparent rounded-full animate-spin" />}
-                          {syncing ? 'Syncing…' : 'Sync now'}
-                        </button>
-                      </div>
+                  <div className="rounded-xl border border-stone-100 dark:border-dark-border px-4 py-3 space-y-3">
+                    <div>
+                      <p className="text-xs font-medium text-stone-700 dark:text-stone-300">Cloud sync</p>
+                      {lastSyncAt ? (
+                        <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-0.5">
+                          Last synced {new Date(lastSyncAt).toLocaleTimeString()}
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-0.5">Not synced yet</p>
+                      )}
                     </div>
+
+                    {/* Sync now */}
+                    <button
+                      onClick={handleSyncNow}
+                      disabled={syncing || uploading}
+                      className="w-full border border-indigo-200 dark:border-indigo-500/30 text-indigo-600 dark:text-indigo-400 py-2 rounded-lg text-xs font-medium hover:bg-indigo-50 dark:hover:bg-indigo-500/10 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      {syncing && <span className="w-3 h-3 border border-indigo-500 border-t-transparent rounded-full animate-spin" />}
+                      {syncing ? 'Syncing…' : 'Sync now'}
+                    </button>
+
+                    {/* Re-upload all */}
+                    <button
+                      onClick={handleReuploadAll}
+                      disabled={uploading || syncing}
+                      className="w-full border border-amber-200 dark:border-amber-500/30 text-amber-600 dark:text-amber-400 py-2 rounded-lg text-xs font-medium hover:bg-amber-50 dark:hover:bg-amber-500/10 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      {uploading && <span className="w-3 h-3 border border-amber-500 border-t-transparent rounded-full animate-spin" />}
+                      {uploading ? 'Uploading…' : 'Re-upload all data'}
+                    </button>
+
                     {uploadMsg && (
                       <p className={`text-[11px] ${uploadMsg.includes('fail') ? 'text-rose-500' : 'text-emerald-500'}`}>
                         {uploadMsg}

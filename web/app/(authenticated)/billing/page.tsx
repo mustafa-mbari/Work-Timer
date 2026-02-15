@@ -22,6 +22,13 @@ export default async function BillingPage() {
     premium_lifetime: 'Premium Lifetime',
   }
 
+  const sourceLabel: Record<string, string> = {
+    stripe: 'Stripe Payment',
+    domain: 'Domain Whitelist',
+    promo: 'Promo Code',
+    admin_manual: 'Manual Grant',
+  }
+
   return (
     <div className="max-w-3xl space-y-6">
       <div>
@@ -50,21 +57,30 @@ export default async function BillingPage() {
             {subscription?.plan === 'premium_monthly' && (
               <p>
                 ${PRICING.monthly}/month &middot;{' '}
-                {subscription.cancel_at_period_end
-                  ? `Cancels on ${new Date(subscription.current_period_end!).toLocaleDateString()}`
-                  : `Renews on ${new Date(subscription.current_period_end!).toLocaleDateString()}`}
+                {subscription.current_period_end
+                  ? subscription.cancel_at_period_end
+                    ? `Cancels on ${new Date(subscription.current_period_end).toLocaleDateString()}`
+                    : `Renews on ${new Date(subscription.current_period_end).toLocaleDateString()}`
+                  : 'No expiry set'}
               </p>
             )}
             {subscription?.plan === 'premium_yearly' && (
               <p>
                 ${PRICING.yearly}/year &middot;{' '}
-                {subscription.cancel_at_period_end
-                  ? `Cancels on ${new Date(subscription.current_period_end!).toLocaleDateString()}`
-                  : `Renews on ${new Date(subscription.current_period_end!).toLocaleDateString()}`}
+                {subscription.current_period_end
+                  ? subscription.cancel_at_period_end
+                    ? `Cancels on ${new Date(subscription.current_period_end).toLocaleDateString()}`
+                    : `Renews on ${new Date(subscription.current_period_end).toLocaleDateString()}`
+                  : 'No expiry set'}
               </p>
             )}
             {subscription?.plan === 'premium_lifetime' && (
               <p>One-time payment &middot; No renewals &middot; You own this forever</p>
+            )}
+            {isPremium && subscription?.granted_by && (
+              <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">
+                Source: {sourceLabel[subscription.granted_by] || subscription.granted_by}
+              </p>
             )}
           </div>
         </CardContent>

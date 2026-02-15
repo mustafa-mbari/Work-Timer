@@ -32,7 +32,7 @@ export async function applyExternalSession(accessToken: string, refreshToken: st
 
 export async function signOut(): Promise<void> {
   await supabase.auth.signOut()
-  await chrome.storage.local.remove([SUBSCRIPTION_KEY])
+  await chrome.storage.local.remove([SUBSCRIPTION_KEY, 'syncQueue', 'syncCursor'])
 }
 
 // --- Subscription ---

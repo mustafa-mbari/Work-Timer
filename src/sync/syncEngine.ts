@@ -146,7 +146,12 @@ export async function pushQueue(): Promise<void> {
         }))
       if (rows.length > 0) {
         const { error } = await supabase.from('tags').upsert(rows as any)
-        if (error) throw new Error(`Sync push failed (tags upsert): ${error.message}`)
+        if (error) {
+          // RLS errors can happen when switching accounts — tag IDs from a
+          // previous account still exist locally. Log and continue instead
+          // of failing the entire sync batch.
+          console.warn('[work-timer] Tags sync skipped (RLS):', error.message)
+        }
       }
     }
 

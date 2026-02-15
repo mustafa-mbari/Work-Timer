@@ -3,18 +3,18 @@ import { Badge } from '@/components/ui/badge'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
-import { Users, Crown, UserPlus, Clock } from 'lucide-react'
-import { getAllAuthUsers } from '@/lib/repositories/admin'
+import { Users, Crown, UserPlus, Clock, CreditCard, Tag, Globe, ShieldCheck } from 'lucide-react'
+import { getAllAuthUsers, getPlatformStats, getPremiumBreakdown } from '@/lib/repositories/admin'
 import { getAllSubscriptions } from '@/lib/repositories/subscriptions'
-import { getPlatformStats } from '@/lib/repositories/admin'
 
 export const revalidate = 60
 
 export default async function AdminOverviewPage() {
-  const [authUsers, subscriptions, platformStats] = await Promise.all([
+  const [authUsers, subscriptions, platformStats, premiumBreakdown] = await Promise.all([
     getAllAuthUsers(),
     getAllSubscriptions(),
     getPlatformStats(),
+    getPremiumBreakdown(),
   ])
 
   const total = authUsers.length
@@ -84,6 +84,34 @@ export default async function AdminOverviewPage() {
           </Card>
         ))}
       </div>
+
+      {/* Premium by source */}
+      {premiumBreakdown.by_source && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          {[
+            { label: 'Manual Grant', key: 'admin_manual', icon: ShieldCheck, iconBg: 'bg-purple-100 dark:bg-purple-900/30', iconColor: 'text-purple-600 dark:text-purple-400' },
+            { label: 'Stripe Payment', key: 'stripe', icon: CreditCard, iconBg: 'bg-blue-100 dark:bg-blue-900/30', iconColor: 'text-blue-600 dark:text-blue-400' },
+            { label: 'Promo Code', key: 'promo', icon: Tag, iconBg: 'bg-pink-100 dark:bg-pink-900/30', iconColor: 'text-pink-600 dark:text-pink-400' },
+            { label: 'Domain Whitelist', key: 'domain', icon: Globe, iconBg: 'bg-teal-100 dark:bg-teal-900/30', iconColor: 'text-teal-600 dark:text-teal-400' },
+          ].map(card => (
+            <Card key={card.key}>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3">
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${card.iconBg}`}>
+                    <card.icon className={`h-5 w-5 ${card.iconColor}`} />
+                  </div>
+                  <div>
+                    <p className="text-sm text-stone-500 dark:text-stone-400">{card.label}</p>
+                    <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">
+                      {premiumBreakdown.by_source?.[card.key] ?? 0}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Conversion rate */}
       {total > 0 && (

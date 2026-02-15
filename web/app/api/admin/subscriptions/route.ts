@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: parsed.error }, { status: 400 })
   }
 
-  const { email, plan } = parsed.data
+  const { email, plan, current_period_end } = parsed.data
 
   // Find user by email via auth.admin (profiles table may be incomplete)
   const authUser = await findAuthUserByEmail(email)
@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
     plan: plan,
     status: 'active',
     granted_by: 'admin_manual',
+    ...(current_period_end ? { current_period_end } : {}),
   })
 
   if (error) {

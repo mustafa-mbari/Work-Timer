@@ -88,6 +88,15 @@ export async function getAllAuthUsers() {
   return data?.users ?? []
 }
 
+export async function getAggregatedUserStats() {
+  const supabase = await createServiceClient()
+  const { data } = await supabase
+    .from('user_stats')
+    .select('total_hours, total_entries, total_projects, active_days, last_active_date')
+    .range(0, 49999)
+  return data ?? []
+}
+
 export async function findAuthUserByEmail(email: string) {
   const supabase = await createServiceClient()
   const { data } = await supabase.auth.admin.listUsers({ perPage: 1000 })

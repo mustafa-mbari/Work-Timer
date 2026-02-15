@@ -12,6 +12,7 @@ import ProjectSelector from './ProjectSelector'
 import EntryList from './EntryList'
 import GoalProgress from './GoalProgress'
 import { PlayIcon, PauseIcon, StopIcon, SkipIcon } from './Icons'
+import RollingTimer from './RollingTimer'
 
 type ExtendedMode = TimerMode | 'pomodoro'
 type InputTab = 'description' | 'workType' | 'link'
@@ -354,23 +355,15 @@ export default function TimerView() {
         </div>
       ) : (
         <div className="text-center py-4">
-          <div
-            className={`text-[44px] font-mono font-semibold tracking-tight leading-none ${
-              isRunning ? 'text-indigo-600 dark:text-indigo-400' : isPaused ? 'text-amber-500 dark:text-amber-400' : 'text-stone-800 dark:text-stone-200'
-            }`}
-            aria-live="polite"
-            aria-label={`Timer: ${formatDuration(elapsed)}`}
-          >
-            {formatDuration(elapsed)}
-          </div>
+          <RollingTimer elapsed={elapsed} />
           {isRunning && (
-            <div className="flex items-center justify-center gap-1.5 mt-2">
+            <div className="flex items-center justify-center gap-1.5 mt-3">
               <span className="w-1.5 h-1.5 bg-rose-500 dark:bg-rose-400 rounded-full animate-pulse-soft" aria-hidden="true" />
               <span className="text-[11px] font-medium text-rose-500 dark:text-rose-400">Recording..</span>
             </div>
           )}
           {isPaused && (
-            <div className="flex items-center justify-center gap-1.5 mt-2">
+            <div className="flex items-center justify-center gap-1.5 mt-3">
               <span className="text-[11px] font-medium text-amber-500 dark:text-amber-400">Paused</span>
             </div>
           )}

@@ -33,6 +33,7 @@ export const promoToggleSchema = z.object({
 export const grantPremiumSchema = z.object({
   email: z.string().email('Valid email is required'),
   plan: z.enum(VALID_PLANS),
+  current_period_end: z.string().nullable().optional(),
 })
 
 // --- Admin domains ---

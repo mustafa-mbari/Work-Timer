@@ -20,9 +20,9 @@ export async function getUserSubscriptionForBilling(userId: string) {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('subscriptions')
-    .select('plan, status, current_period_end, cancel_at_period_end, stripe_customer_id')
+    .select('plan, status, current_period_end, cancel_at_period_end, stripe_customer_id, granted_by')
     .eq('user_id', userId)
-    .single<Pick<Subscription, 'plan' | 'status' | 'current_period_end' | 'cancel_at_period_end' | 'stripe_customer_id'>>()
+    .single<Pick<Subscription, 'plan' | 'status' | 'current_period_end' | 'cancel_at_period_end' | 'stripe_customer_id' | 'granted_by'>>()
   return { data, error }
 }
 
@@ -60,12 +60,29 @@ export async function getAllSubscriptions() {
 
 export async function getAllSubscriptionsWithEmail() {
   const supabase = await createServiceClient()
-  const { data } = await supabase
-    .from('subscriptions')
-    .select('id, user_id, plan, status, stripe_customer_id, stripe_subscription_id, current_period_end, cancel_at_period_end, granted_by, promo_code_id, created_at, updated_at')
-    .order('updated_at', { ascending: false })
-    .returns<Subscription[]>()
-  return data ?? []
+  const [{ data: subscriptions }, { data: profiles }] = await Promise.all([
+    supabase
+      .from('subscriptions')
+      .select('id, user_id, plan, status, stripe_customer_id, stripe_subscription_id, current_period_end, cancel_at_period_end, granted_by, promo_code_id, created_at, updated_at')
+      .order('updated_at', { ascending: false })
+      .returns<Subscription[]>(),
+    supabase
+      .from('profiles')
+      .select('id, email, display_name')
+      .range(0, 49999)
+      .returns<Array<{ id: string; email: string; display_name: string | null }>>(),
+  ])
+
+  const profileMap = new Map<string, { email: string; display_name: string | null }>()
+  for (const p of profiles ?? []) {
+    profileMap.set(p.id, { email: p.email, display_name: p.display_name })
+  }
+
+  return (subscriptions ?? []).map(s => ({
+    ...s,
+    email: profileMap.get(s.user_id)?.email ?? null,
+    display_name: profileMap.get(s.user_id)?.display_name ?? null,
+  }))
 }
 
 // supabase-js v2.95 resolves Insert/Update types to `never` for hand-crafted Database types.

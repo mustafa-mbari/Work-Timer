@@ -235,6 +235,12 @@ export const DEFAULT_SETTINGS: Settings = {
     soundEnabled: true,
   },
   floatingTimerAutoShow: true,
+  reminder: {
+    enabled: true,
+    dayOfWeek: 5,  // Friday
+    hour: 14,      // 2:00 PM
+    minute: 0,
+  },
 }
 
 export async function getSettings(): Promise<Settings> {
