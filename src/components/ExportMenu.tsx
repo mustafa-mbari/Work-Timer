@@ -28,9 +28,9 @@ export default function ExportMenu({ entries, projects, filename }: ExportMenuPr
     }
   }
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     try {
-      exportExcel(entries, projects, filename)
+      await exportExcel(entries, projects, filename)
       showToast('Excel file exported successfully', 'success')
       setOpen(false)
     } catch (err) {

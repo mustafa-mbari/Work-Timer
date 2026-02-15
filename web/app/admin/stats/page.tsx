@@ -1,4 +1,3 @@
-import { createServiceClient } from '@/lib/supabase/server'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -9,8 +8,9 @@ import {
   Crown, CreditCard, Globe, Ticket, UserCheck, CalendarDays,
   FolderKanban,
 } from 'lucide-react'
+import { getAdminStats } from '@/lib/services/analytics'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 function StatCard({ icon: Icon, iconBg, iconColor, label, value, sub }: {
   icon: any; iconBg: string; iconColor: string; label: string; value: string | number; sub?: string
@@ -54,124 +54,14 @@ function BreakdownRow({ label, value, total }: { label: string; value: number; t
 }
 
 export default async function AdminStatsPage() {
-  const supabase = await createServiceClient()
+  const stats = await getAdminStats()
 
-  const now = new Date()
-  const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
-  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
-  const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString()
-  const thirtyDaysAgoDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-
-  // Use auth.admin for accurate user count, profiles for email/created_at data
-  const [
-    { data: { users: authUsers } },
-    { data: allProfiles },
-    { data: subscriptions },
-    { data: promoCodes },
-    { data: domains },
-    { data: allEntries },
-    { data: dauData },
-    { data: wauData },
-    { data: mauData },
-    { data: recentEntries },
-    { data: allProjects },
-  ] = await Promise.all([
-    supabase.auth.admin.listUsers({ perPage: 10000 }),
-    (supabase.from('profiles') as any).select('id, email, created_at').range(0, 49999),
-    (supabase.from('subscriptions') as any).select('user_id, plan, status, granted_by, created_at').range(0, 49999),
-    (supabase.from('promo_codes') as any).select('code, current_uses, max_uses, active').range(0, 49999),
-    (supabase.from('whitelisted_domains') as any).select('domain, active').range(0, 49999),
-    (supabase.from('time_entries') as any).select('user_id, duration, date, type, created_at').is('deleted_at', null).range(0, 49999),
-    (supabase.from('time_entries') as any).select('user_id').is('deleted_at', null).gte('created_at', dayAgo).range(0, 49999),
-    (supabase.from('time_entries') as any).select('user_id').is('deleted_at', null).gte('created_at', weekAgo).range(0, 49999),
-    (supabase.from('time_entries') as any).select('user_id').is('deleted_at', null).gte('created_at', monthAgo).range(0, 49999),
-    (supabase.from('time_entries') as any).select('id').is('deleted_at', null).gte('date', thirtyDaysAgoDate).range(0, 49999),
-    (supabase.from('projects') as any).select('id, user_id').is('deleted_at', null).range(0, 49999),
-  ])
-
-  const userCount = authUsers?.length ?? 0
-  const dau = new Set(dauData?.map((e: any) => e.user_id)).size
-  const wau = new Set(wauData?.map((e: any) => e.user_id)).size
-  const mau = new Set(mauData?.map((e: any) => e.user_id)).size
-  const entryCount = allEntries?.length ?? 0
-  const totalHours = allEntries?.reduce((sum: number, e: any) => sum + (e.duration / 3600000), 0) || 0
-  const avgEntriesPerUser = userCount > 0 ? (entryCount / userCount).toFixed(1) : '0'
-  const avgHoursPerUser = userCount > 0 ? (totalHours / userCount).toFixed(1) : '0'
-  const recentCount = recentEntries?.length ?? 0
-  const avgEntriesPerDay = recentCount > 0 ? (recentCount / 30).toFixed(1) : '0'
-  const newUsersThisWeek = authUsers?.filter((u: any) => {
-    const created = new Date(u.created_at)
-    return created >= new Date(weekAgo)
-  }).length ?? 0
-  const projectCount = allProjects?.length ?? 0
-
-  // Premium breakdown
-  const premiumSubs = subscriptions?.filter((s: any) => s.plan !== 'free' && s.status === 'active') || []
-  const premiumCount = premiumSubs.length
-  const premiumByType = {
-    monthly: premiumSubs.filter((s: any) => s.plan === 'premium_monthly').length,
-    yearly: premiumSubs.filter((s: any) => s.plan === 'premium_yearly').length,
-    lifetime: premiumSubs.filter((s: any) => s.plan === 'premium_lifetime').length,
-  }
-  const premiumBySource = {
-    stripe: premiumSubs.filter((s: any) => s.granted_by === 'stripe').length,
-    domain: premiumSubs.filter((s: any) => s.granted_by === 'domain').length,
-    promo: premiumSubs.filter((s: any) => s.granted_by === 'promo').length,
-    manual: premiumSubs.filter((s: any) => s.granted_by === 'admin_manual').length,
-  }
-
-  const activePromos = promoCodes?.filter((p: any) => p.active).length || 0
-  const totalPromoUses = promoCodes?.reduce((sum: number, p: any) => sum + p.current_uses, 0) || 0
-  const activeDomains = domains?.filter((d: any) => d.active).length || 0
-  const conversionRate = userCount > 0 ? ((premiumCount / userCount) * 100).toFixed(1) : '0'
-
-  // Entry type breakdown
-  const entryByType = {
-    manual: allEntries?.filter((e: any) => e.type === 'manual').length || 0,
-    stopwatch: allEntries?.filter((e: any) => e.type === 'stopwatch').length || 0,
-    pomodoro: allEntries?.filter((e: any) => e.type === 'pomodoro').length || 0,
-  }
-
-  // User growth (signups per week for last 8 weeks) — use auth users for accurate counts
-  const userGrowth: { week: string; count: number }[] = []
-  for (let i = 7; i >= 0; i--) {
-    const wStart = new Date(now.getTime() - (i + 1) * 7 * 24 * 60 * 60 * 1000)
-    const wEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000)
-    const count = authUsers?.filter((u: any) => {
-      const d = new Date(u.created_at)
-      return d >= wStart && d < wEnd
-    }).length || 0
-    userGrowth.push({
-      week: wStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      count,
-    })
-  }
-
-  // Top users by hours
-  const userHours: Record<string, number> = {}
-  allEntries?.forEach((e: any) => {
-    userHours[e.user_id] = (userHours[e.user_id] || 0) + (e.duration / 3600000)
-  })
-  const topUsersById = Object.entries(userHours)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 5)
-  const topUsers = topUsersById.map(([userId, hours]) => {
-    const authUser = authUsers?.find((u: any) => u.id === userId)
-    const profile = allProfiles?.find((p: any) => p.id === userId)
-    return {
-      email: authUser?.email || profile?.email || 'Unknown',
-      hours: Number(hours.toFixed(1)),
-    }
-  })
-
-  // Avg session duration
-  const avgSessionMs = entryCount > 0
-    ? allEntries.reduce((sum: number, e: any) => sum + e.duration, 0) / entryCount
-    : 0
-  const avgSessionMin = Math.round(avgSessionMs / 60000)
-
-  // Projects per user
-  const avgProjectsPerUser = userCount > 0 ? (projectCount / userCount).toFixed(1) : '0'
+  const avgEntriesPerUser = stats.userCount > 0 ? (stats.totalEntries / stats.userCount).toFixed(1) : '0'
+  const avgHoursPerUser = stats.userCount > 0 ? (stats.totalHours / stats.userCount).toFixed(1) : '0'
+  const avgEntriesPerDay = stats.entryCount30d > 0 ? (stats.entryCount30d / 30).toFixed(1) : '0'
+  const conversionRate = stats.userCount > 0 ? ((stats.premiumCount / stats.userCount) * 100).toFixed(1) : '0'
+  const avgSessionMin = Math.round(stats.avgSessionMs / 60000)
+  const avgProjectsPerUser = stats.userCount > 0 ? (stats.projectCount / stats.userCount).toFixed(1) : '0'
 
   return (
     <div>
@@ -188,19 +78,19 @@ export default async function AdminStatsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard
             icon={Users} iconBg="bg-indigo-100 dark:bg-indigo-900/30" iconColor="text-indigo-600 dark:text-indigo-400"
-            label="Total Users" value={userCount} sub={`+${newUsersThisWeek} this week`}
+            label="Total Users" value={stats.userCount} sub={`+${stats.newUsersThisWeek} this week`}
           />
           <StatCard
             icon={Activity} iconBg="bg-emerald-100 dark:bg-emerald-900/30" iconColor="text-emerald-600 dark:text-emerald-400"
-            label="DAU" value={dau} sub="Daily active"
+            label="DAU" value={stats.dau} sub="Daily active"
           />
           <StatCard
             icon={TrendingUp} iconBg="bg-amber-100 dark:bg-amber-900/30" iconColor="text-amber-600 dark:text-amber-400"
-            label="WAU" value={wau} sub="Weekly active"
+            label="WAU" value={stats.wau} sub="Weekly active"
           />
           <StatCard
             icon={UserCheck} iconBg="bg-purple-100 dark:bg-purple-900/30" iconColor="text-purple-600 dark:text-purple-400"
-            label="MAU" value={mau} sub="Monthly active"
+            label="MAU" value={stats.mau} sub="Monthly active"
           />
         </div>
       </div>
@@ -213,8 +103,8 @@ export default async function AdminStatsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-end gap-2 h-32">
-              {userGrowth.map((w, i) => {
-                const maxCount = Math.max(...userGrowth.map(x => x.count), 1)
+              {stats.userGrowth.map((w, i) => {
+                const maxCount = Math.max(...stats.userGrowth.map(x => x.count), 1)
                 const heightPct = (w.count / maxCount) * 100
                 return (
                   <div key={i} className="flex-1 flex flex-col items-center gap-1">
@@ -238,16 +128,16 @@ export default async function AdminStatsPage() {
       <div className="mb-8">
         <h3 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-3 flex items-center gap-2">
           <Crown className="h-4 w-4" /> Premium Subscriptions
-          <Badge variant="secondary">{premiumCount} active</Badge>
+          <Badge variant="secondary">{stats.premiumCount} active</Badge>
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card>
             <CardContent className="pt-6">
               <p className="text-xs font-medium text-stone-500 dark:text-stone-400 mb-4">By Plan Type</p>
               <div className="space-y-3">
-                <BreakdownRow label="Monthly" value={premiumByType.monthly} total={premiumCount} />
-                <BreakdownRow label="Yearly" value={premiumByType.yearly} total={premiumCount} />
-                <BreakdownRow label="Lifetime" value={premiumByType.lifetime} total={premiumCount} />
+                <BreakdownRow label="Monthly" value={stats.premiumByType.monthly} total={stats.premiumCount} />
+                <BreakdownRow label="Yearly" value={stats.premiumByType.yearly} total={stats.premiumCount} />
+                <BreakdownRow label="Lifetime" value={stats.premiumByType.lifetime} total={stats.premiumCount} />
               </div>
             </CardContent>
           </Card>
@@ -255,10 +145,10 @@ export default async function AdminStatsPage() {
             <CardContent className="pt-6">
               <p className="text-xs font-medium text-stone-500 dark:text-stone-400 mb-4">By Source</p>
               <div className="space-y-3">
-                <BreakdownRow label="Stripe (Paid)" value={premiumBySource.stripe} total={premiumCount} />
-                <BreakdownRow label="Domain Whitelist" value={premiumBySource.domain} total={premiumCount} />
-                <BreakdownRow label="Promo Code" value={premiumBySource.promo} total={premiumCount} />
-                <BreakdownRow label="Manual Grant" value={premiumBySource.manual} total={premiumCount} />
+                <BreakdownRow label="Stripe (Paid)" value={stats.premiumBySource.stripe} total={stats.premiumCount} />
+                <BreakdownRow label="Domain Whitelist" value={stats.premiumBySource.domain} total={stats.premiumCount} />
+                <BreakdownRow label="Promo Code" value={stats.premiumBySource.promo} total={stats.premiumCount} />
+                <BreakdownRow label="Manual Grant" value={stats.premiumBySource.manual} total={stats.premiumCount} />
               </div>
             </CardContent>
           </Card>
@@ -273,11 +163,11 @@ export default async function AdminStatsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard
             icon={Clock} iconBg="bg-indigo-100 dark:bg-indigo-900/30" iconColor="text-indigo-600 dark:text-indigo-400"
-            label="Total Hours" value={totalHours.toFixed(0)} sub={`${avgHoursPerUser}h per user`}
+            label="Total Hours" value={stats.totalHours.toFixed(0)} sub={`${avgHoursPerUser}h per user`}
           />
           <StatCard
             icon={FileText} iconBg="bg-emerald-100 dark:bg-emerald-900/30" iconColor="text-emerald-600 dark:text-emerald-400"
-            label="Total Entries" value={entryCount} sub={`${avgEntriesPerUser} per user`}
+            label="Total Entries" value={stats.totalEntries} sub={`${avgEntriesPerUser} per user`}
           />
           <StatCard
             icon={Activity} iconBg="bg-amber-100 dark:bg-amber-900/30" iconColor="text-amber-600 dark:text-amber-400"
@@ -285,7 +175,7 @@ export default async function AdminStatsPage() {
           />
           <StatCard
             icon={Percent} iconBg="bg-purple-100 dark:bg-purple-900/30" iconColor="text-purple-600 dark:text-purple-400"
-            label="Conversion Rate" value={`${conversionRate}%`} sub={`${userCount - premiumCount} free / ${premiumCount} premium`}
+            label="Conversion Rate" value={`${conversionRate}%`} sub={`${stats.userCount - stats.premiumCount} free / ${stats.premiumCount} premium`}
           />
         </div>
       </div>
@@ -300,9 +190,9 @@ export default async function AdminStatsPage() {
             <CardContent className="pt-6">
               <p className="text-xs font-medium text-stone-500 dark:text-stone-400 mb-4">Entry Types</p>
               <div className="space-y-3">
-                <BreakdownRow label="Manual" value={entryByType.manual} total={entryCount} />
-                <BreakdownRow label="Stopwatch" value={entryByType.stopwatch} total={entryCount} />
-                <BreakdownRow label="Pomodoro" value={entryByType.pomodoro} total={entryCount} />
+                <BreakdownRow label="Manual" value={stats.entryByType.manual} total={stats.totalEntries} />
+                <BreakdownRow label="Stopwatch" value={stats.entryByType.stopwatch} total={stats.totalEntries} />
+                <BreakdownRow label="Pomodoro" value={stats.entryByType.pomodoro} total={stats.totalEntries} />
               </div>
             </CardContent>
           </Card>
@@ -312,7 +202,7 @@ export default async function AdminStatsPage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-stone-600 dark:text-stone-300">Total Projects</span>
-                  <span className="text-sm font-semibold text-stone-900 dark:text-stone-100">{projectCount}</span>
+                  <span className="text-sm font-semibold text-stone-900 dark:text-stone-100">{stats.projectCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-stone-600 dark:text-stone-300">Avg Projects/User</span>
@@ -333,7 +223,7 @@ export default async function AdminStatsPage() {
       </div>
 
       {/* Top Users by Hours */}
-      {topUsers.length > 0 && (
+      {stats.topUsers.length > 0 && (
         <div className="mb-8">
           <h3 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-3 flex items-center gap-2">
             <TrendingUp className="h-4 w-4" /> Top Users by Hours Tracked
@@ -349,7 +239,7 @@ export default async function AdminStatsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {topUsers.map((u, i) => (
+                  {stats.topUsers.map((u, i) => (
                     <TableRow key={u.email}>
                       <TableCell className="font-medium text-stone-500 dark:text-stone-400">{i + 1}</TableCell>
                       <TableCell className="font-medium text-stone-900 dark:text-stone-100">{u.email}</TableCell>
@@ -373,15 +263,15 @@ export default async function AdminStatsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <StatCard
             icon={Ticket} iconBg="bg-indigo-100 dark:bg-indigo-900/30" iconColor="text-indigo-600 dark:text-indigo-400"
-            label="Active Promos" value={activePromos} sub={`${totalPromoUses} total uses`}
+            label="Active Promos" value={stats.activePromos} sub={`${stats.totalPromoUses} total uses`}
           />
           <StatCard
             icon={Globe} iconBg="bg-emerald-100 dark:bg-emerald-900/30" iconColor="text-emerald-600 dark:text-emerald-400"
-            label="Whitelisted Domains" value={activeDomains} sub={`${premiumBySource.domain} users granted`}
+            label="Whitelisted Domains" value={stats.activeDomains} sub={`${stats.premiumBySource.domain} users granted`}
           />
           <StatCard
             icon={CreditCard} iconBg="bg-amber-100 dark:bg-amber-900/30" iconColor="text-amber-600 dark:text-amber-400"
-            label="Manual Grants" value={premiumBySource.manual} sub="Admin-granted premium"
+            label="Manual Grants" value={stats.premiumBySource.manual} sub="Admin-granted premium"
           />
         </div>
       </div>

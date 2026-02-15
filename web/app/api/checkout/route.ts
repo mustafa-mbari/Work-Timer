@@ -1,17 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getStripe, STRIPE_PRICES } from '@/lib/stripe'
-import { createClient } from '@/lib/supabase/server'
-import type { PricePlan } from '@/lib/stripe'
+import { requireAuthApi } from '@/lib/services/auth'
+import { getSubscriptionPlanStatus } from '@/lib/repositories/subscriptions'
+import { checkoutSchema, parseBody } from '@/lib/validation'
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
+  const user = await requireAuthApi()
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { plan } = await request.json() as { plan: PricePlan }
+  const parsed = parseBody(checkoutSchema, await request.json())
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 })
+  }
+
+  const plan = parsed.data.plan
   const priceId = STRIPE_PRICES[plan]
 
   if (!priceId) {
@@ -19,12 +23,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Check if user already has an active subscription
-  const { data: existing } = await (supabase
-    .from('subscriptions') as any)
-    .select('plan, status')
-    .eq('user_id', user.id)
-    .single()
-
+  const existing = await getSubscriptionPlanStatus(user.id)
   if (existing && existing.plan !== 'free' && existing.status === 'active') {
     return NextResponse.json({ error: 'You already have an active subscription' }, { status: 400 })
   }

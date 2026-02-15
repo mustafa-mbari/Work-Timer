@@ -13,6 +13,26 @@ export function setSuppressEnqueue(val: boolean): void {
   suppressEnqueue = val
 }
 
+// Cached sync eligibility — avoids 2 async reads (getSession + isCurrentUserPremium) per write.
+// Updated by chrome.storage.onChanged listener and on first check.
+let _syncEligible: boolean | null = null
+
+async function checkSyncEligible(): Promise<boolean> {
+  if (_syncEligible !== null) return _syncEligible
+  const [session, premium] = await Promise.all([getSession(), isCurrentUserPremium()])
+  _syncEligible = !!(session && premium)
+  return _syncEligible
+}
+
+// Invalidate cache when auth or subscription state changes in storage
+if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
+  chrome.storage.onChanged.addListener((changes) => {
+    if (changes['supabase.auth.token'] || changes['subscription']) {
+      _syncEligible = null
+    }
+  })
+}
+
 async function enqueueSyncItem(
   table: 'time_entries' | 'projects' | 'tags',
   recordId: string,
@@ -20,9 +40,7 @@ async function enqueueSyncItem(
   date?: string
 ): Promise<void> {
   if (suppressEnqueue) return
-  // Only enqueue if user is authenticated and on premium plan
-  const [session, premium] = await Promise.all([getSession(), isCurrentUserPremium()])
-  if (!session || !premium) return
+  if (!(await checkSyncEligible())) return
   await enqueue(table, recordId, action, date)
 }
 

@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
 import { createServiceClient } from '@/lib/supabase/server'
+import { upsertSubscription, updateSubscriptionByStripeId } from '@/lib/repositories/subscriptions'
 import type Stripe from 'stripe'
+import type { DbSubscription } from '@shared/types'
 
-function buildPlanMap(): Record<string, string> {
-  const map: Record<string, string> = {}
+type Plan = DbSubscription['plan']
+
+function buildPlanMap(): Record<string, Plan> {
+  const map: Record<string, Plan> = {}
   const monthly = process.env.STRIPE_PRICE_MONTHLY
   const yearly = process.env.STRIPE_PRICE_YEARLY
   const lifetime = process.env.STRIPE_PRICE_LIFETIME
@@ -18,14 +22,13 @@ const PLAN_MAP = buildPlanMap()
 
 const VALID_PLANS = ['premium_monthly', 'premium_yearly', 'premium_lifetime'] as const
 
-function resolveCheckoutPlan(metadata: Record<string, string> | null): string | null {
+function resolveCheckoutPlan(metadata: Record<string, string> | null): Plan | null {
   const plan = metadata?.plan
   if (!plan) return null
   if (plan === 'lifetime') return 'premium_lifetime'
   if (plan === 'yearly') return 'premium_yearly'
   if (plan === 'monthly') return 'premium_monthly'
-  // Direct plan name (e.g. 'premium_monthly')
-  if (VALID_PLANS.includes(plan as any)) return plan
+  if (VALID_PLANS.includes(plan as typeof VALID_PLANS[number])) return plan as Plan
   return null
 }
 
@@ -45,7 +48,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
-  const supabase = await createServiceClient()
+  // Idempotency check: skip already-processed events
+  try {
+    const supabase = await createServiceClient()
+    const { data: existing } = await (supabase.from('stripe_events') as any)
+      .select('event_id')
+      .eq('event_id', event.id)
+      .maybeSingle()
+    if (existing) {
+      return NextResponse.json({ received: true, duplicate: true })
+    }
+    // Mark event as processed before handling (at-most-once delivery)
+    await (supabase.from('stripe_events') as any)
+      .insert({ event_id: event.id, event_type: event.type })
+  } catch (err) {
+    // Log but don't fail — idempotency is best-effort until table exists
+    console.warn('[stripe webhook] idempotency check failed:', err)
+  }
 
   try {
     switch (event.type) {
@@ -65,17 +84,16 @@ export async function POST(request: NextRequest) {
 
         const isLifetime = planName === 'premium_lifetime'
 
-        const { error } = await (supabase.from('subscriptions') as any).upsert({
+        const { error } = await upsertSubscription({
           user_id: userId,
           plan: planName,
           status: 'active',
           stripe_customer_id: session.customer as string | null,
           stripe_subscription_id: isLifetime ? null : session.subscription as string | null,
-          current_period_end: isLifetime ? null : null, // updated by subscription.updated event
+          current_period_end: null,
           cancel_at_period_end: false,
           granted_by: 'stripe',
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'user_id' })
+        })
 
         if (error) {
           console.error('[stripe webhook] checkout upsert failed:', error)
@@ -94,13 +112,12 @@ export async function POST(request: NextRequest) {
           break
         }
 
-        const { error } = await (supabase.from('subscriptions') as any).update({
+        const { error } = await updateSubscriptionByStripeId(sub.id, {
           plan: planName,
-          status: sub.status,
+          status: sub.status as DbSubscription['status'],
           current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
           cancel_at_period_end: sub.cancel_at_period_end,
-          updated_at: new Date().toISOString(),
-        }).eq('stripe_subscription_id', sub.id)
+        })
 
         if (error) {
           console.error('[stripe webhook] subscription update failed:', error)
@@ -111,11 +128,10 @@ export async function POST(request: NextRequest) {
 
       case 'customer.subscription.deleted': {
         const sub = event.data.object as Stripe.Subscription
-        const { error } = await (supabase.from('subscriptions') as any).update({
+        const { error } = await updateSubscriptionByStripeId(sub.id, {
           plan: 'free',
           status: 'canceled',
-          updated_at: new Date().toISOString(),
-        }).eq('stripe_subscription_id', sub.id)
+        })
 
         if (error) {
           console.error('[stripe webhook] subscription delete failed:', error)
@@ -127,10 +143,9 @@ export async function POST(request: NextRequest) {
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice
         if (invoice.subscription) {
-          const { error } = await (supabase.from('subscriptions') as any).update({
+          const { error } = await updateSubscriptionByStripeId(invoice.subscription as string, {
             status: 'past_due',
-            updated_at: new Date().toISOString(),
-          }).eq('stripe_subscription_id', invoice.subscription as string)
+          })
 
           if (error) {
             console.error('[stripe webhook] payment_failed update failed:', error)

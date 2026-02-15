@@ -1,41 +1,33 @@
-import { createServiceClient } from '@/lib/supabase/server'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
-import { Users, Crown, UserPlus, Clock, FileText } from 'lucide-react'
+import { Users, Crown, UserPlus, Clock } from 'lucide-react'
+import { getAllAuthUsers } from '@/lib/repositories/admin'
+import { getAllSubscriptions } from '@/lib/repositories/subscriptions'
+import { getPlatformStats } from '@/lib/repositories/admin'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 export default async function AdminOverviewPage() {
-  const supabase = await createServiceClient()
-
-  // Use auth.admin for accurate user count (profiles table may be incomplete)
-  const [
-    { data: { users: authUsers } },
-    { data: subscriptions, error: subErr },
-    { data: allEntries, error: entriesErr },
-  ] = await Promise.all([
-    supabase.auth.admin.listUsers({ perPage: 10000 }),
-    (supabase.from('subscriptions') as any).select('plan, status').range(0, 49999),
-    (supabase.from('time_entries') as any).select('duration').is('deleted_at', null).range(0, 49999),
+  const [authUsers, subscriptions, platformStats] = await Promise.all([
+    getAllAuthUsers(),
+    getAllSubscriptions(),
+    getPlatformStats(),
   ])
 
-  if (subErr) console.error('Subscriptions query error:', subErr)
-  if (entriesErr) console.error('Entries query error:', entriesErr)
-
-  const total = authUsers?.length ?? 0
-  const premiumSubs = subscriptions?.filter((s: any) => s.plan !== 'free' && s.status === 'active') || []
+  const total = authUsers.length
+  const premiumSubs = subscriptions.filter(s => s.plan !== 'free' && s.status === 'active')
   const premium = premiumSubs.length
   const free = total - premium
-  const totalHours = allEntries?.reduce((sum: number, e: any) => sum + (e.duration / 3600000), 0) || 0
+  const totalHours = platformStats.total_hours
 
   // Recent sign-ups from auth users (sorted by created_at desc, take 10)
-  const recentUsers = [...(authUsers || [])]
-    .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  const recentUsers = [...authUsers]
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 10)
-    .map((u: any) => ({
+    .map(u => ({
       email: u.email || 'Unknown',
       display_name: u.user_metadata?.full_name || u.user_metadata?.name || null,
       created_at: u.created_at,
@@ -126,9 +118,9 @@ export default async function AdminOverviewPage() {
         <CardContent className="pt-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-stone-900 dark:text-stone-100">Recent Sign-ups</h2>
-            <Badge variant="secondary">{recentUsers?.length ?? 0} latest</Badge>
+            <Badge variant="secondary">{recentUsers.length} latest</Badge>
           </div>
-          {recentUsers && recentUsers.length > 0 ? (
+          {recentUsers.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -137,7 +129,7 @@ export default async function AdminOverviewPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentUsers.map((u: any) => (
+                {recentUsers.map(u => (
                   <TableRow key={u.email}>
                     <TableCell>
                       <div>

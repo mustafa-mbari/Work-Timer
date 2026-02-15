@@ -139,6 +139,7 @@ export type MessageAction =
   | 'AUTH_STATE'
   | 'SYNC_NOW'
   | 'SYNC_STATUS'
+  | 'UPLOAD_ALL'
   | 'GET_SUBSCRIPTION'
   | 'SYNC_REMOTE_UPDATE'
 

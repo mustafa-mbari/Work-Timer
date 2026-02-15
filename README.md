@@ -1,8 +1,8 @@
-# Work Timer — Chrome Extension + Web Dashboard
+# Work Timer
 
-> **A modern, privacy-first time tracking system with Chrome extension and companion website**
+A modern, privacy-first time tracking system with Chrome extension and companion website.
 
-Track your work time effortlessly with stopwatch, manual entry, and Pomodoro modes. Start with local-only tracking (no account needed), or upgrade to Premium for cloud sync, advanced analytics, and multi-device support.
+Track your work time with stopwatch, manual entry, and Pomodoro modes. Start with local-only tracking (no account needed), or upgrade to Premium for cloud sync, advanced analytics, and multi-device support.
 
 ![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-4285F4?logo=googlechrome&logoColor=white)
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-green)
@@ -12,61 +12,52 @@ Track your work time effortlessly with stopwatch, manual entry, and Pomodoro mod
 
 ---
 
-## ✨ Features
+## Features
 
-### 🎯 Core Timer Modes
-- **Stopwatch** — Start, pause, resume, and stop with one click
-- **Manual Entry** — Log time retroactively with time ranges or duration
-- **Pomodoro** — 25/5/15 intervals with auto-break transitions and notifications
+### Core Timer Modes
+- **Stopwatch** -- Start, pause, resume, and stop with one click
+- **Manual Entry** -- Log time retroactively with time ranges or duration, any date
+- **Pomodoro** -- 25/5/15 intervals with auto-break transitions and notifications
 
-### 📊 Tracking & Analytics
-- **Daily View** — See today's entries with project breakdown
-- **Weekly View** — 7-day grid with daily totals and progress bars
-- **Statistics** — Weekly bar chart, project pie chart, monthly heatmap (GitHub-style)
-- **Goals & Targets** — Set daily/weekly hour goals with visual progress tracking
+### Tracking & Analytics
+- **Daily View** -- Today's entries with project breakdown and total hours
+- **Weekly View** -- 7-day grid with daily totals, entry pills, and add entry per day
+- **Statistics** -- Weekly bar chart, project pie chart, monthly heatmap (GitHub-style)
+- **Goals & Targets** -- Daily/weekly hour goals with color-coded progress bars
 
-### 🎨 Modern UI & UX
-- **6 Themes** — Light Soft, Light Paper, Light Sepia, Dark Charcoal, Dark Mocha, Dark Midnight, System
-- **Inter Variable Font** — Professional typography with indigo accent palette
-- **19 Custom Icons** — Handcrafted SVG line icons throughout
-- **Smooth Animations** — Backdrop blur modals, fade-in transitions, theme switching
-- **Keyboard Shortcuts** — Alt+Shift+S (start/stop), Alt+Shift+P (pause), Alt+Shift+T (open popup)
-- **Confirmation Dialogs** — Prevents accidental deletion with ESC key support
+### Modern UI
+- **6 Themes** -- Light Soft, Light Paper, Light Sepia, Dark Charcoal, Dark Mocha, Dark Midnight, plus System auto-detect
+- **Inter Variable Font** -- Professional typography with indigo accent palette
+- **Custom SVG Icons** -- 19 handcrafted line icons
+- **Smooth Animations** -- Backdrop blur modals, fade-in transitions
+- **Keyboard Shortcuts** -- Alt+Shift+S (start/stop), Alt+Shift+P (pause), Alt+Shift+T (open popup)
 
-### 🔧 Advanced Features
-- **Projects** — Color-coded projects with inline creation, editing, and color-dot dropdown selector
-- **Work Types (Tags)** — Categorize entries with custom tags via tabbed input interface
-- **Entry Links** — Attach URLs to time entries via dedicated link tab (open in new tab)
-- **Tabbed Input** — Switch between Description, Work Type, and Link fields while timing
-- **Idle Detection** — Prompt to keep or discard idle time when you return
-- **Export** — CSV and Excel export with auto-sized columns
-- **Browser Integration** — Floating timer widget (shows project + description), timer in tab title, right-click context menu
+### Advanced Features
+- **Projects** -- Color-coded with inline creation, editing, and color-dot dropdown
+- **Work Types (Tags)** -- Categorize entries with custom tags via tabbed input
+- **Entry Links** -- Attach URLs to time entries (opens in new tab)
+- **Idle Detection** -- Prompt to keep or discard idle time
+- **Export** -- CSV and Excel export with auto-sized columns
+- **Browser Integration** -- Floating timer widget, timer in tab title, right-click context menu
 
-### 💎 Premium Features (Optional)
-- **Cloud Sync** — Automatic sync across all your devices via Supabase
-- **Unlimited History** — Access all your time entries (free users limited to 30 days)
-- **Unlimited Projects** — Create as many projects as you need (free users limited to 5)
-- **Advanced Analytics** — Detailed reports, trends, and insights on companion website
-- **CSV/Excel Export** — Export your data for external analysis
-- **Work Type Editing** — Full tag management and customization
-- **Multi-Device** — Seamlessly work across Chrome on different computers
+### Premium Features (Optional)
+- **Cloud Sync** -- Automatic sync across devices via Supabase with conflict resolution
+- **Unlimited History** -- All time entries (free: 30 days)
+- **Unlimited Projects** -- No limit (free: 5 projects)
+- **Advanced Analytics** -- Detailed reports on companion website
+- **CSV/Excel Export** -- Export data for external analysis
+- **Work Type Editing** -- Full tag management
+- **Multi-Device** -- Seamless cross-browser sync
 
-### 🌐 Companion Website
-- **Dashboard** — Account overview, plan management, connected devices
-- **Analytics** — Advanced reports with weekly trends, project breakdowns, and insights
-- **Billing** — Manage subscriptions, upgrade plans, promo codes
-- **Admin Panel** — User management, statistics, domain whitelisting, promo codes (admin only)
-
-### 🛡️ Quality & Polish
-- **Offline-First** — All data stored locally with `chrome.storage.local`, works 100% offline
-- **Error Handling** — User-friendly error messages instead of technical jargon
-- **Loading States** — Spinners and feedback during async operations
-- **Accessibility** — ARIA labels, keyboard navigation, WCAG AA contrast
-- **Structured Logging** — Timestamped, leveled logs for debugging
+### Companion Website
+- **Dashboard** -- Account overview, plan info, connected devices
+- **Analytics** -- Weekly trends, project breakdowns, peak hours, streaks
+- **Billing** -- Subscription management, promo codes, Stripe checkout
+- **Admin Panel** -- User management, platform stats, domain whitelisting, promo codes
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Node.js 18+ and npm
@@ -75,196 +66,139 @@ Track your work time effortlessly with stopwatch, manual entry, and Pomodoro mod
 ### Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/mustafa-mbari/Work-Timer.git
 cd Work-Timer
-
-# Install dependencies
 npm install
-
-# Development build with HMR
-npm run dev
-
-# Production build
 npm run build
 ```
 
 ### Load in Chrome
 
-1. Build the extension: `npm run build`
-2. Open Chrome and navigate to `chrome://extensions`
-3. Enable **Developer mode** (top-right toggle)
-4. Click **Load unpacked**
-5. Select the `dist/` folder
+1. Open `chrome://extensions`
+2. Enable **Developer mode** (top-right toggle)
+3. Click **Load unpacked** and select the `dist/` folder
 
-The extension popup will appear when you click the extension icon in the toolbar.
+### Development
+
+```bash
+# Extension (with HMR)
+npm run dev
+
+# Website
+cd web && npm install && npm run dev
+```
 
 ---
 
-## 📁 Project Structure (Monorepo)
+## Project Structure
 
 ```
 Work-Timer/
-├── shared/             # Shared types & constants
-│   ├── types.ts        # Database types, shared interfaces
-│   └── constants.ts    # Free/Premium limits, pricing
-├── src/                # Chrome Extension
-│   ├── popup/          # Popup entry point
-│   ├── background/     # Service worker (timer engine, sync, auth)
-│   ├── components/     # React UI components
-│   ├── hooks/          # Custom React hooks
-│   ├── auth/           # Supabase auth client
-│   ├── sync/           # Cloud sync engine
-│   ├── premium/        # Feature gating utilities
-│   ├── utils/          # Helper functions
-│   ├── constants/      # Extension constants
-│   ├── types/          # TypeScript interfaces
-│   ├── storage/        # chrome.storage.local wrapper
-│   ├── content/        # Content script (floating widget)
-│   └── index.css       # Global styles + Tailwind v4
-├── web/                # Companion Website (Next.js 15)
-│   ├── app/            # Next.js App Router
-│   │   ├── page.tsx            # Landing page
-│   │   ├── login/              # Authentication
-│   │   ├── register/           # Registration
-│   │   ├── dashboard/          # User dashboard
-│   │   ├── billing/            # Subscription management
-│   │   ├── analytics/          # Advanced reports (premium)
-│   │   ├── admin/              # Admin panel (6 pages)
-│   │   └── api/                # API routes (Stripe, promo validation)
-│   ├── components/     # React components
-│   ├── lib/            # Supabase SSR, Stripe client
-│   ├── middleware.ts   # Auth + route protection
-│   └── package.json
-├── public/             # Extension assets
-├── package.json        # Workspace root
-└── pnpm-workspace.yaml # Monorepo config
+  shared/               # Shared types & constants (extension + website)
+    types.ts            # Database types, Database type map
+    constants.ts        # Free/Premium limits
+  src/                  # Chrome Extension
+    popup/              # Popup entry point
+    background/         # Service worker (timer, sync, auth)
+    components/         # React UI components
+    hooks/              # Custom hooks (useTimer, useAuth, usePremium, etc.)
+    auth/               # Supabase auth client
+    sync/               # Cloud sync engine (queue, push/pull, conflict resolver)
+    premium/            # Feature gating
+    storage/            # chrome.storage.local wrapper
+    content/            # Floating timer widget (content script)
+    utils/              # Helpers (date/time, export, logger, etc.)
+    constants/          # Colors, timers, styles
+    types/              # TypeScript interfaces
+  web/                  # Companion Website (Next.js 15)
+    app/                # App Router pages + API routes
+    components/         # UI components (shadcn/ui)
+    lib/
+      repositories/     # Typed Supabase queries (7 modules)
+      services/         # Business logic (auth, analytics, billing)
+      validation.ts     # Zod schemas for API inputs
+      supabase/         # Server + service role clients
+      stripe.ts         # Stripe config
+  supabase/
+    migrations/         # SQL migrations (indexes, RPCs, promo, stripe_events)
+  public/               # Extension assets + manifest.json
 ```
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Chrome Extension
-| Category | Technology | Purpose |
-|----------|-----------|---------|
-| **Framework** | React 18 | Component-based UI |
-| **Language** | TypeScript 5 | Type safety |
-| **Styling** | TailwindCSS v4 | Utility-first CSS |
-| **Build** | Vite | Fast builds & HMR |
-| **Charts** | Recharts | React-native charts |
-| **Storage** | chrome.storage.local | Offline-first persistence |
-| **Sync** | Supabase Realtime | Cloud sync & multi-device |
-| **Auth** | Supabase Auth | User authentication |
-| **State** | React Context + Hooks | Simple state management |
-| **IDs** | nanoid | Compact unique IDs |
-| **Dates** | date-fns | Lightweight date utils |
-| **Export** | xlsx + file-saver | Excel/CSV export |
-| **Icons** | Custom SVG | 19 handcrafted icons |
-| **Font** | Inter Variable | Modern typography |
+| Technology | Purpose |
+|-----------|---------|
+| React 18 + TypeScript | Component UI with type safety |
+| TailwindCSS v4 | Utility-first styling |
+| Vite | Build tool with HMR |
+| Recharts | Charts (lazy loaded) |
+| xlsx | Excel export (dynamic import) |
+| Supabase | Auth + cloud sync |
+| chrome.storage.local | Offline-first persistence |
+| nanoid / date-fns | IDs and dates |
 
 ### Companion Website
-| Category | Technology | Purpose |
-|----------|-----------|---------|
-| **Framework** | Next.js 15 | Server-side rendering & API routes |
-| **UI Library** | React 19 | Component-based UI |
-| **Language** | TypeScript 5 | Type safety |
-| **Styling** | TailwindCSS v4 | Utility-first CSS (matching extension) |
-| **Auth** | @supabase/ssr | Server-side auth with SSR |
-| **Database** | Supabase PostgreSQL | User data, subscriptions, time entries |
-| **Payments** | Stripe | Subscription billing |
-| **Deployment** | Vercel | Serverless hosting |
+| Technology | Purpose |
+|-----------|---------|
+| Next.js 15 + React 19 | Server-side rendering + API routes |
+| shadcn/ui | UI component library |
+| TailwindCSS v4 | Matching design system |
+| Supabase (SSR + service role) | Auth + database |
+| Stripe | Subscription billing |
+| Zod | Input validation |
+| Recharts | Analytics charts |
 
 ---
 
-## 📝 Development
+## Development
 
-### Available Scripts
+### Scripts
 
 ```bash
-npm run dev          # Development build with HMR (watch mode)
-npm run build        # Production build → dist/
-npm run lint         # Run ESLint
-npm run preview      # Preview production build (not for extensions)
+# Extension
+npm run dev          # Dev build with HMR
+npm run build        # Production build -> dist/
+npm run lint         # ESLint
+
+# Website
+cd web
+npm run dev          # Next.js dev server (port 3000)
+npm run build        # Production build
+npm run lint
 ```
 
-### Path Alias
+### Path Aliases
 
-The `@/` alias maps to `src/`:
-
-```typescript
-import { useTimer } from '@/hooks/useTimer'
-import { PROJECT_COLORS } from '@/constants/colors'
-```
-
-Configured in `vite.config.ts` and `tsconfig.app.json`.
-
-### Code Quality
-
-- **ESLint** — Pre-configured with React + TypeScript rules
-- **TypeScript** — Strict mode enabled
-- **Structured Logging** — Use `logger.debug/info/warn/error` instead of console
-- **Error Messages** — Use `getUserFriendlyError()` for user-facing errors
-- **Loading States** — Use `<Spinner />` or `<LoadingState />` for async operations
+- Extension: `@/` -> `src/`, `@shared/` -> `shared/`
+- Website: `@/` -> `web/`, `@shared/` -> `shared/`
 
 ---
 
-## 🎯 Roadmap
+## Architecture Highlights
 
-See [PLAN.md](PLAN.md) and [PLAN_2.md](PLAN_2.md) for full development plans.
-
-### ✅ Completed (Phases 1–4)
-
-**Phases 1–3: Extension Core Features**
-- Stopwatch, Manual, Pomodoro timer modes
-- Daily/Weekly/Stats views with charts and heatmap
-- Projects, tags, goals, idle detection
-- Export (CSV/Excel), 6 themes, keyboard shortcuts
-- Floating widget, tab title integration, context menu
-- Code quality improvements (constants, logging, error handling, UX polish)
-
-**Phase 4: Premium, Auth, Cloud Sync & Website** (✅ Complete)
-- ✅ Supabase backend integration
-- ✅ User authentication (email/password, Google OAuth, magic links)
-- ✅ Cloud sync engine with Supabase Realtime
-- ✅ Multi-device support with conflict resolution
-- ✅ Premium tier with Stripe subscriptions (monthly/yearly/lifetime)
-- ✅ Feature gating (5 projects free, 30-day history limit, premium analytics)
-- ✅ Companion Next.js website with landing page
-- ✅ User dashboard and analytics
-- ✅ Billing management and upgrade flows
-- ✅ Admin panel (6 pages: overview, users, stats, domains, promos, subscriptions)
-- ✅ Promo codes and domain whitelisting
-- ✅ Extension ↔ Website messaging bridge
-
-**Recent Polish & Improvements** (Phase 4H)
-- ✅ **Instant sync** — All entry/project edits now sync immediately (no 5-minute delay)
-- ✅ **Sync status UI** — Manual "Sync now" button with last-synced timestamp in Settings
-- ✅ **Initial sync dialog** — Prompts to upload existing local data after first login
-- ✅ **Entry card redesign** — Project name now prominent, description secondary
-- ✅ **Default "No Project"** — Timer starts with no project selected (cleaner UX)
-- ✅ **Environment URLs** — Local dev uses `http://localhost:3000` via env variables
-- ✅ **Race condition fix** — Sync queue items fully written before push triggers
-
-### 🔜 Next (Future Enhancements)
-- Smart reminders (no time logged, break reminders, end-of-day)
-- Auto-categorization (URL → project mapping)
-- Rich notes with Markdown support
-- Internationalization (English, Arabic with RTL)
-- Team workspaces
-- API for third-party integrations
+- **Offline-first**: Extension works 100% without internet. Cloud sync is additive.
+- **Event-driven timer**: Popup receives `TIMER_SYNC` broadcasts from background (no polling).
+- **Code splitting**: Heavy libraries (recharts, xlsx, supabase) in separate chunks, lazy loaded.
+- **Repository pattern**: All database queries centralized in `web/lib/repositories/` with typed Supabase calls.
+- **Server-side aggregation**: Admin stats and user analytics computed via PostgreSQL RPC functions (not client-side JS).
+- **Sync conflict resolution**: Queue-based -- local changes win over remote when pending in sync queue.
+- **Webhook idempotency**: Stripe events deduplicated via `stripe_events` table.
+- **Input validation**: All API routes validated with Zod schemas.
 
 ---
 
-## 📄 License
+## License
 
-MIT License — See [LICENSE](LICENSE) for details.
+MIT License -- See [LICENSE](LICENSE) for details.
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
-Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
+Contributions welcome!
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -274,11 +208,7 @@ Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 
 ---
 
-## 💬 Support
+## Support
 
 - **Issues:** [GitHub Issues](https://github.com/mustafa-mbari/Work-Timer/issues)
 - **Discussions:** [GitHub Discussions](https://github.com/mustafa-mbari/Work-Timer/discussions)
-
----
-
-**Made with ❤️ using React + TypeScript + TailwindCSS**

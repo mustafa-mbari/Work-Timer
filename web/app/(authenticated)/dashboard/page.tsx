@@ -1,26 +1,19 @@
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Monitor, ArrowRight } from 'lucide-react'
+import { requireAuth } from '@/lib/services/auth'
+import { getUserSubscription } from '@/lib/repositories/subscriptions'
+import { getUserSyncCursors } from '@/lib/repositories/syncCursors'
 
 export default async function DashboardPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
+  const user = await requireAuth()
 
-  // Fetch subscription and sync cursors in parallel
-  const [{ data: subscription }, { data: cursors }] = await Promise.all([
-    (supabase.from('subscriptions') as any)
-      .select('plan, status, current_period_end, cancel_at_period_end')
-      .eq('user_id', user.id)
-      .single(),
-    (supabase.from('sync_cursors') as any)
-      .select('device_id, last_sync')
-      .eq('user_id', user.id)
-      .order('last_sync', { ascending: false }),
+  const [{ data: subscription }, cursors] = await Promise.all([
+    getUserSubscription(user.id),
+    getUserSyncCursors(user.id),
   ])
 
   const isPremium = subscription?.plan !== 'free'
@@ -43,7 +36,7 @@ export default async function DashboardPage() {
         <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle>Your Plan</CardTitle>
           <Badge variant={isPremium ? 'success' : 'secondary'}>
-            {planLabel[subscription?.plan] || 'Free'}
+            {planLabel[subscription?.plan ?? 'free'] || 'Free'}
           </Badge>
         </CardHeader>
         <CardContent>
@@ -55,7 +48,7 @@ export default async function DashboardPage() {
               <p>
                 $1.99/month &middot;{' '}
                 {subscription.cancel_at_period_end
-                  ? `Cancels on ${new Date(subscription.current_period_end).toLocaleDateString()}`
+                  ? `Cancels on ${new Date(subscription.current_period_end!).toLocaleDateString()}`
                   : `Renews ${subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'N/A'}`}
               </p>
             )}
@@ -63,7 +56,7 @@ export default async function DashboardPage() {
               <p>
                 $9.99/year &middot;{' '}
                 {subscription.cancel_at_period_end
-                  ? `Cancels on ${new Date(subscription.current_period_end).toLocaleDateString()}`
+                  ? `Cancels on ${new Date(subscription.current_period_end!).toLocaleDateString()}`
                   : `Renews ${subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'N/A'}`}
               </p>
             )}
@@ -94,7 +87,7 @@ export default async function DashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {cursors.map((c: any) => (
+                {cursors.map(c => (
                   <TableRow key={c.device_id}>
                     <TableCell>
                       <div className="flex items-center gap-3">

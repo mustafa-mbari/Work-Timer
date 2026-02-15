@@ -1,29 +1,24 @@
 import { NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
-import { createClient } from '@/lib/supabase/server'
+import { requireAuthApi } from '@/lib/services/auth'
+import { getStripeCustomerId } from '@/lib/repositories/subscriptions'
 
 export async function POST() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
+  const user = await requireAuthApi()
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { data: subscription } = await (supabase
-    .from('subscriptions') as any)
-    .select('stripe_customer_id')
-    .eq('user_id', user.id)
-    .single()
+  const stripeCustomerId = await getStripeCustomerId(user.id)
 
-  if (!subscription?.stripe_customer_id) {
+  if (!stripeCustomerId) {
     return NextResponse.json({ error: 'No Stripe customer found' }, { status: 400 })
   }
 
   try {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL!
     const session = await getStripe().billingPortal.sessions.create({
-      customer: subscription.stripe_customer_id,
+      customer: stripeCustomerId,
       return_url: `${siteUrl}/billing`,
     })
     return NextResponse.json({ url: session.url })

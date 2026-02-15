@@ -1,34 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { requireAuthApi } from '@/lib/services/auth'
+import { getPromoByCode, checkUserRedemption } from '@/lib/repositories/promoCodes'
+import { promoValidateSchema, parseBody } from '@/lib/validation'
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
+  const user = await requireAuthApi()
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { code } = await request.json() as { code: string }
-
-  if (!code || typeof code !== 'string') {
-    return NextResponse.json({ error: 'Promo code is required' }, { status: 400 })
+  const parsed = parseBody(promoValidateSchema, await request.json())
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 })
   }
 
-  // Fetch promo code
-  const { data: promo, error: promoError } = await (supabase
-    .from('promo_codes') as any)
-    .select('*')
-    .eq('code', code.toUpperCase())
-    .single()
+  const { code } = parsed.data
+
+  const { data: promo, error: promoError } = await getPromoByCode(code)
 
   if (promoError || !promo) {
     return NextResponse.json({ valid: false, error: 'Invalid promo code' }, { status: 404 })
-  }
-
-  // Check if active
-  if (!promo.active) {
-    return NextResponse.json({ valid: false, error: 'This promo code is no longer active' }, { status: 400 })
   }
 
   // Check expiry
@@ -46,18 +37,11 @@ export async function POST(request: NextRequest) {
   }
 
   // Check if user already redeemed this code
-  const { data: redemption } = await (supabase
-    .from('promo_redemptions') as any)
-    .select('id')
-    .eq('promo_code_id', promo.id)
-    .eq('user_id', user.id)
-    .single()
-
-  if (redemption) {
+  const alreadyRedeemed = await checkUserRedemption(promo.id, user.id)
+  if (alreadyRedeemed) {
     return NextResponse.json({ valid: false, error: 'You have already used this promo code' }, { status: 400 })
   }
 
-  // Valid promo code
   return NextResponse.json({
     valid: true,
     promo: {

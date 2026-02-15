@@ -1,7 +1,9 @@
-import { createServiceClient } from '@/lib/supabase/server'
+import { getAllAuthUsers } from '@/lib/repositories/admin'
+import { getAllSubscriptions } from '@/lib/repositories/subscriptions'
+import { getAllProfiles } from '@/lib/repositories/profiles'
 import UsersTable from './UsersTable'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 const PAGE_SIZE = 15
 
@@ -14,27 +16,20 @@ export default async function AdminUsersPage({
   const page = Math.max(1, parseInt(params.page || '1', 10) || 1)
   const search = (params.search || '').toLowerCase()
 
-  const supabase = await createServiceClient()
-
-  // Use auth.admin for the full user list (profiles table may be incomplete)
-  const [
-    { data: { users: authUsers } },
-    { data: subscriptions },
-    { data: profiles },
-  ] = await Promise.all([
-    supabase.auth.admin.listUsers({ perPage: 10000 }),
-    (supabase.from('subscriptions') as any).select('user_id, plan, status'),
-    (supabase.from('profiles') as any).select('id, display_name, role'),
+  const [authUsers, subscriptions, profiles] = await Promise.all([
+    getAllAuthUsers(),
+    getAllSubscriptions(),
+    getAllProfiles(),
   ])
 
   // Build lookup maps
   const subMap = new Map<string, { plan: string; status: string }>()
-  subscriptions?.forEach((s: any) => { subMap.set(s.user_id, s) })
+  subscriptions.forEach(s => { subMap.set(s.user_id, s) })
   const profileMap = new Map<string, { display_name: string | null; role: string }>()
-  profiles?.forEach((p: any) => { profileMap.set(p.id, p) })
+  profiles.forEach(p => { profileMap.set(p.id, p) })
 
   // Merge auth users with profile + subscription data
-  let mergedUsers = (authUsers || []).map((u: any) => {
+  let mergedUsers = authUsers.map(u => {
     const profile = profileMap.get(u.id)
     const sub = subMap.get(u.id)
     return {

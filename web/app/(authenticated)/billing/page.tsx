@@ -1,21 +1,16 @@
-import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import CheckoutButton from './CheckoutButton'
 import PortalButton from './PortalButton'
 import PromoCodeInput from './PromoCodeInput'
 import { PRICING } from '@shared/constants'
+import { requireAuth } from '@/lib/services/auth'
+import { getUserSubscriptionForBilling } from '@/lib/repositories/subscriptions'
 
 export default async function BillingPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
+  const user = await requireAuth()
 
-  const { data: subscription } = await (supabase
-    .from('subscriptions') as any)
-    .select('*')
-    .eq('user_id', user.id)
-    .single()
+  const { data: subscription } = await getUserSubscriptionForBilling(user.id)
 
   const isPremium = subscription && subscription.plan !== 'free'
   const isLifetime = subscription?.plan === 'premium_lifetime'
@@ -46,7 +41,7 @@ export default async function BillingPage() {
         </CardHeader>
         <CardContent>
           <p className="text-lg font-semibold text-stone-900 dark:text-stone-100 mb-1">
-            {planLabel[subscription?.plan] || 'Free'}
+            {planLabel[subscription?.plan ?? 'free'] || 'Free'}
           </p>
           <div className="text-sm text-stone-600 dark:text-stone-400">
             {subscription?.plan === 'free' && (
@@ -56,16 +51,16 @@ export default async function BillingPage() {
               <p>
                 ${PRICING.monthly}/month &middot;{' '}
                 {subscription.cancel_at_period_end
-                  ? `Cancels on ${new Date(subscription.current_period_end).toLocaleDateString()}`
-                  : `Renews on ${new Date(subscription.current_period_end).toLocaleDateString()}`}
+                  ? `Cancels on ${new Date(subscription.current_period_end!).toLocaleDateString()}`
+                  : `Renews on ${new Date(subscription.current_period_end!).toLocaleDateString()}`}
               </p>
             )}
             {subscription?.plan === 'premium_yearly' && (
               <p>
                 ${PRICING.yearly}/year &middot;{' '}
                 {subscription.cancel_at_period_end
-                  ? `Cancels on ${new Date(subscription.current_period_end).toLocaleDateString()}`
-                  : `Renews on ${new Date(subscription.current_period_end).toLocaleDateString()}`}
+                  ? `Cancels on ${new Date(subscription.current_period_end!).toLocaleDateString()}`
+                  : `Renews on ${new Date(subscription.current_period_end!).toLocaleDateString()}`}
               </p>
             )}
             {subscription?.plan === 'premium_lifetime' && (

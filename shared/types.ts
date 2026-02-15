@@ -127,70 +127,320 @@ export interface DbWhitelistedDomain {
 }
 
 // ---------------------------------------------------------------------------
-// Insert / Update helper types
-// Insert: required fields that have no DB default must be provided; the rest optional
+// Insert / Update helper types (flat object types for supabase-js compatibility)
+// Insert: required fields that have no DB default must be provided; `?` = has DB default
 // Update: all fields optional (you only update what you need)
 // ---------------------------------------------------------------------------
 
-// Profiles — id comes from auth.users, created_at/updated_at have DB defaults
-type DbProfileInsert = Pick<DbProfile, 'id' | 'email'> & Partial<Omit<DbProfile, 'id' | 'email'>>
-type DbProfileUpdate = Partial<DbProfile>
+interface DbProfileInsert {
+  id: string
+  email: string
+  display_name?: string | null
+  avatar_url?: string | null
+  role?: 'user' | 'admin'
+  created_at?: string
+  updated_at?: string
+}
+interface DbProfileUpdate {
+  id?: string
+  email?: string
+  display_name?: string | null
+  avatar_url?: string | null
+  role?: 'user' | 'admin'
+  created_at?: string
+  updated_at?: string
+}
 
-// Subscriptions — id is auto UUID, created_at/updated_at have defaults, plan defaults to 'free'
-type DbSubscriptionInsert = Pick<DbSubscription, 'user_id'> & Partial<Omit<DbSubscription, 'user_id'>>
-type DbSubscriptionUpdate = Partial<DbSubscription>
+interface DbSubscriptionInsert {
+  user_id: string
+  id?: string
+  stripe_customer_id?: string | null
+  stripe_subscription_id?: string | null
+  plan?: 'free' | 'premium_monthly' | 'premium_yearly' | 'premium_lifetime'
+  status?: 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete'
+  current_period_start?: string | null
+  current_period_end?: string | null
+  cancel_at_period_end?: boolean
+  granted_by?: 'stripe' | 'domain' | 'promo' | 'admin_manual' | null
+  promo_code_id?: string | null
+  created_at?: string
+  updated_at?: string
+}
+interface DbSubscriptionUpdate {
+  user_id?: string
+  id?: string
+  stripe_customer_id?: string | null
+  stripe_subscription_id?: string | null
+  plan?: 'free' | 'premium_monthly' | 'premium_yearly' | 'premium_lifetime'
+  status?: 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete'
+  current_period_start?: string | null
+  current_period_end?: string | null
+  cancel_at_period_end?: boolean
+  granted_by?: 'stripe' | 'domain' | 'promo' | 'admin_manual' | null
+  promo_code_id?: string | null
+  created_at?: string
+  updated_at?: string
+}
 
-// Projects — id is nanoid from client, user_id required, created_at/updated_at have defaults
-type DbProjectInsert = Pick<DbProject, 'id' | 'user_id' | 'name' | 'color'> & Partial<Omit<DbProject, 'id' | 'user_id' | 'name' | 'color'>>
-type DbProjectUpdate = Partial<DbProject>
+interface DbProjectInsert {
+  id: string
+  user_id: string
+  name: string
+  color: string
+  target_hours?: number | null
+  archived?: boolean
+  created_at?: number
+  updated_at?: string
+  deleted_at?: string | null
+}
+interface DbProjectUpdate {
+  id?: string
+  user_id?: string
+  name?: string
+  color?: string
+  target_hours?: number | null
+  archived?: boolean
+  created_at?: number
+  updated_at?: string
+  deleted_at?: string | null
+}
 
-// Tags — id is nanoid from client, user_id and name required
-type DbTagInsert = Pick<DbTag, 'id' | 'user_id' | 'name'> & Partial<Omit<DbTag, 'id' | 'user_id' | 'name'>>
-type DbTagUpdate = Partial<DbTag>
+interface DbTagInsert {
+  id: string
+  user_id: string
+  name: string
+  created_at?: string
+  updated_at?: string
+  deleted_at?: string | null
+}
+interface DbTagUpdate {
+  id?: string
+  user_id?: string
+  name?: string
+  created_at?: string
+  updated_at?: string
+  deleted_at?: string | null
+}
 
-// TimeEntries — id is nanoid from client, most fields required for a valid entry
-type DbTimeEntryInsert = Pick<DbTimeEntry, 'id' | 'user_id' | 'date' | 'start_time' | 'end_time' | 'duration' | 'type'> & Partial<Omit<DbTimeEntry, 'id' | 'user_id' | 'date' | 'start_time' | 'end_time' | 'duration' | 'type'>>
-type DbTimeEntryUpdate = Partial<DbTimeEntry>
+interface DbTimeEntryInsert {
+  id: string
+  user_id: string
+  date: string
+  start_time: number
+  end_time: number
+  duration: number
+  type: 'manual' | 'stopwatch' | 'pomodoro'
+  project_id?: string | null
+  task_id?: string | null
+  description?: string
+  tags?: string[]
+  link?: string | null
+  created_at?: string
+  updated_at?: string
+  deleted_at?: string | null
+}
+interface DbTimeEntryUpdate {
+  id?: string
+  user_id?: string
+  date?: string
+  start_time?: number
+  end_time?: number
+  duration?: number
+  type?: 'manual' | 'stopwatch' | 'pomodoro'
+  project_id?: string | null
+  task_id?: string | null
+  description?: string
+  tags?: string[]
+  link?: string | null
+  created_at?: string
+  updated_at?: string
+  deleted_at?: string | null
+}
 
-// UserSettings — user_id is the PK (references auth.users)
-type DbUserSettingsInsert = Pick<DbUserSettings, 'user_id'> & Partial<Omit<DbUserSettings, 'user_id'>>
-type DbUserSettingsUpdate = Partial<DbUserSettings>
+interface DbUserSettingsInsert {
+  user_id: string
+  working_days?: number
+  week_start_day?: 0 | 1
+  idle_timeout?: number
+  theme?: string
+  language?: string
+  notifications?: boolean
+  daily_target?: number | null
+  weekly_target?: number | null
+  pomodoro_config?: DbUserSettings['pomodoro_config']
+  floating_timer_auto?: boolean
+  updated_at?: string
+}
+interface DbUserSettingsUpdate {
+  user_id?: string
+  working_days?: number
+  week_start_day?: 0 | 1
+  idle_timeout?: number
+  theme?: string
+  language?: string
+  notifications?: boolean
+  daily_target?: number | null
+  weekly_target?: number | null
+  pomodoro_config?: DbUserSettings['pomodoro_config']
+  floating_timer_auto?: boolean
+  updated_at?: string
+}
 
-// SyncCursors — id auto, user_id and device_id required
-type DbSyncCursorInsert = Pick<DbSyncCursor, 'user_id' | 'device_id'> & Partial<Omit<DbSyncCursor, 'user_id' | 'device_id'>>
-type DbSyncCursorUpdate = Partial<DbSyncCursor>
+interface DbSyncCursorInsert {
+  user_id: string
+  device_id: string
+  id?: string
+  last_sync?: string
+  created_at?: string
+}
+interface DbSyncCursorUpdate {
+  user_id?: string
+  device_id?: string
+  id?: string
+  last_sync?: string
+  created_at?: string
+}
 
-// PromoCodes — id auto, code/discount_pct/plan required
-type DbPromoCodeInsert = Pick<DbPromoCode, 'code' | 'discount_pct' | 'plan'> & Partial<Omit<DbPromoCode, 'code' | 'discount_pct' | 'plan'>>
-type DbPromoCodeUpdate = Partial<DbPromoCode>
+interface DbPromoCodeInsert {
+  code: string
+  discount_pct: number
+  plan: 'premium_monthly' | 'premium_yearly' | 'premium_lifetime'
+  id?: string
+  max_uses?: number | null
+  current_uses?: number
+  valid_from?: string
+  valid_until?: string | null
+  active?: boolean
+  created_at?: string
+  created_by?: string | null
+}
+interface DbPromoCodeUpdate {
+  code?: string
+  discount_pct?: number
+  plan?: 'premium_monthly' | 'premium_yearly' | 'premium_lifetime'
+  id?: string
+  max_uses?: number | null
+  current_uses?: number
+  valid_from?: string
+  valid_until?: string | null
+  active?: boolean
+  created_at?: string
+  created_by?: string | null
+}
 
-// PromoRedemptions — id auto, promo_code_id and user_id required
-type DbPromoRedemptionInsert = Pick<DbPromoRedemption, 'promo_code_id' | 'user_id'> & Partial<Omit<DbPromoRedemption, 'promo_code_id' | 'user_id'>>
-type DbPromoRedemptionUpdate = Partial<DbPromoRedemption>
+interface DbPromoRedemptionInsert {
+  promo_code_id: string
+  user_id: string
+  id?: string
+  redeemed_at?: string
+}
+interface DbPromoRedemptionUpdate {
+  promo_code_id?: string
+  user_id?: string
+  id?: string
+  redeemed_at?: string
+}
 
-// WhitelistedDomains — id auto, domain and plan required
-type DbWhitelistedDomainInsert = Pick<DbWhitelistedDomain, 'domain' | 'plan'> & Partial<Omit<DbWhitelistedDomain, 'domain' | 'plan'>>
-type DbWhitelistedDomainUpdate = Partial<DbWhitelistedDomain>
+interface DbWhitelistedDomainInsert {
+  domain: string
+  plan: 'premium_monthly' | 'premium_yearly' | 'premium_lifetime'
+  id?: string
+  notes?: string | null
+  active?: boolean
+  created_at?: string
+  created_by?: string | null
+}
+interface DbWhitelistedDomainUpdate {
+  domain?: string
+  plan?: 'premium_monthly' | 'premium_yearly' | 'premium_lifetime'
+  id?: string
+  notes?: string | null
+  active?: boolean
+  created_at?: string
+  created_by?: string | null
+}
 
 // Database type map for @supabase/supabase-js typed client
 export type Database = {
   public: {
     Tables: {
-      profiles: { Row: DbProfile; Insert: DbProfileInsert; Update: DbProfileUpdate }
-      subscriptions: { Row: DbSubscription; Insert: DbSubscriptionInsert; Update: DbSubscriptionUpdate }
-      projects: { Row: DbProject; Insert: DbProjectInsert; Update: DbProjectUpdate }
-      tags: { Row: DbTag; Insert: DbTagInsert; Update: DbTagUpdate }
-      time_entries: { Row: DbTimeEntry; Insert: DbTimeEntryInsert; Update: DbTimeEntryUpdate }
-      user_settings: { Row: DbUserSettings; Insert: DbUserSettingsInsert; Update: DbUserSettingsUpdate }
-      sync_cursors: { Row: DbSyncCursor; Insert: DbSyncCursorInsert; Update: DbSyncCursorUpdate }
-      promo_codes: { Row: DbPromoCode; Insert: DbPromoCodeInsert; Update: DbPromoCodeUpdate }
-      promo_redemptions: { Row: DbPromoRedemption; Insert: DbPromoRedemptionInsert; Update: DbPromoRedemptionUpdate }
-      whitelisted_domains: { Row: DbWhitelistedDomain; Insert: DbWhitelistedDomainInsert; Update: DbWhitelistedDomainUpdate }
+      profiles: { Row: DbProfile; Insert: DbProfileInsert; Update: DbProfileUpdate; Relationships: [] }
+      subscriptions: { Row: DbSubscription; Insert: DbSubscriptionInsert; Update: DbSubscriptionUpdate; Relationships: [] }
+      projects: { Row: DbProject; Insert: DbProjectInsert; Update: DbProjectUpdate; Relationships: [] }
+      tags: { Row: DbTag; Insert: DbTagInsert; Update: DbTagUpdate; Relationships: [] }
+      time_entries: { Row: DbTimeEntry; Insert: DbTimeEntryInsert; Update: DbTimeEntryUpdate; Relationships: [] }
+      user_settings: { Row: DbUserSettings; Insert: DbUserSettingsInsert; Update: DbUserSettingsUpdate; Relationships: [] }
+      sync_cursors: { Row: DbSyncCursor; Insert: DbSyncCursorInsert; Update: DbSyncCursorUpdate; Relationships: [] }
+      promo_codes: { Row: DbPromoCode; Insert: DbPromoCodeInsert; Update: DbPromoCodeUpdate; Relationships: [] }
+      promo_redemptions: { Row: DbPromoRedemption; Insert: DbPromoRedemptionInsert; Update: DbPromoRedemptionUpdate; Relationships: [] }
+      whitelisted_domains: { Row: DbWhitelistedDomain; Insert: DbWhitelistedDomainInsert; Update: DbWhitelistedDomainUpdate; Relationships: [] }
     }
     Views: Record<string, never>
     Functions: {
       is_premium: { Args: { check_user_id: string }; Returns: boolean }
       check_domain_whitelist: { Args: { user_email: string }; Returns: Array<{ domain: string; plan: string }> }
+      get_platform_stats: { Args: Record<string, never>; Returns: {
+        total_entries: number
+        total_hours: number
+        entry_count_30d: number
+        project_count: number
+        avg_session_ms: number
+      }}
+      get_active_users: { Args: { period: string }; Returns: number }
+      get_user_growth: { Args: { weeks?: number }; Returns: Array<{
+        week_start: string
+        signup_count: number
+      }>}
+      get_top_users: { Args: { lim?: number }; Returns: Array<{
+        user_id: string
+        email: string
+        total_hours: number
+      }>}
+      get_entry_type_breakdown: { Args: Record<string, never>; Returns: Array<{
+        entry_type: string
+        entry_count: number
+        total_hours: number
+      }>}
+      get_premium_breakdown: { Args: Record<string, never>; Returns: {
+        total_premium: number
+        by_plan: Record<string, number> | null
+        by_source: Record<string, number> | null
+      }}
+      get_promo_stats: { Args: Record<string, never>; Returns: {
+        active_promos: number
+        total_uses: number
+      }}
+      get_domain_stats: { Args: Record<string, never>; Returns: {
+        active_domains: number
+      }}
+      get_user_analytics: { Args: { p_user_id: string }; Returns: {
+        total_hours: number
+        total_entries: number
+        unique_days: number
+        avg_session_ms: number
+        streak: number
+        weekly_data: Array<{ week: string; hours: number }> | null
+        type_data: Array<{ name: string; hours: number; count: number }> | null
+        day_of_week_data: Array<{ name: string; hours: number }> | null
+        daily_data: Array<{ date: string; hours: number }> | null
+        peak_hours_data: Array<{ hour: string; count: number }> | null
+        project_stats: Array<{
+          name: string
+          color: string
+          hours: number
+          entries: number
+          target_hours: number | null
+        }> | null
+      }}
+      redeem_promo: { Args: { p_code: string; p_user_id: string }; Returns: {
+        success: boolean
+        error: string | null
+        granted: boolean | null
+        plan: string | null
+        discount_pct: number | null
+        promo_id: string | null
+        promo_code: string | null
+      }}
     }
     Enums: Record<string, never>
   }

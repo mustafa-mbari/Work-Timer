@@ -1,105 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { requireAuthApi } from '@/lib/services/auth'
+import { createServiceClient } from '@/lib/supabase/server'
 import { getStripe, STRIPE_PRICES } from '@/lib/stripe'
+import { promoRedeemSchema, parseBody } from '@/lib/validation'
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
+  const user = await requireAuthApi()
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { code } = await request.json() as { code: string }
-
-  if (!code || typeof code !== 'string') {
-    return NextResponse.json({ error: 'Promo code is required' }, { status: 400 })
+  const parsed = parseBody(promoRedeemSchema, await request.json())
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 })
   }
 
-  // Use service role for atomic operations
-  const serviceSupabase = await createServiceClient()
+  const { code } = parsed.data
 
-  // Fetch and validate promo code
-  const { data: promo, error: promoError } = await (serviceSupabase
-    .from('promo_codes') as any)
-    .select('*')
-    .eq('code', code.toUpperCase())
-    .eq('active', true)
-    .single()
+  // Use service role client to call the atomic RPC
+  const supabase = await createServiceClient()
+  const rpcArgs = { p_code: code.toUpperCase(), p_user_id: user.id }
+  // Type assertion needed: supabase-js v2.95 cannot resolve complex RPC return types
+  const { data, error } = await (supabase.rpc as Function)('redeem_promo', rpcArgs)
 
-  if (promoError || !promo) {
-    return NextResponse.json({ success: false, error: 'Invalid promo code' }, { status: 404 })
+  if (error) {
+    console.error('[promo redeem] RPC error:', error)
+    return NextResponse.json({ success: false, error: error.message || 'Failed to redeem promo code' }, { status: 400 })
   }
 
-  // Check expiry
-  const now = new Date()
-  if (promo.valid_from && new Date(promo.valid_from) > now) {
-    return NextResponse.json({ success: false, error: 'Promo code is not yet valid' }, { status: 400 })
-  }
-  if (promo.valid_until && new Date(promo.valid_until) < now) {
-    return NextResponse.json({ success: false, error: 'Promo code has expired' }, { status: 400 })
+  // RPC returns: { success, error, granted, plan, discount_pct, promo_id, promo_code }
+  const result = data as { success: boolean; error: string | null; granted: boolean | null; plan: string | null; discount_pct: number | null; promo_id: string | null; promo_code: string | null }
+
+  if (!result.success) {
+    return NextResponse.json({ success: false, error: result.error || 'Failed to redeem promo code' }, { status: 400 })
   }
 
-  // Check max uses
-  if (promo.max_uses !== null && promo.current_uses >= promo.max_uses) {
-    return NextResponse.json({ success: false, error: 'Promo code has reached its usage limit' }, { status: 400 })
-  }
-
-  // Check if user already redeemed
-  const { data: existing } = await (serviceSupabase
-    .from('promo_redemptions') as any)
-    .select('id')
-    .eq('promo_code_id', promo.id)
-    .eq('user_id', user.id)
-    .single()
-
-  if (existing) {
-    return NextResponse.json({ success: false, error: 'You have already used this promo code' }, { status: 400 })
-  }
-
-  // Record redemption and increment usage
-  await (serviceSupabase.from('promo_redemptions') as any).insert({
-    promo_code_id: promo.id,
-    user_id: user.id,
-  })
-
-  await (serviceSupabase.from('promo_codes') as any)
-    .update({ current_uses: promo.current_uses + 1 })
-    .eq('id', promo.id)
-
-  // 100% discount = grant premium directly, no Stripe
-  if (promo.discount_pct === 100) {
-    const { error } = await (serviceSupabase.from('subscriptions') as any).upsert({
-      user_id: user.id,
-      plan: promo.plan,
-      status: 'active',
-      granted_by: 'promo',
-      promo_code_id: promo.id,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'user_id' })
-
-    if (error) {
-      console.error('[promo redeem] Failed to grant premium:', error)
-      return NextResponse.json({ success: false, error: 'Failed to activate premium' }, { status: 500 })
-    }
-
+  // 100% discount = premium already granted by the RPC
+  if (result.discount_pct === 100) {
     return NextResponse.json({ success: true })
   }
 
   // Partial discount — create Stripe checkout session with coupon
   try {
-    // Create a one-time Stripe coupon for this redemption
     const coupon = await getStripe().coupons.create({
-      percent_off: promo.discount_pct,
+      percent_off: result.discount_pct!,
       duration: 'once',
-      name: `Promo ${promo.code}`,
+      name: `Promo ${code.toUpperCase()}`,
     })
 
-    const planKey = promo.plan === 'premium_yearly' ? 'yearly'
-      : promo.plan === 'premium_lifetime' ? 'lifetime'
+    const planKey = result.plan === 'premium_yearly' ? 'yearly'
+      : result.plan === 'premium_lifetime' ? 'lifetime'
       : 'monthly'
     const priceId = STRIPE_PRICES[planKey as keyof typeof STRIPE_PRICES]
-    const isLifetime = promo.plan === 'premium_lifetime'
+    const isLifetime = result.plan === 'premium_lifetime'
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL!
 
     const session = await getStripe().checkout.sessions.create({
@@ -110,7 +63,7 @@ export async function POST(request: NextRequest) {
       customer_email: user.email,
       success_url: `${siteUrl}/billing?success=true`,
       cancel_url: `${siteUrl}/billing`,
-      metadata: { userId: user.id, plan: planKey, promoCode: promo.code },
+      metadata: { userId: user.id, plan: planKey, promoCode: code.toUpperCase() },
     })
 
     return NextResponse.json({ success: true, checkoutUrl: session.url })

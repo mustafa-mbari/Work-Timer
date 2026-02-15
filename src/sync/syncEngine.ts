@@ -132,15 +132,18 @@ export async function pushQueue(): Promise<void> {
       if (error) throw new Error(`Sync push failed (projects delete): ${error.message}`)
     }
 
-    // Push tag upserts
+    // Push tag upserts — only push tags that are in the queue
     if (tagUpserts.length > 0) {
       const allTags = await getTags()
-      const rows = allTags.map(tag => ({
-        id: tag.id,
-        user_id: session.userId,
-        name: tag.name,
-        updated_at: new Date().toISOString(),
-      }))
+      const queuedIds = new Set(tagUpserts.map(item => item.recordId))
+      const rows = allTags
+        .filter(tag => queuedIds.has(tag.id))
+        .map(tag => ({
+          id: tag.id,
+          user_id: session.userId,
+          name: tag.name,
+          updated_at: new Date().toISOString(),
+        }))
       if (rows.length > 0) {
         const { error } = await supabase.from('tags').upsert(rows as any)
         if (error) throw new Error(`Sync push failed (tags upsert): ${error.message}`)
@@ -168,11 +171,18 @@ export async function pullDelta(): Promise<void> {
     .eq('user_id', session.userId)
     .gt('updated_at', since)
 
+  // Build set of record IDs with pending local changes — skip overwriting these
+  const queue = await getQueue()
+  const pendingIds = new Set(queue.map(item => item.recordId))
+
   // Suppress enqueue during pull — remote changes must not loop back to the queue
   setSuppressEnqueue(true)
   try {
     if (remoteEntries) {
       for (const remote of remoteEntries as DbTimeEntry[]) {
+        // Skip if local has pending changes for this entry — local wins
+        if (pendingIds.has(remote.id)) continue
+
         if (remote.deleted_at) {
           // Soft-deleted remotely — remove from local
           const local = await getEntries(remote.date)
@@ -203,6 +213,9 @@ export async function pullDelta(): Promise<void> {
     if (remoteProjects) {
       const localProjects = await getProjects()
       for (const remote of remoteProjects as DbProject[]) {
+        // Skip if local has pending changes for this project — local wins
+        if (pendingIds.has(remote.id)) continue
+
         if (remote.deleted_at) {
           // Project deleted on another device — archive locally
           const existing = localProjects.find(p => p.id === remote.id)
@@ -232,6 +245,9 @@ export async function pullDelta(): Promise<void> {
       const localTags = await getTags()
       const mergedTags = [...localTags]
       for (const remote of remoteTags as DbTag[]) {
+        // Skip if local has pending changes for this tag — local wins
+        if (pendingIds.has(remote.id)) continue
+
         if (remote.deleted_at) {
           const idx = mergedTags.findIndex(t => t.id === remote.id)
           if (idx !== -1) mergedTags.splice(idx, 1)
@@ -295,30 +311,46 @@ export async function uploadAllLocalData(): Promise<void> {
   const session = await getSession()
   if (!session) return
 
+  const errors: string[] = []
+
   // Upload all projects
   const projects = await getProjects()
   if (projects.length > 0) {
     const rows = projects.map(p => localProjectToDb(p, session.userId))
-    await supabase.from('projects').upsert(rows as any)
+    const { error } = await supabase.from('projects').upsert(rows as any)
+    if (error) errors.push(`Projects upload failed: ${error.message}`)
   }
 
   // Upload all time entries (scan all entry_* keys)
   const allStorage = await chrome.storage.local.get(null)
   const entryBatches: Partial<DbTimeEntry>[][] = [[]]
+  let totalEntries = 0
   for (const [key, value] of Object.entries(allStorage)) {
     if (!key.startsWith('entries_')) continue
     const entries = value as Array<Parameters<typeof localEntryToDb>[0]>
     for (const entry of entries) {
       const lastBatch = entryBatches[entryBatches.length - 1]!
       lastBatch.push(localEntryToDb(entry, session.userId))
+      totalEntries++
       if (lastBatch.length >= BATCH_SIZE) {
         entryBatches.push([])
       }
     }
   }
+  let uploadedEntries = 0
   for (const batch of entryBatches) {
     if (batch.length > 0) {
-      await supabase.from('time_entries').upsert(batch as any)
+      let { error } = await supabase.from('time_entries').upsert(batch as any)
+      // Retry once with backoff on failure
+      if (error) {
+        await new Promise(r => setTimeout(r, 1000))
+        ;({ error } = await supabase.from('time_entries').upsert(batch as any))
+      }
+      if (error) {
+        errors.push(`Entries batch upload failed (${batch.length} entries): ${error.message}`)
+      } else {
+        uploadedEntries += batch.length
+      }
     }
   }
 
@@ -331,6 +363,14 @@ export async function uploadAllLocalData(): Promise<void> {
       name: tag.name,
       updated_at: new Date().toISOString(),
     }))
-    await supabase.from('tags').upsert(rows as any)
+    const { error } = await supabase.from('tags').upsert(rows as any)
+    if (error) errors.push(`Tags upload failed: ${error.message}`)
+  }
+
+  console.log(`[work-timer] Upload complete: ${uploadedEntries}/${totalEntries} entries, ${projects.length} projects, ${tags.length} tags`)
+
+  if (errors.length > 0) {
+    console.error('[work-timer] Upload errors:', errors)
+    throw new Error(`Upload partially failed: ${errors.join('; ')}`)
   }
 }

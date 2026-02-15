@@ -17,6 +17,11 @@ export default defineConfig({
         entryFileNames: '[name].js',
         chunkFileNames: 'chunks/[name].[hash].js',
         assetFileNames: 'assets/[name].[ext]',
+        manualChunks: {
+          recharts: ['recharts'],
+          xlsx: ['xlsx'],
+          supabase: ['@supabase/supabase-js'],
+        },
       },
     },
   },

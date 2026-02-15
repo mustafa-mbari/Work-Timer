@@ -58,11 +58,18 @@ export function useTimer() {
     return () => window.clearInterval(interval)
   }, [fetchState])
 
-  // Re-fetch real state periodically to stay in sync
+  // Listen for TIMER_SYNC broadcasts from background instead of polling every 5s
   useEffect(() => {
-    const sync = window.setInterval(fetchState, 5000)
-    return () => window.clearInterval(sync)
-  }, [fetchState])
+    const listener = (message: any) => {
+      if (message?.action === 'TIMER_SYNC') {
+        if (message.state) setState(message.state)
+        if (message.idleInfo) setIdleInfo(message.idleInfo)
+        if (message.pomodoroState) setPomodoroState(message.pomodoroState)
+      }
+    }
+    chrome.runtime.onMessage.addListener(listener)
+    return () => chrome.runtime.onMessage.removeListener(listener)
+  }, [])
 
   const start = useCallback(async (projectId: string | null, description: string, continuingEntryId: string | null = null) => {
     const response = await sendMessage({

@@ -2,6 +2,14 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  // Skip auth entirely for public routes — avoids a Supabase round-trip
+  const publicPaths = ['/', '/login', '/register', '/terms', '/privacy', '/api/webhooks', '/auth']
+  if (publicPaths.some(p => pathname === p || pathname.startsWith(p + '/'))) {
+    return NextResponse.next({ request })
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -26,10 +34,8 @@ export async function middleware(request: NextRequest) {
   // Refresh session — required for @supabase/ssr
   const { data: { user } } = await supabase.auth.getUser()
 
-  const { pathname } = request.nextUrl
-
   // Protect authenticated routes
-  const protectedPaths = ['/dashboard', '/billing']
+  const protectedPaths = ['/dashboard', '/billing', '/analytics']
   const adminPaths = ['/admin']
 
   const isProtected = protectedPaths.some(p => pathname.startsWith(p))
@@ -40,11 +46,6 @@ export async function middleware(request: NextRequest) {
     loginUrl.pathname = '/login'
     loginUrl.searchParams.set('redirectTo', pathname)
     return NextResponse.redirect(loginUrl)
-  }
-
-  if (isAdmin && user) {
-    // Admin check done in admin/layout.tsx via service role
-    // Middleware only handles unauthenticated redirect
   }
 
   return supabaseResponse

@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import type { View } from '@/types'
 import TimerView from '@/components/TimerView'
-import WeekView from '@/components/WeekView'
-import StatsView from '@/components/StatsView'
-import SettingsView from '@/components/SettingsView'
+
+// Lazy load non-default views to reduce initial popup load time
+const WeekView = lazy(() => import('@/components/WeekView'))
+const StatsView = lazy(() => import('@/components/StatsView'))
+const SettingsView = lazy(() => import('@/components/SettingsView'))
 import NavBar from '@/components/NavBar'
 import InitialSyncDialog from '@/components/InitialSyncDialog'
 import { useTheme } from '@/hooks/useTheme'
@@ -63,9 +65,11 @@ export default function App() {
     <div className="flex flex-col h-[520px] bg-stone-50 dark:bg-dark">
       <main className="flex-1 overflow-y-auto">
         {view === 'timer' && <TimerView />}
-        {view === 'week' && <WeekView />}
-        {view === 'stats' && <StatsView />}
-        {view === 'settings' && <SettingsView />}
+        <Suspense fallback={null}>
+          {view === 'week' && <WeekView />}
+          {view === 'stats' && <StatsView />}
+          {view === 'settings' && <SettingsView />}
+        </Suspense>
       </main>
       <NavBar currentView={view} onViewChange={setView} />
       <InitialSyncDialog

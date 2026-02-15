@@ -4,7 +4,7 @@ import { getToday } from '../utils/date'
 import { POMODORO_WORK_MS, IDLE_THRESHOLD_MS } from '../constants/timers'
 import { getSettings, getTimerState, setTimerState, saveEntry, updateEntry, getEntries } from '../storage'
 import { applyExternalSession, signOut as authSignOut, refreshSubscription, getSession } from '../auth/authState'
-import { syncAll, getSyncState } from '../sync/syncEngine'
+import { syncAll, getSyncState, uploadAllLocalData } from '../sync/syncEngine'
 import { setupRealtime, teardownRealtime } from '../sync/realtimeSubscription'
 
 const TIMER_ALARM = 'timer-tick'
@@ -644,6 +644,11 @@ chrome.runtime.onMessage.addListener(
           case 'SYNC_STATUS': {
             const syncState = await getSyncState()
             return { success: true, syncState }
+          }
+          case 'UPLOAD_ALL': {
+            await uploadAllLocalData()
+            await syncAll()
+            return { success: true }
           }
           default:
             return { success: false, error: 'Unknown action' }

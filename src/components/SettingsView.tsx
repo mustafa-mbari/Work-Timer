@@ -38,6 +38,8 @@ export default function SettingsView() {
   const [confirmDeleteTag, setConfirmDeleteTag] = useState<{ id: string; name: string } | null>(null)
 
   const [syncing, setSyncing] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [uploadMsg, setUploadMsg] = useState<string | null>(null)
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null)
 
   useEffect(() => {
@@ -62,6 +64,22 @@ export default function SettingsView() {
           setSyncing(false)
         })
       }, 3000)
+    })
+  }
+
+  const handleReuploadAll = () => {
+    setUploading(true)
+    setUploadMsg(null)
+    chrome.runtime.sendMessage({ action: 'UPLOAD_ALL' }, (res) => {
+      if (res?.success) {
+        setUploadMsg('All data re-uploaded successfully')
+        chrome.runtime.sendMessage({ action: 'SYNC_STATUS' }, (s) => {
+          if (s?.syncState?.lastSyncAt) setLastSyncAt(s.syncState.lastSyncAt)
+        })
+      } else {
+        setUploadMsg(res?.error || 'Upload failed')
+      }
+      setUploading(false)
     })
   }
 
@@ -642,25 +660,42 @@ export default function SettingsView() {
 
                 {/* Sync Now */}
                 {isPremium && (
-                  <div className="flex items-center justify-between rounded-xl border border-stone-100 dark:border-dark-border px-4 py-3">
-                    <div>
-                      <p className="text-xs font-medium text-stone-700 dark:text-stone-300">Cloud sync</p>
-                      {lastSyncAt ? (
-                        <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-0.5">
-                          Last synced {new Date(lastSyncAt).toLocaleTimeString()}
-                        </p>
-                      ) : (
-                        <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-0.5">Not synced yet</p>
-                      )}
+                  <div className="rounded-xl border border-stone-100 dark:border-dark-border px-4 py-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-medium text-stone-700 dark:text-stone-300">Cloud sync</p>
+                        {lastSyncAt ? (
+                          <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-0.5">
+                            Last synced {new Date(lastSyncAt).toLocaleTimeString()}
+                          </p>
+                        ) : (
+                          <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-0.5">Not synced yet</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={handleReuploadAll}
+                          disabled={uploading || syncing}
+                          className="text-xs font-medium text-amber-500 dark:text-amber-400 hover:text-amber-600 disabled:opacity-50 flex items-center gap-1"
+                        >
+                          {uploading && <span className="w-3 h-3 border border-amber-500 border-t-transparent rounded-full animate-spin" />}
+                          {uploading ? 'Uploading…' : 'Re-upload all'}
+                        </button>
+                        <button
+                          onClick={handleSyncNow}
+                          disabled={syncing || uploading}
+                          className="text-xs font-medium text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 disabled:opacity-50 flex items-center gap-1"
+                        >
+                          {syncing && <span className="w-3 h-3 border border-indigo-500 border-t-transparent rounded-full animate-spin" />}
+                          {syncing ? 'Syncing…' : 'Sync now'}
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      onClick={handleSyncNow}
-                      disabled={syncing}
-                      className="text-xs font-medium text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 disabled:opacity-50 flex items-center gap-1"
-                    >
-                      {syncing && <span className="w-3 h-3 border border-indigo-500 border-t-transparent rounded-full animate-spin" />}
-                      {syncing ? 'Syncing…' : 'Sync now'}
-                    </button>
+                    {uploadMsg && (
+                      <p className={`text-[11px] ${uploadMsg.includes('fail') ? 'text-rose-500' : 'text-emerald-500'}`}>
+                        {uploadMsg}
+                      </p>
+                    )}
                   </div>
                 )}
 

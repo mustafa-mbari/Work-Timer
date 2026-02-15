@@ -1,4 +1,3 @@
-import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
 import type { TimeEntry, Project } from '@/types'
 
@@ -47,13 +46,14 @@ export function exportCSV(entries: TimeEntry[], projects: Project[], filename: s
   }
 }
 
-export function exportExcel(entries: TimeEntry[], projects: Project[], filename: string) {
+export async function exportExcel(entries: TimeEntry[], projects: Project[], filename: string) {
   const rows = entries.map(e => formatEntryRow(e, projects))
   if (rows.length === 0) {
     throw new Error('No entries to export for this period.')
   }
 
   try {
+    const XLSX = await import('xlsx')
     const ws = XLSX.utils.json_to_sheet(rows)
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Time Entries')

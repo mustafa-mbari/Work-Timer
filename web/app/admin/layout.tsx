@@ -1,25 +1,10 @@
-import { redirect } from 'next/navigation'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { AdminNav } from './AdminNav'
 import { ArrowLeft } from 'lucide-react'
+import { requireAdminPage } from '@/lib/services/auth'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) redirect('/login')
-
-  // Check admin role using service role
-  const serviceSupabase = await createServiceClient()
-  const { data: profile } = await (serviceSupabase.from('profiles') as any)
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (profile?.role !== 'admin') {
-    redirect('/dashboard')
-  }
+  await requireAdminPage()
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
