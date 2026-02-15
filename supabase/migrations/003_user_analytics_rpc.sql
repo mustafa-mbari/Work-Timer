@@ -64,40 +64,52 @@ BEGIN
 
     -- Weekly breakdown (last 12 weeks)
     'weekly_data', (
-      WITH week_series AS (
-        SELECT generate_series(
-          date_trunc('week', current_date - interval '11 weeks'),
-          date_trunc('week', current_date),
-          interval '1 week'
-        )::date AS week_start
-      )
       SELECT json_agg(json_build_object(
-        'week', to_char(ws.week_start, 'Mon DD'),
-        'hours', COALESCE(round(sum(te.duration) / 3600000.0, 1), 0)
-      ) ORDER BY ws.week_start)
-      FROM week_series ws
-      LEFT JOIN time_entries te
-        ON te.user_id = p_user_id
-        AND te.deleted_at IS NULL
-        AND te.date::date >= ws.week_start
-        AND te.date::date < ws.week_start + 7
-      GROUP BY ws.week_start
+        'week', sub.week_label,
+        'hours', sub.hours
+      ) ORDER BY sub.week_start)
+      FROM (
+        WITH week_series AS (
+          SELECT generate_series(
+            date_trunc('week', current_date - interval '11 weeks'),
+            date_trunc('week', current_date),
+            interval '1 week'
+          )::date AS week_start
+        )
+        SELECT
+          ws.week_start,
+          to_char(ws.week_start, 'Mon DD') AS week_label,
+          COALESCE(round(sum(te.duration) / 3600000.0, 1), 0) AS hours
+        FROM week_series ws
+        LEFT JOIN time_entries te
+          ON te.user_id = p_user_id
+          AND te.deleted_at IS NULL
+          AND te.date::date >= ws.week_start
+          AND te.date::date < ws.week_start + 7
+        GROUP BY ws.week_start
+      ) sub
     ),
 
     -- Entry type breakdown
     'type_data', (
       SELECT json_agg(json_build_object(
-        'name', CASE type
-          WHEN 'manual' THEN 'Manual'
-          WHEN 'stopwatch' THEN 'Stopwatch'
-          WHEN 'pomodoro' THEN 'Pomodoro'
-        END,
-        'hours', round(sum(duration) / 3600000.0, 1),
-        'count', count(*)
+        'name', sub.type_name,
+        'hours', sub.hours,
+        'count', sub.entry_count
       ))
-      FROM time_entries
-      WHERE user_id = p_user_id AND deleted_at IS NULL
-      GROUP BY type
+      FROM (
+        SELECT
+          CASE type
+            WHEN 'manual' THEN 'Manual'
+            WHEN 'stopwatch' THEN 'Stopwatch'
+            WHEN 'pomodoro' THEN 'Pomodoro'
+          END AS type_name,
+          round(sum(duration) / 3600000.0, 1) AS hours,
+          count(*) AS entry_count
+        FROM time_entries
+        WHERE user_id = p_user_id AND deleted_at IS NULL
+        GROUP BY type
+      ) sub
     ),
 
     -- Day of week breakdown
@@ -124,23 +136,29 @@ BEGIN
 
     -- Daily trend (last 30 days)
     'daily_data', (
-      WITH day_series AS (
-        SELECT generate_series(
-          current_date - 29,
-          current_date,
-          interval '1 day'
-        )::date AS d
-      )
       SELECT json_agg(json_build_object(
-        'date', to_char(ds.d, 'Mon DD'),
-        'hours', COALESCE(round(sum(te.duration) / 3600000.0, 1), 0)
-      ) ORDER BY ds.d)
-      FROM day_series ds
-      LEFT JOIN time_entries te
-        ON te.user_id = p_user_id
-        AND te.deleted_at IS NULL
-        AND te.date::date = ds.d
-      GROUP BY ds.d
+        'date', sub.day_label,
+        'hours', sub.hours
+      ) ORDER BY sub.d)
+      FROM (
+        WITH day_series AS (
+          SELECT generate_series(
+            current_date - 29,
+            current_date,
+            interval '1 day'
+          )::date AS d
+        )
+        SELECT
+          ds.d,
+          to_char(ds.d, 'Mon DD') AS day_label,
+          COALESCE(round(sum(te.duration) / 3600000.0, 1), 0) AS hours
+        FROM day_series ds
+        LEFT JOIN time_entries te
+          ON te.user_id = p_user_id
+          AND te.deleted_at IS NULL
+          AND te.date::date = ds.d
+        GROUP BY ds.d
+      ) sub
     ),
 
     -- Peak hours (hour of day distribution)

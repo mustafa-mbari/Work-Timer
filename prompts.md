@@ -25,7 +25,7 @@ Based on @PLAN_2.md, did you complete all implementation of Section B?
 
 -------------------------------------------------------------------------------------------------------------------------
 
-
+Now After your finished plan of imrovment the db, please update CLAUDE.md and README.md after that delete all old plan files like @PLAN_2.md, @PLAN_1.md, @PLAN.md, PROJECT_IMPROVEMENTS.md, WorkTimer_todo.md
 
 
 -------------------------------------------------------------------------------------------------------------------------
