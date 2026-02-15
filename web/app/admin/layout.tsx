@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import { AdminNav } from './AdminNav'
+import { ArrowLeft } from 'lucide-react'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -19,41 +21,23 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect('/dashboard')
   }
 
-  const navItems = [
-    { href: '/admin', label: 'Overview' },
-    { href: '/admin/users', label: 'Users' },
-    { href: '/admin/stats', label: 'Statistics' },
-    { href: '/admin/domains', label: 'Domains' },
-    { href: '/admin/promos', label: 'Promo Codes' },
-    { href: '/admin/subscriptions', label: 'Subscriptions' },
-  ]
-
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-stone-900">Admin Dashboard</h1>
-          <p className="text-sm text-stone-500">Manage users, plans, and settings</p>
+          <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100">Admin Dashboard</h1>
+          <p className="text-sm text-stone-500 dark:text-stone-400">Manage users, plans, and settings</p>
         </div>
         <Link
           href="/dashboard"
-          className="text-sm text-stone-600 hover:text-stone-900 transition-colors"
+          className="flex items-center gap-1.5 text-sm text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 transition-colors"
         >
-          ← Back to Dashboard
+          <ArrowLeft className="h-4 w-4" />
+          Back to Dashboard
         </Link>
       </div>
 
-      <nav className="flex gap-2 mb-8 border-b border-stone-200">
-        {navItems.map(item => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="px-4 py-2 text-sm font-medium text-stone-600 hover:text-stone-900 border-b-2 border-transparent hover:border-indigo-500 transition-colors -mb-px"
-          >
-            {item.label}
-          </Link>
-        ))}
-      </nav>
+      <AdminNav />
 
       {children}
     </div>

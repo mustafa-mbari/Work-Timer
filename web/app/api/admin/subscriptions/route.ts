@@ -48,19 +48,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
   }
 
-  // Find user by email
-  const { data: profile } = await (supabase.from('profiles') as any)
-    .select('id')
-    .eq('email', email)
-    .single()
+  // Find user by email via auth.admin (profiles table may be incomplete)
+  const { data: { users } } = await supabase.auth.admin.listUsers({ perPage: 10000 })
+  const authUser = users?.find((u: any) => u.email?.toLowerCase() === email.toLowerCase())
 
-  if (!profile) {
+  if (!authUser) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 
   // Upsert subscription
   const { error } = await (supabase.from('subscriptions') as any).upsert({
-    user_id: profile.id,
+    user_id: authUser.id,
     plan,
     status: 'active',
     granted_by: 'admin_manual',

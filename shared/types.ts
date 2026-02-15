@@ -126,20 +126,66 @@ export interface DbWhitelistedDomain {
   created_by: string | null
 }
 
+// ---------------------------------------------------------------------------
+// Insert / Update helper types
+// Insert: required fields that have no DB default must be provided; the rest optional
+// Update: all fields optional (you only update what you need)
+// ---------------------------------------------------------------------------
+
+// Profiles — id comes from auth.users, created_at/updated_at have DB defaults
+type DbProfileInsert = Pick<DbProfile, 'id' | 'email'> & Partial<Omit<DbProfile, 'id' | 'email'>>
+type DbProfileUpdate = Partial<DbProfile>
+
+// Subscriptions — id is auto UUID, created_at/updated_at have defaults, plan defaults to 'free'
+type DbSubscriptionInsert = Pick<DbSubscription, 'user_id'> & Partial<Omit<DbSubscription, 'user_id'>>
+type DbSubscriptionUpdate = Partial<DbSubscription>
+
+// Projects — id is nanoid from client, user_id required, created_at/updated_at have defaults
+type DbProjectInsert = Pick<DbProject, 'id' | 'user_id' | 'name' | 'color'> & Partial<Omit<DbProject, 'id' | 'user_id' | 'name' | 'color'>>
+type DbProjectUpdate = Partial<DbProject>
+
+// Tags — id is nanoid from client, user_id and name required
+type DbTagInsert = Pick<DbTag, 'id' | 'user_id' | 'name'> & Partial<Omit<DbTag, 'id' | 'user_id' | 'name'>>
+type DbTagUpdate = Partial<DbTag>
+
+// TimeEntries — id is nanoid from client, most fields required for a valid entry
+type DbTimeEntryInsert = Pick<DbTimeEntry, 'id' | 'user_id' | 'date' | 'start_time' | 'end_time' | 'duration' | 'type'> & Partial<Omit<DbTimeEntry, 'id' | 'user_id' | 'date' | 'start_time' | 'end_time' | 'duration' | 'type'>>
+type DbTimeEntryUpdate = Partial<DbTimeEntry>
+
+// UserSettings — user_id is the PK (references auth.users)
+type DbUserSettingsInsert = Pick<DbUserSettings, 'user_id'> & Partial<Omit<DbUserSettings, 'user_id'>>
+type DbUserSettingsUpdate = Partial<DbUserSettings>
+
+// SyncCursors — id auto, user_id and device_id required
+type DbSyncCursorInsert = Pick<DbSyncCursor, 'user_id' | 'device_id'> & Partial<Omit<DbSyncCursor, 'user_id' | 'device_id'>>
+type DbSyncCursorUpdate = Partial<DbSyncCursor>
+
+// PromoCodes — id auto, code/discount_pct/plan required
+type DbPromoCodeInsert = Pick<DbPromoCode, 'code' | 'discount_pct' | 'plan'> & Partial<Omit<DbPromoCode, 'code' | 'discount_pct' | 'plan'>>
+type DbPromoCodeUpdate = Partial<DbPromoCode>
+
+// PromoRedemptions — id auto, promo_code_id and user_id required
+type DbPromoRedemptionInsert = Pick<DbPromoRedemption, 'promo_code_id' | 'user_id'> & Partial<Omit<DbPromoRedemption, 'promo_code_id' | 'user_id'>>
+type DbPromoRedemptionUpdate = Partial<DbPromoRedemption>
+
+// WhitelistedDomains — id auto, domain and plan required
+type DbWhitelistedDomainInsert = Pick<DbWhitelistedDomain, 'domain' | 'plan'> & Partial<Omit<DbWhitelistedDomain, 'domain' | 'plan'>>
+type DbWhitelistedDomainUpdate = Partial<DbWhitelistedDomain>
+
 // Database type map for @supabase/supabase-js typed client
 export type Database = {
   public: {
     Tables: {
-      profiles: { Row: DbProfile; Insert: Partial<DbProfile>; Update: Partial<DbProfile> }
-      subscriptions: { Row: DbSubscription; Insert: Partial<DbSubscription>; Update: Partial<DbSubscription> }
-      projects: { Row: DbProject; Insert: Partial<DbProject>; Update: Partial<DbProject> }
-      tags: { Row: DbTag; Insert: Partial<DbTag>; Update: Partial<DbTag> }
-      time_entries: { Row: DbTimeEntry; Insert: Partial<DbTimeEntry>; Update: Partial<DbTimeEntry> }
-      user_settings: { Row: DbUserSettings; Insert: Partial<DbUserSettings>; Update: Partial<DbUserSettings> }
-      sync_cursors: { Row: DbSyncCursor; Insert: Partial<DbSyncCursor>; Update: Partial<DbSyncCursor> }
-      promo_codes: { Row: DbPromoCode; Insert: Partial<DbPromoCode>; Update: Partial<DbPromoCode> }
-      promo_redemptions: { Row: DbPromoRedemption; Insert: Partial<DbPromoRedemption>; Update: Partial<DbPromoRedemption> }
-      whitelisted_domains: { Row: DbWhitelistedDomain; Insert: Partial<DbWhitelistedDomain>; Update: Partial<DbWhitelistedDomain> }
+      profiles: { Row: DbProfile; Insert: DbProfileInsert; Update: DbProfileUpdate }
+      subscriptions: { Row: DbSubscription; Insert: DbSubscriptionInsert; Update: DbSubscriptionUpdate }
+      projects: { Row: DbProject; Insert: DbProjectInsert; Update: DbProjectUpdate }
+      tags: { Row: DbTag; Insert: DbTagInsert; Update: DbTagUpdate }
+      time_entries: { Row: DbTimeEntry; Insert: DbTimeEntryInsert; Update: DbTimeEntryUpdate }
+      user_settings: { Row: DbUserSettings; Insert: DbUserSettingsInsert; Update: DbUserSettingsUpdate }
+      sync_cursors: { Row: DbSyncCursor; Insert: DbSyncCursorInsert; Update: DbSyncCursorUpdate }
+      promo_codes: { Row: DbPromoCode; Insert: DbPromoCodeInsert; Update: DbPromoCodeUpdate }
+      promo_redemptions: { Row: DbPromoRedemption; Insert: DbPromoRedemptionInsert; Update: DbPromoRedemptionUpdate }
+      whitelisted_domains: { Row: DbWhitelistedDomain; Insert: DbWhitelistedDomainInsert; Update: DbWhitelistedDomainUpdate }
     }
     Views: Record<string, never>
     Functions: {

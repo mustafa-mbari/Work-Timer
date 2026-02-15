@@ -1,12 +1,40 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
+import { toast } from 'sonner'
+import { Crown, UserPlus } from 'lucide-react'
+
+const PLAN_LABELS: Record<string, string> = {
+  free: 'Free',
+  premium_monthly: 'Premium Monthly',
+  premium_yearly: 'Premium Yearly',
+  premium_lifetime: 'Premium Lifetime',
+}
+
+const SOURCE_LABELS: Record<string, string> = {
+  stripe: 'Stripe',
+  domain: 'Domain Whitelist',
+  promo: 'Promo Code',
+  admin_manual: 'Manual Grant',
+}
 
 export default function AdminSubscriptionsPage() {
   const [subscriptions, setSubscriptions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [email, setEmail] = useState('')
+  const [plan, setPlan] = useState('premium_monthly')
 
   useEffect(() => {
     fetchSubscriptions()
@@ -19,17 +47,14 @@ export default function AdminSubscriptionsPage() {
     setLoading(false)
   }
 
-  async function grantPremium(e: React.FormEvent<HTMLFormElement>) {
+  async function grantPremium(e: React.FormEvent) {
     e.preventDefault()
-    setError(null)
     setSubmitting(true)
 
-    const formData = new FormData(e.currentTarget)
-    const email = (formData.get('email') as string).trim()
-    const plan = formData.get('plan') as string
+    const trimmedEmail = email.trim()
 
-    if (!email) {
-      setError('Email is required')
+    if (!trimmedEmail) {
+      toast.error('Email is required')
       setSubmitting(false)
       return
     }
@@ -37,87 +62,126 @@ export default function AdminSubscriptionsPage() {
     const res = await fetch('/api/admin/subscriptions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, plan }),
+      body: JSON.stringify({ email: trimmedEmail, plan }),
     })
     const data = await res.json()
 
     if (!res.ok) {
-      setError(data.error || 'Failed to grant premium')
+      toast.error(data.error || 'Failed to grant premium')
     } else {
-      e.currentTarget.reset()
+      toast.success(`Premium granted to ${trimmedEmail}`)
+      setEmail('')
     }
 
     setSubmitting(false)
     await fetchSubscriptions()
   }
 
-  if (loading) return <div className="text-sm text-stone-500">Loading...</div>
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <Card><CardContent className="pt-6 h-32 animate-pulse bg-stone-100 dark:bg-[var(--dark-elevated)] rounded-lg" /></Card>
+        <Card><CardContent className="pt-6 h-48 animate-pulse bg-stone-100 dark:bg-[var(--dark-elevated)] rounded-lg" /></Card>
+      </div>
+    )
+  }
 
   return (
-    <div>
-      <div className="rounded-2xl border border-stone-200 bg-white p-6 mb-6">
-        <h2 className="font-semibold text-stone-900 mb-4">Grant Premium Manually</h2>
-        <form onSubmit={grantPremium} className="flex gap-3">
-          <input
-            name="email"
-            type="email"
-            placeholder="user@example.com"
-            required
-            className="flex-1 px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-          <select
-            name="plan"
-            required
-            className="px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="premium_monthly">Monthly</option>
-            <option value="premium_yearly">Yearly</option>
-            <option value="premium_lifetime">Lifetime</option>
-          </select>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
-          >
-            {submitting ? 'Granting…' : 'Grant'}
-          </button>
-        </form>
-        {error && <p className="text-sm text-rose-600 mt-2">{error}</p>}
-      </div>
+    <div className="space-y-6">
+      {/* Grant Premium Form */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Crown className="h-5 w-5 text-indigo-500" />
+            <h2 className="font-semibold text-stone-900 dark:text-stone-100">Grant Premium Manually</h2>
+          </div>
+          <form onSubmit={grantPremium} className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1 space-y-1.5">
+              <Label htmlFor="email">User Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="user@example.com"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Plan</Label>
+              <Select value={plan} onValueChange={setPlan}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="premium_monthly">Monthly</SelectItem>
+                  <SelectItem value="premium_yearly">Yearly</SelectItem>
+                  <SelectItem value="premium_lifetime">Lifetime</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-end">
+              <Button type="submit" disabled={submitting}>
+                <UserPlus className="h-4 w-4 mr-1" />
+                {submitting ? 'Granting...' : 'Grant'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
 
-      <div className="rounded-2xl border border-stone-200 bg-white overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-stone-50 border-b border-stone-200">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-stone-600">Email</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-stone-600">Plan</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-stone-600">Status</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-stone-600">Granted By</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-stone-100">
-            {subscriptions.map(s => {
-              const profile = Array.isArray(s.profiles) ? s.profiles[0] : s.profiles
-              return (
-                <tr key={s.id}>
-                  <td className="px-4 py-3 text-sm text-stone-700">{profile?.email}</td>
-                  <td className="px-4 py-3 text-sm">
-                    <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${
-                      s.plan === 'free'
-                        ? 'bg-stone-100 text-stone-600'
-                        : 'bg-emerald-100 text-emerald-700'
-                    }`}>
-                      {s.plan}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-stone-600">{s.status}</td>
-                  <td className="px-4 py-3 text-sm text-stone-500">{s.granted_by || '—'}</td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
+      {/* Subscriptions Table */}
+      <Card>
+        <CardContent className="p-0">
+          <div className="px-6 py-4 border-b border-stone-100 dark:border-[var(--dark-border)]">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-stone-900 dark:text-stone-100">All Subscriptions</h2>
+              <Badge variant="secondary">{subscriptions.length} total</Badge>
+            </div>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User</TableHead>
+                <TableHead>Plan</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Source</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {subscriptions.length > 0 ? subscriptions.map(s => {
+                const profile = Array.isArray(s.profiles) ? s.profiles[0] : s.profiles
+                return (
+                  <TableRow key={s.id}>
+                    <TableCell className="font-medium text-stone-900 dark:text-stone-100">
+                      {profile?.email || 'Unknown'}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={s.plan === 'free' ? 'secondary' : 'default'}>
+                        {PLAN_LABELS[s.plan] || s.plan}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={s.status === 'active' ? 'default' : 'outline'}>
+                        {s.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-stone-500 dark:text-stone-400">
+                      {SOURCE_LABELS[s.granted_by] || s.granted_by || '—'}
+                    </TableCell>
+                  </TableRow>
+                )
+              }) : (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-8 text-stone-500 dark:text-stone-400">
+                    No subscriptions found
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   )
 }

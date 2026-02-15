@@ -1,9 +1,27 @@
 @import "tailwindcss";
 @import "@fontsource-variable/inter";
 
+/* Tailwind v4: use class-based dark mode instead of prefers-color-scheme */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ----------------------------------------------------------------
+   Design Tokens — matches the Chrome Extension's design system
+   ---------------------------------------------------------------- */
+
 :root {
   --font-sans: 'Inter Variable', system-ui, sans-serif;
+
+  /* Dark mode surface tokens (used via var() in components) */
+  --dark: #1c1917;
+  --dark-card: #292524;
+  --dark-elevated: #3a3633;
+  --dark-border: #44403c;
+  --dark-hover: #3a3633;
 }
+
+/* ----------------------------------------------------------------
+   Base Styles
+   ---------------------------------------------------------------- */
 
 * {
   box-sizing: border-box;
@@ -12,4 +30,29 @@
 body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Dark mode body */
+.dark body,
+.dark {
+  color-scheme: dark;
+}
+
+.dark body {
+  background-color: var(--dark);
+  color: #e7e5e4; /* stone-200 */
+}
+
+/* ----------------------------------------------------------------
+   Animations (for shadcn/ui)
+   ---------------------------------------------------------------- */
+
+@keyframes accordion-down {
+  from { height: 0; }
+  to { height: var(--radix-accordion-content-height); }
+}
+
+@keyframes accordion-up {
+  from { height: var(--radix-accordion-content-height); }
+  to { height: 0; }
 }

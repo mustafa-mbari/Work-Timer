@@ -1,12 +1,37 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import { toast } from 'sonner'
+import { Globe, Plus, Power, PowerOff } from 'lucide-react'
+
+const PLAN_LABELS: Record<string, string> = {
+  premium_monthly: 'Premium Monthly',
+  premium_yearly: 'Premium Yearly',
+  premium_lifetime: 'Premium Lifetime',
+}
 
 export default function AdminDomainsPage() {
   const [domains, setDomains] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [domain, setDomain] = useState('')
+  const [plan, setPlan] = useState('premium_monthly')
 
   useEffect(() => {
     fetchDomains()
@@ -19,24 +44,20 @@ export default function AdminDomainsPage() {
     setLoading(false)
   }
 
-  async function addDomain(e: React.FormEvent<HTMLFormElement>) {
+  async function addDomain(e: React.FormEvent) {
     e.preventDefault()
-    setError(null)
     setSubmitting(true)
 
-    const formData = new FormData(e.currentTarget)
-    const domain = (formData.get('domain') as string).trim().toLowerCase()
-    const plan = formData.get('plan') as string
+    const trimmed = domain.trim().toLowerCase()
 
-    // Client-side validation
-    if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(domain)) {
-      setError('Invalid domain format (e.g. example.com)')
+    if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(trimmed)) {
+      toast.error('Invalid domain format (e.g. example.com)')
       setSubmitting(false)
       return
     }
 
-    if (domains.some(d => d.domain === domain)) {
-      setError('This domain is already whitelisted')
+    if (domains.some(d => d.domain === trimmed)) {
+      toast.error('This domain is already whitelisted')
       setSubmitting(false)
       return
     }
@@ -44,97 +65,161 @@ export default function AdminDomainsPage() {
     const res = await fetch('/api/admin/domains', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ domain, plan }),
+      body: JSON.stringify({ domain: trimmed, plan }),
     })
     const data = await res.json()
 
     if (!res.ok) {
-      setError(data.error || 'Failed to add domain')
+      toast.error(data.error || 'Failed to add domain')
     } else {
-      e.currentTarget.reset()
+      toast.success(`Domain "${trimmed}" added`)
+      setDomain('')
     }
 
     setSubmitting(false)
     await fetchDomains()
   }
 
-  async function toggleActive(id: string, active: boolean) {
-    await fetch('/api/admin/domains', {
+  async function toggleActive(id: string, active: boolean, domainName: string) {
+    const res = await fetch('/api/admin/domains', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, active: !active }),
     })
+
+    if (res.ok) {
+      toast.success(`${domainName} ${active ? 'deactivated' : 'activated'}`)
+    } else {
+      toast.error('Failed to update domain')
+    }
+
     await fetchDomains()
   }
 
-  if (loading) return <div className="text-sm text-stone-500">Loading...</div>
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <Card><CardContent className="pt-6 h-32 animate-pulse bg-stone-100 dark:bg-[var(--dark-elevated)] rounded-lg" /></Card>
+        <Card><CardContent className="pt-6 h-48 animate-pulse bg-stone-100 dark:bg-[var(--dark-elevated)] rounded-lg" /></Card>
+      </div>
+    )
+  }
 
   return (
-    <div>
-      <div className="rounded-2xl border border-stone-200 bg-white p-6 mb-6">
-        <h2 className="font-semibold text-stone-900 mb-4">Add Whitelisted Domain</h2>
-        <form onSubmit={addDomain} className="flex gap-3">
-          <input
-            name="domain"
-            placeholder="example.com"
-            required
-            className="flex-1 px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-          <select
-            name="plan"
-            required
-            className="px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="premium_monthly">Monthly</option>
-            <option value="premium_yearly">Yearly</option>
-            <option value="premium_lifetime">Lifetime</option>
-          </select>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
-          >
-            {submitting ? 'Adding…' : 'Add'}
-          </button>
-        </form>
-        {error && <p className="text-sm text-rose-600 mt-2">{error}</p>}
-      </div>
+    <div className="space-y-6">
+      {/* Add Domain Form */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Globe className="h-5 w-5 text-indigo-500" />
+            <h2 className="font-semibold text-stone-900 dark:text-stone-100">Add Whitelisted Domain</h2>
+          </div>
+          <form onSubmit={addDomain} className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1 space-y-1.5">
+              <Label htmlFor="domain">Domain</Label>
+              <Input
+                id="domain"
+                value={domain}
+                onChange={e => setDomain(e.target.value)}
+                placeholder="example.com"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Plan</Label>
+              <Select value={plan} onValueChange={setPlan}>
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="premium_monthly">Monthly</SelectItem>
+                  <SelectItem value="premium_yearly">Yearly</SelectItem>
+                  <SelectItem value="premium_lifetime">Lifetime</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-end">
+              <Button type="submit" disabled={submitting}>
+                <Plus className="h-4 w-4 mr-1" />
+                {submitting ? 'Adding...' : 'Add'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
 
-      <div className="rounded-2xl border border-stone-200 bg-white overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-stone-50 border-b border-stone-200">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-stone-600">Domain</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-stone-600">Plan</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-stone-600">Status</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-stone-600">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-stone-100">
-            {domains.map(d => (
-              <tr key={d.id}>
-                <td className="px-4 py-3 text-sm text-stone-700">{d.domain}</td>
-                <td className="px-4 py-3 text-sm text-stone-600">{d.plan}</td>
-                <td className="px-4 py-3 text-sm">
-                  <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${
-                    d.active ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-100 text-stone-600'
-                  }`}>
-                    {d.active ? 'Active' : 'Inactive'}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <button
-                    onClick={() => toggleActive(d.id, d.active)}
-                    className="text-xs text-indigo-500 hover:text-indigo-600"
-                  >
-                    {d.active ? 'Deactivate' : 'Activate'}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* Domains Table */}
+      <Card>
+        <CardContent className="p-0">
+          <div className="px-6 py-4 border-b border-stone-100 dark:border-[var(--dark-border)]">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-stone-900 dark:text-stone-100">Whitelisted Domains</h2>
+              <Badge variant="secondary">{domains.length} total</Badge>
+            </div>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Domain</TableHead>
+                <TableHead>Plan</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {domains.length > 0 ? domains.map(d => (
+                <TableRow key={d.id}>
+                  <TableCell className="font-medium text-stone-900 dark:text-stone-100">
+                    {d.domain}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{PLAN_LABELS[d.plan] || d.plan}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={d.active ? 'default' : 'secondary'}>
+                      {d.active ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          {d.active ? <PowerOff className="h-3.5 w-3.5 mr-1" /> : <Power className="h-3.5 w-3.5 mr-1" />}
+                          {d.active ? 'Deactivate' : 'Activate'}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            {d.active ? 'Deactivate' : 'Activate'} {d.domain}?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {d.active
+                              ? 'Users with this domain will no longer receive automatic premium access.'
+                              : 'Users with this domain will automatically receive premium access.'}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => toggleActive(d.id, d.active, d.domain)}>
+                            Confirm
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </TableCell>
+                </TableRow>
+              )) : (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-8 text-stone-500 dark:text-stone-400">
+                    No domains whitelisted yet
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   )
 }

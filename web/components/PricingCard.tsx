@@ -1,7 +1,13 @@
 'use client'
 
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { PRICING } from '@shared/constants'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Check } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface PricingCardProps {
   plan: 'monthly' | 'yearly' | 'lifetime'
@@ -14,8 +20,7 @@ const PLAN_INFO = {
     price: PRICING.monthly,
     period: '/month',
     description: 'Full access, cancel anytime',
-    priceId: 'monthly',
-    badge: undefined,
+    badge: undefined as string | undefined,
   },
   yearly: {
     name: 'Yearly',
@@ -23,15 +28,13 @@ const PLAN_INFO = {
     period: '/year',
     description: 'Save 58% vs monthly',
     badge: 'Best value',
-    priceId: 'yearly',
   },
   lifetime: {
     name: 'Lifetime',
     price: PRICING.lifetime,
     period: ' one-time',
     description: 'Pay once, own forever',
-    priceId: 'lifetime',
-    badge: undefined,
+    badge: undefined as string | undefined,
   },
 }
 
@@ -51,7 +54,7 @@ export default function PricingCard({ plan, isLoggedIn }: PricingCardProps) {
 
   async function handleUpgrade() {
     if (!isLoggedIn) {
-      window.location.href = `/register`
+      window.location.href = '/register'
       return
     }
     setLoading(true)
@@ -62,56 +65,58 @@ export default function PricingCard({ plan, isLoggedIn }: PricingCardProps) {
         body: JSON.stringify({ plan }),
       })
       const data = await res.json() as { url?: string; error?: string }
-      if (data.url) window.location.href = data.url
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        toast.error(data.error || 'Failed to create checkout session')
+      }
+    } catch {
+      toast.error('Failed to start checkout')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className={`relative rounded-2xl border p-6 flex flex-col gap-4 ${
-      isYearly
-        ? 'border-indigo-300 bg-indigo-50 shadow-md'
-        : 'border-stone-200 bg-white'
-    }`}>
+    <Card className={cn(
+      'relative flex flex-col',
+      isYearly && 'border-indigo-300 dark:border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/20 shadow-md'
+    )}>
       {info.badge && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-xs font-medium px-3 py-1 rounded-full">
+        <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-500 text-white border-0">
           {info.badge}
-        </span>
+        </Badge>
       )}
 
-      <div>
-        <h3 className="font-semibold text-stone-900">{info.name}</h3>
-        <p className="text-sm text-stone-500 mt-0.5">{info.description}</p>
-      </div>
+      <CardContent className="pt-6 flex flex-col gap-4 flex-1">
+        <div>
+          <h3 className="font-semibold text-stone-900 dark:text-stone-100">{info.name}</h3>
+          <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">{info.description}</p>
+        </div>
 
-      <div className="flex items-baseline gap-1">
-        <span className="text-3xl font-bold text-stone-900">${info.price}</span>
-        <span className="text-stone-500 text-sm">{info.period}</span>
-      </div>
+        <div className="flex items-baseline gap-1">
+          <span className="text-3xl font-bold text-stone-900 dark:text-stone-100">${info.price}</span>
+          <span className="text-stone-500 dark:text-stone-400 text-sm">{info.period}</span>
+        </div>
 
-      <ul className="space-y-2 flex-1">
-        {FEATURES.map(f => (
-          <li key={f} className="flex items-center gap-2 text-sm text-stone-600">
-            <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-            {f}
-          </li>
-        ))}
-      </ul>
+        <ul className="space-y-2 flex-1">
+          {FEATURES.map(f => (
+            <li key={f} className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-400">
+              <Check className="h-4 w-4 text-emerald-500 shrink-0" />
+              {f}
+            </li>
+          ))}
+        </ul>
 
-      <button
-        onClick={handleUpgrade}
-        disabled={loading}
-        className={`w-full py-2.5 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 ${
-          isYearly
-            ? 'bg-indigo-500 hover:bg-indigo-600 text-white'
-            : 'border border-stone-200 hover:bg-stone-50 text-stone-700'
-        }`}
-      >
-        {loading ? 'Loading…' : `Get ${info.name}`}
-      </button>
-    </div>
+        <Button
+          onClick={handleUpgrade}
+          disabled={loading}
+          variant={isYearly ? 'default' : 'outline'}
+          className="w-full"
+        >
+          {loading ? 'Loading...' : `Get ${info.name}`}
+        </Button>
+      </CardContent>
+    </Card>
   )
 }

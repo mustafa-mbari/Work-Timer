@@ -58,10 +58,14 @@ export async function POST(request: NextRequest) {
     max_uses: max_uses || null,
     current_uses: 0,
     active: true,
+    valid_from: new Date().toISOString(),
   })
 
   if (error) {
-    const msg = error.message?.includes('duplicate') ? 'Promo code already exists' : 'Failed to create promo code'
+    console.error('Promo code insert error:', error)
+    const msg = error.message?.includes('duplicate')
+      ? 'Promo code already exists'
+      : error.message || 'Failed to create promo code'
     return NextResponse.json({ error: msg }, { status: 400 })
   }
 
