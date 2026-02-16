@@ -28,6 +28,7 @@ export async function getAllProfiles(): Promise<Pick<Profile, 'id' | 'display_na
   const { data } = await supabase
     .from('profiles')
     .select('id, display_name, role')
+    .range(0, 49999)
     .returns<Pick<Profile, 'id' | 'display_name' | 'role'>[]>()
   return data ?? []
 }

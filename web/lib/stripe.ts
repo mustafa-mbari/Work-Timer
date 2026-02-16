@@ -11,10 +11,16 @@ export function getStripe() {
   return _stripe
 }
 
+function requireEnv(name: string): string {
+  const value = process.env[name]
+  if (!value) throw new Error(`Missing required environment variable: ${name}`)
+  return value
+}
+
 export const STRIPE_PRICES = {
-  monthly: process.env.STRIPE_PRICE_MONTHLY || '',
-  yearly: process.env.STRIPE_PRICE_YEARLY || '',
-  lifetime: process.env.STRIPE_PRICE_LIFETIME || '',
+  monthly: requireEnv('STRIPE_PRICE_MONTHLY'),
+  yearly: requireEnv('STRIPE_PRICE_YEARLY'),
+  lifetime: requireEnv('STRIPE_PRICE_LIFETIME'),
 } as const
 
 export type PricePlan = keyof typeof STRIPE_PRICES

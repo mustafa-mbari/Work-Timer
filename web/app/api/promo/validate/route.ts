@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
   const { data: promo, error: promoError } = await getPromoByCode(code)
 
   if (promoError || !promo) {
-    return NextResponse.json({ valid: false, error: 'Invalid promo code' }, { status: 404 })
+    return NextResponse.json({ valid: false, error: 'Invalid promo code' }, { status: 400 })
   }
 
   // Check expiry

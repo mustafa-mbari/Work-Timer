@@ -119,28 +119,40 @@ export default function AnalyticsCharts({
           </CardHeader>
           <CardContent>
             {projectStats.length > 0 ? (
-              <ResponsiveContainer width="100%" height={280}>
-                <PieChart>
-                  <Pie
-                    data={projectStats.slice(0, 8)}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    dataKey="hours"
-                    nameKey="name"
-                    label={({ name, hours }: any) => `${name}: ${hours}h`}
-                    labelLine={false}
-                  >
-                    {projectStats.slice(0, 8).map((p, i) => (
-                      <Cell key={i} fill={p.color || '#6366f1'} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value) => [`${value}h`, 'Hours']}
-                    contentStyle={tooltipStyle}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+              <div>
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie
+                      data={projectStats.slice(0, 8)}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      innerRadius={40}
+                      dataKey="hours"
+                      nameKey="name"
+                    >
+                      {projectStats.slice(0, 8).map((p, i) => (
+                        <Cell key={i} fill={p.color || '#6366f1'} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value) => [`${value}h`, 'Hours']}
+                      contentStyle={tooltipStyle}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="mt-3 space-y-1.5">
+                  {projectStats.slice(0, 8).map((p, i) => (
+                    <div key={i} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: p.color || '#6366f1' }} />
+                        <span className="text-stone-700 dark:text-stone-300 truncate">{p.name}</span>
+                      </div>
+                      <span className="text-stone-500 dark:text-stone-400 shrink-0 ml-2">{p.hours}h</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             ) : (
               <div className="text-sm text-stone-400 text-center py-12">No project data yet</div>
             )}

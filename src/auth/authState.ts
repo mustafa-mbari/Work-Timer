@@ -8,6 +8,23 @@ const SUBSCRIPTION_KEY = 'subscriptionInfo'
 export async function getSession(): Promise<AuthSession | null> {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) return null
+
+  // If the access token is expired or about to expire (within 60s),
+  // refresh it so subsequent Supabase requests carry a valid JWT.
+  // Without this, auth.uid() resolves to NULL on the server and RLS blocks writes.
+  const now = Math.floor(Date.now() / 1000)
+  if ((session.expires_at ?? 0) - now < 60) {
+    const { data: { session: refreshed } } = await supabase.auth.refreshSession()
+    if (!refreshed) return null
+    return {
+      userId: refreshed.user.id,
+      email: refreshed.user.email ?? '',
+      accessToken: refreshed.access_token,
+      refreshToken: refreshed.refresh_token ?? '',
+      expiresAt: refreshed.expires_at ?? 0,
+    }
+  }
+
   return {
     userId: session.user.id,
     email: session.user.email ?? '',

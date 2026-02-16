@@ -48,7 +48,7 @@ export default async function DashboardPage() {
               <p>
                 $1.99/month &middot;{' '}
                 {subscription.cancel_at_period_end
-                  ? `Cancels on ${new Date(subscription.current_period_end!).toLocaleDateString()}`
+                  ? `Cancels on ${subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'N/A'}`
                   : `Renews ${subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'N/A'}`}
               </p>
             )}
@@ -56,7 +56,7 @@ export default async function DashboardPage() {
               <p>
                 $9.99/year &middot;{' '}
                 {subscription.cancel_at_period_end
-                  ? `Cancels on ${new Date(subscription.current_period_end!).toLocaleDateString()}`
+                  ? `Cancels on ${subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'N/A'}`
                   : `Renews ${subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'N/A'}`}
               </p>
             )}

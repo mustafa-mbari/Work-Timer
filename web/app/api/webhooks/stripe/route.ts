@@ -48,19 +48,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
-  // Idempotency check: skip already-processed events
+  // Idempotency check: attempt insert first (unique constraint on event_id)
   try {
     const supabase = await createServiceClient()
-    const { data: existing } = await (supabase.from('stripe_events') as any)
-      .select('event_id')
-      .eq('event_id', event.id)
-      .maybeSingle()
-    if (existing) {
-      return NextResponse.json({ received: true, duplicate: true })
-    }
-    // Mark event as processed before handling (at-most-once delivery)
-    await (supabase.from('stripe_events') as any)
+    const { error: insertError } = await (supabase.from('stripe_events') as any)
       .insert({ event_id: event.id, event_type: event.type })
+    if (insertError) {
+      // Unique constraint violation = duplicate event, skip processing
+      if (insertError.code === '23505') {
+        return NextResponse.json({ received: true, duplicate: true })
+      }
+      console.warn('[stripe webhook] idempotency insert failed:', insertError)
+    }
   } catch (err) {
     // Log but don't fail — idempotency is best-effort until table exists
     console.warn('[stripe webhook] idempotency check failed:', err)
