@@ -3,6 +3,15 @@ import type { Database } from '@/lib/shared/types'
 
 type SyncCursor = Database['public']['Tables']['sync_cursors']['Row']
 
+export async function deleteSyncCursor(userId: string, deviceId: string) {
+  const supabase = await createClient()
+  return supabase
+    .from('sync_cursors')
+    .delete()
+    .eq('user_id', userId)
+    .eq('device_id', deviceId)
+}
+
 export async function getUserSyncCursors(userId: string) {
   const supabase = await createClient()
   const { data } = await supabase

@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { LogOut, LayoutDashboard, Shield } from "lucide-react"
+import { LogOut, LayoutDashboard, Shield, Settings } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
@@ -65,6 +65,10 @@ export function UserMenu({ email, displayName, role }: UserMenuProps) {
             Admin Panel
           </DropdownMenuItem>
         )}
+        <DropdownMenuItem onClick={() => router.push("/settings")}>
+          <Settings className="mr-2 h-4 w-4" />
+          Settings
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleSignOut}>
           <LogOut className="mr-2 h-4 w-4" />

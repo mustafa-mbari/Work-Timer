@@ -24,6 +24,7 @@ const authLinks = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/analytics", label: "Analytics" },
   { href: "/billing", label: "Billing" },
+  { href: "/settings", label: "Settings" },
 ]
 
 const adminLinks = [

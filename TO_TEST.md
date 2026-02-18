@@ -81,7 +81,112 @@ Mark items with `[x]` as you test them, or add notes if something fails.
 
 ## Phase 2 — Settings Pages
 
-> Not yet implemented. Tests will be added when Phase 2 is complete.
+### Navigation — Settings Entry Points
+
+- [ ] Navbar: confirm "Settings" link appears between Billing and user menu (authenticated only)
+- [ ] Mobile menu: confirm "Settings" appears in the authenticated links list
+- [ ] User menu dropdown: confirm "Settings" item appears before "Sign out"
+- [ ] All three entry points navigate to `/settings`
+
+### Settings Page Shell
+
+- [ ] Navigate to `/settings` → confirm the page loads with 5 tabs: Profile, Time Tracking, Appearance, Security, Sessions & Devices
+- [ ] Default tab is "Profile"
+- [ ] Click each tab → confirm URL updates to `?tab=<id>` and correct content renders
+- [ ] Refresh page on a non-default tab → confirm the correct tab is still active (URL param preserved)
+- [ ] Loading skeleton renders during SSR hydration
+- [ ] Page is responsive at 375px mobile width (tabs scroll horizontally if needed)
+- [ ] Light mode and dark mode render correctly across all tabs
+
+---
+
+### Task 2.3 — Profile Tab
+
+**Setup:** Sign in with a test account.
+
+- [ ] Profile tab shows the user's current email (read-only)
+- [ ] Profile tab shows the current subscription plan badge (Free / Premium)
+- [ ] Avatar shows initials derived from display name (if set) or email
+- [ ] Display name field is pre-filled if one exists
+- [ ] Change the display name → click "Save changes" → confirm toast "Profile saved"
+- [ ] Refresh the page → confirm new display name persists
+- [ ] Clear display name (empty field) → save → confirm null is accepted (no validation error)
+- [ ] Display name > 100 chars → confirm validation error or truncation
+
+---
+
+### Task 2.4 — Time Tracking Tab
+
+- [ ] All fields load with current saved values (or sensible defaults on first visit)
+- [ ] **Working days**: change from 5 to 3 → save → refresh → confirm persists
+- [ ] **Week starts on**: toggle between Monday/Sunday → save → refresh → confirm persists
+- [ ] **Daily target**: set to 8 → save → refresh → confirm persists
+- [ ] **Weekly target**: set to 40 → save → refresh → confirm persists
+- [ ] **Daily/weekly target**: clear field → save → confirm null accepted (no required error)
+- [ ] **Idle timeout**: change to 15 minutes → save → refresh → confirm persists
+- [ ] **Auto-show floating timer**: toggle on → save → refresh → confirm persists
+- [ ] **Pomodoro — Work session**: change to 45 → save → refresh → confirm persists
+- [ ] **Pomodoro — Short break**: change to 10 → save → refresh → confirm persists
+- [ ] **Pomodoro — Long break**: change to 20 → save → refresh → confirm persists
+- [ ] **Pomodoro — Sessions before long break**: change to 3 → save → refresh → confirm persists
+- [ ] **Pomodoro — Sound notifications**: toggle off → save → refresh → confirm persists
+- [ ] **Reminder — Enable**: toggle on → confirm Day / Hour / Minute fields appear
+- [ ] **Reminder — Enable**: toggle off → confirm sub-fields disappear
+- [ ] **Reminder**: set to Wednesday 09:30 → save → refresh → confirm persists
+- [ ] Submit with invalid pomodoro values (e.g. 0 minutes) → confirm validation error (min=1)
+- [ ] Toast "Settings saved" appears on successful save
+
+---
+
+### Task 2.5 — Appearance Tab
+
+- [ ] Active theme option is highlighted with indigo border
+- [ ] Click "Light" → page switches to light mode instantly (no page reload)
+- [ ] Click "Dark" → page switches to dark mode instantly
+- [ ] Click "System" → page follows OS dark mode preference
+- [ ] Click "Save to extension" → toast "Appearance saved"
+- [ ] Verify the theme choice persists after page refresh (cookie-backed)
+
+---
+
+### Task 2.6 — Security Tab
+
+**Setup:** Use an email/password account (not OAuth-only).
+
+- [ ] All three password fields start empty
+- [ ] Submit with empty "Current password" → confirm error
+- [ ] Submit with wrong "Current password" → confirm "Current password is incorrect" error
+- [ ] Submit with mismatched new passwords → confirm "Passwords do not match" error
+- [ ] Submit with new password < 8 chars → confirm "at least 8 characters" error
+- [ ] Password strength indicator reacts as you type the new password
+- [ ] Submit with correct current password + valid new password → confirm "Password updated" success state
+- [ ] Sign in with the new password → confirm it works
+
+---
+
+### Task 2.7 — Sessions & Devices Tab
+
+**Setup:** Ensure the extension is installed and synced to your account (requires Premium).
+
+- [ ] **With no devices**: empty state shows Monitor icon + "No devices connected" message
+- [ ] **With devices**: each connected device shows "Chrome Extension" + partial device ID + last synced date
+- [ ] Click the trash icon on a device → confirm it disappears immediately (optimistic)
+- [ ] If the DELETE request fails (network off) → confirm the device is restored and an error toast appears
+- [ ] After disconnecting a device, refresh → confirm it no longer appears
+- [ ] Tip card at the bottom renders correctly
+
+---
+
+### Phase 2 — API Sanity Checks
+
+- [ ] `GET /api/settings` returns 200 + current settings JSON (or empty object for new user)
+- [ ] `PUT /api/settings` with valid body → returns 200
+- [ ] `PUT /api/settings` with invalid body (e.g. `working_days: 999`) → returns 400
+- [ ] `PATCH /api/profile` with `{ displayName: "Test" }` → returns 200
+- [ ] `GET /api/devices` returns 200 + array of cursors
+- [ ] `DELETE /api/devices` with valid `device_id` → returns 200
+- [ ] `DELETE /api/devices` with missing `device_id` → returns 400
+- [ ] All settings API routes return 401 when called without authentication
 
 ---
 

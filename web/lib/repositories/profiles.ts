@@ -23,6 +23,14 @@ export async function getProfile(userId: string): Promise<Pick<Profile, 'id' | '
   return data
 }
 
+export async function updateProfileDisplayName(userId: string, displayName: string | null) {
+  const supabase = await createServiceClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (supabase.from('profiles') as any)
+    .update({ display_name: displayName, updated_at: new Date().toISOString() })
+    .eq('id', userId)
+}
+
 export async function getAllProfiles(): Promise<Pick<Profile, 'id' | 'display_name' | 'role'>[]> {
   const supabase = await createServiceClient()
   const { data } = await supabase

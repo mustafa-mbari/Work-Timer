@@ -64,6 +64,13 @@ export default async function Navbar() {
               >
                 Billing
               </NavLink>
+              <NavLink
+                href="/settings"
+                className="px-3 py-1.5 text-sm rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-50 transition-colors dark:text-stone-400 dark:hover:text-stone-100 dark:hover:bg-[var(--dark-hover)]"
+                activeClassName="!text-indigo-600 !bg-indigo-50 font-medium dark:!text-indigo-400 dark:!bg-indigo-900/20"
+              >
+                Settings
+              </NavLink>
               <div className="w-px h-5 bg-stone-200 mx-2 dark:bg-[var(--dark-border)]" />
               <ThemeToggle />
               <div className="ml-1">

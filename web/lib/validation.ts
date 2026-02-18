@@ -48,6 +48,46 @@ export const domainToggleSchema = z.object({
   active: z.boolean(),
 })
 
+// --- User settings ---
+const pomodoroConfigSchema = z.object({
+  workMinutes: z.number().int().min(1).max(120),
+  shortBreakMinutes: z.number().int().min(1).max(60),
+  longBreakMinutes: z.number().int().min(1).max(120),
+  sessionsBeforeLongBreak: z.number().int().min(1).max(10),
+  soundEnabled: z.boolean(),
+})
+
+const reminderConfigSchema = z.object({
+  enabled: z.boolean(),
+  dayOfWeek: z.number().int().min(0).max(6),
+  hour: z.number().int().min(0).max(23),
+  minute: z.number().int().min(0).max(59),
+})
+
+export const updateSettingsSchema = z.object({
+  working_days: z.number().int().min(1).max(7).optional(),
+  week_start_day: z.union([z.literal(0), z.literal(1)]).optional(),
+  idle_timeout: z.number().int().min(1).max(480).optional(),
+  theme: z.string().max(50).optional(),
+  language: z.string().max(10).optional(),
+  notifications: z.boolean().optional(),
+  daily_target: z.number().min(0).max(24).nullable().optional(),
+  weekly_target: z.number().min(0).max(168).nullable().optional(),
+  pomodoro_config: pomodoroConfigSchema.optional(),
+  floating_timer_auto: z.boolean().optional(),
+  reminder: reminderConfigSchema.nullable().optional(),
+})
+
+// --- User profile ---
+export const updateProfileSchema = z.object({
+  displayName: z.string().max(100).nullable(),
+})
+
+// --- Devices ---
+export const deleteDeviceSchema = z.object({
+  device_id: z.string().min(1).max(200),
+})
+
 // Helper to parse and return a typed result or a 400 response
 export function parseBody<T extends z.ZodType>(schema: T, data: unknown):
   { success: true; data: z.infer<T> } | { success: false; error: string } {
