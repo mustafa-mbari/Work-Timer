@@ -58,7 +58,7 @@ export default function SettingsLayout({ user, profile, subscription, settings, 
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div>
         <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100">Settings</h1>
         <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">

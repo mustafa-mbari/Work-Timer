@@ -36,7 +36,7 @@ export default async function EntriesPage({ searchParams }: Props) {
   ])
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-8">
+    <div className="max-w-5xl mx-auto px-6 py-8 animate-fade-in">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold text-stone-900 dark:text-stone-100">Time Entries</h1>
         <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">

@@ -20,7 +20,7 @@ export default async function DashboardPage() {
   const isPremium = subscription?.plan !== 'free' && subscription?.status === 'active'
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 animate-fade-in">
       <div className="mb-4">
         <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100">Dashboard</h1>
       </div>

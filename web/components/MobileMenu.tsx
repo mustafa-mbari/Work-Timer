@@ -3,7 +3,10 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Menu, LogOut } from "lucide-react"
+import {
+  Menu, LogOut, LayoutDashboard, BarChart2, Clock,
+  CreditCard, Settings2, ShieldCheck,
+} from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -21,15 +24,15 @@ interface MobileMenuProps {
 }
 
 const authLinks = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/analytics", label: "Analytics" },
-  { href: "/entries", label: "Entries" },
-  { href: "/billing", label: "Billing" },
-  { href: "/settings", label: "Settings" },
+  { href: "/dashboard", label: "Dashboard",  icon: LayoutDashboard },
+  { href: "/analytics", label: "Analytics",  icon: BarChart2 },
+  { href: "/entries",   label: "Entries",    icon: Clock },
+  { href: "/billing",   label: "Billing",    icon: CreditCard },
+  { href: "/settings",  label: "Settings",   icon: Settings2 },
 ]
 
 const adminLinks = [
-  { href: "/admin", label: "Admin Panel" },
+  { href: "/admin", label: "Admin Panel", icon: ShieldCheck },
 ]
 
 export function MobileMenu({ user }: MobileMenuProps) {
@@ -66,18 +69,19 @@ export function MobileMenu({ user }: MobileMenuProps) {
               <div className="px-3 py-2 text-xs font-medium text-stone-400 uppercase tracking-wider">
                 Navigation
               </div>
-              {links.map(({ href, label }) => (
+              {links.map(({ href, label, icon: Icon }) => (
                 <Link
                   key={href}
                   href={href}
                   onClick={() => setOpen(false)}
                   className={cn(
-                    "rounded-lg px-3 py-2 text-sm transition-colors",
+                    "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors",
                     pathname === href || pathname.startsWith(href + "/")
                       ? "bg-indigo-50 text-indigo-700 font-medium dark:bg-indigo-900/20 dark:text-indigo-300"
                       : "text-stone-600 hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-[var(--dark-hover)]"
                   )}
                 >
+                  <Icon className="h-4 w-4 shrink-0" />
                   {label}
                 </Link>
               ))}

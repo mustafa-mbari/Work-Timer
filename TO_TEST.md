@@ -445,4 +445,35 @@ Mark items with `[x]` as you test them, or add notes if something fails.
 
 ## Phase 6 — UI Polish & Navigation
 
-> Not yet implemented. Tests will be added when Phase 6 is complete.
+### Task 6.1 — Mobile Navigation Icons
+
+- [ ] Open the mobile menu (hamburger icon, ≤ md breakpoint)
+- [ ] **Dashboard** link shows `LayoutDashboard` icon to the left of the label
+- [ ] **Analytics** link shows `BarChart2` icon
+- [ ] **Entries** link shows `Clock` icon
+- [ ] **Billing** link shows `CreditCard` icon
+- [ ] **Settings** link shows `Settings2` icon
+- [ ] **Admin Panel** link (admin accounts only) shows `ShieldCheck` icon
+- [ ] Icons align with the label text at the same vertical centre
+- [ ] Active link highlights correctly (indigo background + indigo text) with icon
+- [ ] Inactive links have correct grey colour + hover state with icon
+- [ ] "Sign out" button (bottom of menu) still shows `LogOut` icon (unchanged)
+- [ ] Menu renders correctly in light mode and dark mode
+- [ ] Tapping any link closes the menu and navigates correctly
+
+---
+
+### Task 6.2 — Page Transition Animations
+
+**Setup:** Use a screen ≥ 375px width; no special configuration needed.
+
+- [ ] Navigate to `/dashboard` → content fades in and slides up 4px over 0.2 s
+- [ ] Navigate to `/analytics` → same fade-in animation plays
+- [ ] Navigate to `/entries` → same animation plays
+- [ ] Navigate to `/settings` → same animation plays
+- [ ] Navigate to `/billing` → same animation plays
+- [ ] Navigate **between** pages (e.g. dashboard → analytics → entries) → animation replays on each navigation
+- [ ] Loading skeleton appears while page fetches data (next.js loading.tsx), then fades in when ready
+- [ ] Animation plays correctly in both light mode and dark mode
+- [ ] Animation does NOT play inside the same page (e.g. switching settings tabs or analytics filter changes should not retrigger fade-in)
+- [ ] `prefers-reduced-motion` — if OS has reduced motion enabled, animation should not be jarring (verify the `both` fill mode keeps content visible at rest)

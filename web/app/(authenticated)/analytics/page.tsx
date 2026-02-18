@@ -34,7 +34,7 @@ export default async function AnalyticsPage({
   // Full-page empty state when there are no entries at all
   if (data.total_entries === 0 && !isFiltered) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100">Analytics & Reports</h1>
