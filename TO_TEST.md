@@ -192,7 +192,125 @@ Mark items with `[x]` as you test them, or add notes if something fails.
 
 ## Phase 3 — Entries Page
 
-> Not yet implemented. Tests will be added when Phase 3 is complete.
+### Navigation — Entries Entry Points
+
+- [ ] Navbar: confirm "Entries" link appears between Analytics and Billing (authenticated only)
+- [ ] Mobile menu: confirm "Entries" appears between Analytics and Billing
+- [ ] Both entry points navigate to `/entries`
+
+---
+
+### Task 3.3 — Entries Page Shell (Premium gate)
+
+**Setup:** Sign in with a **free** account first, then with a premium account.
+
+- [ ] **Free user**: navigate to `/entries` → confirm redirect to `/billing`
+- [ ] **Premium user**: navigate to `/entries` → confirm page loads with heading "Time Entries"
+- [ ] Entry count shows correct total (e.g. "42 entries total")
+- [ ] Loading skeleton renders during navigation
+- [ ] Page is responsive at 375px mobile width (table scrolls horizontally)
+- [ ] Light mode and dark mode render correctly
+
+---
+
+### Task 3.3 — Entry Filters
+
+- [ ] Date "From" field: set a date → table updates to show only entries on or after that date
+- [ ] Date "To" field: set a date → table updates to show only entries on or before that date
+- [ ] Date range combined: set From + To → confirm entries are within range
+- [ ] Project dropdown: select a project → confirm only entries for that project appear
+- [ ] Type dropdown: select "Manual" / "Stopwatch" / "Pomodoro" → confirm filter works
+- [ ] Multiple filters combined → confirm results match all active filters
+- [ ] "Clear" button appears when any filter is active → click it → all filters reset
+- [ ] Filter indicator row shows active filter summary
+- [ ] Changing any filter resets pagination to page 1
+
+---
+
+### Task 3.3 — Entries Table
+
+- [ ] Table shows columns: Date, Time, Duration, Project, Description, Type, Actions
+- [ ] Date displays in "Jan 15, 2025" format
+- [ ] Time range displays as "09:30 – 11:45"
+- [ ] Duration displays as "2h 15m" or "45m" format
+- [ ] Project column shows colored dot + project name (or "—" if none)
+- [ ] Description is truncated if long (title attribute shows full text on hover)
+- [ ] Tags show as small chips below description (max 3 visible, "+N more" for extras)
+- [ ] Type badge: Manual (gray), Stopwatch (indigo), Pomodoro (rose)
+- [ ] Alternating row background (zebra stripes)
+
+---
+
+### Task 3.3 — Empty State
+
+- [ ] No entries + no filters: shows "No entries found" with hint about extension + "Add manually" button
+- [ ] No entries + active filters: shows "No entries found" + "Try adjusting your filters"
+- [ ] "Add manually" button in empty state opens the Add Entry dialog
+
+---
+
+### Task 3.3 — Pagination
+
+- [ ] Page controls appear only when there are > 50 entries
+- [ ] "Page X of Y · N entries" counter is accurate
+- [ ] Prev / Next buttons navigate correctly
+- [ ] Page number buttons highlight current page
+- [ ] Prev is disabled on page 1; Next is disabled on last page
+
+---
+
+### Task 3.4 — Add Entry Dialog
+
+- [ ] Click "Add Entry" button → dialog opens with today's date pre-filled
+- [ ] Date, Start time, End time fields are required — submit empty → validation errors appear
+- [ ] End time before start time → "End time must be after start time" error
+- [ ] Duration auto-calculates as start/end change (shown as "Duration: 2h 15m")
+- [ ] Type select defaults to "Manual"
+- [ ] Project dropdown lists all synced projects
+- [ ] Description field accepts up to 1000 characters
+- [ ] Tags field: enter "design, meeting" → saved as two separate tags
+- [ ] Link field: accepts a valid URL
+- [ ] Submit valid form → toast "Entry created" → dialog closes → new entry appears in table
+- [ ] Cancel button closes the dialog without creating
+
+---
+
+### Task 3.4 — Edit Entry Dialog
+
+- [ ] Click the pencil icon on an entry → dialog opens pre-filled with that entry's data
+- [ ] Edit the description → save → toast "Entry updated" → table shows new description
+- [ ] Edit project → save → table shows new project
+- [ ] Edit date/time → save → entry re-sorts correctly after page refresh
+- [ ] Cancel button closes without saving changes
+
+---
+
+### Task 3.5 — Bulk Operations
+
+- [ ] Checkbox column appears on each row + "select all" header checkbox
+- [ ] Select 1 entry → blue selection bar appears at top: "1 selected"
+- [ ] Select all → "X selected" count matches entry count on current page
+- [ ] Clicking "select all" when all are selected → deselects all
+- [ ] "Deselect all" button in selection bar clears selection
+- [ ] Click "Delete N" in selection bar → AlertDialog confirmation appears
+- [ ] Confirm deletion → entries disappear, toast "N entries deleted", selection clears
+- [ ] Cancel deletion → entries remain, selection preserved
+
+---
+
+### Phase 3 — API Sanity Checks
+
+- [ ] `GET /api/entries` returns 200 + `{ data, total, page, pageSize, totalPages }` shape
+- [ ] `GET /api/entries?dateFrom=2025-01-01&dateTo=2025-01-31` returns filtered results
+- [ ] `GET /api/entries?projectId=<id>` returns project-filtered results
+- [ ] `GET /api/entries?type=manual` returns type-filtered results
+- [ ] `POST /api/entries` with valid body → returns 201 + `{ success: true, id }`
+- [ ] `POST /api/entries` without required fields → returns 400
+- [ ] `PATCH /api/entries/<id>` with partial body → returns 200
+- [ ] `DELETE /api/entries/<id>` → returns 200 (soft delete)
+- [ ] `DELETE /api/entries` with `{ ids: [...] }` → returns 200 (bulk soft delete)
+- [ ] `DELETE /api/entries` with empty `ids` array → returns 400
+- [ ] All entries API routes return 401 without auth, 403 for free users
 
 ---
 

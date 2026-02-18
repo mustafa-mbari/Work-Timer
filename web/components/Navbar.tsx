@@ -58,6 +58,13 @@ export default async function Navbar() {
                 Analytics
               </NavLink>
               <NavLink
+                href="/entries"
+                className="px-3 py-1.5 text-sm rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-50 transition-colors dark:text-stone-400 dark:hover:text-stone-100 dark:hover:bg-[var(--dark-hover)]"
+                activeClassName="!text-indigo-600 !bg-indigo-50 font-medium dark:!text-indigo-400 dark:!bg-indigo-900/20"
+              >
+                Entries
+              </NavLink>
+              <NavLink
                 href="/billing"
                 className="px-3 py-1.5 text-sm rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-50 transition-colors dark:text-stone-400 dark:hover:text-stone-100 dark:hover:bg-[var(--dark-hover)]"
                 activeClassName="!text-indigo-600 !bg-indigo-50 font-medium dark:!text-indigo-400 dark:!bg-indigo-900/20"

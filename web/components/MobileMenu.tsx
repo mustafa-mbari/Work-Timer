@@ -23,6 +23,7 @@ interface MobileMenuProps {
 const authLinks = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/analytics", label: "Analytics" },
+  { href: "/entries", label: "Entries" },
   { href: "/billing", label: "Billing" },
   { href: "/settings", label: "Settings" },
 ]
