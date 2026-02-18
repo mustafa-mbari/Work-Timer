@@ -326,47 +326,49 @@ export default function EntriesTable({ entriesPage, projects, filters }: Props) 
         </table>
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
+      {/* Pagination — always visible when there are entries */}
+      {entriesPage.total > 0 && (
         <div className="mt-4 flex items-center justify-between">
           <p className="text-sm text-stone-500 dark:text-stone-400">
-            Page {page} of {totalPages} · {entriesPage.total} entries
+            Page {page} of {totalPages} · {entriesPage.total} {entriesPage.total === 1 ? 'entry' : 'entries'}
           </p>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => navigate({ page: String(page - 1) })}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Prev
-            </Button>
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              const start = Math.max(1, Math.min(page - 2, totalPages - 4))
-              const p = start + i
-              return (
-                <Button
-                  key={p}
-                  variant={p === page ? 'default' : 'ghost'}
-                  size="sm"
-                  className="w-8 h-8 p-0"
-                  onClick={() => navigate({ page: String(p) })}
-                >
-                  {p}
-                </Button>
-              )
-            })}
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={page >= totalPages}
-              onClick={() => navigate({ page: String(page + 1) })}
-            >
-              Next
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => navigate({ page: String(page - 1) })}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Prev
+              </Button>
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const start = Math.max(1, Math.min(page - 2, totalPages - 4))
+                const p = start + i
+                return (
+                  <Button
+                    key={p}
+                    variant={p === page ? 'default' : 'ghost'}
+                    size="sm"
+                    className="w-8 h-8 p-0"
+                    onClick={() => navigate({ page: String(p) })}
+                  >
+                    {p}
+                  </Button>
+                )
+              })}
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={page >= totalPages}
+                onClick={() => navigate({ page: String(page + 1) })}
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
       )}
 

@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
 import { requireAuth } from '@/lib/services/auth'
 import { isPremiumUser } from '@/lib/services/billing'
 import { getUserTimeEntries } from '@/lib/repositories/timeEntries'
@@ -44,11 +45,13 @@ export default async function EntriesPage({ searchParams }: Props) {
         </p>
       </div>
 
-      <EntriesView
-        entriesPage={entriesPage}
-        projects={projects}
-        filters={filters}
-      />
+      <Suspense fallback={<div className="h-64" />}>
+        <EntriesView
+          entriesPage={entriesPage}
+          projects={projects}
+          filters={filters}
+        />
+      </Suspense>
     </div>
   )
 }

@@ -3,7 +3,7 @@ import { Suspense } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
-  Clock, FileText, TrendingUp, Flame, CalendarDays, Timer, FolderKanban, BarChart2,
+  Clock, FileText, TrendingUp, Flame, CalendarDays, Timer, FolderKanban, BarChart2, AlertTriangle,
 } from 'lucide-react'
 import AnalyticsCharts from './AnalyticsCharts'
 import AnalyticsFilters from './AnalyticsFilters'
@@ -12,6 +12,13 @@ import { isPremiumUser } from '@/lib/services/billing'
 import { getUserAnalytics } from '@/lib/services/analytics'
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
+
+const HEADER = (
+  <div>
+    <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100">Analytics & Reports</h1>
+    <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">Advanced insights into your time tracking</p>
+  </div>
+)
 
 export default async function AnalyticsPage({
   searchParams,
@@ -28,19 +35,46 @@ export default async function AnalyticsPage({
   const dateFrom = rawFrom && ISO_DATE.test(rawFrom) ? rawFrom : undefined
   const dateTo   = rawTo   && ISO_DATE.test(rawTo)   ? rawTo   : undefined
 
-  const data = await getUserAnalytics(user.id, dateFrom, dateTo)
+  let data: Awaited<ReturnType<typeof getUserAnalytics>> | null = null
+  let fetchError: string | null = null
+
+  try {
+    data = await getUserAnalytics(user.id, dateFrom, dateTo)
+  } catch (err) {
+    fetchError = err instanceof Error ? err.message : 'Failed to load analytics'
+  }
 
   const isFiltered = dateFrom || dateTo
+
+  // Error state
+  if (fetchError || !data) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          {HEADER}
+          <Suspense fallback={<div className="h-8" />}>
+            <AnalyticsFilters />
+          </Suspense>
+        </div>
+        <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
+          <AlertTriangle className="h-12 w-12 text-amber-400" />
+          <div>
+            <p className="text-base font-medium text-stone-700 dark:text-stone-300">Could not load analytics</p>
+            <p className="text-sm text-stone-400 dark:text-stone-500 mt-1">
+              {fetchError ?? 'An unexpected error occurred. Please try refreshing.'}
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // Full-page empty state when there are no entries at all
   if (data.total_entries === 0 && !isFiltered) {
     return (
       <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100">Analytics & Reports</h1>
-            <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">Advanced insights into your time tracking</p>
-          </div>
+          {HEADER}
         </div>
         <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
           <BarChart2 className="h-12 w-12 text-stone-300 dark:text-stone-600" />
@@ -56,7 +90,7 @@ export default async function AnalyticsPage({
   }
 
   const avgPerDay = data.unique_days > 0 ? data.total_hours / data.unique_days : 0
-  const avgSessionMin = Math.round(data.avg_session_ms / 60000)
+  const avgSessionMin = Math.round((data.avg_session_ms ?? 0) / 60000)
 
   // Find best day
   const dayOfWeekData = data.day_of_week_data ?? []
@@ -84,12 +118,9 @@ export default async function AnalyticsPage({
   }))
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100">Analytics & Reports</h1>
-          <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">Advanced insights into your time tracking</p>
-        </div>
+        {HEADER}
         <Suspense fallback={<div className="h-8" />}>
           <AnalyticsFilters />
         </Suspense>
@@ -115,7 +146,7 @@ export default async function AnalyticsPage({
                   <Clock className="h-4 w-4 text-indigo-500" />
                   <span className="text-xs text-stone-500 dark:text-stone-400">Total Hours</span>
                 </div>
-                <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{data.total_hours.toFixed(1)}</p>
+                <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{(data.total_hours ?? 0).toFixed(1)}</p>
               </CardContent>
             </Card>
             <Card>
@@ -151,7 +182,7 @@ export default async function AnalyticsPage({
                   <Flame className="h-4 w-4 text-rose-500" />
                   <span className="text-xs text-stone-500 dark:text-stone-400">Streak</span>
                 </div>
-                <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{data.streak}d</p>
+                <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{data.streak ?? 0}d</p>
               </CardContent>
             </Card>
             <Card>

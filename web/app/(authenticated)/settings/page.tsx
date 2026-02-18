@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { requireAuth } from '@/lib/services/auth'
 import { getUserSubscription } from '@/lib/repositories/subscriptions'
 import { getProfile } from '@/lib/repositories/profiles'
@@ -16,12 +17,14 @@ export default async function SettingsPage() {
   ])
 
   return (
-    <SettingsLayout
-      user={{ id: user.id, email: user.email ?? '' }}
-      profile={profile}
-      subscription={subscription}
-      settings={settings}
-      cursors={cursors}
-    />
+    <Suspense fallback={<div className="h-64" />}>
+      <SettingsLayout
+        user={{ id: user.id, email: user.email ?? '' }}
+        profile={profile}
+        subscription={subscription}
+        settings={settings}
+        cursors={cursors}
+      />
+    </Suspense>
   )
 }
