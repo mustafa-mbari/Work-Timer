@@ -4,6 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area,
 } from 'recharts'
+import { BarChart2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card'
 
 interface AnalyticsChartsProps {
@@ -13,6 +14,7 @@ interface AnalyticsChartsProps {
   typeData: { name: string; hours: number; count: number; fill: string }[]
   dayOfWeekData: { name: string; hours: number }[]
   peakHoursData: { hour: string; count: number }[]
+  isFiltered?: boolean
 }
 
 const tooltipStyle = {
@@ -22,6 +24,15 @@ const tooltipStyle = {
   backgroundColor: '#fff',
 }
 
+function ChartEmpty({ message }: { message: string }) {
+  return (
+    <div className="flex flex-col items-center gap-2 py-12 text-center">
+      <BarChart2 className="h-8 w-8 text-stone-300 dark:text-stone-600" />
+      <p className="text-sm text-stone-400 dark:text-stone-500">{message}</p>
+    </div>
+  )
+}
+
 export default function AnalyticsCharts({
   weeklyData,
   dailyData,
@@ -29,13 +40,17 @@ export default function AnalyticsCharts({
   typeData,
   dayOfWeekData,
   peakHoursData,
+  isFiltered,
 }: AnalyticsChartsProps) {
+  const dailyTitle  = isFiltered ? 'Daily Activity' : 'Daily Activity (Last 30 Days)'
+  const weeklyTitle = isFiltered ? 'Weekly Hours' : 'Weekly Hours (Last 12 Weeks)'
+
   return (
     <>
-      {/* Daily Trend (30 days) */}
+      {/* Daily Trend */}
       <Card>
         <CardHeader>
-          <CardTitle>Daily Activity (Last 30 Days)</CardTitle>
+          <CardTitle>{dailyTitle}</CardTitle>
         </CardHeader>
         <CardContent>
           {dailyData.some(d => d.hours > 0) ? (
@@ -73,7 +88,7 @@ export default function AnalyticsCharts({
               </AreaChart>
             </ResponsiveContainer>
           ) : (
-            <div className="text-sm text-stone-400 text-center py-12">No data in the last 30 days</div>
+            <ChartEmpty message="No activity in the selected period" />
           )}
         </CardContent>
       </Card>
@@ -81,10 +96,10 @@ export default function AnalyticsCharts({
       {/* Weekly Trend */}
       <Card>
         <CardHeader>
-          <CardTitle>Weekly Hours (Last 12 Weeks)</CardTitle>
+          <CardTitle>{weeklyTitle}</CardTitle>
         </CardHeader>
         <CardContent>
-          {weeklyData.length > 0 ? (
+          {weeklyData.some(d => d.hours > 0) ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={weeklyData}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-stone-200 dark:stroke-stone-700" />
@@ -106,7 +121,7 @@ export default function AnalyticsCharts({
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="text-sm text-stone-400 text-center py-12">No data yet</div>
+            <ChartEmpty message="No weekly data in the selected period" />
           )}
         </CardContent>
       </Card>
@@ -118,7 +133,7 @@ export default function AnalyticsCharts({
             <CardTitle>Time by Project</CardTitle>
           </CardHeader>
           <CardContent>
-            {projectStats.length > 0 ? (
+            {projectStats.some(p => p.hours > 0) ? (
               <div>
                 <ResponsiveContainer width="100%" height={200}>
                   <PieChart>
@@ -154,7 +169,7 @@ export default function AnalyticsCharts({
                 </div>
               </div>
             ) : (
-              <div className="text-sm text-stone-400 text-center py-12">No project data yet</div>
+              <ChartEmpty message="No project data for the selected period" />
             )}
           </CardContent>
         </Card>
@@ -165,33 +180,37 @@ export default function AnalyticsCharts({
             <CardTitle>Time by Entry Type</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={typeData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" className="stroke-stone-200 dark:stroke-stone-700" />
-                <XAxis
-                  type="number"
-                  tick={{ fontSize: 12 }}
-                  className="fill-stone-500"
-                  tickFormatter={(v) => `${v}h`}
-                />
-                <YAxis
-                  dataKey="name"
-                  type="category"
-                  tick={{ fontSize: 12 }}
-                  className="fill-stone-500"
-                  width={80}
-                />
-                <Tooltip
-                  formatter={(value, name, props) => [`${value}h (${props.payload.count} entries)`, 'Hours']}
-                  contentStyle={tooltipStyle}
-                />
-                <Bar dataKey="hours" radius={[0, 6, 6, 0]}>
-                  {typeData.map((d, i) => (
-                    <Cell key={i} fill={d.fill} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            {typeData.some(t => t.hours > 0) ? (
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={typeData} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-stone-200 dark:stroke-stone-700" />
+                  <XAxis
+                    type="number"
+                    tick={{ fontSize: 12 }}
+                    className="fill-stone-500"
+                    tickFormatter={(v) => `${v}h`}
+                  />
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    tick={{ fontSize: 12 }}
+                    className="fill-stone-500"
+                    width={80}
+                  />
+                  <Tooltip
+                    formatter={(value, name, props) => [`${value}h (${props.payload.count} entries)`, 'Hours']}
+                    contentStyle={tooltipStyle}
+                  />
+                  <Bar dataKey="hours" radius={[0, 6, 6, 0]}>
+                    {typeData.map((d, i) => (
+                      <Cell key={i} fill={d.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <ChartEmpty message="No entry type data for the selected period" />
+            )}
           </CardContent>
         </Card>
       </div>
@@ -203,26 +222,30 @@ export default function AnalyticsCharts({
             <CardTitle>Hours by Day of Week</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={dayOfWeekData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-stone-200 dark:stroke-stone-700" />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 12 }}
-                  className="fill-stone-500"
-                />
-                <YAxis
-                  tick={{ fontSize: 12 }}
-                  className="fill-stone-500"
-                  tickFormatter={(v) => `${v}h`}
-                />
-                <Tooltip
-                  formatter={(value) => [`${value}h`, 'Hours']}
-                  contentStyle={tooltipStyle}
-                />
-                <Bar dataKey="hours" fill="#10b981" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {dayOfWeekData.some(d => d.hours > 0) ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={dayOfWeekData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-stone-200 dark:stroke-stone-700" />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 12 }}
+                    className="fill-stone-500"
+                  />
+                  <YAxis
+                    tick={{ fontSize: 12 }}
+                    className="fill-stone-500"
+                    tickFormatter={(v) => `${v}h`}
+                  />
+                  <Tooltip
+                    formatter={(value) => [`${value}h`, 'Hours']}
+                    contentStyle={tooltipStyle}
+                  />
+                  <Bar dataKey="hours" fill="#10b981" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <ChartEmpty message="No day-of-week data for the selected period" />
+            )}
           </CardContent>
         </Card>
 
@@ -254,7 +277,7 @@ export default function AnalyticsCharts({
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="text-sm text-stone-400 text-center py-12">No timing data available</div>
+              <ChartEmpty message="No timing data for the selected period" />
             )}
           </CardContent>
         </Card>

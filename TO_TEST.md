@@ -387,7 +387,59 @@ Mark items with `[x]` as you test them, or add notes if something fails.
 
 ## Phase 5 — Analytics Enhancements
 
-> Not yet implemented. Tests will be added when Phase 5 is complete.
+### Task 5.1 — Analytics Filters
+
+**Setup:** Sign in with a Premium account that has time entries spanning several weeks.
+
+- [ ] Navigate to `/analytics` → confirm the filter bar appears below the page title
+- [ ] Filter bar shows three preset buttons: **7d**, **30d**, **90d**
+- [ ] Filter bar shows a **From** date input and a **To** date input
+- [ ] No filter active: URL has no `dateFrom` / `dateTo` params; charts show default ranges
+- [ ] Click **7d** → URL updates to `?dateFrom=<7 days ago>&dateTo=<today>` → stats + charts update
+- [ ] Click **30d** → URL updates accordingly → charts update
+- [ ] Click **90d** → URL updates accordingly → charts update
+- [ ] Set **From** date manually → URL updates → charts update
+- [ ] Set **To** date manually → URL updates → charts update
+- [ ] Set both **From** and **To** → charts and KPI cards reflect only that date range
+- [ ] **Daily Activity chart title** shows "Daily Activity" (not the hardcoded "Last 30 Days") when filtered
+- [ ] **Weekly Hours chart title** shows "Weekly Hours" (not "Last 12 Weeks") when filtered
+- [ ] **Clear** button appears when any filter is active → click → URL loses date params → charts revert to defaults
+- [ ] **Streak KPI card** always shows current streak regardless of date filter (not filtered)
+- [ ] Refresh page with date params in URL → correct filter is still active
+
+**Date range edge cases:**
+- [ ] From > To → charts may show empty; no crash
+- [ ] Very wide range (e.g. all time) → page renders correctly
+- [ ] Malformed date param in URL (e.g. `?dateFrom=notadate`) → safely ignored, defaults used (no 500 error)
+
+---
+
+### Task 5.2 — Analytics Empty States
+
+**Setup:** Use an account with zero tracked entries for the full-page test.
+
+- [ ] **Full-page empty state** (no entries ever): navigate to `/analytics` → confirm "No data yet" message with BarChart icon and a helpful hint; filter bar is hidden
+- [ ] **Filtered empty state**: apply a date filter with no entries in that range → confirm compact empty state with BarChart icon + "No entries found for the selected date range." message; stats cards are hidden
+- [ ] **Per-chart empty states** (individual charts with no data in range):
+  - [ ] Daily Activity: shows BarChart icon + "No activity in the selected period"
+  - [ ] Weekly Hours: shows BarChart icon + "No weekly data in the selected period"
+  - [ ] Time by Project: shows BarChart icon + "No project data for the selected period"
+  - [ ] Time by Entry Type: shows BarChart icon + "No entry type data for the selected period"
+  - [ ] Hours by Day of Week: shows BarChart icon + "No day-of-week data for the selected period"
+  - [ ] Peak Working Hours: shows BarChart icon + "No timing data for the selected period"
+- [ ] Light mode and dark mode render correctly for all empty states
+- [ ] Empty states are responsive at 375px mobile width
+
+---
+
+### Phase 5 — SQL Migration
+
+> **Must apply to Supabase before testing the filter feature.**
+>
+> Run migration `010_analytics_date_filter.sql` in Supabase SQL Editor or via CLI.
+
+- [ ] After applying migration: `get_user_analytics` with no date params returns same results as before
+- [ ] After applying: `get_user_analytics` with `p_date_from` + `p_date_to` returns filtered totals
 
 ---
 

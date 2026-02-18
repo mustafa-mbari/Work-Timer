@@ -109,6 +109,12 @@ export const bulkDeleteEntriesSchema = z.object({
   ids: z.array(z.string().min(1)).min(1).max(500),
 })
 
+// --- Analytics filters ---
+export const analyticsFilterSchema = z.object({
+  dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  dateTo:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+})
+
 // Helper to parse and return a typed result or a 400 response
 export function parseBody<T extends z.ZodType>(schema: T, data: unknown):
   { success: true; data: z.infer<T> } | { success: false; error: string } {

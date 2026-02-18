@@ -1,13 +1,16 @@
 import { createServiceClient } from '@/lib/supabase/server'
 
 // Calls the RPC function created in migration 003_user_analytics_rpc.sql
-// Replaces 150+ lines of JS aggregation in analytics/page.tsx
+// Updated in migration 010 to accept optional date-range parameters.
 
-export async function getUserAnalytics(userId: string) {
+export async function getUserAnalytics(userId: string, dateFrom?: string, dateTo?: string) {
   const supabase = await createServiceClient()
+  const args: Record<string, string> = { p_user_id: userId }
+  if (dateFrom) args.p_date_from = dateFrom
+  if (dateTo)   args.p_date_to   = dateTo
   // supabase-js v2.95 cannot resolve RPC arg types from manual Database definition
   // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
-  const { data, error } = await (supabase.rpc as Function)('get_user_analytics', { p_user_id: userId })
+  const { data, error } = await (supabase.rpc as Function)('get_user_analytics', args)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (error) throw new Error(`get_user_analytics failed: ${(error as any).message}`)
   return data as {
