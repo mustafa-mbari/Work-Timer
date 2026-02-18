@@ -114,7 +114,9 @@ export async function POST(request: NextRequest) {
         const { error } = await updateSubscriptionByStripeId(sub.id, {
           plan: planName,
           status: sub.status as DbSubscription['status'],
-          current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
+          current_period_end: sub.items.data[0]?.current_period_end
+            ? new Date(sub.items.data[0].current_period_end * 1000).toISOString()
+            : null,
           cancel_at_period_end: sub.cancel_at_period_end,
         })
 
@@ -141,8 +143,10 @@ export async function POST(request: NextRequest) {
 
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice
-        if (invoice.subscription) {
-          const { error } = await updateSubscriptionByStripeId(invoice.subscription as string, {
+        const subDetail = invoice.parent?.subscription_details?.subscription
+        const stripeSubId = typeof subDetail === 'string' ? subDetail : subDetail?.id
+        if (stripeSubId) {
+          const { error } = await updateSubscriptionByStripeId(stripeSubId, {
             status: 'past_due',
           })
 

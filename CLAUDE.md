@@ -26,12 +26,12 @@ Work-Timer is a Chrome Extension (Manifest V3) + Next.js companion website for t
 - **Icons:** Custom SVG components in `src/components/Icons.tsx`
 
 ### Companion Website (`web/`)
-- **Framework:** Next.js 15 (App Router) + React 19 + TypeScript 5.7
+- **Framework:** Next.js 16 (App Router) + React 19 + TypeScript 5.7
 - **Styling:** TailwindCSS v4 (`@tailwindcss/postcss` plugin)
 - **UI Components:** shadcn/ui (Radix primitives)
 - **Charts:** Recharts
-- **Auth & DB:** Supabase (`@supabase/ssr` for user client, `@supabase/supabase-js` for service role client)
-- **Payments:** Stripe (checkout sessions, billing portal, webhooks)
+- **Auth & DB:** Supabase (`@supabase/ssr` v0.8+ for user client, `@supabase/supabase-js` v2.97+ for service role client)
+- **Payments:** Stripe v20 (checkout sessions, billing portal, webhooks; API version `2026-01-28.clover`)
 - **Validation:** Zod (all API route inputs)
 - **Icons:** Lucide React
 
@@ -106,7 +106,7 @@ web/
     supabase/           # Server + service role Supabase clients
     utils.ts            # cn() helper
     theme.ts            # Cookie-based theme provider
-  middleware.ts         # Auth guards (skips public routes for performance)
+  middleware.ts         # Auth guards (skips public routes for performance) — deprecated name, will become proxy.ts
 ```
 
 ### Popup <-> Background Communication
@@ -196,7 +196,7 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 
 ## Key Gotchas
 
-### Supabase Type System (v2.95.3)
+### Supabase Type System (v2.97+)
 - Hand-crafted `Database` types don't fully work with supabase-js type inference for mutations
 - **Selects**: Use `.single<Pick<T, ...>>()` or `.returns<T[]>()` for typed results
 - **Mutations**: Use `(supabase.from('table') as any)` for insert/update/upsert operations
@@ -215,6 +215,11 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 
 ### Promo Codes
 - `valid_from` field required on insert (no DB default)
+
+### Stripe API (v20, API `2026-01-28.clover`)
+- `Subscription.current_period_end` moved to item-level: use `sub.items.data[0]?.current_period_end`
+- `Invoice.subscription` moved to `invoice.parent?.subscription_details?.subscription`
+- API version pinned in `web/lib/stripe.ts`
 
 ### Tailwind v4
 - `@theme {}` block defines CSS custom properties for colors
