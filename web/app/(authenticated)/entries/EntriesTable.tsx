@@ -134,10 +134,11 @@ export default function EntriesTable({ entriesPage, projects, filters }: Props) 
     router.refresh()
   }
 
-  if (entries.length === 0) {
-    return (
-      <>
-        <div className="rounded-xl border border-stone-200 dark:border-[var(--dark-border)] py-16 flex flex-col items-center gap-3 text-center">
+  return (
+    <>
+      {/* Empty state */}
+      {entries.length === 0 && (
+        <div className="rounded-xl border border-stone-200 dark:border-[var(--dark-border)] py-16 flex flex-col items-center gap-3 text-center mb-4">
           <div className="h-12 w-12 rounded-full bg-stone-100 dark:bg-[var(--dark-elevated)] flex items-center justify-center">
             <svg className="h-6 w-6 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -155,19 +156,9 @@ export default function EntriesTable({ entriesPage, projects, filters }: Props) 
             Add manually
           </Button>
         </div>
+      )}
 
-        <EntryFormDialog
-          open={showAddDialog}
-          onOpenChange={setShowAddDialog}
-          projects={projects}
-          onSaved={handleSaved}
-        />
-      </>
-    )
-  }
-
-  return (
-    <>
+      {entries.length > 0 && <>
       {/* Bulk action bar */}
       {selected.size > 0 && (
         <div className="mb-3 flex items-center gap-3 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 px-4 py-2.5">
@@ -326,49 +317,49 @@ export default function EntriesTable({ entriesPage, projects, filters }: Props) 
         </table>
       </div>
 
+      </>}
+
       {/* Pagination — always visible when there are entries */}
       {entriesPage.total > 0 && (
         <div className="mt-4 flex items-center justify-between">
           <p className="text-sm text-stone-500 dark:text-stone-400">
             Page {page} of {totalPages} · {entriesPage.total} {entriesPage.total === 1 ? 'entry' : 'entries'}
           </p>
-          {totalPages > 1 && (
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => navigate({ page: String(page - 1) })}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Prev
-              </Button>
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                const start = Math.max(1, Math.min(page - 2, totalPages - 4))
-                const p = start + i
-                return (
-                  <Button
-                    key={p}
-                    variant={p === page ? 'default' : 'ghost'}
-                    size="sm"
-                    className="w-8 h-8 p-0"
-                    onClick={() => navigate({ page: String(p) })}
-                  >
-                    {p}
-                  </Button>
-                )
-              })}
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={page >= totalPages}
-                onClick={() => navigate({ page: String(page + 1) })}
-              >
-                Next
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => navigate({ page: String(page - 1) })}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Prev
+            </Button>
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              const start = Math.max(1, Math.min(page - 2, totalPages - 4))
+              const p = start + i
+              return (
+                <Button
+                  key={p}
+                  variant={p === page ? 'default' : 'ghost'}
+                  size="sm"
+                  className="w-8 h-8 p-0"
+                  onClick={() => navigate({ page: String(p) })}
+                >
+                  {p}
+                </Button>
+              )
+            })}
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => navigate({ page: String(page + 1) })}
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       )}
 
