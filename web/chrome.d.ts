@@ -5,7 +5,8 @@ declare namespace chrome {
     function sendMessage(
       extensionId: string,
       message: unknown,
-      callback: (response: unknown) => void
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      callback: (response: any) => void
     ): void
   }
 }
