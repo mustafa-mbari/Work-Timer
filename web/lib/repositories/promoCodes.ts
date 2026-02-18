@@ -1,5 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import type { Database } from '@shared/types'
+import type { Database } from '@/lib/shared/types'
 
 type PromoCode = Database['public']['Tables']['promo_codes']['Row']
 type PromoCodeInsert = Database['public']['Tables']['promo_codes']['Insert']

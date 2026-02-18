@@ -25,9 +25,6 @@
     "paths": {
       "@/*": [
         "./*"
-      ],
-      "@shared/*": [
-        "../shared/*"
       ]
     },
     "target": "ES2017"
@@ -37,7 +34,6 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "../shared",
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [

@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge'
 import CheckoutButton from './CheckoutButton'
 import PortalButton from './PortalButton'
 import PromoCodeInput from './PromoCodeInput'
-import { PRICING } from '@shared/constants'
+import { PRICING } from '@/lib/shared/constants'
 import { requireAuth } from '@/lib/services/auth'
 import { getUserSubscriptionForBilling } from '@/lib/repositories/subscriptions'
 

@@ -1,5 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import type { Database } from '@shared/types'
+import type { Database } from '@/lib/shared/types'
 
 type Domain = Database['public']['Tables']['whitelisted_domains']['Row']
 type DomainInsert = Database['public']['Tables']['whitelisted_domains']['Insert']

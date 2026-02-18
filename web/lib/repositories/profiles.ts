@@ -1,5 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/server'
-import type { Database } from '@shared/types'
+import type { Database } from '@/lib/shared/types'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 

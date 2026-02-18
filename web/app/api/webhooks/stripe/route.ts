@@ -3,7 +3,7 @@ import { getStripe } from '@/lib/stripe'
 import { createServiceClient } from '@/lib/supabase/server'
 import { upsertSubscription, updateSubscriptionByStripeId } from '@/lib/repositories/subscriptions'
 import type Stripe from 'stripe'
-import type { DbSubscription } from '@shared/types'
+import type { DbSubscription } from '@/lib/shared/types'
 
 type Plan = DbSubscription['plan']
 
