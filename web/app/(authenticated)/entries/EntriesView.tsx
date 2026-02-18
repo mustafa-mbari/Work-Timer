@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import EntryFilters from './EntryFilters'
 import EntriesTable from './EntriesTable'
 import EntryFormDialog from './EntryFormDialog'
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export default function EntriesView({ entriesPage, projects, filters }: Props) {
+  const router = useRouter()
   const [showAddDialog, setShowAddDialog] = useState(false)
 
   return (
@@ -36,7 +38,7 @@ export default function EntriesView({ entriesPage, projects, filters }: Props) {
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
         projects={projects}
-        onSaved={() => { /* EntriesTable handles its own refresh */ }}
+        onSaved={() => router.refresh()}
       />
     </>
   )
