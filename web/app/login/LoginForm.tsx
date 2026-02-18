@@ -46,7 +46,15 @@ export default function LoginForm() {
       if (isExtension) {
         window.location.href = '/auth/callback?ext=true'
       } else {
-        router.push('/dashboard')
+        // Return to last visited page if available
+        let destination = '/dashboard'
+        try {
+          const lastPage = localStorage.getItem('lastPage')
+          if (lastPage && lastPage.startsWith('/') && !lastPage.startsWith('/login') && !lastPage.startsWith('/register')) {
+            destination = lastPage
+          }
+        } catch { /* localStorage unavailable */ }
+        router.push(destination)
         router.refresh()
       }
     } catch (err) {

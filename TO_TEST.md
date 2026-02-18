@@ -316,7 +316,72 @@ Mark items with `[x]` as you test them, or add notes if something fails.
 
 ## Phase 4 — Dashboard Enhancements
 
-> Not yet implemented. Tests will be added when Phase 4 is complete.
+### Task 4.1 — Dashboard Tab Layout
+
+- [ ] Navigate to `/dashboard` → confirm 3 tabs appear: Overview, Devices, Recent Entries
+- [ ] Default tab is "Overview"
+- [ ] Click "Devices" → confirm URL updates to `?tab=devices` and Devices content renders
+- [ ] Click "Recent Entries" → confirm URL updates to `?tab=recent` and recent entries render
+- [ ] Refresh on a non-default tab → confirm correct tab is still active (URL param preserved)
+- [ ] Devices tab badge shows the count of connected devices (e.g. "Devices 2")
+- [ ] Light mode and dark mode render correctly across all tabs
+
+---
+
+### Task 4.2 — Post-Login Landing Logic
+
+- [ ] Sign in → if no `lastPage` in localStorage → confirm redirect to `/dashboard`
+- [ ] Browse to `/analytics` while logged in → sign out → sign back in → confirm redirect to `/analytics` (lastPage restored)
+- [ ] Browse to `/entries` → sign out → sign in → confirm redirect to `/entries`
+- [ ] Browse to `/settings` → sign out → sign in → confirm redirect to `/settings`
+- [ ] `lastPage` of `/login` is ignored → confirm redirect to `/dashboard` instead
+- [ ] `lastPage` of `/register` is ignored → confirm redirect to `/dashboard` instead
+- [ ] Extension login flow (`?ext=true`) is unaffected — still redirects through `/auth/callback?ext=true`
+
+---
+
+### Task 4.3 — Dashboard KPI Cards & Quick Actions
+
+**Setup:** Use a premium account with at least some tracked entries synced to the cloud.
+
+- [ ] KPI cards row appears at the top of the Overview tab
+- [ ] **Hours card**: shows total tracked hours (matches analytics page total)
+- [ ] **Entries card**: shows total entry count
+- [ ] **Days card**: shows number of active days
+- [ ] **Projects card**: shows total project count + last active date
+- [ ] With no stats yet (new account): KPI card row is hidden, plan card and actions still render
+- [ ] **Quick actions — Premium user**: "View Analytics" + "Manage Entries" + "Settings" buttons appear
+- [ ] **Quick actions — Free user**: "Upgrade to Premium" + "Settings" buttons appear
+- [ ] All quick action buttons navigate to the correct page
+
+---
+
+### Task 4.1 — Overview Tab
+
+- [ ] Plan card shows correct plan name and badge (Free / Premium Monthly / etc.)
+- [ ] Billing renewal/cancellation info shows for monthly and yearly plans
+- [ ] "Manage billing" link navigates to `/billing`
+- [ ] User email is shown below the plan name
+
+---
+
+### Task 4.1 — Devices Tab
+
+- [ ] With no devices: shows empty state with Monitor icon + instructions
+- [ ] With devices: shows list of Chrome Extension entries with partial device ID + last synced time
+- [ ] Click trash icon → device disappears immediately (optimistic)
+- [ ] If disconnect fails (network off) → device is restored + error toast
+- [ ] "Manage in Settings" link navigates to `/settings?tab=sessions`
+
+---
+
+### Task 4.1 — Recent Entries Tab (Premium)
+
+- [ ] **Premium user with entries**: shows up to 10 most recent entries in compact format
+- [ ] Each row shows: date, project dot + name, description, duration
+- [ ] "View all" button navigates to `/entries`
+- [ ] **Premium user with no entries**: shows empty state with Clock icon + extension hint
+- [ ] **Free user**: shows upgrade prompt (not the entries list)
 
 ---
 
