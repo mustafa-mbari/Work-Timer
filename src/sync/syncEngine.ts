@@ -1,19 +1,21 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Supabase v2.95 type workaround for mutations */
 import { supabase } from '@/auth/supabaseClient'
 import { getSession } from '@/auth/authState'
 import { isCurrentUserPremium } from '@/premium/featureGate'
 import { getQueue, dequeue } from './syncQueue'
 import {
-  localEntryToDb, localProjectToDb,
-  dbEntryToLocal, dbProjectToLocal, dbTagToLocal,
+  localEntryToDb, localProjectToDb, localSettingsToDb,
+  dbEntryToLocal, dbProjectToLocal, dbTagToLocal, dbSettingsToLocal,
 } from './conflictResolver'
 import {
   getEntries, updateEntry, saveEntry,
   getProjects, updateProject, saveProject,
   getTags, saveTags,
+  getSettings, updateSettings,
   setSuppressEnqueue,
 } from '@/storage'
 import type { SyncState } from '@/types'
-import type { DbTimeEntry, DbProject, DbTag } from '@shared/types'
+import type { DbTimeEntry, DbProject, DbTag, DbUserSettings } from '@shared/types'
 
 const SYNC_CURSOR_KEY = 'syncCursor'
 const DEVICE_ID_KEY = 'deviceId'
@@ -109,6 +111,10 @@ export async function pushQueue(): Promise<void> {
       if (error) throw new Error(`Sync push failed (entries delete): ${error.message}`)
     }
 
+    // Dequeue entries immediately after successful push
+    const entryIds = [...entryUpserts, ...entryDeletes].map(item => item.id)
+    if (entryIds.length > 0) await dequeue(entryIds)
+
     // Push project upserts
     if (projectUpserts.length > 0) {
       const allProjects = await getProjects()
@@ -131,6 +137,10 @@ export async function pushQueue(): Promise<void> {
         .eq('user_id', session.userId)
       if (error) throw new Error(`Sync push failed (projects delete): ${error.message}`)
     }
+
+    // Dequeue projects immediately after successful push
+    const projectIds = [...projectUpserts, ...projectDeletes].map(item => item.id)
+    if (projectIds.length > 0) await dequeue(projectIds)
 
     // Push tag upserts — only push tags that are in the queue
     if (tagUpserts.length > 0) {
@@ -155,7 +165,22 @@ export async function pushQueue(): Promise<void> {
       }
     }
 
-    await dequeue(batch.map(item => item.id))
+    // Dequeue tags after push
+    const tagIds = tagUpserts.map(item => item.id)
+    if (tagIds.length > 0) await dequeue(tagIds)
+
+    // Push settings upserts
+    const settingsUpserts = batch.filter(item => item.table === 'user_settings' && item.action === 'upsert')
+    if (settingsUpserts.length > 0) {
+      const settings = await getSettings()
+      const row = localSettingsToDb(settings, session.userId)
+      const { error } = await supabase.from('user_settings').upsert(row as any)
+      if (error) console.warn('[work-timer] Settings sync push failed:', error.message)
+    }
+
+    // Dequeue settings after push
+    const settingsIds = settingsUpserts.map(item => item.id)
+    if (settingsIds.length > 0) await dequeue(settingsIds)
   }
 }
 
@@ -175,6 +200,7 @@ export async function pullDelta(): Promise<void> {
     .select('*')
     .eq('user_id', session.userId)
     .gt('updated_at', since)
+    .range(0, 49999)
 
   // Build set of record IDs with pending local changes — skip overwriting these
   const queue = await getQueue()
@@ -214,6 +240,7 @@ export async function pullDelta(): Promise<void> {
       .select('*')
       .eq('user_id', session.userId)
       .gt('updated_at', since)
+      .range(0, 49999)
 
     if (remoteProjects) {
       const localProjects = await getProjects()
@@ -245,6 +272,7 @@ export async function pullDelta(): Promise<void> {
       .select('*')
       .eq('user_id', session.userId)
       .gt('updated_at', since)
+      .range(0, 49999)
 
     if (remoteTags) {
       const localTags = await getTags()
@@ -264,6 +292,19 @@ export async function pullDelta(): Promise<void> {
         }
       }
       await saveTags(mergedTags)
+    }
+
+    // Pull settings (single row — always fetch latest unless local has pending changes)
+    if (!pendingIds.has('self')) {
+      const { data: remoteSettings } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', session.userId)
+        .single()
+      if (remoteSettings) {
+        const localSettings = dbSettingsToLocal(remoteSettings as DbUserSettings)
+        await updateSettings(localSettings)
+      }
     }
   } finally {
     setSuppressEnqueue(false)
@@ -372,7 +413,13 @@ export async function uploadAllLocalData(): Promise<void> {
     if (error) errors.push(`Tags upload failed: ${error.message}`)
   }
 
-  console.log(`[work-timer] Upload complete: ${uploadedEntries}/${totalEntries} entries, ${projects.length} projects, ${tags.length} tags`)
+  // Upload settings
+  const settings = await getSettings()
+  const settingsRow = localSettingsToDb(settings, session.userId)
+  const { error: settingsError } = await supabase.from('user_settings').upsert(settingsRow as any)
+  if (settingsError) errors.push(`Settings upload failed: ${settingsError.message}`)
+
+  console.log(`[work-timer] Upload complete: ${uploadedEntries}/${totalEntries} entries, ${projects.length} projects, ${tags.length} tags, settings`)
 
   if (errors.length > 0) {
     console.error('[work-timer] Upload errors:', errors)

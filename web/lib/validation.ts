@@ -1,7 +1,6 @@
 import { z } from 'zod'
 
 const VALID_PLANS = ['premium_monthly', 'premium_yearly', 'premium_lifetime'] as const
-type PremiumPlan = typeof VALID_PLANS[number]
 
 // --- Checkout ---
 export const checkoutSchema = z.object({

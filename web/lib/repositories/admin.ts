@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Supabase v2.95 type workaround for RPC calls */
 import { createServiceClient } from '@/lib/supabase/server'
 
 // Calls the RPC functions created in migration 002_admin_rpc.sql
@@ -7,6 +8,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 // Return types are explicitly cast at each call site, preserving type safety.
 async function callRpc(name: string, args?: Record<string, unknown>) {
   const supabase = await createServiceClient()
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   return (supabase.rpc as Function)(name, args)
 }
 

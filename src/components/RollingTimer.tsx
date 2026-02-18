@@ -24,7 +24,7 @@ const RollingDigit = memo(function RollingDigit({ value, maxDigit = 9 }: Rolling
 
     if (value < prev) {
       // Wrap around: roll forward to the duplicate position at end of strip
-      setShouldAnimate(true)
+      setShouldAnimate(true) // eslint-disable-line react-hooks/set-state-in-effect
       setOffset(maxDigit + 1)
       const t = setTimeout(() => {
         setShouldAnimate(false)

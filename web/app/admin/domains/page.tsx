@@ -27,15 +27,12 @@ const PLAN_LABELS: Record<string, string> = {
 }
 
 export default function AdminDomainsPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [domains, setDomains] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [domain, setDomain] = useState('')
   const [plan, setPlan] = useState('premium_monthly')
-
-  useEffect(() => {
-    fetchDomains()
-  }, [])
 
   async function fetchDomains() {
     const res = await fetch('/api/admin/domains')
@@ -43,6 +40,10 @@ export default function AdminDomainsPage() {
     setDomains(data.domains ?? [])
     setLoading(false)
   }
+
+  useEffect(() => {
+    fetchDomains() // eslint-disable-line react-hooks/set-state-in-effect
+  }, [])
 
   async function addDomain(e: React.FormEvent) {
     e.preventDefault()

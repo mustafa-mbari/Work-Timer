@@ -13,6 +13,7 @@ import { getAdminStats } from '@/lib/services/analytics'
 export const revalidate = 60
 
 function StatCard({ icon: Icon, iconBg, iconColor, label, value, sub }: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   icon: any; iconBg: string; iconColor: string; label: string; value: string | number; sub?: string
 }) {
   return (

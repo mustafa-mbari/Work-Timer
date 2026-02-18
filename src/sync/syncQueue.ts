@@ -2,6 +2,7 @@ import type { SyncQueueItem } from '@/types'
 import { generateId } from '@/utils/id'
 
 const SYNC_QUEUE_KEY = 'syncQueue'
+const MAX_QUEUE_SIZE = 5000
 
 export async function getQueue(): Promise<SyncQueueItem[]> {
   const result = await chrome.storage.local.get(SYNC_QUEUE_KEY)
@@ -32,6 +33,13 @@ export async function enqueue(
       date,
       updatedAt: Date.now(),
     })
+  }
+
+  // Enforce queue size limit — drop oldest items if exceeded
+  if (queue.length > MAX_QUEUE_SIZE) {
+    const overflow = queue.length - MAX_QUEUE_SIZE
+    queue.splice(0, overflow)
+    console.warn(`[work-timer] Sync queue exceeded ${MAX_QUEUE_SIZE} items, dropped ${overflow} oldest`)
   }
 
   await chrome.storage.local.set({ [SYNC_QUEUE_KEY]: queue })

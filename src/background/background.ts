@@ -2,7 +2,7 @@ import type { TimerMessage, TimerResponse, TimerState, TimeEntry, IdleInfo, Pomo
 import { generateId } from '../utils/id'
 import { getToday } from '../utils/date'
 import { POMODORO_WORK_MS, IDLE_THRESHOLD_MS } from '../constants/timers'
-import { getSettings, getTimerState, setTimerState, saveEntry, updateEntry, getEntries } from '../storage'
+import { getSettings, getTimerState, setTimerState, saveEntry, updateEntry, getEntries, getLocalUserId, setLocalUserId, hasAnyLocalData, clearAllLocalData } from '../storage'
 import { applyExternalSession, signOut as authSignOut, refreshSubscription, getSession } from '../auth/authState'
 import { syncAll, getSyncState, uploadAllLocalData } from '../sync/syncEngine'
 import { setupRealtime, teardownRealtime } from '../sync/realtimeSubscription'
@@ -608,6 +608,38 @@ chrome.runtime.onMessage.addListener(
             await syncAll()
             return { success: true }
           }
+          case 'ACCOUNT_SWITCH_CHOICE': {
+            const choice = message.payload?.description as 'clear' | 'merge' | 'keep' | undefined
+            const session = await getSession()
+            if (!session || !choice) return { success: false, error: 'Missing session or choice' }
+
+            // Clear the pending flag
+            await chrome.storage.local.remove('accountSwitchPending')
+
+            if (choice === 'clear') {
+              await clearAllLocalData()
+              await setLocalUserId(session.userId)
+              await refreshSubscription().catch(() => null)
+              setupRealtime(session.userId)
+              await syncAll()
+            } else if (choice === 'merge') {
+              await setLocalUserId(session.userId)
+              await refreshSubscription().catch(() => null)
+              await uploadAllLocalData()
+              setupRealtime(session.userId)
+              await syncAll()
+            } else if (choice === 'keep') {
+              await setLocalUserId(session.userId)
+              await refreshSubscription().catch(() => null)
+              setupRealtime(session.userId)
+              await syncAll()
+            }
+
+            await chrome.alarms.create(SUBSCRIPTION_ALARM, { periodInMinutes: 60 })
+            await chrome.alarms.create(SYNC_ALARM, { periodInMinutes: 5 })
+            await chrome.alarms.create(STATS_SYNC_ALARM, { periodInMinutes: 60 })
+            return { success: true }
+          }
           default:
             return { success: false, error: 'Unknown action' }
         }
@@ -736,7 +768,7 @@ chrome.notifications.onClicked.addListener(async (notificationId) => {
 })
 
 // Handle notification dismissed (closed without action) — retry in 1 hour
-chrome.notifications.onClosed.addListener(async (notificationId, _byUser) => {
+chrome.notifications.onClosed.addListener(async (notificationId) => {
   if (notificationId !== 'weekly-reminder') return
   const { reminderPending } = await chrome.storage.local.get('reminderPending')
   if (reminderPending) {
@@ -980,12 +1012,31 @@ chrome.runtime.onMessageExternal.addListener(
       if (message.action === 'AUTH_LOGIN' && message.accessToken && message.refreshToken) {
         const session = await applyExternalSession(message.accessToken, message.refreshToken)
         if (session) {
+          const localUserId = await getLocalUserId()
+          const hasData = await hasAnyLocalData()
+
+          // Detect account switch: different user with existing local data
+          if (localUserId && localUserId !== session.userId && hasData) {
+            // Store flag so the popup can show the account switch dialog
+            await chrome.storage.local.set({ accountSwitchPending: true })
+            sendResponse({ success: true })
+            return
+          }
+
+          // Same account, first login, or no local data — proceed normally
+          await setLocalUserId(session.userId)
           // Fetch and cache subscription immediately after login
           await refreshSubscription().catch(() => null)
           // Schedule alarms
           await chrome.alarms.create(SUBSCRIPTION_ALARM, { periodInMinutes: 60 })
           await chrome.alarms.create(SYNC_ALARM, { periodInMinutes: 5 })
           await chrome.alarms.create(STATS_SYNC_ALARM, { periodInMinutes: 60 })
+
+          // First-time login with existing offline data — upload it
+          if (!localUserId && hasData) {
+            await uploadAllLocalData().catch(() => null)
+          }
+
           // Initial sync
           void syncAll().catch(() => null)
           // Push aggregate stats on login

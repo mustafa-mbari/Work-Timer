@@ -47,5 +47,6 @@ export const PRICING = {
 } as const
 
 export const WEBSITE_URL =
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Vite env access
   (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_WEBSITE_URL) ||
   'https://w-timer.com'

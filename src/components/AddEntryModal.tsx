@@ -262,16 +262,16 @@ export default function AddEntryModal({ date: initialDate, onSave, onClose }: Ad
             )}
           </div>
 
-          {/* Work Type */}
+          {/* Tag */}
           <div>
-            <label className={labelClass}>Work Type</label>
+            <label className={labelClass}>Tag</label>
             <div className="flex gap-2">
               <select
                 value={selectedTagId}
                 onChange={e => { setSelectedTagId(e.target.value); setShowNewTag(false) }}
                 className={`${inputClass} flex-1 appearance-none`}
               >
-                <option value="">No Type</option>
+                <option value="">No Tag</option>
                 {tags.map(t => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
@@ -280,7 +280,7 @@ export default function AddEntryModal({ date: initialDate, onSave, onClose }: Ad
                 onClick={() => { setShowNewTag(!showNewTag); setShowNewProject(false) }}
                 className={plusBtnClass(showNewTag)}
                 type="button"
-                aria-label="Add new work type"
+                aria-label="Add new tag"
               >
                 <PlusIcon className="w-4 h-4" />
               </button>
@@ -292,7 +292,7 @@ export default function AddEntryModal({ date: initialDate, onSave, onClose }: Ad
                   value={newTagName}
                   onChange={e => setNewTagName(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleAddTag()}
-                  placeholder="Work type name"
+                  placeholder="Tag name"
                   autoFocus
                   className={addInputClass}
                 />

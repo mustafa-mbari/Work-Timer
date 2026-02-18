@@ -35,6 +35,7 @@ export async function pushUserStats(): Promise<void> {
   const sortedDates = [...activeDates].sort()
   const lastActiveDate = sortedDates.length > 0 ? sortedDates[sortedDates.length - 1] : null
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase mutation type workaround
   await (supabase.from('user_stats') as any).upsert({
     user_id: session.userId,
     total_hours: totalHours,

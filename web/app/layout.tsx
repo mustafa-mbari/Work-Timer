@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/components/ThemeProvider'
 import { Toaster } from '@/components/ui/sonner'
 import type { Theme } from '@/lib/theme'
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const metadata: Metadata = {
   title: 'Work Timer — Time Tracking for Focused Work',
   description: 'Track your work time with a privacy-first Chrome extension. Free, offline, and blazing fast.',

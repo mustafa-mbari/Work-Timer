@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
   // Idempotency check: attempt insert first (unique constraint on event_id)
   try {
     const supabase = await createServiceClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: insertError } = await (supabase.from('stripe_events') as any)
       .insert({ event_id: event.id, event_type: event.type })
     if (insertError) {

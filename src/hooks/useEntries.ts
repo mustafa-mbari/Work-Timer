@@ -17,7 +17,7 @@ export function useEntries(date?: string) {
     setLoading(false)
   }, [targetDate])
 
-  useEffect(() => { fetch() }, [fetch])
+  useEffect(() => { fetch() }, [fetch]) // eslint-disable-line react-hooks/set-state-in-effect
 
   // Re-fetch when storage changes (local or remote)
   useEffect(() => {
@@ -75,7 +75,7 @@ export function useEntriesRange(startDate: string, endDate: string) {
     setLoading(false)
   }, [startDate, endDate])
 
-  useEffect(() => { fetch() }, [fetch])
+  useEffect(() => { fetch() }, [fetch]) // eslint-disable-line react-hooks/set-state-in-effect
 
   // Re-fetch when storage changes
   useEffect(() => {

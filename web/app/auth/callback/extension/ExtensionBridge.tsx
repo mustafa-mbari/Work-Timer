@@ -15,7 +15,7 @@ export default function ExtensionBridge({ accessToken, refreshToken }: Extension
 
     if (!extensionId) {
       console.error('[Extension Bridge] NEXT_PUBLIC_EXTENSION_ID not configured')
-      setStatus('timeout')
+      setStatus('timeout') // eslint-disable-line react-hooks/set-state-in-effect
       return
     }
 

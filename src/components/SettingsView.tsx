@@ -583,9 +583,9 @@ export default function SettingsView() {
             {/* Divider */}
             <div className="border-t border-stone-100 dark:border-dark-border" />
 
-            {/* Work Types */}
+            {/* Tags */}
             <div>
-              <label className={labelClass}>Work Types</label>
+              <label className={labelClass}>Tags</label>
 
               <div className="flex flex-col gap-1.5 mb-3">
                 {tags.map((tag) => (
@@ -635,7 +635,7 @@ export default function SettingsView() {
                   )
                 ))}
                 {tags.length === 0 && (
-                  <div className="text-xs text-stone-400 dark:text-stone-600 text-center py-3">No work types yet</div>
+                  <div className="text-xs text-stone-400 dark:text-stone-600 text-center py-3">No tags yet</div>
                 )}
               </div>
 
@@ -643,19 +643,19 @@ export default function SettingsView() {
                 <div className="flex-1">
                   <input
                     type="text"
-                    placeholder="New work type name"
+                    placeholder="New tag name"
                     value={newTagName}
                     onChange={(e) => setNewTagName(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
                     className={`${inputClass} dark:placeholder-stone-600`}
-                    aria-label="New work type name"
+                    aria-label="New tag name"
                   />
                 </div>
                 <button
                   onClick={handleCreateTag}
                   disabled={!newTagName.trim()}
                   className="bg-indigo-500 text-white p-2 rounded-lg hover:bg-indigo-600 disabled:opacity-40 transition-colors shadow-sm shadow-indigo-500/20"
-                  aria-label="Add work type"
+                  aria-label="Add tag"
                 >
                   <PlusIcon className="w-4 h-4" />
                 </button>
@@ -844,7 +844,7 @@ export default function SettingsView() {
 
       <ConfirmDialog
         isOpen={!!confirmDeleteTag}
-        title="Delete Work Type?"
+        title="Delete Tag?"
         message={`Are you sure you want to delete "${confirmDeleteTag?.name}"? This will remove it from all entries that use it.`}
         confirmText="Delete"
         cancelText="Cancel"

@@ -11,7 +11,7 @@ export function useTags() {
     setTags(data)
   }, [])
 
-  useEffect(() => { fetch() }, [fetch])
+  useEffect(() => { fetch() }, [fetch]) // eslint-disable-line react-hooks/set-state-in-effect
 
   // Re-fetch when storage changes
   useEffect(() => {

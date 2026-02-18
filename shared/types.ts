@@ -84,6 +84,12 @@ export interface DbUserSettings {
     soundEnabled: boolean
   }
   floating_timer_auto: boolean
+  reminder: {
+    enabled: boolean
+    dayOfWeek: number
+    hour: number
+    minute: number
+  }
   updated_at: string
 }
 
@@ -279,6 +285,7 @@ interface DbUserSettingsInsert {
   weekly_target?: number | null
   pomodoro_config?: DbUserSettings['pomodoro_config']
   floating_timer_auto?: boolean
+  reminder?: DbUserSettings['reminder']
   updated_at?: string
 }
 interface DbUserSettingsUpdate {
@@ -293,6 +300,7 @@ interface DbUserSettingsUpdate {
   weekly_target?: number | null
   pomodoro_config?: DbUserSettings['pomodoro_config']
   floating_timer_auto?: boolean
+  reminder?: DbUserSettings['reminder']
   updated_at?: string
 }
 

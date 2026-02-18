@@ -91,6 +91,7 @@ export async function getAllSubscriptionsWithEmail() {
 
 export async function upsertSubscription(sub: Partial<SubscriptionInsert> & { user_id: string }) {
   const supabase = await createServiceClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (supabase.from('subscriptions') as any).upsert({
     ...sub,
     updated_at: new Date().toISOString(),
@@ -99,6 +100,7 @@ export async function upsertSubscription(sub: Partial<SubscriptionInsert> & { us
 
 export async function updateSubscriptionByStripeId(stripeSubscriptionId: string, updates: Partial<Subscription>) {
   const supabase = await createServiceClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (supabase.from('subscriptions') as any)
     .update({
       ...updates,

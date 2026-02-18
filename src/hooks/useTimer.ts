@@ -35,7 +35,7 @@ export function useTimer() {
   const [state, setState] = useState<TimerState>(DEFAULT_STATE)
   const [idleInfo, setIdleInfo] = useState<IdleInfo>(DEFAULT_IDLE)
   const [pomodoroState, setPomodoroState] = useState<PomodoroState>(DEFAULT_POMODORO)
-  const [_tick, setTick] = useState(0) // Triggers re-renders for real-time display
+  const [, setTick] = useState(0) // Triggers re-renders for real-time display
 
   const fetchState = useCallback(async () => {
     try {
@@ -60,6 +60,7 @@ export function useTimer() {
 
   // Listen for TIMER_SYNC broadcasts from background instead of polling every 5s
   useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const listener = (message: any) => {
       if (message?.action === 'TIMER_SYNC') {
         if (message.state) setState(message.state)
@@ -149,7 +150,7 @@ export function useTimer() {
   }, [])
 
   // Compute elapsed in real-time
-  const now = Date.now()
+  const now = Date.now() // eslint-disable-line react-hooks/purity
   const elapsed = state.status === 'running' && state.startTime
     ? state.elapsed + (now - state.startTime)
     : state.elapsed

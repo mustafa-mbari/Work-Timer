@@ -25,11 +25,12 @@ export async function createDomain(domain: {
     plan: domain.plan as Domain['plan'],
     active: domain.active,
   }
-  // supabase-js v2.95 resolves Insert type to `never` for hand-crafted Database types
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- supabase-js v2.95 resolves Insert type to `never`
   return (supabase.from('whitelisted_domains') as any).insert(row)
 }
 
 export async function updateDomainActive(id: string, active: boolean) {
   const supabase = await createServiceClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (supabase.from('whitelisted_domains') as any).update({ active }).eq('id', id)
 }

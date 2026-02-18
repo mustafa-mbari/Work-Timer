@@ -253,9 +253,9 @@ export default function EntryEditModal({ entry, onSave, onDelete, onClose }: Ent
           )}
         </div>
 
-        {/* Tag / Work Type selector with inline add */}
+        {/* Tag selector with inline add */}
         <div>
-          <label htmlFor="edit-tag" className={labelClass}>Work Type</label>
+          <label htmlFor="edit-tag" className={labelClass}>Tag</label>
           <div className="flex gap-2">
             <select
               id="edit-tag"
@@ -263,7 +263,7 @@ export default function EntryEditModal({ entry, onSave, onDelete, onClose }: Ent
               onChange={(e) => { setSelectedTagId(e.target.value); setShowNewTag(false) }}
               className={`${inputClass} flex-1 appearance-none`}
             >
-              <option value="">No Type</option>
+              <option value="">No Tag</option>
               {tags.map((t) => (
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
@@ -272,8 +272,8 @@ export default function EntryEditModal({ entry, onSave, onDelete, onClose }: Ent
               onClick={() => { setShowNewTag(!showNewTag); setShowNewProject(false) }}
               className={`p-2.5 rounded-lg border transition-colors ${showNewTag ? 'border-indigo-500 text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10' : 'border-stone-200 dark:border-dark-border text-stone-400 dark:text-stone-500 hover:text-indigo-500 hover:border-indigo-400 dark:hover:text-indigo-400 dark:hover:border-indigo-400/60'}`}
               type="button"
-              aria-label="Add new work type"
-              title="Add new work type"
+              aria-label="Add new tag"
+              title="Add new tag"
             >
               <PlusIcon className="w-4 h-4" />
             </button>
@@ -285,7 +285,7 @@ export default function EntryEditModal({ entry, onSave, onDelete, onClose }: Ent
                 value={newTagName}
                 onChange={(e) => setNewTagName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
-                placeholder="Work type name"
+                placeholder="Tag name"
                 autoFocus
                 className={addInputClass}
               />

@@ -10,7 +10,7 @@ export function useSettings() {
     setSettings(data)
   }, [])
 
-  useEffect(() => { fetch() }, [fetch])
+  useEffect(() => { fetch() }, [fetch]) // eslint-disable-line react-hooks/set-state-in-effect
 
   const update = useCallback(async (partial: Partial<Settings>) => {
     await updateSettings(partial)

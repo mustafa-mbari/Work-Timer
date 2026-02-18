@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react'
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import type { View } from '@/types'
 import TimerView from '@/components/TimerView'
 
@@ -8,6 +8,7 @@ const StatsView = lazy(() => import('@/components/StatsView'))
 const SettingsView = lazy(() => import('@/components/SettingsView'))
 import NavBar from '@/components/NavBar'
 import InitialSyncDialog from '@/components/InitialSyncDialog'
+import AccountSwitchModal from '@/components/AccountSwitchModal'
 import AuthGate from '@/components/AuthGate'
 import { useTheme } from '@/hooks/useTheme'
 import { useToast } from '@/components/Toast'
@@ -25,6 +26,23 @@ export default function App() {
   const [showInitialSync, setShowInitialSync] = useState(false)
   const [localEntryCount, setLocalEntryCount] = useState(0)
   const [localProjectCount, setLocalProjectCount] = useState(0)
+  const [showAccountSwitch, setShowAccountSwitch] = useState(false)
+
+  // Check for pending account switch dialog
+  useEffect(() => {
+    if (!session) return
+    chrome.storage.local.get('accountSwitchPending').then(({ accountSwitchPending }) => {
+      if (accountSwitchPending) setShowAccountSwitch(true)
+    })
+  }, [session])
+
+  const handleAccountSwitchChoice = useCallback((choice: 'clear' | 'merge' | 'keep') => {
+    setShowAccountSwitch(false)
+    chrome.runtime.sendMessage({
+      action: 'ACCOUNT_SWITCH_CHOICE',
+      payload: { description: choice },
+    })
+  }, [])
 
   // Show initial sync dialog once after first login if there is local data to upload
   useEffect(() => {
@@ -91,6 +109,10 @@ export default function App() {
         entryCount={localEntryCount}
         projectCount={localProjectCount}
         onDone={() => setShowInitialSync(false)}
+      />
+      <AccountSwitchModal
+        isOpen={showAccountSwitch}
+        onChoice={handleAccountSwitchChoice}
       />
     </div>
   )

@@ -34,7 +34,7 @@ if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
 }
 
 async function enqueueSyncItem(
-  table: 'time_entries' | 'projects' | 'tags',
+  table: 'time_entries' | 'projects' | 'tags' | 'user_settings',
   recordId: string,
   action: 'upsert' | 'delete',
   date?: string
@@ -252,6 +252,7 @@ export async function getSettings(): Promise<Settings> {
 export async function updateSettings(partial: Partial<Settings>): Promise<void> {
   const current = await getSettings()
   await storageSet({ [KEYS.settings]: { ...current, ...partial } })
+  await enqueueSyncItem('user_settings', 'self', 'upsert')
 }
 
 // --- Timer State ---
@@ -277,4 +278,44 @@ export async function setTimerState(state: TimerState): Promise<void> {
 
 export async function clearTimerState(): Promise<void> {
   await storageSet({ [KEYS.timerState]: DEFAULT_TIMER_STATE })
+}
+
+// --- Local User Identity ---
+
+const LOCAL_USER_ID_KEY = 'localUserId'
+
+export async function getLocalUserId(): Promise<string | null> {
+  const result = await chrome.storage.local.get(LOCAL_USER_ID_KEY)
+  return (result[LOCAL_USER_ID_KEY] as string | undefined) ?? null
+}
+
+export async function setLocalUserId(userId: string): Promise<void> {
+  await chrome.storage.local.set({ [LOCAL_USER_ID_KEY]: userId })
+}
+
+// --- Data Management ---
+
+/** Check if there is any meaningful local data (entries or projects) */
+export async function hasAnyLocalData(): Promise<boolean> {
+  const all = await chrome.storage.local.get(null)
+  const hasEntries = Object.keys(all).some(k => k.startsWith('entries_'))
+  const hasProjects = Array.isArray(all[KEYS.projects]) && (all[KEYS.projects] as unknown[]).length > 0
+  return hasEntries || hasProjects
+}
+
+/** Clear all user data from local storage (entries, projects, tags, settings, timer, sync state) */
+export async function clearAllLocalData(): Promise<void> {
+  const all = await chrome.storage.local.get(null)
+  const keysToRemove = Object.keys(all).filter(k =>
+    k.startsWith('entries_') ||
+    k === KEYS.projects ||
+    k === KEYS.tags ||
+    k === KEYS.settings ||
+    k === KEYS.timerState ||
+    k === 'syncQueue' ||
+    k === 'syncCursor'
+  )
+  if (keysToRemove.length > 0) {
+    await chrome.storage.local.remove(keysToRemove)
+  }
 }

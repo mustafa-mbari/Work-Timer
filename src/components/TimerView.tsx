@@ -15,7 +15,7 @@ import { PlayIcon, PauseIcon, StopIcon, SkipIcon } from './Icons'
 import RollingTimer from './RollingTimer'
 
 type ExtendedMode = TimerMode | 'pomodoro'
-type InputTab = 'description' | 'workType' | 'link'
+type InputTab = 'description' | 'tag' | 'link'
 
 export default function TimerView() {
   const {
@@ -49,7 +49,7 @@ export default function TimerView() {
 
   useEffect(() => {
     if (pomodoroState.active) {
-      setMode('pomodoro')
+      setMode('pomodoro') // eslint-disable-line react-hooks/set-state-in-effect
     }
   }, [pomodoroState.active])
 
@@ -381,7 +381,7 @@ export default function TimerView() {
       {/* Input Tabs (only for stopwatch and manual modes) */}
       {mode !== 'pomodoro' && (
         <div className="flex gap-1 bg-stone-100 dark:bg-dark-card rounded-lg p-1">
-          {(['description', 'workType', 'link'] as InputTab[]).map((tab) => (
+          {(['description', 'tag', 'link'] as InputTab[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -393,7 +393,7 @@ export default function TimerView() {
               } ${isActive ? 'opacity-50 cursor-not-allowed' : ''}`}
               aria-label={`${tab} input`}
             >
-              {tab === 'description' ? 'Description' : tab === 'workType' ? 'Work Type' : 'Link'}
+              {tab === 'description' ? 'Description' : tab === 'tag' ? 'Tag' : 'Link'}
             </button>
           ))}
         </div>
@@ -423,15 +423,15 @@ export default function TimerView() {
               aria-label="Task description"
             />
           )}
-          {activeTab === 'workType' && (
+          {activeTab === 'tag' && (
             <select
               value={selectedTagId}
               onChange={(e) => setSelectedTagId(e.target.value)}
               disabled={isActive}
               className="w-full border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400 disabled:opacity-50"
-              aria-label="Select work type"
+              aria-label="Select tag"
             >
-              <option value="">No Type</option>
+              <option value="">No Tag</option>
               {tags.map((tag) => (
                 <option key={tag.id} value={tag.id}>
                   {tag.name}

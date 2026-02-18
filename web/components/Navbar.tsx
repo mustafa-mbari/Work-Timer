@@ -15,6 +15,7 @@ export default async function Navbar() {
   let profile: { display_name: string | null; role: 'user' | 'admin' } | null = null
   if (user) {
     const { data } = await (supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .from('profiles') as any)
       .select('display_name, role')
       .eq('id', user.id)

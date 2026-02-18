@@ -1,8 +1,8 @@
 // Last-write-wins (LWW) conflict resolution based on updated_at timestamp.
 // When a remote record has a newer updated_at than the local version, the remote wins.
 
-import type { TimeEntry, Project, Tag } from '@/types'
-import type { DbTimeEntry, DbProject, DbTag } from '@shared/types'
+import type { TimeEntry, Project, Tag, Settings } from '@/types'
+import type { DbTimeEntry, DbProject, DbTag, DbUserSettings } from '@shared/types'
 
 /** Returns true if the remote record is newer and should overwrite local */
 export function remoteWins(localUpdatedAt: number, remoteUpdatedAt: string): boolean {
@@ -77,5 +77,41 @@ export function dbTagToLocal(db: DbTag): Tag {
   return {
     id: db.id,
     name: db.name,
+  }
+}
+
+/** Convert local Settings to a Supabase DbUserSettings row for upsert */
+export function localSettingsToDb(settings: Settings, userId: string): Partial<DbUserSettings> {
+  return {
+    user_id: userId,
+    working_days: settings.workingDays,
+    week_start_day: settings.weekStartDay,
+    idle_timeout: settings.idleTimeout,
+    theme: settings.theme,
+    language: settings.language,
+    notifications: settings.notifications,
+    daily_target: settings.dailyTarget,
+    weekly_target: settings.weeklyTarget,
+    pomodoro_config: settings.pomodoro,
+    floating_timer_auto: settings.floatingTimerAutoShow,
+    reminder: settings.reminder,
+    updated_at: new Date().toISOString(),
+  }
+}
+
+/** Convert a Supabase DbUserSettings to local Settings */
+export function dbSettingsToLocal(db: DbUserSettings): Settings {
+  return {
+    workingDays: db.working_days,
+    weekStartDay: db.week_start_day,
+    idleTimeout: db.idle_timeout,
+    theme: db.theme as Settings['theme'],
+    language: db.language as Settings['language'],
+    notifications: db.notifications,
+    dailyTarget: db.daily_target,
+    weeklyTarget: db.weekly_target,
+    pomodoro: db.pomodoro_config,
+    floatingTimerAutoShow: db.floating_timer_auto,
+    reminder: db.reminder,
   }
 }

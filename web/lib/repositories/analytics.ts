@@ -6,7 +6,9 @@ import { createServiceClient } from '@/lib/supabase/server'
 export async function getUserAnalytics(userId: string) {
   const supabase = await createServiceClient()
   // supabase-js v2.95 cannot resolve RPC arg types from manual Database definition
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   const { data, error } = await (supabase.rpc as Function)('get_user_analytics', { p_user_id: userId })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (error) throw new Error(`get_user_analytics failed: ${(error as any).message}`)
   return data as {
     total_hours: number

@@ -27,6 +27,7 @@ const PLAN_LABELS: Record<string, string> = {
 }
 
 export default function AdminPromosPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [promos, setPromos] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -35,16 +36,16 @@ export default function AdminPromosPage() {
   const [plan, setPlan] = useState('premium_monthly')
   const [maxUses, setMaxUses] = useState('')
 
-  useEffect(() => {
-    fetchPromos()
-  }, [])
-
   async function fetchPromos() {
     const res = await fetch('/api/admin/promos')
     const data = await res.json()
     setPromos(data.promos ?? [])
     setLoading(false)
   }
+
+  useEffect(() => {
+    fetchPromos() // eslint-disable-line react-hooks/set-state-in-effect
+  }, [])
 
   async function addPromo(e: React.FormEvent) {
     e.preventDefault()

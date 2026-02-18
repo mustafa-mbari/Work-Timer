@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (user) {
     const serviceSupabase = await createServiceClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (serviceSupabase.from('profiles') as any).upsert({
       id: user.id,
       email: user.email,

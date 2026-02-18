@@ -150,6 +150,7 @@ export type MessageAction =
   | 'UPLOAD_ALL'
   | 'GET_SUBSCRIPTION'
   | 'SYNC_REMOTE_UPDATE'
+  | 'ACCOUNT_SWITCH_CHOICE'
 
 export interface TimerMessage {
   action: MessageAction
@@ -170,4 +171,7 @@ export interface TimerResponse {
   session?: AuthSession
   subscription?: SubscriptionInfo
   syncState?: SyncState
+  accountSwitch?: boolean
+  previousUserId?: string
+  newUserId?: string
 }

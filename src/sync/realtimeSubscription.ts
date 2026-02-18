@@ -1,12 +1,15 @@
 import { supabase } from '@/auth/supabaseClient'
 import type { RealtimeChannel } from '@supabase/supabase-js'
-import { dbEntryToLocal, dbProjectToLocal } from './conflictResolver'
+import { dbEntryToLocal, dbProjectToLocal, dbTagToLocal, dbSettingsToLocal } from './conflictResolver'
+import { getQueue } from './syncQueue'
 import {
   getEntries, saveEntry, updateEntry,
   getProjects, saveProject, updateProject,
+  getTags, saveTags,
+  updateSettings,
   setSuppressEnqueue,
 } from '@/storage'
-import type { DbTimeEntry, DbProject } from '@shared/types'
+import type { DbTimeEntry, DbProject, DbTag, DbUserSettings } from '@shared/types'
 
 let channels: RealtimeChannel[] = []
 
@@ -19,6 +22,10 @@ type ChangePayload<T> = {
 async function handleTimeEntryChange(payload: ChangePayload<DbTimeEntry>): Promise<void> {
   const remote = payload.new
   if (!remote?.id) return
+
+  // Skip if local has a pending change for this record — local wins
+  const queue = await getQueue()
+  if (queue.some(item => item.recordId === remote.id)) return
 
   setSuppressEnqueue(true)
   try {
@@ -50,6 +57,10 @@ async function handleProjectChange(payload: ChangePayload<DbProject>): Promise<v
   const remote = payload.new
   if (!remote?.id) return
 
+  // Skip if local has a pending change for this record — local wins
+  const queue = await getQueue()
+  if (queue.some(item => item.recordId === remote.id)) return
+
   setSuppressEnqueue(true)
   try {
     if (remote.deleted_at) {
@@ -74,6 +85,58 @@ async function handleProjectChange(payload: ChangePayload<DbProject>): Promise<v
 
   // Notify popup to re-fetch
   chrome.runtime.sendMessage({ action: 'SYNC_REMOTE_UPDATE', table: 'projects' }).catch(() => {})
+}
+
+async function handleTagChange(payload: ChangePayload<DbTag>): Promise<void> {
+  const remote = payload.new
+  if (!remote?.id) return
+
+  // Skip if local has a pending change for this record — local wins
+  const queue = await getQueue()
+  if (queue.some(item => item.recordId === remote.id)) return
+
+  setSuppressEnqueue(true)
+  try {
+    const localTags = await getTags()
+    if (remote.deleted_at) {
+      const filtered = localTags.filter(t => t.id !== remote.id)
+      if (filtered.length !== localTags.length) {
+        await saveTags(filtered)
+      }
+    } else {
+      const localTag = dbTagToLocal(remote)
+      const existing = localTags.find(t => t.id === localTag.id)
+      if (existing) {
+        existing.name = localTag.name
+        await saveTags(localTags)
+      } else {
+        await saveTags([...localTags, localTag])
+      }
+    }
+  } finally {
+    setSuppressEnqueue(false)
+  }
+
+  chrome.runtime.sendMessage({ action: 'SYNC_REMOTE_UPDATE', table: 'tags' }).catch(() => {})
+}
+
+async function handleSettingsChange(payload: ChangePayload<DbUserSettings>): Promise<void> {
+  const remote = payload.new
+  if (!remote?.user_id) return
+
+  // Skip if local has pending settings changes
+  const queue = await getQueue()
+  if (queue.some(item => item.table === 'user_settings')) return
+
+  setSuppressEnqueue(true)
+  try {
+    const localSettings = dbSettingsToLocal(remote)
+    await updateSettings(localSettings)
+  } finally {
+    setSuppressEnqueue(false)
+  }
+
+  chrome.runtime.sendMessage({ action: 'SYNC_REMOTE_UPDATE', table: 'user_settings' }).catch(() => {})
 }
 
 export function setupRealtime(userId: string): void {
@@ -107,7 +170,35 @@ export function setupRealtime(userId: string): void {
       }
     })
 
-  channels = [entriesChannel, projectsChannel]
+  // Subscribe to tags changes for this user
+  const tagsChannel = supabase
+    .channel(`tags:${userId}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'tags', filter: `user_id=eq.${userId}` },
+      (payload) => { void handleTagChange(payload as unknown as ChangePayload<DbTag>) }
+    )
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('[work-timer] Realtime: subscribed to tags')
+      }
+    })
+
+  // Subscribe to user_settings changes for this user
+  const settingsChannel = supabase
+    .channel(`user_settings:${userId}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'user_settings', filter: `user_id=eq.${userId}` },
+      (payload) => { void handleSettingsChange(payload as unknown as ChangePayload<DbUserSettings>) }
+    )
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('[work-timer] Realtime: subscribed to user_settings')
+      }
+    })
+
+  channels = [entriesChannel, projectsChannel, tagsChannel, settingsChannel]
 }
 
 export function teardownRealtime(): void {

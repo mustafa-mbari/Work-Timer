@@ -30,6 +30,7 @@ const SOURCE_LABELS: Record<string, string> = {
 }
 
 export default function AdminSubscriptionsPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [subscriptions, setSubscriptions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -37,16 +38,16 @@ export default function AdminSubscriptionsPage() {
   const [plan, setPlan] = useState('premium_monthly')
   const [endDate, setEndDate] = useState('')
 
-  useEffect(() => {
-    fetchSubscriptions()
-  }, [])
-
   async function fetchSubscriptions() {
     const res = await fetch('/api/admin/subscriptions')
     const data = await res.json()
     setSubscriptions(data.subscriptions ?? [])
     setLoading(false)
   }
+
+  useEffect(() => {
+    fetchSubscriptions() // eslint-disable-line react-hooks/set-state-in-effect
+  }, [])
 
   async function grantPremium(e: React.FormEvent) {
     e.preventDefault()

@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
   const supabase = await createServiceClient()
   const rpcArgs = { p_code: code.toUpperCase(), p_user_id: user.id }
   // Type assertion needed: supabase-js v2.95 cannot resolve complex RPC return types
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   const { data, error } = await (supabase.rpc as Function)('redeem_promo', rpcArgs)
 
   if (error) {
