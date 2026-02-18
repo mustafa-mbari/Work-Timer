@@ -45,6 +45,7 @@
   "externally_connectable": {
     "matches": [
       "https://w-timer.com/*",
+      "https://www.w-timer.com/*",
       "http://localhost:3000/*"
     ]
   },
