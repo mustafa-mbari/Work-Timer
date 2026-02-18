@@ -40,7 +40,19 @@ export default function LoginForm() {
 
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) throw error
+
+      if (error) {
+        // Email not confirmed — redirect to verify-email so the user can
+        // resend the confirmation link rather than seeing a cryptic error.
+        if (
+          error.message.toLowerCase().includes('email not confirmed') ||
+          error.message.toLowerCase().includes('email_not_confirmed')
+        ) {
+          router.push(`/verify-email?email=${encodeURIComponent(email)}`)
+          return
+        }
+        throw error
+      }
 
       // Password login creates a session directly — redirect without going through OAuth callback
       if (isExtension) {
