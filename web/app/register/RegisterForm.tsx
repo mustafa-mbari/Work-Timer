@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -10,9 +10,19 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
+import PasswordStrengthIndicator from '@/components/PasswordStrengthIndicator'
+
+function isRateLimitError(message: string) {
+  return (
+    message.toLowerCase().includes('rate limit') ||
+    message.toLowerCase().includes('too many') ||
+    message.includes('429')
+  )
+}
 
 export default function RegisterForm() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const isExtension = searchParams.get('ext') === 'true'
 
   const [email, setEmail] = useState('')
@@ -34,9 +44,14 @@ export default function RegisterForm() {
       })
       if (error) throw error
 
-      toast.success('Check your email to confirm your account!')
+      // Redirect to verify-email so the user knows to check their inbox
+      router.push(`/verify-email?email=${encodeURIComponent(email)}`)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Registration failed')
+      const msg = err instanceof Error ? err.message : 'Registration failed'
+      toast.error(isRateLimitError(msg)
+        ? 'Too many sign-up attempts. Please wait a moment and try again.'
+        : msg
+      )
     } finally {
       setLoading(false)
     }
@@ -49,11 +64,6 @@ export default function RegisterForm() {
       options: { redirectTo: redirectUrl },
     })
   }
-
-  // Password strength indicator
-  const strength = password.length === 0 ? 0 : password.length < 6 ? 1 : password.length < 8 ? 2 : 3
-  const strengthLabel = ['', 'Weak', 'Fair', 'Strong']
-  const strengthColor = ['', 'bg-rose-500', 'bg-amber-500', 'bg-emerald-500']
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center px-6 py-12">
@@ -76,6 +86,7 @@ export default function RegisterForm() {
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   required
+                  autoComplete="email"
                   placeholder="you@example.com"
                 />
               </div>
@@ -88,19 +99,10 @@ export default function RegisterForm() {
                   onChange={e => setPassword(e.target.value)}
                   required
                   minLength={8}
+                  autoComplete="new-password"
                   placeholder="At least 8 characters"
                 />
-                {password.length > 0 && (
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="flex-1 h-1 rounded-full bg-stone-200 dark:bg-[var(--dark-elevated)] overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all ${strengthColor[strength]}`}
-                        style={{ width: `${(strength / 3) * 100}%` }}
-                      />
-                    </div>
-                    <span className="text-xs text-stone-500 dark:text-stone-400">{strengthLabel[strength]}</span>
-                  </div>
-                )}
+                <PasswordStrengthIndicator password={password} />
               </div>
               <Button type="submit" disabled={loading} className="w-full">
                 {loading ? 'Creating account...' : 'Sign up'}

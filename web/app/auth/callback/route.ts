@@ -36,6 +36,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/callback/extension', request.url))
   }
 
+  // Support ?next= for post-auth redirects (e.g. password reset)
+  const next = searchParams.get('next')
+  if (next && next.startsWith('/')) {
+    return NextResponse.redirect(new URL(next, request.url))
+  }
+
   // Otherwise go to dashboard
   return NextResponse.redirect(new URL('/dashboard', request.url))
 }

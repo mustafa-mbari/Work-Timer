@@ -12,10 +12,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
 
+function isRateLimitError(message: string) {
+  return (
+    message.toLowerCase().includes('rate limit') ||
+    message.toLowerCase().includes('too many') ||
+    message.includes('429')
+  )
+}
+
 export default function LoginForm() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const isExtension = searchParams.get('ext') === 'true'
+
+  // Show a success banner if redirected from password-reset flow
+  const message = searchParams.get('message')
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -39,7 +50,11 @@ export default function LoginForm() {
         router.refresh()
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Login failed')
+      const msg = err instanceof Error ? err.message : 'Login failed'
+      toast.error(isRateLimitError(msg)
+        ? 'Too many login attempts. Please wait a moment and try again.'
+        : msg
+      )
     } finally {
       setLoading(false)
     }
@@ -58,7 +73,11 @@ export default function LoginForm() {
       if (error) throw error
       toast.success('Check your email for the login link!')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to send magic link')
+      const msg = err instanceof Error ? err.message : 'Failed to send magic link'
+      toast.error(isRateLimitError(msg)
+        ? 'Too many attempts. Please wait a moment and try again.'
+        : msg
+      )
     } finally {
       setLoading(false)
     }
@@ -82,6 +101,12 @@ export default function LoginForm() {
           </p>
         </div>
 
+        {message === 'password-updated' && (
+          <div className="mb-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">
+            Password updated successfully. Sign in with your new password.
+          </div>
+        )}
+
         <Card>
           <CardContent className="pt-6">
             <Tabs defaultValue="password">
@@ -104,7 +129,15 @@ export default function LoginForm() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="password">Password</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password">Password</Label>
+                      <Link
+                        href="/forgot-password"
+                        className="text-xs text-indigo-500 hover:text-indigo-600 dark:text-indigo-400"
+                      >
+                        Forgot password?
+                      </Link>
+                    </div>
                     <Input
                       id="password"
                       type="password"

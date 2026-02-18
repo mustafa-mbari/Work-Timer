@@ -13,6 +13,16 @@ export default async function AuthenticatedLayout({
     redirect('/login')
   }
 
+  // Enforce email verification for email/password users.
+  // OAuth providers (Google, etc.) confirm email at the provider level,
+  // so email_confirmed_at is always set for them.
+  if (!user.email_confirmed_at) {
+    const emailParam = user.email
+      ? `?email=${encodeURIComponent(user.email)}`
+      : ''
+    redirect(`/verify-email${emailParam}`)
+  }
+
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">
       {children}
