@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import type { UserSettingsFull, ReminderConfig } from '@/lib/repositories/userSettings'
 
 interface Props {
@@ -37,6 +38,8 @@ const DEFAULTS = {
 
 const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const IDLE_OPTIONS = [1, 5, 10, 15, 30, 60, 120]
+
+const selectCls = 'w-full rounded-lg border border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)] px-3 py-2 text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-indigo-500'
 
 export default function TimeTrackingTab({ settings }: Props) {
   const s: Partial<UserSettingsFull> = settings ?? {}
@@ -120,7 +123,7 @@ export default function TimeTrackingTab({ settings }: Props) {
               id="workingDays"
               value={workingDays}
               onChange={e => setWorkingDays(Number(e.target.value))}
-              className="w-full rounded-lg border border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)] px-3 py-2 text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className={selectCls}
             >
               {[1, 2, 3, 4, 5, 6, 7].map(d => (
                 <option key={d} value={d}>{d} {d === 1 ? 'day' : 'days'}</option>
@@ -199,7 +202,7 @@ export default function TimeTrackingTab({ settings }: Props) {
               id="idleTimeout"
               value={idleTimeout}
               onChange={e => setIdleTimeout(Number(e.target.value))}
-              className="w-full rounded-lg border border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)] px-3 py-2 text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className={selectCls}
             >
               {IDLE_OPTIONS.map(m => (
                 <option key={m} value={m}>{m} {m === 1 ? 'minute' : 'minutes'}</option>
@@ -210,20 +213,13 @@ export default function TimeTrackingTab({ settings }: Props) {
             </p>
           </div>
 
-          <label className="flex items-center justify-between cursor-pointer">
+          <div className="flex items-center justify-between py-1">
             <div>
               <p className="text-sm font-medium text-stone-700 dark:text-stone-300">Auto-show floating timer</p>
               <p className="text-xs text-stone-400 dark:text-stone-500">Show the mini timer widget on every page</p>
             </div>
-            <input
-              type="checkbox"
-              role="switch"
-              checked={floatingAuto}
-              onChange={e => setFloatingAuto(e.target.checked)}
-              className="w-10 h-5 rounded-full appearance-none bg-stone-200 dark:bg-stone-700 checked:bg-indigo-500 transition-colors cursor-pointer relative"
-              style={{ WebkitAppearance: 'none' }}
-            />
-          </label>
+            <Switch checked={floatingAuto} onCheckedChange={setFloatingAuto} />
+          </div>
         </CardContent>
       </Card>
 
@@ -281,20 +277,13 @@ export default function TimeTrackingTab({ settings }: Props) {
             </div>
           </div>
 
-          <label className="flex items-center justify-between cursor-pointer pt-1">
+          <div className="flex items-center justify-between pt-1">
             <div>
               <p className="text-sm font-medium text-stone-700 dark:text-stone-300">Sound notifications</p>
               <p className="text-xs text-stone-400 dark:text-stone-500">Play a sound when each phase ends</p>
             </div>
-            <input
-              type="checkbox"
-              role="switch"
-              checked={sound}
-              onChange={e => setSound(e.target.checked)}
-              className="w-10 h-5 rounded-full appearance-none bg-stone-200 dark:bg-stone-700 checked:bg-indigo-500 transition-colors cursor-pointer"
-              style={{ WebkitAppearance: 'none' }}
-            />
-          </label>
+            <Switch checked={sound} onCheckedChange={setSound} />
+          </div>
         </CardContent>
       </Card>
 
@@ -305,17 +294,10 @@ export default function TimeTrackingTab({ settings }: Props) {
           <CardDescription>Get a nudge to log your time if you haven&apos;t recently</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <label className="flex items-center justify-between cursor-pointer">
+          <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-stone-700 dark:text-stone-300">Enable reminders</p>
-            <input
-              type="checkbox"
-              role="switch"
-              checked={remEnabled}
-              onChange={e => setRemEnabled(e.target.checked)}
-              className="w-10 h-5 rounded-full appearance-none bg-stone-200 dark:bg-stone-700 checked:bg-indigo-500 transition-colors cursor-pointer"
-              style={{ WebkitAppearance: 'none' }}
-            />
-          </label>
+            <Switch checked={remEnabled} onCheckedChange={setRemEnabled} />
+          </div>
 
           {remEnabled && (
             <div className="grid grid-cols-3 gap-3">
@@ -325,7 +307,7 @@ export default function TimeTrackingTab({ settings }: Props) {
                   id="remDay"
                   value={remDay}
                   onChange={e => setRemDay(Number(e.target.value))}
-                  className="w-full rounded-lg border border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)] px-3 py-2 text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className={selectCls}
                 >
                   {DAYS_OF_WEEK.map((d, i) => (
                     <option key={i} value={i}>{d}</option>
@@ -349,7 +331,7 @@ export default function TimeTrackingTab({ settings }: Props) {
                   id="remMinute"
                   value={remMinute}
                   onChange={e => setRemMinute(Number(e.target.value))}
-                  className="w-full rounded-lg border border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)] px-3 py-2 text-sm text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className={selectCls}
                 >
                   {[0, 15, 30, 45].map(m => (
                     <option key={m} value={m}>{String(m).padStart(2, '0')}</option>

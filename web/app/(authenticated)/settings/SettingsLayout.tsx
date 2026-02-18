@@ -1,6 +1,7 @@
 'use client'
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
+import { User, Clock, Palette, Shield, Monitor } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { UserSettingsFull } from '@/lib/repositories/userSettings'
 import type { Database } from '@/lib/shared/types'
@@ -32,11 +33,11 @@ interface Props {
 }
 
 const TABS = [
-  { id: 'profile',    label: 'Profile' },
-  { id: 'time',       label: 'Time Tracking' },
-  { id: 'appearance', label: 'Appearance' },
-  { id: 'security',   label: 'Security' },
-  { id: 'sessions',   label: 'Sessions & Devices' },
+  { id: 'profile',    label: 'Profile',           icon: User },
+  { id: 'time',       label: 'Time Tracking',      icon: Clock },
+  { id: 'appearance', label: 'Appearance',          icon: Palette },
+  { id: 'security',   label: 'Security',            icon: Shield },
+  { id: 'sessions',   label: 'Sessions & Devices',  icon: Monitor },
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
@@ -68,20 +69,25 @@ export default function SettingsLayout({ user, profile, subscription, settings, 
 
       {/* Tab navigation */}
       <div className="flex gap-0 border-b border-stone-200 dark:border-[var(--dark-border)] overflow-x-auto">
-        {TABS.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => goToTab(tab.id)}
-            className={cn(
-              'px-4 py-2.5 text-sm font-medium border-b-2 -mb-px whitespace-nowrap transition-colors',
-              activeTab === tab.id
-                ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
-                : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300 dark:text-stone-400 dark:hover:text-stone-200 dark:hover:border-stone-600'
-            )}
-          >
-            {tab.label}
-          </button>
-        ))}
+        {TABS.map(tab => {
+          const Icon = tab.icon
+          const active = activeTab === tab.id
+          return (
+            <button
+              key={tab.id}
+              onClick={() => goToTab(tab.id)}
+              className={cn(
+                'flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px whitespace-nowrap transition-colors',
+                active
+                  ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                  : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300 dark:text-stone-400 dark:hover:text-stone-200 dark:hover:border-stone-600'
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              {tab.label}
+            </button>
+          )
+        })}
       </div>
 
       {/* Tab content */}

@@ -27,7 +27,7 @@ export default async function EntriesPage({ searchParams }: Props) {
     projectId: sp.projectId,
     type: sp.type,
     page,
-    pageSize: 50,
+    pageSize: 25,
   }
 
   const [entriesPage, projects] = await Promise.all([

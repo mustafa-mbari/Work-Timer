@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -89,7 +90,9 @@ export default async function AnalyticsPage({
           <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100">Analytics & Reports</h1>
           <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">Advanced insights into your time tracking</p>
         </div>
-        <AnalyticsFilters />
+        <Suspense fallback={<div className="h-8" />}>
+          <AnalyticsFilters />
+        </Suspense>
       </div>
 
       {/* Empty state when filter returns no results */}
