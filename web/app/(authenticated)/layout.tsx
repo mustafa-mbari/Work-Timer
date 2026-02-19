@@ -42,7 +42,7 @@ export default async function AuthenticatedLayout({
       <div className="flex flex-col flex-1 overflow-hidden min-w-0">
         <AppHeader userInfo={userInfo} />
         <main className="flex-1 overflow-y-auto">
-          <div className="p-6 lg:p-8 w-full max-w-[1400px]">
+          <div className="p-6 lg:p-8 w-full">
             <LastPageTracker />
             {children}
           </div>
