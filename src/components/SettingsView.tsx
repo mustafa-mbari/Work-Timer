@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import type { Settings } from '@/types'
+import type { Settings, SyncDiagnostics } from '@/types'
 import { getSettings, updateSettings } from '@/storage'
 import { useProjects, ProjectLimitError } from '@/hooks/useProjects'
 import { useTags } from '@/hooks/useTags'
@@ -41,6 +41,10 @@ export default function SettingsView() {
   const [uploading, setUploading] = useState(false)
   const [uploadMsg, setUploadMsg] = useState<string | null>(null)
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null)
+  const [diagnosing, setDiagnosing] = useState(false)
+  const [diagnostics, setDiagnostics] = useState<SyncDiagnostics | null>(null)
+  const [clearingLocal, setClearingLocal] = useState(false)
+  const [confirmClear, setConfirmClear] = useState(false)
 
   useEffect(() => {
     getSettings().then(setSettings)
@@ -80,6 +84,29 @@ export default function SettingsView() {
         setUploadMsg(res?.error || 'Upload failed')
       }
       setUploading(false)
+    })
+  }
+
+  const handleDiagnose = () => {
+    setDiagnosing(true)
+    chrome.runtime.sendMessage({ action: 'DIAGNOSE_SYNC' }, (res) => {
+      if (res?.syncDiagnostics) setDiagnostics(res.syncDiagnostics)
+      setDiagnosing(false)
+    })
+  }
+
+  const handleClearAndResync = () => {
+    if (!confirmClear) {
+      setConfirmClear(true)
+      return
+    }
+    setClearingLocal(true)
+    setConfirmClear(false)
+    setDiagnostics(null)
+    chrome.runtime.sendMessage({ action: 'CLEAR_AND_RESYNC' }, () => {
+      setClearingLocal(false)
+      setUploadMsg('Local data cleared. Pulling fresh data from cloud…')
+      setTimeout(() => setUploadMsg(null), 4000)
     })
   }
 
@@ -781,6 +808,92 @@ export default function SettingsView() {
                       <p className={`text-[11px] ${uploadMsg.includes('fail') ? 'text-rose-500' : 'text-emerald-500'}`}>
                         {uploadMsg}
                       </p>
+                    )}
+
+                    {/* Sync diagnostics */}
+                    <button
+                      onClick={handleDiagnose}
+                      disabled={diagnosing || syncing || uploading || clearingLocal}
+                      className="w-full border border-stone-200 dark:border-dark-border text-stone-500 dark:text-stone-400 py-2 rounded-lg text-xs font-medium hover:bg-stone-50 dark:hover:bg-dark-hover disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      {diagnosing && <span className="w-3 h-3 border border-stone-400 border-t-transparent rounded-full animate-spin" />}
+                      {diagnosing ? 'Checking…' : 'Check sync status'}
+                    </button>
+
+                    {/* Drop local data & sync fresh */}
+                    <button
+                      onClick={handleClearAndResync}
+                      onBlur={() => setConfirmClear(false)}
+                      disabled={clearingLocal || syncing || uploading || diagnosing}
+                      className={`w-full border py-2 rounded-lg text-xs font-medium disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5 ${
+                        confirmClear
+                          ? 'border-rose-400 bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400'
+                          : 'border-stone-200 dark:border-dark-border text-stone-500 dark:text-stone-400 hover:border-rose-300 hover:text-rose-500 dark:hover:text-rose-400'
+                      }`}
+                    >
+                      {clearingLocal && <span className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />}
+                      {clearingLocal ? 'Clearing…' : confirmClear ? 'Confirm — this will erase local data!' : 'Drop local data & sync fresh'}
+                    </button>
+
+                    {diagnostics && (
+                      <div className="rounded-lg border border-stone-100 dark:border-dark-border bg-stone-50 dark:bg-dark-card px-3 py-2.5 space-y-1.5 text-[11px] font-mono">
+                        <div className="flex justify-between">
+                          <span className="text-stone-400">Session</span>
+                          <span className={diagnostics.hasSession ? 'text-emerald-500' : 'text-rose-500'}>
+                            {diagnostics.hasSession ? `✓ ${diagnostics.sessionEmail ?? ''}` : '✗ Not logged in'}
+                          </span>
+                        </div>
+                        {diagnostics.sessionUserId && (
+                          <div className="flex justify-between gap-2">
+                            <span className="text-stone-400 flex-shrink-0">User ID</span>
+                            <span className="text-stone-500 break-all text-right">{diagnostics.sessionUserId}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span className="text-stone-400">Token</span>
+                          <span className={
+                            diagnostics.tokenExpiresInSeconds === null ? 'text-stone-400'
+                            : diagnostics.tokenExpiresInSeconds < 0 ? 'text-rose-500'
+                            : diagnostics.tokenExpiresInSeconds < 120 ? 'text-amber-500'
+                            : 'text-emerald-500'
+                          }>
+                            {diagnostics.tokenExpiresInSeconds === null ? '—'
+                              : diagnostics.tokenExpiresInSeconds < 0 ? `✗ expired ${Math.abs(Math.round(diagnostics.tokenExpiresInSeconds / 60))}m ago`
+                              : `✓ ${Math.round(diagnostics.tokenExpiresInSeconds / 60)}m remaining`}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-stone-400">Premium</span>
+                          <span className={diagnostics.isPremium ? 'text-emerald-500' : 'text-rose-500'}>
+                            {diagnostics.isPremium
+                              ? `✓ ${diagnostics.subscriptionPlan ?? ''} (${diagnostics.subscriptionStatus ?? ''})`
+                              : `✗ ${diagnostics.subscriptionStatus ?? 'not found'}`}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-stone-400">Queue</span>
+                          <span className={diagnostics.queueLength > 0 ? 'text-amber-500' : 'text-stone-500'}>
+                            {diagnostics.queueLength} pending
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-stone-400">Last sync</span>
+                          <span className="text-stone-500">
+                            {diagnostics.lastSyncAt ? new Date(diagnostics.lastSyncAt).toLocaleTimeString() : 'never'}
+                          </span>
+                        </div>
+                        {diagnostics.syncErrorMessage && (
+                          <div className="pt-1 text-rose-500 break-all">
+                            ✗ {diagnostics.syncErrorMessage}
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span className="text-stone-400">Network</span>
+                          <span className={diagnostics.isOnline ? 'text-emerald-500' : 'text-rose-500'}>
+                            {diagnostics.isOnline ? '✓ online' : '✗ offline'}
+                          </span>
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}

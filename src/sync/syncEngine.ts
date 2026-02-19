@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- Supabase v2.95 type workaround for mutations */
 import { supabase } from '@/auth/supabaseClient'
-import { getSession } from '@/auth/authState'
-import { isCurrentUserPremium } from '@/premium/featureGate'
+import { getSession, getCachedSubscription } from '@/auth/authState'
+import { isCurrentUserPremium, isPremiumSubscription } from '@/premium/featureGate'
 import { getQueue, dequeue } from './syncQueue'
 import {
   localEntryToDb, localProjectToDb, localSettingsToDb,
@@ -14,7 +14,7 @@ import {
   getSettings, updateSettings,
   setSuppressEnqueue,
 } from '@/storage'
-import type { SyncState } from '@/types'
+import type { SyncState, SyncDiagnostics } from '@/types'
 import type { DbTimeEntry, DbProject, DbTag, DbUserSettings } from '@shared/types'
 
 const SYNC_CURSOR_KEY = 'syncCursor'
@@ -22,6 +22,15 @@ const DEVICE_ID_KEY = 'deviceId'
 const SYNC_STATE_KEY = 'syncState'
 
 const BATCH_SIZE = 500
+
+// Detect RLS "USING expression" errors caused by a user_id mismatch.
+// This happens when a row already exists in Supabase under a different user_id
+// (e.g. a previous account) and the current session's auth.uid() can't UPDATE it.
+// These rows cannot be fixed from the client — they must be dequeued and skipped
+// so that future syncs (for new data with the correct user_id) are not blocked.
+function isRlsUsingError(error: { message: string }): boolean {
+  return error.message.includes('(USING expression)')
+}
 
 // --- Device ID ---
 
@@ -86,34 +95,8 @@ export async function pushQueue(): Promise<void> {
     const tagUpserts = batch
       .filter(item => item.table === 'tags' && item.action === 'upsert')
 
-    // Push time entry upserts
-    if (entryUpserts.length > 0) {
-      const rows: Partial<DbTimeEntry>[] = []
-      for (const item of entryUpserts) {
-        if (!item.date) continue // skip items without date (old queue entries)
-        const entries = await getEntries(item.date)
-        const found = entries.find(e => e.id === item.recordId)
-        if (found) rows.push(localEntryToDb(found, session.userId))
-      }
-      if (rows.length > 0) {
-        const { error } = await supabase.from('time_entries').upsert(rows as any)
-        if (error) throw new Error(`Sync push failed (entries upsert): ${error.message}`)
-      }
-    }
-
-    // Push time entry deletes (soft delete)
-    if (entryDeletes.length > 0) {
-      const now = new Date().toISOString()
-      const { error } = await (supabase.from('time_entries') as any)
-        .update({ deleted_at: now, updated_at: now })
-        .in('id', entryDeletes.map(item => item.recordId))
-        .eq('user_id', session.userId)
-      if (error) throw new Error(`Sync push failed (entries delete): ${error.message}`)
-    }
-
-    // Dequeue entries immediately after successful push
-    const entryIds = [...entryUpserts, ...entryDeletes].map(item => item.id)
-    if (entryIds.length > 0) await dequeue(entryIds)
+    // Push projects FIRST — entries have a FK constraint on project_id,
+    // so the referenced project must exist in Supabase before entries are pushed.
 
     // Push project upserts
     if (projectUpserts.length > 0) {
@@ -124,7 +107,15 @@ export async function pushQueue(): Promise<void> {
         .map(p => localProjectToDb(p!, session.userId))
       if (rows.length > 0) {
         const { error } = await supabase.from('projects').upsert(rows as any)
-        if (error) throw new Error(`Sync push failed (projects upsert): ${error.message}`)
+        if (error) {
+          if (isRlsUsingError(error)) {
+            // Rows exist in Supabase under a different user_id — cannot update via RLS.
+            // Dequeue and skip so future syncs are not permanently blocked.
+            console.warn('[work-timer] Projects upsert skipped (user_id mismatch in Supabase):', error.message)
+          } else {
+            throw new Error(`Sync push failed (projects upsert): ${error.message}`)
+          }
+        }
       }
     }
 
@@ -141,6 +132,41 @@ export async function pushQueue(): Promise<void> {
     // Dequeue projects immediately after successful push
     const projectIds = [...projectUpserts, ...projectDeletes].map(item => item.id)
     if (projectIds.length > 0) await dequeue(projectIds)
+
+    // Push time entry upserts (after projects, to satisfy FK constraint)
+    if (entryUpserts.length > 0) {
+      const rows: Partial<DbTimeEntry>[] = []
+      for (const item of entryUpserts) {
+        if (!item.date) continue // skip items without date (old queue entries)
+        const entries = await getEntries(item.date)
+        const found = entries.find(e => e.id === item.recordId)
+        if (found) rows.push(localEntryToDb(found, session.userId))
+      }
+      if (rows.length > 0) {
+        const { error } = await supabase.from('time_entries').upsert(rows as any)
+        if (error) {
+          if (isRlsUsingError(error)) {
+            console.warn('[work-timer] Entries upsert skipped (user_id mismatch in Supabase):', error.message)
+          } else {
+            throw new Error(`Sync push failed (entries upsert): ${error.message}`)
+          }
+        }
+      }
+    }
+
+    // Push time entry deletes (soft delete)
+    if (entryDeletes.length > 0) {
+      const now = new Date().toISOString()
+      const { error } = await (supabase.from('time_entries') as any)
+        .update({ deleted_at: now, updated_at: now })
+        .in('id', entryDeletes.map(item => item.recordId))
+        .eq('user_id', session.userId)
+      if (error) throw new Error(`Sync push failed (entries delete): ${error.message}`)
+    }
+
+    // Dequeue entries immediately after successful push
+    const entryIds = [...entryUpserts, ...entryDeletes].map(item => item.id)
+    if (entryIds.length > 0) await dequeue(entryIds)
 
     // Push tag upserts — only push tags that are in the queue
     if (tagUpserts.length > 0) {
@@ -351,6 +377,33 @@ export async function syncAll(): Promise<void> {
   }
 }
 
+// --- Sync Diagnostics ---
+
+export async function diagnoseSyncState(): Promise<SyncDiagnostics> {
+  const now = Math.floor(Date.now() / 1000)
+  const [session, sub, queue, syncState] = await Promise.all([
+    getSession(),
+    getCachedSubscription(),
+    getQueue(),
+    getSyncState(),
+  ])
+  return {
+    hasSession: !!session,
+    sessionEmail: session?.email ?? null,
+    sessionUserId: session?.userId ?? null,
+    tokenExpiresAt: session?.expiresAt ?? null,
+    tokenExpiresInSeconds: session ? (session.expiresAt - now) : null,
+    isPremium: isPremiumSubscription(sub),
+    subscriptionPlan: sub?.plan ?? null,
+    subscriptionStatus: sub?.status ?? null,
+    queueLength: queue.length,
+    lastSyncAt: syncState.lastSyncAt,
+    syncStatus: syncState.status,
+    syncErrorMessage: syncState.errorMessage,
+    isOnline: navigator.onLine,
+  }
+}
+
 // --- Initial Upload (first login with existing local data) ---
 
 export async function uploadAllLocalData(): Promise<void> {
@@ -364,7 +417,13 @@ export async function uploadAllLocalData(): Promise<void> {
   if (projects.length > 0) {
     const rows = projects.map(p => localProjectToDb(p, session.userId))
     const { error } = await supabase.from('projects').upsert(rows as any)
-    if (error) errors.push(`Projects upload failed: ${error.message}`)
+    if (error) {
+      if (isRlsUsingError(error)) {
+        console.warn('[work-timer] Projects upload skipped (user_id mismatch in Supabase):', error.message)
+      } else {
+        errors.push(`Projects upload failed: ${error.message}`)
+      }
+    }
   }
 
   // Upload all time entries (scan all entry_* keys)
@@ -387,13 +446,17 @@ export async function uploadAllLocalData(): Promise<void> {
   for (const batch of entryBatches) {
     if (batch.length > 0) {
       let { error } = await supabase.from('time_entries').upsert(batch as any)
-      // Retry once with backoff on failure
-      if (error) {
+      // Retry once with backoff on failure (non-RLS errors only)
+      if (error && !isRlsUsingError(error)) {
         await new Promise(r => setTimeout(r, 1000))
         ;({ error } = await supabase.from('time_entries').upsert(batch as any))
       }
       if (error) {
-        errors.push(`Entries batch upload failed (${batch.length} entries): ${error.message}`)
+        if (isRlsUsingError(error)) {
+          console.warn('[work-timer] Entries batch skipped (user_id mismatch in Supabase):', error.message)
+        } else {
+          errors.push(`Entries batch upload failed (${batch.length} entries): ${error.message}`)
+        }
       } else {
         uploadedEntries += batch.length
       }
@@ -410,14 +473,26 @@ export async function uploadAllLocalData(): Promise<void> {
       updated_at: new Date().toISOString(),
     }))
     const { error } = await supabase.from('tags').upsert(rows as any)
-    if (error) errors.push(`Tags upload failed: ${error.message}`)
+    if (error) {
+      if (isRlsUsingError(error)) {
+        console.warn('[work-timer] Tags upload skipped (user_id mismatch in Supabase):', error.message)
+      } else {
+        errors.push(`Tags upload failed: ${error.message}`)
+      }
+    }
   }
 
   // Upload settings
   const settings = await getSettings()
   const settingsRow = localSettingsToDb(settings, session.userId)
   const { error: settingsError } = await supabase.from('user_settings').upsert(settingsRow as any)
-  if (settingsError) errors.push(`Settings upload failed: ${settingsError.message}`)
+  if (settingsError) {
+    if (isRlsUsingError(settingsError)) {
+      console.warn('[work-timer] Settings upload skipped (user_id mismatch in Supabase):', settingsError.message)
+    } else {
+      errors.push(`Settings upload failed: ${settingsError.message}`)
+    }
+  }
 
   console.log(`[work-timer] Upload complete: ${uploadedEntries}/${totalEntries} entries, ${projects.length} projects, ${tags.length} tags, settings`)
 

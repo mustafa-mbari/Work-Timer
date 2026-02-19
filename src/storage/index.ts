@@ -27,7 +27,7 @@ async function checkSyncEligible(): Promise<boolean> {
 // Invalidate cache when auth or subscription state changes in storage
 if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
   chrome.storage.onChanged.addListener((changes) => {
-    if (changes['supabase.auth.token'] || changes['subscription']) {
+    if (changes['supabase.auth.token'] || changes['subscriptionInfo']) {
       _syncEligible = null
     }
   })

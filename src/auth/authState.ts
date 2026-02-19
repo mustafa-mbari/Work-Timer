@@ -13,7 +13,7 @@ export async function getSession(): Promise<AuthSession | null> {
   // refresh it so subsequent Supabase requests carry a valid JWT.
   // Without this, auth.uid() resolves to NULL on the server and RLS blocks writes.
   const now = Math.floor(Date.now() / 1000)
-  if ((session.expires_at ?? 0) - now < 60) {
+  if ((session.expires_at ?? 0) - now < 120) {
     const { data: { session: refreshed } } = await supabase.auth.refreshSession()
     if (!refreshed) return null
     return {

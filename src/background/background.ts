@@ -4,7 +4,7 @@ import { getToday } from '../utils/date'
 import { POMODORO_WORK_MS, IDLE_THRESHOLD_MS } from '../constants/timers'
 import { getSettings, getTimerState, setTimerState, saveEntry, updateEntry, getEntries, getLocalUserId, setLocalUserId, hasAnyLocalData, clearAllLocalData } from '../storage'
 import { applyExternalSession, signOut as authSignOut, refreshSubscription, getSession } from '../auth/authState'
-import { syncAll, getSyncState, uploadAllLocalData } from '../sync/syncEngine'
+import { syncAll, getSyncState, uploadAllLocalData, diagnoseSyncState } from '../sync/syncEngine'
 import { setupRealtime, teardownRealtime } from '../sync/realtimeSubscription'
 import { pushUserStats } from '../sync/statsSync'
 
@@ -606,6 +606,20 @@ chrome.runtime.onMessage.addListener(
           case 'UPLOAD_ALL': {
             await uploadAllLocalData()
             await syncAll()
+            return { success: true }
+          }
+          case 'DIAGNOSE_SYNC': {
+            const syncDiagnostics = await diagnoseSyncState()
+            return { success: true, syncDiagnostics }
+          }
+          case 'CLEAR_AND_RESYNC': {
+            const session = await getSession()
+            if (!session) return { success: false, error: 'Not logged in' }
+            await clearAllLocalData()
+            await setLocalUserId(session.userId)
+            await refreshSubscription().catch(() => null)
+            setupRealtime(session.userId)
+            void syncAll().catch(() => null)
             return { success: true }
           }
           case 'ACCOUNT_SWITCH_CHOICE': {

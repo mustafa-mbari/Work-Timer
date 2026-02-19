@@ -129,6 +129,23 @@ export interface SyncState {
 }
 
 // Message types for popup <-> background communication
+// Sync diagnostics snapshot returned by DIAGNOSE_SYNC message
+export interface SyncDiagnostics {
+  hasSession: boolean
+  sessionEmail: string | null
+  sessionUserId: string | null         // The UUID used as user_id in all DB writes
+  tokenExpiresAt: number | null       // Unix seconds
+  tokenExpiresInSeconds: number | null // positive = future, negative = expired
+  isPremium: boolean
+  subscriptionPlan: string | null
+  subscriptionStatus: string | null
+  queueLength: number
+  lastSyncAt: string | null
+  syncStatus: SyncStatus
+  syncErrorMessage: string | null
+  isOnline: boolean
+}
+
 export type MessageAction =
   | 'START_TIMER'
   | 'PAUSE_TIMER'
@@ -151,6 +168,8 @@ export type MessageAction =
   | 'GET_SUBSCRIPTION'
   | 'SYNC_REMOTE_UPDATE'
   | 'ACCOUNT_SWITCH_CHOICE'
+  | 'DIAGNOSE_SYNC'
+  | 'CLEAR_AND_RESYNC'
 
 export interface TimerMessage {
   action: MessageAction
@@ -171,6 +190,7 @@ export interface TimerResponse {
   session?: AuthSession
   subscription?: SubscriptionInfo
   syncState?: SyncState
+  syncDiagnostics?: SyncDiagnostics
   accountSwitch?: boolean
   previousUserId?: string
   newUserId?: string
