@@ -28,7 +28,7 @@ export default async function AuthenticatedLayout({
   return (
     <div className="flex min-h-[calc(100vh-3.5rem)]">
       <Sidebar />
-      <div className="flex-1 min-w-0 px-6 py-8">
+      <div className="flex-1 min-w-0 px-10 py-8 max-w-[1400px]">
         <LastPageTracker />
         {children}
       </div>
