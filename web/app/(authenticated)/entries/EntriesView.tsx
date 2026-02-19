@@ -7,14 +7,16 @@ import EntriesTable from './EntriesTable'
 import EntryFormDialog from './EntryFormDialog'
 import type { TimeEntryPage, TimeEntryFilters } from '@/lib/repositories/timeEntries'
 import type { ProjectSummary } from '@/lib/repositories/projects'
+import type { TagSummary } from '@/lib/repositories/tags'
 
 interface Props {
   entriesPage: TimeEntryPage
   projects: ProjectSummary[]
+  tags: TagSummary[]
   filters: TimeEntryFilters
 }
 
-export default function EntriesView({ entriesPage, projects, filters }: Props) {
+export default function EntriesView({ entriesPage, projects, tags, filters }: Props) {
   const router = useRouter()
   const [showAddDialog, setShowAddDialog] = useState(false)
 
@@ -30,6 +32,7 @@ export default function EntriesView({ entriesPage, projects, filters }: Props) {
         <EntriesTable
           entriesPage={entriesPage}
           projects={projects}
+          tags={tags}
           filters={filters}
         />
       </div>

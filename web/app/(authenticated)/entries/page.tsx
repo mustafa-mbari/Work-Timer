@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/services/auth'
 import { isPremiumUser } from '@/lib/services/billing'
 import { getUserTimeEntries } from '@/lib/repositories/timeEntries'
 import { getUserProjects } from '@/lib/repositories/projects'
+import { getUserTags } from '@/lib/repositories/tags'
 import EntriesView from './EntriesView'
 
 interface Props {
@@ -31,9 +32,10 @@ export default async function EntriesPage({ searchParams }: Props) {
     pageSize: 25,
   }
 
-  const [entriesPage, projects] = await Promise.all([
+  const [entriesPage, projects, tags] = await Promise.all([
     getUserTimeEntries(user.id, filters),
     getUserProjects(user.id),
+    getUserTags(user.id),
   ])
 
   return (
@@ -49,6 +51,7 @@ export default async function EntriesPage({ searchParams }: Props) {
         <EntriesView
           entriesPage={entriesPage}
           projects={projects}
+          tags={tags}
           filters={filters}
         />
       </Suspense>

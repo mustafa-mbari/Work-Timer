@@ -1,9 +1,9 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useTransition, useState } from 'react'
+import { useTransition, useState, useEffect } from 'react'
 import { toast } from 'sonner'
-import { Pencil, Trash2, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
+import { Pencil, Trash2, ChevronLeft, ChevronRight, ExternalLink, SlidersHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
@@ -15,15 +15,62 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import type { TimeEntryPage, TimeEntry } from '@/lib/repositories/timeEntries'
 import type { ProjectSummary } from '@/lib/repositories/projects'
 import type { TimeEntryFilters } from '@/lib/repositories/timeEntries'
+import type { TagSummary } from '@/lib/repositories/tags'
 import EntryFormDialog from './EntryFormDialog'
 
 interface Props {
   entriesPage: TimeEntryPage
   projects: ProjectSummary[]
+  tags: TagSummary[]
   filters: TimeEntryFilters
+}
+
+const STORAGE_KEY = 'entries-table-columns'
+
+type ColumnId = 'date' | 'time' | 'duration' | 'project' | 'description' | 'tags' | 'link' | 'type'
+
+const ALL_COLUMNS: { id: ColumnId; label: string }[] = [
+  { id: 'date', label: 'Date' },
+  { id: 'time', label: 'Time' },
+  { id: 'duration', label: 'Duration' },
+  { id: 'project', label: 'Project' },
+  { id: 'description', label: 'Description' },
+  { id: 'tags', label: 'Tags' },
+  { id: 'link', label: 'Link' },
+  { id: 'type', label: 'Type' },
+]
+
+const DEFAULT_VISIBLE: Record<ColumnId, boolean> = {
+  date: true,
+  time: true,
+  duration: true,
+  project: true,
+  description: true,
+  tags: true,
+  link: true,
+  type: true,
+}
+
+function loadColumnPrefs(): Record<ColumnId, boolean> {
+  if (typeof window === 'undefined') return DEFAULT_VISIBLE
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return DEFAULT_VISIBLE
+    return { ...DEFAULT_VISIBLE, ...JSON.parse(raw) }
+  } catch {
+    return DEFAULT_VISIBLE
+  }
 }
 
 function formatDate(date: string): string {
@@ -49,6 +96,14 @@ function formatDuration(ms: number): string {
   return `${hours}h ${mins}m`
 }
 
+function formatLinkHost(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return url.length > 28 ? url.slice(0, 28) + '…' : url
+  }
+}
+
 const TYPE_BADGE: Record<TimeEntry['type'], { label: string; class: string }> = {
   manual: {
     label: 'Manual',
@@ -64,7 +119,7 @@ const TYPE_BADGE: Record<TimeEntry['type'], { label: string; class: string }> = 
   },
 }
 
-export default function EntriesTable({ entriesPage, projects, filters }: Props) {
+export default function EntriesTable({ entriesPage, projects, tags, filters }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [, startTransition] = useTransition()
@@ -74,8 +129,22 @@ export default function EntriesTable({ entriesPage, projects, filters }: Props) 
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [deleteIds, setDeleteIds] = useState<string[] | null>(null)
   const [isBusy, setIsBusy] = useState(false)
+  const [visibleCols, setVisibleCols] = useState<Record<ColumnId, boolean>>(DEFAULT_VISIBLE)
+
+  useEffect(() => {
+    setVisibleCols(loadColumnPrefs())
+  }, [])
+
+  function toggleColumn(id: ColumnId) {
+    setVisibleCols(prev => {
+      const next = { ...prev, [id]: !prev[id] }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+      return next
+    })
+  }
 
   const projectMap = new Map(projects.map(p => [p.id, p]))
+  const tagMap = new Map(tags.map(t => [t.id, t.name]))
   const { data: entries, page, totalPages } = entriesPage
 
   function navigate(params: Record<string, string | undefined>) {
@@ -134,6 +203,8 @@ export default function EntriesTable({ entriesPage, projects, filters }: Props) 
     router.refresh()
   }
 
+  const col = visibleCols
+
   return (
     <>
       {/* Empty state */}
@@ -158,179 +229,241 @@ export default function EntriesTable({ entriesPage, projects, filters }: Props) 
         </div>
       )}
 
-      {entries.length > 0 && <>
-      {/* Bulk action bar */}
-      {selected.size > 0 && (
-        <div className="mb-3 flex items-center gap-3 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 px-4 py-2.5">
-          <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
-            {selected.size} selected
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-stone-600 dark:text-stone-300"
-            onClick={() => setSelected(new Set())}
-          >
-            Deselect all
-          </Button>
-          <Button
-            size="sm"
-            variant="destructive"
-            className="h-7 ml-auto"
-            disabled={isBusy}
-            onClick={() => setDeleteIds([...selected])}
-          >
-            <Trash2 className="h-3.5 w-3.5 mr-1" />
-            Delete {selected.size}
-          </Button>
-        </div>
-      )}
-
-      {/* Table */}
-      <div className="rounded-xl border border-stone-200 dark:border-[var(--dark-border)] overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-stone-50 dark:bg-[var(--dark-card)] text-left text-xs font-medium text-stone-500 dark:text-stone-400 uppercase tracking-wider">
-              <th className="px-4 py-3 w-10">
-                <input
-                  type="checkbox"
-                  checked={selected.size === entries.length && entries.length > 0}
-                  ref={el => {
-                    if (el) el.indeterminate = selected.size > 0 && selected.size < entries.length
-                  }}
-                  onChange={toggleAll}
-                  className="rounded border-stone-300 dark:border-stone-600"
-                  aria-label="Select all"
-                />
-              </th>
-              <th className="px-4 py-3">Date</th>
-              <th className="px-4 py-3">Time</th>
-              <th className="px-4 py-3">Duration</th>
-              <th className="px-4 py-3">Project</th>
-              <th className="px-4 py-3 max-w-xs">Description</th>
-              <th className="px-4 py-3">Type</th>
-              <th className="px-4 py-3 w-20 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-stone-100 dark:divide-[var(--dark-border)]">
-            {entries.map((entry, i) => {
-              const project = entry.project_id ? projectMap.get(entry.project_id) : null
-              const badge = TYPE_BADGE[entry.type]
-              const isSelected = selected.has(entry.id)
-
-              return (
-                <tr
-                  key={entry.id}
-                  className={`transition-colors ${
-                    isSelected
-                      ? 'bg-indigo-50/60 dark:bg-indigo-900/10'
-                      : i % 2 === 0
-                      ? 'bg-white dark:bg-[var(--dark)]'
-                      : 'bg-stone-50/50 dark:bg-[var(--dark-card)]/40'
-                  } hover:bg-stone-50 dark:hover:bg-[var(--dark-hover)]`}
+      {entries.length > 0 && (
+        <>
+          {/* Toolbar: bulk actions + column settings */}
+          <div className="mb-3 flex items-center gap-3">
+            {selected.size > 0 ? (
+              <div className="flex-1 flex items-center gap-3 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 px-4 py-2.5">
+                <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
+                  {selected.size} selected
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-stone-600 dark:text-stone-300"
+                  onClick={() => setSelected(new Set())}
                 >
-                  <td className="px-4 py-3">
+                  Deselect all
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="h-7 ml-auto"
+                  disabled={isBusy}
+                  onClick={() => setDeleteIds([...selected])}
+                >
+                  <Trash2 className="h-3.5 w-3.5 mr-1" />
+                  Delete {selected.size}
+                </Button>
+              </div>
+            ) : (
+              <div className="flex-1" />
+            )}
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 h-9 shrink-0">
+                  <SlidersHorizontal className="h-3.5 w-3.5" />
+                  Columns
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuLabel>Show / hide columns</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {ALL_COLUMNS.map(c => (
+                  <DropdownMenuCheckboxItem
+                    key={c.id}
+                    checked={visibleCols[c.id]}
+                    onCheckedChange={() => toggleColumn(c.id)}
+                  >
+                    {c.label}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* Table */}
+          <div className="rounded-xl border border-stone-200 dark:border-[var(--dark-border)] overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-stone-50 dark:bg-[var(--dark-card)] text-left text-xs font-medium text-stone-500 dark:text-stone-400 uppercase tracking-wider">
+                  <th className="px-4 py-3 w-10">
                     <input
                       type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggleSelect(entry.id)}
+                      checked={selected.size === entries.length && entries.length > 0}
+                      ref={el => {
+                        if (el) el.indeterminate = selected.size > 0 && selected.size < entries.length
+                      }}
+                      onChange={toggleAll}
                       className="rounded border-stone-300 dark:border-stone-600"
-                      aria-label={`Select entry ${entry.id}`}
+                      aria-label="Select all"
                     />
-                  </td>
-                  <td className="px-4 py-3 text-stone-700 dark:text-stone-300 whitespace-nowrap">
-                    {formatDate(entry.date)}
-                  </td>
-                  <td className="px-4 py-3 text-stone-600 dark:text-stone-400 whitespace-nowrap tabular-nums">
-                    {formatTime(entry.start_time)} – {formatTime(entry.end_time)}
-                  </td>
-                  <td className="px-4 py-3 text-stone-700 dark:text-stone-300 whitespace-nowrap tabular-nums font-medium">
-                    {formatDuration(entry.duration)}
-                  </td>
-                  <td className="px-4 py-3">
-                    {project ? (
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className="h-2.5 w-2.5 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: project.color }}
-                        />
-                        <span className="text-stone-700 dark:text-stone-300 truncate max-w-[120px]">
-                          {project.name}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-stone-400 dark:text-stone-600">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 max-w-xs">
-                    <span
-                      className="text-stone-700 dark:text-stone-300 truncate block max-w-[200px]"
-                      title={entry.description}
-                    >
-                      {entry.description || (
-                        <span className="text-stone-400 dark:text-stone-600 italic">No description</span>
-                      )}
-                    </span>
-                    {entry.tags && entry.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {entry.tags.slice(0, 3).map(tag => (
-                          <span
-                            key={tag}
-                            className="text-xs bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 rounded px-1.5 py-0.5"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                        {entry.tags.length > 3 && (
-                          <span className="text-xs text-stone-400">+{entry.tags.length - 3}</span>
-                        )}
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${badge.class}`}>
-                      {badge.label}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-1">
-                      {entry.link && (
-                        <a
-                          href={entry.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-1.5 rounded-lg text-stone-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-indigo-900/20 transition-colors"
-                          aria-label="Open link"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </a>
-                      )}
-                      <button
-                        onClick={() => setEditEntry(entry)}
-                        className="p-1.5 rounded-lg text-stone-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-indigo-900/20 transition-colors"
-                        aria-label="Edit entry"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        onClick={() => setDeleteIds([entry.id])}
-                        className="p-1.5 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:text-rose-400 dark:hover:bg-rose-900/20 transition-colors"
-                        aria-label="Delete entry"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </td>
+                  </th>
+                  {col.date && <th className="px-4 py-3">Date</th>}
+                  {col.time && <th className="px-4 py-3">Time</th>}
+                  {col.duration && <th className="px-4 py-3">Duration</th>}
+                  {col.project && <th className="px-4 py-3">Project</th>}
+                  {col.description && <th className="px-4 py-3 max-w-xs">Description</th>}
+                  {col.tags && <th className="px-4 py-3">Tags</th>}
+                  {col.link && <th className="px-4 py-3">Link</th>}
+                  {col.type && <th className="px-4 py-3">Type</th>}
+                  <th className="px-4 py-3 w-20 text-right">Actions</th>
                 </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody className="divide-y divide-stone-100 dark:divide-[var(--dark-border)]">
+                {entries.map((entry, i) => {
+                  const project = entry.project_id ? projectMap.get(entry.project_id) : null
+                  const badge = TYPE_BADGE[entry.type]
+                  const isSelected = selected.has(entry.id)
 
-      </>}
+                  return (
+                    <tr
+                      key={entry.id}
+                      className={`transition-colors ${
+                        isSelected
+                          ? 'bg-indigo-50/60 dark:bg-indigo-900/10'
+                          : i % 2 === 0
+                          ? 'bg-white dark:bg-[var(--dark)]'
+                          : 'bg-stone-50/50 dark:bg-[var(--dark-card)]/40'
+                      } hover:bg-stone-50 dark:hover:bg-[var(--dark-hover)]`}
+                    >
+                      <td className="px-4 py-3">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelect(entry.id)}
+                          className="rounded border-stone-300 dark:border-stone-600"
+                          aria-label={`Select entry ${entry.id}`}
+                        />
+                      </td>
+                      {col.date && (
+                        <td className="px-4 py-3 text-stone-700 dark:text-stone-300 whitespace-nowrap">
+                          {formatDate(entry.date)}
+                        </td>
+                      )}
+                      {col.time && (
+                        <td className="px-4 py-3 text-stone-600 dark:text-stone-400 whitespace-nowrap tabular-nums">
+                          {formatTime(entry.start_time)} – {formatTime(entry.end_time)}
+                        </td>
+                      )}
+                      {col.duration && (
+                        <td className="px-4 py-3 text-stone-700 dark:text-stone-300 whitespace-nowrap tabular-nums font-medium">
+                          {formatDuration(entry.duration)}
+                        </td>
+                      )}
+                      {col.project && (
+                        <td className="px-4 py-3">
+                          {project ? (
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className="h-2.5 w-2.5 rounded-full flex-shrink-0"
+                                style={{ backgroundColor: project.color }}
+                              />
+                              <span className="text-stone-700 dark:text-stone-300 truncate max-w-[120px]">
+                                {project.name}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-stone-400 dark:text-stone-600">—</span>
+                          )}
+                        </td>
+                      )}
+                      {col.description && (
+                        <td className="px-4 py-3 max-w-xs">
+                          <span
+                            className="text-stone-700 dark:text-stone-300 truncate block max-w-[200px]"
+                            title={entry.description}
+                          >
+                            {entry.description || (
+                              <span className="text-stone-400 dark:text-stone-600 italic">No description</span>
+                            )}
+                          </span>
+                        </td>
+                      )}
+                      {col.tags && (
+                        <td className="px-4 py-3">
+                          {entry.tags && entry.tags.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {entry.tags.slice(0, 3).map(tagId => {
+                                const name = tagMap.get(tagId) ?? tagId
+                                return (
+                                  <span
+                                    key={tagId}
+                                    className="text-xs bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 rounded px-1.5 py-0.5 whitespace-nowrap"
+                                  >
+                                    {name}
+                                  </span>
+                                )
+                              })}
+                              {entry.tags.length > 3 && (
+                                <span
+                                  className="text-xs text-stone-400 dark:text-stone-500 self-center cursor-default"
+                                  title={entry.tags.slice(3).map(id => tagMap.get(id) ?? id).join(', ')}
+                                >
+                                  +{entry.tags.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-stone-400 dark:text-stone-600">—</span>
+                          )}
+                        </td>
+                      )}
+                      {col.link && (
+                        <td className="px-4 py-3">
+                          {entry.link ? (
+                            <a
+                              href={entry.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:underline max-w-[140px]"
+                              title={entry.link}
+                            >
+                              <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                              <span className="truncate text-xs">{formatLinkHost(entry.link)}</span>
+                            </a>
+                          ) : (
+                            <span className="text-stone-400 dark:text-stone-600">—</span>
+                          )}
+                        </td>
+                      )}
+                      {col.type && (
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${badge.class}`}>
+                            {badge.label}
+                          </span>
+                        </td>
+                      )}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => setEditEntry(entry)}
+                            className="p-1.5 rounded-lg text-stone-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-indigo-900/20 transition-colors"
+                            aria-label="Edit entry"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setDeleteIds([entry.id])}
+                            className="p-1.5 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:text-rose-400 dark:hover:bg-rose-900/20 transition-colors"
+                            aria-label="Delete entry"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
 
-      {/* Pagination — always visible when there are entries */}
+      {/* Pagination */}
       {entriesPage.total > 0 && (
         <div className="mt-4 flex items-center justify-between">
           <p className="text-sm text-stone-500 dark:text-stone-400">
@@ -383,7 +516,7 @@ export default function EntriesTable({ entriesPage, projects, filters }: Props) 
         onSaved={handleSaved}
       />
 
-      {/* Add dialog (triggered from empty state or bulk bar) */}
+      {/* Add dialog (triggered from empty state) */}
       <EntryFormDialog
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
