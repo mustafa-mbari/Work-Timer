@@ -52,7 +52,7 @@ export default function SessionsTab({ initialCursors }: Props) {
   }
 
   return (
-    <div className="space-y-5 max-w-xl">
+    <div className="space-y-5">
       <Card>
         <CardHeader>
           <CardTitle>Connected devices</CardTitle>

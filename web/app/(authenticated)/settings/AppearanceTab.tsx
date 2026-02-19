@@ -38,7 +38,7 @@ export default function AppearanceTab() {
   }
 
   return (
-    <div className="space-y-5 max-w-xl">
+    <div className="space-y-5">
       <Card>
         <CardHeader>
           <CardTitle>Theme</CardTitle>

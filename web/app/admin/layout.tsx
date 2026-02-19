@@ -1,33 +1,38 @@
-import Link from 'next/link'
-import Navbar from '@/components/Navbar'
-import { AdminNav } from './AdminNav'
-import { ArrowLeft } from 'lucide-react'
+import { createClient } from '@/lib/supabase/server'
 import { requireAdminPage } from '@/lib/services/auth'
+import Sidebar from '@/app/(authenticated)/Sidebar'
+import AppHeader from '@/app/(authenticated)/AppHeader'
+import { AdminNav } from './AdminNav'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   await requireAdminPage()
 
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase.from('profiles') as any)
+    .select('display_name, role')
+    .eq('id', user!.id)
+    .single()
+
+  const userInfo = {
+    email: user?.email ?? '',
+    displayName: (data?.display_name ?? null) as string | null,
+    role: (data?.role ?? 'admin') as 'user' | 'admin',
+  }
+
   return (
-    <div className="min-h-screen bg-white dark:bg-[var(--dark)] text-stone-900 dark:text-stone-200">
-      <Navbar />
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100">Admin Dashboard</h1>
-            <p className="text-sm text-stone-500 dark:text-stone-400">Manage users, plans, and settings</p>
+    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-[var(--dark)]">
+      <Sidebar isAdmin={true} />
+      <div className="flex flex-col flex-1 overflow-hidden min-w-0">
+        <AppHeader userInfo={userInfo} />
+        <main className="flex-1 overflow-y-auto">
+          <div className="py-6 lg:py-8 px-[10%] w-full">
+            <AdminNav />
+            {children}
           </div>
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-1.5 text-sm text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
-          </Link>
-        </div>
-
-        <AdminNav />
-
-        {children}
+        </main>
       </div>
     </div>
   )

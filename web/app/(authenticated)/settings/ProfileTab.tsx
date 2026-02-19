@@ -69,7 +69,7 @@ export default function ProfileTab({ user, profile, subscription }: Props) {
   }
 
   return (
-    <div className="space-y-5 max-w-xl">
+    <div className="space-y-5">
       {/* Avatar + plan badge */}
       <Card>
         <CardContent className="pt-6 flex items-center gap-4">

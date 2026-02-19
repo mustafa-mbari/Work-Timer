@@ -5,12 +5,12 @@ import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { LayoutDashboard, Users, BarChart3, Globe, Ticket, CreditCard } from 'lucide-react'
 
-const navItems = [
-  { href: '/admin', label: 'Overview', icon: LayoutDashboard, exact: true },
-  { href: '/admin/users', label: 'Users', icon: Users },
-  { href: '/admin/stats', label: 'Statistics', icon: BarChart3 },
-  { href: '/admin/domains', label: 'Domains', icon: Globe },
-  { href: '/admin/promos', label: 'Promo Codes', icon: Ticket },
+const NAV_ITEMS = [
+  { href: '/admin',               label: 'Overview',      icon: LayoutDashboard, exact: true },
+  { href: '/admin/users',         label: 'Users',         icon: Users },
+  { href: '/admin/stats',         label: 'Statistics',    icon: BarChart3 },
+  { href: '/admin/domains',       label: 'Domains',       icon: Globe },
+  { href: '/admin/promos',        label: 'Promo Codes',   icon: Ticket },
   { href: '/admin/subscriptions', label: 'Subscriptions', icon: CreditCard },
 ]
 
@@ -18,8 +18,8 @@ export function AdminNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="flex gap-1 mb-8 border-b border-stone-200 dark:border-[var(--dark-border)] overflow-x-auto">
-      {navItems.map(item => {
+    <div className="flex items-center gap-1 bg-white dark:bg-[var(--dark-card)] border border-slate-200 dark:border-[var(--dark-border)] rounded-2xl shadow-sm px-2 py-1.5 overflow-x-auto mb-6">
+      {NAV_ITEMS.map(item => {
         const isActive = item.exact
           ? pathname === item.href
           : pathname === item.href || pathname.startsWith(item.href + '/')
@@ -29,19 +29,19 @@ export function AdminNav() {
           <Link
             key={item.href}
             href={item.href}
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 -mb-px whitespace-nowrap transition-colors',
-              isActive
-                ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
-                : 'border-transparent text-stone-500 hover:text-stone-900 hover:border-stone-300 dark:text-stone-400 dark:hover:text-stone-100 dark:hover:border-stone-600'
-            )}
             aria-current={isActive ? 'page' : undefined}
+            className={cn(
+              'flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-xl whitespace-nowrap transition-all',
+              isActive
+                ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-[var(--dark-hover)]'
+            )}
           >
             <Icon className="h-4 w-4" />
             {item.label}
           </Link>
         )
       })}
-    </nav>
+    </div>
   )
 }

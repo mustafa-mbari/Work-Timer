@@ -109,7 +109,7 @@ export default function TimeTrackingTab({ settings }: Props) {
   }
 
   return (
-    <form onSubmit={handleSave} className="space-y-5 max-w-xl">
+    <form onSubmit={handleSave} className="space-y-5">
       {/* Work schedule */}
       <Card>
         <CardHeader>

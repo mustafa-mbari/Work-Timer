@@ -38,11 +38,11 @@ export default async function AuthenticatedLayout({
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-[var(--dark)]">
-      <Sidebar />
+      <Sidebar isAdmin={userInfo.role === 'admin'} />
       <div className="flex flex-col flex-1 overflow-hidden min-w-0">
         <AppHeader userInfo={userInfo} />
         <main className="flex-1 overflow-y-auto">
-          <div className="p-6 lg:p-8 w-full">
+          <div className="py-6 lg:py-8 px-[10%] w-full">
             <LastPageTracker />
             {children}
           </div>

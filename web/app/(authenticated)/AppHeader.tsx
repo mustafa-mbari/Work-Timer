@@ -6,11 +6,17 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import { UserMenu } from '@/components/UserMenu'
 
 const PAGE_META: { match: string; breadcrumb: string; title: string }[] = [
-  { match: '/dashboard',  breadcrumb: 'Pages / Dashboard', title: 'Main Dashboard' },
-  { match: '/analytics',  breadcrumb: 'Pages / Analytics', title: 'Analytics' },
-  { match: '/entries',    breadcrumb: 'Pages / Entries',   title: 'Time Entries' },
-  { match: '/billing',    breadcrumb: 'Pages / Billing',   title: 'Billing & Plans' },
-  { match: '/settings',   breadcrumb: 'Pages / Settings',  title: 'Settings' },
+  { match: '/dashboard',           breadcrumb: 'Pages / Dashboard',           title: 'Main Dashboard' },
+  { match: '/analytics',           breadcrumb: 'Pages / Analytics',           title: 'Analytics' },
+  { match: '/entries',             breadcrumb: 'Pages / Entries',             title: 'Time Entries' },
+  { match: '/billing',             breadcrumb: 'Pages / Billing',             title: 'Billing & Plans' },
+  { match: '/settings',            breadcrumb: 'Pages / Settings',            title: 'Settings' },
+  { match: '/admin/users',         breadcrumb: 'Admin / Users',               title: 'Users' },
+  { match: '/admin/stats',         breadcrumb: 'Admin / Statistics',          title: 'Statistics' },
+  { match: '/admin/domains',       breadcrumb: 'Admin / Domains',             title: 'Domains' },
+  { match: '/admin/promos',        breadcrumb: 'Admin / Promo Codes',         title: 'Promo Codes' },
+  { match: '/admin/subscriptions', breadcrumb: 'Admin / Subscriptions',       title: 'Subscriptions' },
+  { match: '/admin',               breadcrumb: 'Admin / Overview',            title: 'Admin Dashboard' },
 ]
 
 interface UserInfo {
