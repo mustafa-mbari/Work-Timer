@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Navbar from '@/components/Navbar'
 import { AdminNav } from './AdminNav'
 import { ArrowLeft } from 'lucide-react'
 import { requireAdminPage } from '@/lib/services/auth'
@@ -7,24 +8,27 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   await requireAdminPage()
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100">Admin Dashboard</h1>
-          <p className="text-sm text-stone-500 dark:text-stone-400">Manage users, plans, and settings</p>
+    <div className="min-h-screen bg-white dark:bg-[var(--dark)] text-stone-900 dark:text-stone-200">
+      <Navbar />
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100">Admin Dashboard</h1>
+            <p className="text-sm text-stone-500 dark:text-stone-400">Manage users, plans, and settings</p>
+          </div>
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-1.5 text-sm text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Link>
         </div>
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-1.5 text-sm text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Dashboard
-        </Link>
+
+        <AdminNav />
+
+        {children}
       </div>
-
-      <AdminNav />
-
-      {children}
     </div>
   )
 }

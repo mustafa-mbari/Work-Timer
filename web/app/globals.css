@@ -5,13 +5,13 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ----------------------------------------------------------------
-   Design Tokens — matches the Chrome Extension's design system
+   Design Tokens
    ---------------------------------------------------------------- */
 
 :root {
   --font-sans: 'Inter Variable', system-ui, sans-serif;
 
-  /* Dark mode surface tokens (used via var() in components) */
+  /* Dark mode surface tokens */
   --dark: #1c1917;
   --dark-card: #292524;
   --dark-elevated: #3a3633;
@@ -32,7 +32,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Dark mode body */
 .dark body,
 .dark {
   color-scheme: dark;
@@ -40,11 +39,30 @@ body {
 
 .dark body {
   background-color: var(--dark);
-  color: #e7e5e4; /* stone-200 */
+  color: #e7e5e4;
 }
 
 /* ----------------------------------------------------------------
-   Animations (for shadcn/ui)
+   Scrollbar (app shell)
+   ---------------------------------------------------------------- */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--dark-border);
+}
+
+/* ----------------------------------------------------------------
+   Animations
    ---------------------------------------------------------------- */
 
 @keyframes accordion-down {
@@ -58,10 +76,10 @@ body {
 }
 
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
 @utility animate-fade-in {
-  animation: fade-in 0.2s ease-out both;
+  animation: fade-in 0.25s ease-out both;
 }

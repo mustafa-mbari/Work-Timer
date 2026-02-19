@@ -58,20 +58,20 @@ export default function DashboardTabs({
   return (
     <div>
       {/* Tab bar */}
-      <div className="flex gap-1 border-b border-stone-200 dark:border-[var(--dark-border)] mb-6">
+      <div className="flex gap-1 mb-6">
         {TABS.map(tab => (
           <button
             key={tab.id}
             onClick={() => switchTab(tab.id)}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+            className={`relative px-5 py-2 text-sm font-medium rounded-xl transition-all ${
               activeTab === tab.id
-                ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
-                : 'border-transparent text-stone-500 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100'
+                ? 'bg-white dark:bg-[var(--dark-card)] text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-100 dark:border-[var(--dark-border)]'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-[var(--dark-card)]/60'
             }`}
           >
             {tab.label}
             {tab.id === 'devices' && cursors.length > 0 && (
-              <span className="ml-1.5 text-xs bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300 rounded-full px-1.5 py-0.5">
+              <span className="ml-1.5 text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full px-1.5 py-0.5">
                 {cursors.length}
               </span>
             )}

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import LastPageTracker from '@/components/LastPageTracker'
 import Sidebar from './Sidebar'
+import AppHeader from './AppHeader'
 
 export default async function AuthenticatedLayout({
   children,
@@ -15,9 +16,6 @@ export default async function AuthenticatedLayout({
     redirect('/login')
   }
 
-  // Enforce email verification for email/password users.
-  // OAuth providers (Google, etc.) confirm email at the provider level,
-  // so email_confirmed_at is always set for them.
   if (!user.email_confirmed_at) {
     const emailParam = user.email
       ? `?email=${encodeURIComponent(user.email)}`
@@ -25,12 +23,30 @@ export default async function AuthenticatedLayout({
     redirect(`/verify-email${emailParam}`)
   }
 
+  // Fetch profile for the top header user menu
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase.from('profiles') as any)
+    .select('display_name, role')
+    .eq('id', user.id)
+    .single()
+
+  const userInfo = {
+    email: user.email ?? '',
+    displayName: (data?.display_name ?? null) as string | null,
+    role: (data?.role ?? 'user') as 'user' | 'admin',
+  }
+
   return (
-    <div className="flex min-h-[calc(100vh-3.5rem)]">
+    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-[var(--dark)]">
       <Sidebar />
-      <div className="flex-1 min-w-0 px-10 py-8 max-w-[1400px]">
-        <LastPageTracker />
-        {children}
+      <div className="flex flex-col flex-1 overflow-hidden min-w-0">
+        <AppHeader userInfo={userInfo} />
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-6 lg:p-8 max-w-[1400px]">
+            <LastPageTracker />
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   )
