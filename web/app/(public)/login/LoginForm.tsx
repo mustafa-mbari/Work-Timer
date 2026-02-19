@@ -54,9 +54,10 @@ export default function LoginForm() {
         throw error
       }
 
-      // Password login creates a session directly — redirect without going through OAuth callback
+      // Password login creates a session directly in cookies — skip OAuth code exchange
+      // and go straight to the extension bridge page which reads the session from cookies.
       if (isExtension) {
-        window.location.href = '/auth/callback?ext=true'
+        window.location.href = '/auth/callback/extension'
       } else {
         // Return to last visited page if available
         let destination = '/dashboard'
