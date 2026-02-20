@@ -89,7 +89,7 @@ export default function DashboardTabs({
         />
       )}
       {activeTab === 'devices' && (
-        <DevicesTab initialCursors={cursors} />
+        <DevicesTab initialCursors={cursors} isPremium={isPremium} />
       )}
       {activeTab === 'recent' && (
         <RecentTab entries={recentEntries} projects={projects} isPremium={isPremium} />

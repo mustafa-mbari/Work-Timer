@@ -12,9 +12,10 @@ type SyncCursor = Database['public']['Tables']['sync_cursors']['Row']
 
 interface Props {
   initialCursors: Pick<SyncCursor, 'device_id' | 'last_sync'>[]
+  isPremium: boolean
 }
 
-export default function DevicesTab({ initialCursors }: Props) {
+export default function DevicesTab({ initialCursors, isPremium }: Props) {
   const router = useRouter()
   const [cursors, setCursors] = useState(initialCursors)
   const [disconnecting, setDisconnecting] = useState<string | null>(null)
@@ -51,19 +52,42 @@ export default function DevicesTab({ initialCursors }: Props) {
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle>Connected Devices</CardTitle>
-        <Button asChild variant="link" size="sm" className="gap-1 pr-0 text-indigo-500">
-          <a href="/settings?tab=sessions">
-            Manage in Settings <ExternalLink className="h-3.5 w-3.5" />
-          </a>
-        </Button>
+        {isPremium && (
+          <Button asChild variant="link" size="sm" className="gap-1 pr-0 text-indigo-500">
+            <a href="/settings?tab=sessions">
+              Manage in Settings <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
+        {/* Free-plan upsell */}
+        {!isPremium && (
+          <div className="mb-4 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 px-4 py-3 flex items-start gap-3">
+            <Monitor className="h-5 w-5 text-indigo-500 dark:text-indigo-400 mt-0.5 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-indigo-800 dark:text-indigo-200">Multi-device sync requires Premium</p>
+              <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-0.5">
+                Free plan is limited to local storage only. Upgrade to sync your time entries across all your devices.
+              </p>
+            </div>
+            <a
+              href="/billing"
+              className="flex-shrink-0 text-xs font-medium px-3 py-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white transition-colors"
+            >
+              Upgrade
+            </a>
+          </div>
+        )}
+
         {cursors.length === 0 ? (
           <div className="py-8 flex flex-col items-center gap-2 text-center">
             <Monitor className="h-10 w-10 text-stone-300 dark:text-stone-600" />
             <p className="text-sm text-stone-500 dark:text-stone-400">No devices connected yet.</p>
             <p className="text-xs text-stone-400 dark:text-stone-600">
-              Open the extension and go to Settings → Account to sync.
+              {isPremium
+                ? 'Open the extension and go to Settings → Account to sync.'
+                : 'Upgrade to Premium to connect your extension and sync across devices.'}
             </p>
           </div>
         ) : (
