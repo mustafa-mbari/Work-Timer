@@ -90,11 +90,13 @@ export function useProjects() {
   const setDefault = useCallback(async (id: string) => {
     await setDefaultProject(id)
     await fetch()
+    syncNow()
   }, [fetch])
 
   const reorder = useCallback(async (orderedIds: string[]) => {
     await reorderProjects(orderedIds)
     await fetch()
+    syncNow()
   }, [fetch])
 
   return { projects, activeProjects, loading, create, update, archive, remove, setDefault, reorder, refetch: fetch }

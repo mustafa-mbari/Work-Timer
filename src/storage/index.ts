@@ -207,7 +207,10 @@ export async function setDefaultProject(id: string): Promise<void> {
     p.isDefault = p.id === id ? true : undefined
   }
   await storageSet({ [KEYS.projects]: projects })
-  await enqueueSyncItem('projects', id, 'upsert')
+  // Enqueue all projects because isDefault changed on multiple records
+  for (const p of projects) {
+    await enqueueSyncItem('projects', p.id, 'upsert')
+  }
 }
 
 export async function reorderProjects(orderedIds: string[]): Promise<void> {
@@ -217,6 +220,10 @@ export async function reorderProjects(orderedIds: string[]): Promise<void> {
     p.order = idx !== -1 ? idx : undefined
   }
   await storageSet({ [KEYS.projects]: projects })
+  // Enqueue all projects because order changed on multiple records
+  for (const p of projects) {
+    await enqueueSyncItem('projects', p.id, 'upsert')
+  }
 }
 
 // --- Tags ---

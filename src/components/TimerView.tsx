@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode, type FC } from 'react'
+import { useState, useEffect, useMemo, type ReactNode, type FC } from 'react'
 import type { TimerMode } from '@/types'
 import { useTimer } from '@/hooks/useTimer'
 import { useProjects } from '@/hooks/useProjects'
@@ -42,12 +42,34 @@ export default function TimerView() {
   const [activeTab, setActiveTab] = useState<InputTab>('description')
 
   // Manual mode fields
-  const [manualInputType, setManualInputType] = useState<'timeRange' | 'duration'>('timeRange')
+  const [manualInputType, setManualInputType] = useState<'timeRange' | 'duration'>('duration')
   const [manualDate, setManualDate] = useState(getToday())
   const [manualFrom, setManualFrom] = useState('')
   const [manualTo, setManualTo] = useState('')
   const [manualHours, setManualHours] = useState('')
   const [manualMinutes, setManualMinutes] = useState('')
+
+  // "Use last values" — stores most recently saved manual entry metadata (session-only)
+  const [lastManualEntry, setLastManualEntry] = useState<{
+    projectId: string | null
+    tagId: string
+    description: string
+  } | null>(null)
+
+  // Computed duration in ms from current manual inputs (drives Total display + Save disabled state)
+  const manualDuration = useMemo(() => {
+    if (manualInputType === 'timeRange' && manualFrom && manualTo) {
+      const [fh, fm] = manualFrom.split(':').map(Number)
+      const [th, tm] = manualTo.split(':').map(Number)
+      const mins = (th * 60 + tm) - (fh * 60 + fm)
+      return mins > 0 ? mins * 60 * 1000 : 0
+    } else if (manualInputType === 'duration') {
+      const h = parseInt(manualHours) || 0
+      const m = parseInt(manualMinutes) || 0
+      return (h * 60 + m) * 60 * 1000
+    }
+    return 0
+  }, [manualInputType, manualFrom, manualTo, manualHours, manualMinutes])
 
   const isRunning = state.status === 'running'
   const isPaused = state.status === 'paused'
@@ -162,6 +184,9 @@ export default function TimerView() {
       link: link.trim() || undefined,
     })
 
+    // Store for "Use last" button
+    setLastManualEntry({ projectId: selectedProjectId, tagId: selectedTagId, description })
+
     setManualDate(getToday())
     setManualFrom('')
     setManualTo('')
@@ -268,97 +293,212 @@ export default function TimerView() {
 
       {/* Timer Display */}
       {mode === 'manual' ? (
-        <div className="py-2">
-          {/* Date */}
-          <div className="mb-4">
-            <label htmlFor="manual-date" className="text-[11px] font-medium text-stone-500 dark:text-stone-400 block mb-1.5">Date</label>
-            <input
-              id="manual-date"
-              type="date"
-              value={manualDate}
-              onChange={(e) => setManualDate(e.target.value || getToday())}
-              className="w-full border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
-            />
-          </div>
+        <div className="rounded-2xl border border-stone-200 dark:border-dark-border overflow-visible">
 
-          {/* Toggle between Time Range and Duration */}
-          <div className="flex gap-1 bg-stone-100 dark:bg-dark-card rounded-lg p-0.5 mb-4">
-            <button
-              onClick={() => setManualInputType('timeRange')}
-              className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-all ${
-                manualInputType === 'timeRange'
-                  ? 'bg-white dark:bg-dark-elevated text-stone-900 dark:text-stone-100 shadow-sm'
-                  : 'text-stone-500 dark:text-stone-400'
-              }`}
-            >
-              Time Range
-            </button>
-            <button
-              onClick={() => setManualInputType('duration')}
-              className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-all ${
-                manualInputType === 'duration'
-                  ? 'bg-white dark:bg-dark-elevated text-stone-900 dark:text-stone-100 shadow-sm'
-                  : 'text-stone-500 dark:text-stone-400'
-              }`}
-            >
-              Duration
-            </button>
-          </div>
+          {/* ── TIME BLOCK ── */}
+          <div className="px-3.5 pt-3 pb-2.5 border-b border-stone-100 dark:border-dark-border">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-medium text-stone-500 dark:text-stone-400 uppercase tracking-wider">Time</span>
+              {lastManualEntry && (
+                <button
+                  onClick={() => {
+                    setSelectedProjectId(lastManualEntry.projectId)
+                    setSelectedTagId(lastManualEntry.tagId)
+                    setDescription(lastManualEntry.description)
+                  }}
+                  className="text-[11px] font-medium text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors"
+                  aria-label="Fill fields from last saved entry"
+                >
+                  Use last
+                </button>
+              )}
+            </div>
 
-          {manualInputType === 'timeRange' ? (
-            <div className="flex gap-3 items-center">
-              <div className="flex-1">
-                <label htmlFor="manual-from" className="text-[11px] font-medium text-stone-500 dark:text-stone-400 block mb-1.5">From</label>
+            {/* Row 1: Date + toggle on the same line */}
+            <div className="flex items-center gap-2 mb-2">
+              <input
+                id="manual-date"
+                type="date"
+                value={manualDate}
+                onChange={(e) => setManualDate(e.target.value || getToday())}
+                className="flex-1 min-w-0 border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
+                aria-label="Date"
+              />
+              <div className="flex gap-0.5 bg-stone-100 dark:bg-dark-elevated rounded-lg p-0.5 shrink-0">
+                <button
+                  onClick={() => setManualInputType('duration')}
+                  aria-pressed={manualInputType === 'duration'}
+                  className={`text-[11px] font-medium px-2.5 py-1 rounded-md transition-all ${
+                    manualInputType === 'duration'
+                      ? 'bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 shadow-sm'
+                      : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
+                  }`}
+                >
+                  Duration
+                </button>
+                <button
+                  onClick={() => setManualInputType('timeRange')}
+                  aria-pressed={manualInputType === 'timeRange'}
+                  className={`text-[11px] font-medium px-2.5 py-1 rounded-md transition-all ${
+                    manualInputType === 'timeRange'
+                      ? 'bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 shadow-sm'
+                      : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
+                  }`}
+                >
+                  Range
+                </button>
+              </div>
+            </div>
+
+            {/* Row 2: time inputs */}
+            {manualInputType === 'timeRange' ? (
+              <div className="flex gap-2 items-center">
                 <input
                   id="manual-from"
                   type="time"
                   value={manualFrom}
                   onChange={(e) => setManualFrom(e.target.value)}
-                  className="w-full border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
+                  className="flex-1 border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
+                  aria-label="From time"
                 />
-              </div>
-              <span className="text-stone-300 dark:text-stone-600 mt-6 text-sm">&rarr;</span>
-              <div className="flex-1">
-                <label htmlFor="manual-to" className="text-[11px] font-medium text-stone-500 dark:text-stone-400 block mb-1.5">To</label>
+                <span className="text-stone-300 dark:text-stone-600 text-xs">&rarr;</span>
                 <input
                   id="manual-to"
                   type="time"
                   value={manualTo}
                   onChange={(e) => setManualTo(e.target.value)}
-                  className="w-full border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
+                  className="flex-1 border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
+                  aria-label="To time"
                 />
               </div>
+            ) : (
+              <div className="flex items-center justify-around py-1">
+                {/* Hours stepper */}
+                <div className="flex flex-col items-center gap-1">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setManualHours(h => String(Math.max(0, (parseInt(h) || 0) - 1)))}
+                      className="w-8 h-8 rounded-full border-2 border-stone-300 dark:border-stone-600 text-stone-400 dark:text-stone-500 flex items-center justify-center hover:border-indigo-400 hover:text-indigo-500 dark:hover:border-indigo-400 dark:hover:text-indigo-400 transition-colors active:scale-95 text-lg leading-none"
+                      aria-label="Decrease hours"
+                    >−</button>
+                    <span className="text-2xl font-semibold w-9 text-center tabular-nums text-stone-900 dark:text-stone-100">
+                      {parseInt(manualHours) || 0}
+                    </span>
+                    <button
+                      onClick={() => setManualHours(h => String(Math.min(23, (parseInt(h) || 0) + 1)))}
+                      className="w-8 h-8 rounded-full border-2 border-stone-300 dark:border-stone-600 text-stone-400 dark:text-stone-500 flex items-center justify-center hover:border-indigo-400 hover:text-indigo-500 dark:hover:border-indigo-400 dark:hover:text-indigo-400 transition-colors active:scale-95 text-lg leading-none"
+                      aria-label="Increase hours"
+                    >+</button>
+                  </div>
+                  <span className="text-[10px] text-stone-400 dark:text-stone-500">hours</span>
+                </div>
+
+                <span className="text-xl text-stone-200 dark:text-stone-700 mb-3.5">:</span>
+
+                {/* Minutes stepper */}
+                <div className="flex flex-col items-center gap-1">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setManualMinutes(m => String(Math.max(0, (parseInt(m) || 0) - 5)))}
+                      className="w-8 h-8 rounded-full border-2 border-stone-300 dark:border-stone-600 text-stone-400 dark:text-stone-500 flex items-center justify-center hover:border-indigo-400 hover:text-indigo-500 dark:hover:border-indigo-400 dark:hover:text-indigo-400 transition-colors active:scale-95 text-lg leading-none"
+                      aria-label="Decrease minutes"
+                    >−</button>
+                    <span className="text-2xl font-semibold w-9 text-center tabular-nums text-stone-900 dark:text-stone-100">
+                      {String(parseInt(manualMinutes) || 0).padStart(2, '0')}
+                    </span>
+                    <button
+                      onClick={() => setManualMinutes(m => String(Math.min(55, (parseInt(m) || 0) + 5)))}
+                      className="w-8 h-8 rounded-full border-2 border-stone-300 dark:border-stone-600 text-stone-400 dark:text-stone-500 flex items-center justify-center hover:border-indigo-400 hover:text-indigo-500 dark:hover:border-indigo-400 dark:hover:text-indigo-400 transition-colors active:scale-95 text-lg leading-none"
+                      aria-label="Increase minutes"
+                    >+</button>
+                  </div>
+                  <span className="text-[10px] text-stone-400 dark:text-stone-500">min</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── PROJECT BLOCK ── */}
+          <div className="px-3.5 py-2.5 border-b border-stone-100 dark:border-dark-border">
+            <span className="text-[11px] font-medium text-stone-500 dark:text-stone-400 uppercase tracking-wider block mb-1.5">Project</span>
+            <ProjectSelector
+              projects={activeProjects}
+              selectedId={selectedProjectId}
+              onChange={setSelectedProjectId}
+              disabled={false}
+            />
+          </div>
+
+          {/* ── DETAILS BLOCK ── */}
+          <div className="px-3.5 py-2.5 border-b border-stone-100 dark:border-dark-border">
+            <span className="text-[11px] font-medium text-stone-500 dark:text-stone-400 uppercase tracking-wider block mb-1.5">Details</span>
+            {/* Tab strip */}
+            <div className="flex gap-0.5 bg-stone-100 dark:bg-dark-elevated rounded-lg p-0.5 mb-2">
+              {(['description', 'tag', 'link'] as InputTab[]).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`flex-1 text-[11px] font-medium py-1 rounded-md transition-all ${
+                    activeTab === tab
+                      ? 'bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 shadow-sm'
+                      : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
+                  }`}
+                  aria-label={`${tab} tab`}
+                >
+                  {tab === 'description' ? 'Description' : tab === 'tag' ? 'Tag' : 'Link'}
+                </button>
+              ))}
             </div>
-          ) : (
-            <div className="flex gap-3 items-center">
-              <div className="flex-1">
-                <label htmlFor="manual-hours" className="text-[11px] font-medium text-stone-500 dark:text-stone-400 block mb-1.5">Hours</label>
-                <input
-                  id="manual-hours"
-                  type="number"
-                  min="0"
-                  max="23"
-                  value={manualHours}
-                  onChange={(e) => setManualHours(e.target.value)}
-                  placeholder="0"
-                  className="w-full border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-600 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
-                />
-              </div>
-              <div className="flex-1">
-                <label htmlFor="manual-minutes" className="text-[11px] font-medium text-stone-500 dark:text-stone-400 block mb-1.5">Minutes</label>
-                <input
-                  id="manual-minutes"
-                  type="number"
-                  min="0"
-                  max="59"
-                  value={manualMinutes}
-                  onChange={(e) => setManualMinutes(e.target.value)}
-                  placeholder="0"
-                  className="w-full border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-600 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
-                />
-              </div>
-            </div>
-          )}
+            {/* Tab content */}
+            {activeTab === 'description' && (
+              <textarea
+                rows={2}
+                placeholder="What did you work on?"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full resize-none border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
+                aria-label="Task description"
+              />
+            )}
+            {activeTab === 'tag' && (
+              <select
+                value={selectedTagId}
+                onChange={(e) => setSelectedTagId(e.target.value)}
+                className="w-full border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
+                aria-label="Select tag"
+              >
+                <option value="">No Tag</option>
+                {tags.map((tag) => (
+                  <option key={tag.id} value={tag.id}>{tag.name}</option>
+                ))}
+              </select>
+            )}
+            {activeTab === 'link' && (
+              <input
+                type="url"
+                placeholder="https://..."
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
+                className="w-full border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
+                aria-label="Link URL"
+              />
+            )}
+          </div>
+
+          {/* ── STICKY FOOTER ── */}
+          <div className="sticky bottom-0 flex items-center justify-between px-3.5 py-2.5 bg-stone-50 dark:bg-dark rounded-b-2xl border-t border-stone-100 dark:border-dark-border">
+            <span className="text-xs font-medium text-stone-500 dark:text-stone-400">
+              {manualDuration > 0 ? `Total: ${formatDurationShort(manualDuration)}` : 'Total: —'}
+            </span>
+            <button
+              onClick={handleManualSave}
+              disabled={manualDuration === 0}
+              className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-1.5 rounded-lg font-medium text-xs transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shadow-indigo-500/20"
+              aria-label="Save manual entry"
+            >
+              Save entry
+            </button>
+          </div>
         </div>
       ) : mode === 'pomodoro' ? (
         <div className="flex flex-col items-center gap-3 py-1">
@@ -533,16 +673,18 @@ export default function TimerView() {
         </div>
       )}
 
-      {/* Project Selector */}
-      <ProjectSelector
-        projects={activeProjects}
-        selectedId={selectedProjectId}
-        onChange={setSelectedProjectId}
-        disabled={isActive}
-      />
+      {/* Project Selector — stopwatch and pomodoro only; manual has its own inside the card */}
+      {mode !== 'manual' && (
+        <ProjectSelector
+          projects={activeProjects}
+          selectedId={selectedProjectId}
+          onChange={setSelectedProjectId}
+          disabled={isActive}
+        />
+      )}
 
-      {/* Input Tabs (only for stopwatch and manual modes) */}
-      {mode !== 'pomodoro' && (
+      {/* Input Tabs — stopwatch only */}
+      {mode === 'stopwatch' && (
         <div className="flex gap-1 bg-stone-100 dark:bg-dark-card rounded-lg p-1">
           {(['description', 'tag', 'link'] as InputTab[]).map((tab) => (
             <button
@@ -562,8 +704,8 @@ export default function TimerView() {
         </div>
       )}
 
-      {/* Input Fields based on active tab */}
-      {mode === 'pomodoro' ? (
+      {/* Input Fields — pomodoro description */}
+      {mode === 'pomodoro' && (
         <input
           type="text"
           placeholder="What are you working on?"
@@ -573,7 +715,10 @@ export default function TimerView() {
           className="border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-600 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400 disabled:opacity-50"
           aria-label="Task description"
         />
-      ) : (
+      )}
+
+      {/* Input Fields — stopwatch tab content */}
+      {mode === 'stopwatch' && (
         <>
           {activeTab === 'description' && (
             <input
@@ -616,21 +761,8 @@ export default function TimerView() {
         </>
       )}
 
-      {/* Action Buttons — manual and stopwatch only (pomodoro buttons live above project selector) */}
-      {mode === 'manual' ? (
-        <button
-          onClick={handleManualSave}
-          disabled={
-            manualInputType === 'timeRange'
-              ? !manualFrom || !manualTo
-              : (!manualHours && !manualMinutes) || (parseInt(manualHours || '0') === 0 && parseInt(manualMinutes || '0') === 0)
-          }
-          className="bg-indigo-500 hover:bg-indigo-600 text-white py-2.5 rounded-xl font-medium text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shadow-indigo-500/20"
-          aria-label="Save manual entry"
-        >
-          Save Entry
-        </button>
-      ) : mode === 'stopwatch' ? (
+      {/* Action Buttons — stopwatch only (manual save is inside the card; pomodoro buttons live above project selector) */}
+      {mode === 'stopwatch' && (
         <div className="flex gap-2.5">
           {!isActive ? (
             <button
@@ -677,7 +809,7 @@ export default function TimerView() {
             </>
           )}
         </div>
-      ) : null}
+      )}
 
       {/* Daily Goal Progress */}
       {settings?.dailyTarget && (
