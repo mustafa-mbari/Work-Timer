@@ -7,7 +7,8 @@ import DevicesTab from './DevicesTab'
 import RecentTab from './RecentTab'
 import type { Database } from '@/lib/shared/types'
 import type { TimeEntry } from '@/lib/repositories/timeEntries'
-import type { ProjectSummary } from '@/lib/repositories/projects'
+import type { ProjectFull } from '@/lib/repositories/projects'
+import type { TagFull } from '@/lib/repositories/tags'
 
 type Subscription = Database['public']['Tables']['subscriptions']['Row']
 type UserStats = Database['public']['Tables']['user_stats']['Row']
@@ -17,7 +18,8 @@ interface Props {
   subscription: Pick<Subscription, 'plan' | 'status' | 'current_period_end' | 'cancel_at_period_end'> | null
   cursors: Pick<SyncCursor, 'device_id' | 'last_sync'>[]
   recentEntries: TimeEntry[]
-  projects: ProjectSummary[]
+  projects: ProjectFull[]
+  tags: TagFull[]
   stats: UserStats | null
   isPremium: boolean
   userEmail: string
@@ -36,6 +38,7 @@ export default function DashboardTabs({
   cursors,
   recentEntries,
   projects,
+  tags,
   stats,
   isPremium,
   userEmail,
@@ -86,6 +89,8 @@ export default function DashboardTabs({
           stats={stats}
           isPremium={isPremium}
           userEmail={userEmail}
+          projects={projects}
+          tags={tags}
         />
       )}
       {activeTab === 'devices' && (

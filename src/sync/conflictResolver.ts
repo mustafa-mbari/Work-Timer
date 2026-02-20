@@ -55,6 +55,8 @@ export function dbProjectToLocal(db: DbProject): Project {
     targetHours: db.target_hours ?? null,
     archived: db.archived,
     createdAt: db.created_at,
+    isDefault: db.is_default ?? false,
+    order: db.sort_order ?? undefined,
   }
 }
 
@@ -67,6 +69,8 @@ export function localProjectToDb(project: Project, userId: string): Partial<DbPr
     color: project.color,
     target_hours: project.targetHours ?? null,
     archived: project.archived,
+    is_default: project.isDefault ?? false,
+    sort_order: project.order ?? null,
     created_at: project.createdAt,
     updated_at: new Date().toISOString(),
   }
@@ -77,6 +81,20 @@ export function dbTagToLocal(db: DbTag): Tag {
   return {
     id: db.id,
     name: db.name,
+    isDefault: db.is_default ?? false,
+    order: db.sort_order ?? undefined,
+  }
+}
+
+/** Convert a local Tag to a Supabase DbTag row for upsert */
+export function localTagToDb(tag: Tag, userId: string): Partial<DbTag> {
+  return {
+    id: tag.id,
+    user_id: userId,
+    name: tag.name,
+    is_default: tag.isDefault ?? false,
+    sort_order: tag.order ?? null,
+    updated_at: new Date().toISOString(),
   }
 }
 

@@ -5,7 +5,7 @@ import { isPremiumSubscription } from '@/premium/featureGate'
 import { pushUserStats } from './statsSync'
 import { getQueue, dequeue } from './syncQueue'
 import {
-  localEntryToDb, localProjectToDb, localSettingsToDb,
+  localEntryToDb, localProjectToDb, localTagToDb, localSettingsToDb,
   dbEntryToLocal, dbProjectToLocal, dbTagToLocal, dbSettingsToLocal,
 } from './conflictResolver'
 import {
@@ -175,12 +175,7 @@ export async function pushQueue(): Promise<void> {
       const queuedIds = new Set(tagUpserts.map(item => item.recordId))
       const rows = allTags
         .filter(tag => queuedIds.has(tag.id))
-        .map(tag => ({
-          id: tag.id,
-          user_id: session.userId,
-          name: tag.name,
-          updated_at: new Date().toISOString(),
-        }))
+        .map(tag => localTagToDb(tag, session.userId))
       if (rows.length > 0) {
         const { error } = await supabase.from('tags').upsert(rows as any)
         if (error) {
@@ -315,7 +310,7 @@ export async function pullDelta(): Promise<void> {
           const localTag = dbTagToLocal(remote)
           const existing = mergedTags.find(t => t.id === localTag.id)
           if (!existing) mergedTags.push(localTag)
-          else existing.name = localTag.name
+          else Object.assign(existing, localTag)
         }
       }
       await saveTags(mergedTags)
@@ -465,12 +460,7 @@ export async function uploadAllLocalData(): Promise<void> {
   // Upload all tags
   const tags = await getTags()
   if (tags.length > 0) {
-    const rows = tags.map(tag => ({
-      id: tag.id,
-      user_id: session.userId,
-      name: tag.name,
-      updated_at: new Date().toISOString(),
-    }))
+    const rows = tags.map(tag => localTagToDb(tag, session.userId))
     const { error } = await supabase.from('tags').upsert(rows as any)
     if (error) {
       if (isRlsUsingError(error)) {

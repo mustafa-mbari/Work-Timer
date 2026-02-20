@@ -5,11 +5,11 @@ import { ArrowRight, Clock } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import type { TimeEntry } from '@/lib/repositories/timeEntries'
-import type { ProjectSummary } from '@/lib/repositories/projects'
+import type { ProjectFull } from '@/lib/repositories/projects'
 
 interface Props {
   entries: TimeEntry[]
-  projects: ProjectSummary[]
+  projects: ProjectFull[]
   isPremium: boolean
 }
 

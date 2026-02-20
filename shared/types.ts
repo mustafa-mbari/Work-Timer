@@ -34,6 +34,8 @@ export interface DbProject {
   color: string               // Hex color
   target_hours: number | null
   archived: boolean
+  is_default: boolean
+  sort_order: number | null
   created_at: number          // Unix ms timestamp — matches local Project.createdAt
   updated_at: string          // TIMESTAMPTZ for sync cursor comparison
   deleted_at: string | null   // Soft delete
@@ -43,6 +45,8 @@ export interface DbTag {
   id: string
   user_id: string
   name: string
+  is_default: boolean
+  sort_order: number | null
   created_at: string
   updated_at: string
   deleted_at: string | null
@@ -205,6 +209,8 @@ interface DbProjectInsert {
   color: string
   target_hours?: number | null
   archived?: boolean
+  is_default?: boolean
+  sort_order?: number | null
   created_at?: number
   updated_at?: string
   deleted_at?: string | null
@@ -216,6 +222,8 @@ interface DbProjectUpdate {
   color?: string
   target_hours?: number | null
   archived?: boolean
+  is_default?: boolean
+  sort_order?: number | null
   created_at?: number
   updated_at?: string
   deleted_at?: string | null
@@ -225,6 +233,8 @@ interface DbTagInsert {
   id: string
   user_id: string
   name: string
+  is_default?: boolean
+  sort_order?: number | null
   created_at?: string
   updated_at?: string
   deleted_at?: string | null
@@ -233,6 +243,8 @@ interface DbTagUpdate {
   id?: string
   user_id?: string
   name?: string
+  is_default?: boolean
+  sort_order?: number | null
   created_at?: string
   updated_at?: string
   deleted_at?: string | null

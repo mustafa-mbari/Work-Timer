@@ -7,7 +7,11 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import ProjectsCard from './ProjectsCard'
+import TagsCard from './TagsCard'
 import type { Database } from '@/lib/shared/types'
+import type { ProjectFull } from '@/lib/repositories/projects'
+import type { TagFull } from '@/lib/repositories/tags'
 
 type Subscription = Database['public']['Tables']['subscriptions']['Row']
 type UserStats = Database['public']['Tables']['user_stats']['Row']
@@ -17,6 +21,8 @@ interface Props {
   stats: UserStats | null
   isPremium: boolean
   userEmail: string
+  projects: ProjectFull[]
+  tags: TagFull[]
 }
 
 const PLAN_LABEL: Record<string, string> = {
@@ -72,7 +78,7 @@ const STAT_CARDS = (stats: UserStats) => [
   },
 ]
 
-export default function OverviewTab({ subscription, stats, isPremium, userEmail }: Props) {
+export default function OverviewTab({ subscription, stats, isPremium, userEmail, projects, tags }: Props) {
   const plan = subscription?.plan ?? 'free'
 
   return (
@@ -115,6 +121,12 @@ export default function OverviewTab({ subscription, stats, isPremium, userEmail 
           </p>
         </div>
       )}
+
+      {/* ── Projects & Tags cards ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <ProjectsCard initialProjects={projects} isPremium={isPremium} />
+        <TagsCard initialTags={tags} />
+      </div>
 
       {/* ── Bottom two-column row ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

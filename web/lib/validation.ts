@@ -109,6 +109,35 @@ export const bulkDeleteEntriesSchema = z.object({
   ids: z.array(z.string().min(1)).min(1).max(500),
 })
 
+// --- Projects ---
+export const createProjectSchema = z.object({
+  id: z.string().min(1).max(50),
+  name: z.string().min(1, 'Name is required').max(100),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Invalid color'),
+  target_hours: z.number().min(0).max(10000).nullable().optional(),
+})
+
+export const updateProjectSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  target_hours: z.number().min(0).max(10000).nullable().optional(),
+  archived: z.boolean().optional(),
+})
+
+export const reorderSchema = z.object({
+  ids: z.array(z.string().min(1)).min(1).max(200),
+})
+
+// --- Tags ---
+export const createTagSchema = z.object({
+  id: z.string().min(1).max(50),
+  name: z.string().min(1, 'Name is required').max(50),
+})
+
+export const updateTagSchema = z.object({
+  name: z.string().min(1).max(50),
+})
+
 // --- Analytics filters ---
 export const analyticsFilterSchema = z.object({
   dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
