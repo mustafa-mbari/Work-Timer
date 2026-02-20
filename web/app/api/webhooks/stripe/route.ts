@@ -99,6 +99,16 @@ export async function POST(request: NextRequest) {
           console.error('[stripe webhook] checkout upsert failed:', error)
           return NextResponse.json({ error: 'Database error' }, { status: 500 })
         }
+
+        // If this was a lifetime upgrade from an existing subscription, cancel the old sub
+        if (isLifetime) {
+          const cancelSubId = (session.metadata as Record<string, string> | null)?.cancel_subscription_id
+          if (cancelSubId) {
+            await getStripe().subscriptions.cancel(cancelSubId).catch(e => {
+              console.warn('[stripe webhook] failed to cancel old sub during lifetime upgrade:', e)
+            })
+          }
+        }
         break
       }
 

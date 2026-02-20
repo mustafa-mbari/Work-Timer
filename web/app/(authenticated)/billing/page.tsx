@@ -1,5 +1,6 @@
 import { Check, X, Zap, Star, Infinity as InfinityIcon } from 'lucide-react'
 import CheckoutButton from './CheckoutButton'
+import UpgradeButton from './UpgradeButton'
 import PortalButton from './PortalButton'
 import PromoCodeInput from './PromoCodeInput'
 import { PRICING } from '@/lib/shared/constants'
@@ -219,9 +220,13 @@ export default async function BillingPage() {
                   </div>
                 ) : !isPremium ? (
                   <CheckoutButton plan={plan.id} label={`Get ${plan.name}`} highlight={plan.highlight} />
+                ) : currentPlan === 'premium_monthly' && plan.id === 'yearly' ? (
+                  <UpgradeButton plan="yearly" label="Upgrade to Yearly" />
+                ) : (currentPlan === 'premium_monthly' || currentPlan === 'premium_yearly') && plan.id === 'lifetime' ? (
+                  <UpgradeButton plan="lifetime" label="Upgrade to Lifetime" />
                 ) : (
                   <div className="py-2.5 px-4 rounded-xl text-sm font-semibold text-center text-stone-400 dark:text-stone-500 bg-stone-100 dark:bg-[var(--dark-elevated)]">
-                    Not active
+                    Not available
                   </div>
                 )}
               </div>

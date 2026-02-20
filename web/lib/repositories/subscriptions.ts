@@ -26,6 +26,16 @@ export async function getUserSubscriptionForBilling(userId: string) {
   return { data, error }
 }
 
+export async function getStripeSubscriptionInfo(userId: string): Promise<Pick<Subscription, 'stripe_subscription_id' | 'stripe_customer_id'> | null> {
+  const supabase = await createServiceClient()
+  const { data } = await supabase
+    .from('subscriptions')
+    .select('stripe_subscription_id, stripe_customer_id')
+    .eq('user_id', userId)
+    .single<Pick<Subscription, 'stripe_subscription_id' | 'stripe_customer_id'>>()
+  return data ?? null
+}
+
 export async function getStripeCustomerId(userId: string): Promise<string | null> {
   const supabase = await createClient()
   const { data } = await supabase
