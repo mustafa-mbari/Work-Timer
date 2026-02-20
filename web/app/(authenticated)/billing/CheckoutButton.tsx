@@ -2,15 +2,15 @@
 
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
-import { ChevronRight } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 
 interface CheckoutButtonProps {
   plan: 'monthly' | 'yearly' | 'lifetime'
   label: string
+  highlight?: boolean
 }
 
-export default function CheckoutButton({ plan, label }: CheckoutButtonProps) {
+export default function CheckoutButton({ plan, label, highlight }: CheckoutButtonProps) {
   const [loading, setLoading] = useState(false)
 
   async function handleClick() {
@@ -35,14 +35,17 @@ export default function CheckoutButton({ plan, label }: CheckoutButtonProps) {
   }
 
   return (
-    <Button
+    <button
       onClick={handleClick}
       disabled={loading}
-      variant="outline"
-      className="w-full justify-between h-auto py-3"
+      className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold transition-colors disabled:opacity-60 ${
+        highlight
+          ? 'bg-indigo-500 hover:bg-indigo-600 text-white'
+          : 'bg-stone-900 hover:bg-stone-800 dark:bg-stone-100 dark:hover:bg-white text-white dark:text-stone-900'
+      }`}
     >
-      <span>{label}</span>
-      <ChevronRight className="h-4 w-4 text-stone-400" />
-    </Button>
+      {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+      {loading ? 'Redirecting...' : label}
+    </button>
   )
 }

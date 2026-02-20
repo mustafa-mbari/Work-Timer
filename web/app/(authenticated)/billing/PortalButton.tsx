@@ -26,9 +26,13 @@ export default function PortalButton() {
   }
 
   return (
-    <Button onClick={handleClick} disabled={loading} variant="outline">
+    <button
+      onClick={handleClick}
+      disabled={loading}
+      className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors disabled:opacity-60 shrink-0"
+    >
       <ExternalLink className="h-4 w-4" />
-      {loading ? 'Opening...' : 'Open Stripe Portal'}
-    </Button>
+      {loading ? 'Opening...' : 'Manage Subscription'}
+    </button>
   )
 }
