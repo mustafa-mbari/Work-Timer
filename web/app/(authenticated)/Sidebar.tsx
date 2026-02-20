@@ -15,9 +15,10 @@ const LINKS = [
 
 interface Props {
   isAdmin?: boolean
+  isPremium?: boolean
 }
 
-export default function Sidebar({ isAdmin }: Props) {
+export default function Sidebar({ isAdmin, isPremium }: Props) {
   const pathname = usePathname()
 
   return (
@@ -74,8 +75,8 @@ export default function Sidebar({ isAdmin }: Props) {
         )}
       </nav>
 
-      {/* Upgrade to PRO card */}
-      <div className="px-4 pb-6 shrink-0">
+      {/* Upgrade to PRO card — only shown for free users */}
+      {!isPremium && <div className="px-4 pb-6 shrink-0">
         <div className="relative rounded-2xl overflow-hidden p-5 text-white" style={{ background: 'linear-gradient(135deg, #868CFF 0%, #4318FF 100%)' }}>
           <div className="absolute -top-5 -right-5 h-24 w-24 rounded-full bg-white/10 pointer-events-none" />
           <div className="absolute bottom-2 -left-4 h-16 w-16 rounded-full bg-white/10 pointer-events-none" />
@@ -93,7 +94,7 @@ export default function Sidebar({ isAdmin }: Props) {
             </Link>
           </div>
         </div>
-      </div>
+      </div>}
     </aside>
   )
 }

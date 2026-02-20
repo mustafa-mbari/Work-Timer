@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { isPremiumUser } from '@/lib/services/billing'
 import LastPageTracker from '@/components/LastPageTracker'
 import Sidebar from './Sidebar'
 import AppHeader from './AppHeader'
@@ -25,10 +26,13 @@ export default async function AuthenticatedLayout({
 
   // Fetch profile for the top header user menu
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase.from('profiles') as any)
-    .select('display_name, role')
-    .eq('id', user.id)
-    .single()
+  const [{ data }, premium] = await Promise.all([
+    (supabase.from('profiles') as any)
+      .select('display_name, role')
+      .eq('id', user.id)
+      .single(),
+    isPremiumUser(user.id),
+  ])
 
   const userInfo = {
     email: user.email ?? '',
@@ -38,7 +42,7 @@ export default async function AuthenticatedLayout({
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-[var(--dark)]">
-      <Sidebar isAdmin={userInfo.role === 'admin'} />
+      <Sidebar isAdmin={userInfo.role === 'admin'} isPremium={premium} />
       <div className="flex flex-col flex-1 overflow-hidden min-w-0">
         <AppHeader userInfo={userInfo} />
         <main className="flex-1 overflow-y-auto">
