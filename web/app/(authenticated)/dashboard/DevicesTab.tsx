@@ -61,14 +61,18 @@ export default function DevicesTab({ initialCursors, isPremium }: Props) {
         )}
       </CardHeader>
       <CardContent>
-        {/* Free-plan upsell */}
+        {/* Free-plan upsell — shown only when they already have a device or have none */}
         {!isPremium && (
           <div className="mb-4 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 px-4 py-3 flex items-start gap-3">
             <Monitor className="h-5 w-5 text-indigo-500 dark:text-indigo-400 mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-indigo-800 dark:text-indigo-200">Multi-device sync requires Premium</p>
+              <p className="text-sm font-medium text-indigo-800 dark:text-indigo-200">
+                {cursors.length >= 1 ? 'Want to connect more devices?' : 'Free plan includes 1 device'}
+              </p>
               <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-0.5">
-                Free plan is limited to local storage only. Upgrade to sync your time entries across all your devices.
+                {cursors.length >= 1
+                  ? 'You are using your 1 free device slot. Upgrade to Premium to sync across unlimited devices.'
+                  : 'Connect one device for free. Upgrade to Premium to sync across unlimited devices.'}
               </p>
             </div>
             <a
@@ -85,9 +89,7 @@ export default function DevicesTab({ initialCursors, isPremium }: Props) {
             <Monitor className="h-10 w-10 text-stone-300 dark:text-stone-600" />
             <p className="text-sm text-stone-500 dark:text-stone-400">No devices connected yet.</p>
             <p className="text-xs text-stone-400 dark:text-stone-600">
-              {isPremium
-                ? 'Open the extension and go to Settings → Account to sync.'
-                : 'Upgrade to Premium to connect your extension and sync across devices.'}
+              Open the extension and go to Settings → Account to sync.
             </p>
           </div>
         ) : (

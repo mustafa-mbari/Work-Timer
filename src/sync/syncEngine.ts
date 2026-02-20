@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- Supabase v2.95 type workaround for mutations */
 import { supabase } from '@/auth/supabaseClient'
 import { getSession, getCachedSubscription } from '@/auth/authState'
-import { isCurrentUserPremium, isPremiumSubscription } from '@/premium/featureGate'
+import { isPremiumSubscription } from '@/premium/featureGate'
 import { getQueue, dequeue } from './syncQueue'
 import {
   localEntryToDb, localProjectToDb, localSettingsToDb,
@@ -350,9 +350,6 @@ export async function pullDelta(): Promise<void> {
 // --- Full Sync ---
 
 export async function syncAll(): Promise<void> {
-  const premium = await isCurrentUserPremium()
-  if (!premium) return
-
   const session = await getSession()
   if (!session) return
 
