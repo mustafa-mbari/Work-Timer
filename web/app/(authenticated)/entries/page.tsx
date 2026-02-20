@@ -8,14 +8,26 @@ import { getUserTags } from '@/lib/repositories/tags'
 import EntriesView from './EntriesView'
 
 const PREVIEW_ENTRIES = [
-  { date: 'Today',      time: '09:00 – 11:30', duration: '2h 30m', project: 'Frontend',  description: 'Implement dashboard components',  type: 'Stopwatch' },
-  { date: 'Today',      time: '13:00 – 13:45', duration: '0h 45m', project: 'Meetings',  description: 'Daily standup & sprint planning',  type: 'Manual'    },
-  { date: 'Yesterday',  time: '10:15 – 11:30', duration: '1h 15m', project: 'Design',    description: 'UI review and design feedback',    type: 'Manual'    },
-  { date: 'Yesterday',  time: '14:00 – 17:00', duration: '3h 00m', project: 'Backend',   description: 'Fix authentication bug',           type: 'Stopwatch' },
-  { date: '2 days ago', time: '09:30 – 11:00', duration: '1h 30m', project: 'Frontend',  description: 'Write unit tests for API layer',   type: 'Stopwatch' },
-  { date: '2 days ago', time: '15:00 – 15:30', duration: '0h 30m', project: 'Meetings',  description: 'Team retrospective',               type: 'Pomodoro'  },
-  { date: '3 days ago', time: '10:00 – 11:45', duration: '1h 45m', project: 'Backend',   description: 'Database schema migration',        type: 'Stopwatch' },
-  { date: '3 days ago', time: '13:30 – 17:30', duration: '4h 00m', project: 'Frontend',  description: 'Refactor state management layer',  type: 'Stopwatch' },
+  { date: 'Today',      time: '09:00 – 11:30', duration: '2h 30m', project: 'Frontend',  description: 'Implement dashboard components',        type: 'Stopwatch' },
+  { date: 'Today',      time: '13:00 – 13:45', duration: '0h 45m', project: 'Meetings',  description: 'Daily standup & sprint planning',        type: 'Manual'    },
+  { date: 'Yesterday',  time: '10:15 – 11:30', duration: '1h 15m', project: 'Design',    description: 'UI review and design feedback session',  type: 'Manual'    },
+  { date: 'Yesterday',  time: '14:00 – 17:00', duration: '3h 00m', project: 'Backend',   description: 'Fix authentication bug in API',          type: 'Stopwatch' },
+  { date: 'Yesterday',  time: '17:30 – 18:00', duration: '0h 30m', project: 'Frontend',  description: 'Code review for pull request #42',       type: 'Manual'    },
+  { date: '2 days ago', time: '08:45 – 10:15', duration: '1h 30m', project: 'Frontend',  description: 'Write unit tests for API layer',         type: 'Stopwatch' },
+  { date: '2 days ago', time: '11:00 – 12:00', duration: '1h 00m', project: 'Planning',  description: 'Sprint planning & backlog grooming',     type: 'Manual'    },
+  { date: '2 days ago', time: '15:00 – 15:30', duration: '0h 30m', project: 'Meetings',  description: 'Team retrospective',                     type: 'Pomodoro'  },
+  { date: '3 days ago', time: '09:00 – 10:00', duration: '1h 00m', project: 'Backend',   description: 'Database schema migration v2',           type: 'Stopwatch' },
+  { date: '3 days ago', time: '10:30 – 14:30', duration: '4h 00m', project: 'Frontend',  description: 'Refactor state management layer',        type: 'Stopwatch' },
+  { date: '3 days ago', time: '15:00 – 16:45', duration: '1h 45m', project: 'Design',    description: 'Create mockups for onboarding flow',     type: 'Manual'    },
+  { date: '4 days ago', time: '09:30 – 12:00', duration: '2h 30m', project: 'Backend',   description: 'Set up CI/CD pipeline with GitHub Actions', type: 'Stopwatch' },
+  { date: '4 days ago', time: '13:00 – 14:00', duration: '1h 00m', project: 'Meetings',  description: 'Client demo preparation',                type: 'Manual'    },
+  { date: '4 days ago', time: '14:30 – 17:30', duration: '3h 00m', project: 'Frontend',  description: 'Build responsive layout for mobile',     type: 'Stopwatch' },
+  { date: '5 days ago', time: '09:00 – 11:00', duration: '2h 00m', project: 'Planning',  description: 'Architecture decision for new feature',  type: 'Manual'    },
+  { date: '5 days ago', time: '11:30 – 13:00', duration: '1h 30m', project: 'Backend',   description: 'Implement rate limiting middleware',      type: 'Pomodoro'  },
+  { date: '5 days ago', time: '14:00 – 16:30', duration: '2h 30m', project: 'Frontend',  description: 'Integrate Recharts for analytics page',  type: 'Stopwatch' },
+  { date: '6 days ago', time: '09:15 – 10:45', duration: '1h 30m', project: 'Design',    description: 'Update component library styles',        type: 'Manual'    },
+  { date: '6 days ago', time: '11:00 – 13:30', duration: '2h 30m', project: 'Backend',   description: 'Write API documentation with OpenAPI',   type: 'Stopwatch' },
+  { date: '6 days ago', time: '15:00 – 17:00', duration: '2h 00m', project: 'Frontend',  description: 'Performance optimisation & lazy loading', type: 'Stopwatch' },
 ]
 
 const PROJECT_COLORS: Record<string, string> = {
@@ -46,33 +58,39 @@ export default async function EntriesPage({ searchParams }: Props) {
 
         <div className="relative">
           {/* Blurred fake table */}
-          <div className="blur-[2px] pointer-events-none select-none opacity-60">
+          <div className="blur-[2px] pointer-events-none select-none opacity-60 w-full">
             {/* Filter bar placeholder */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-9 w-36 rounded-lg bg-stone-100 dark:bg-[var(--dark-elevated)]" />
-              <div className="h-9 w-28 rounded-lg bg-stone-100 dark:bg-[var(--dark-elevated)]" />
-              <div className="h-9 w-28 rounded-lg bg-stone-100 dark:bg-[var(--dark-elevated)]" />
-              <div className="ml-auto h-9 w-28 rounded-lg bg-indigo-100 dark:bg-indigo-900/30" />
+            <div className="flex items-center gap-3 mb-4 w-full">
+              <div className="h-9 w-40 rounded-lg bg-stone-100 dark:bg-[var(--dark-elevated)]" />
+              <div className="h-9 w-32 rounded-lg bg-stone-100 dark:bg-[var(--dark-elevated)]" />
+              <div className="h-9 w-32 rounded-lg bg-stone-100 dark:bg-[var(--dark-elevated)]" />
+              <div className="h-9 w-32 rounded-lg bg-stone-100 dark:bg-[var(--dark-elevated)]" />
+              <div className="ml-auto h-9 w-32 rounded-lg bg-indigo-100 dark:bg-indigo-900/30" />
             </div>
 
             {/* Table */}
-            <div className="rounded-xl border border-stone-200 dark:border-[var(--dark-border)] overflow-hidden bg-white dark:bg-[var(--dark-card)]">
+            <div className="w-full rounded-xl border border-stone-200 dark:border-[var(--dark-border)] overflow-hidden bg-white dark:bg-[var(--dark-card)]">
               {/* Header */}
-              <div className="grid grid-cols-[1fr_1fr_1fr_1.5fr_2fr_1fr] gap-4 px-4 py-3 bg-stone-50 dark:bg-[var(--dark-elevated)] text-xs font-medium text-stone-500 dark:text-stone-400 border-b border-stone-200 dark:border-[var(--dark-border)]">
-                <span>Date</span><span>Time</span><span>Duration</span><span>Project</span><span>Description</span><span>Type</span>
+              <div className="w-full flex px-4 py-3 bg-stone-50 dark:bg-[var(--dark-elevated)] text-xs font-medium text-stone-500 dark:text-stone-400 border-b border-stone-200 dark:border-[var(--dark-border)] gap-0">
+                <span className="w-[12%]">Date</span>
+                <span className="w-[14%]">Time</span>
+                <span className="w-[10%]">Duration</span>
+                <span className="w-[14%]">Project</span>
+                <span className="flex-1">Description</span>
+                <span className="w-[10%]">Type</span>
               </div>
               {/* Rows */}
               {PREVIEW_ENTRIES.map((e, i) => (
-                <div key={i} className="grid grid-cols-[1fr_1fr_1fr_1.5fr_2fr_1fr] gap-4 px-4 py-3 text-sm border-b border-stone-100 dark:border-[var(--dark-border)] last:border-0 items-center">
-                  <span className="text-stone-500 dark:text-stone-400 text-xs">{e.date}</span>
-                  <span className="text-stone-500 dark:text-stone-400 text-xs font-mono">{e.time}</span>
-                  <span className="font-medium text-stone-800 dark:text-stone-200">{e.duration}</span>
-                  <span className="flex items-center gap-1.5">
+                <div key={i} className="w-full flex px-4 py-3.5 text-sm border-b border-stone-100 dark:border-[var(--dark-border)] last:border-0 items-center gap-0">
+                  <span className="w-[12%] text-stone-500 dark:text-stone-400 text-xs shrink-0">{e.date}</span>
+                  <span className="w-[14%] text-stone-500 dark:text-stone-400 text-xs font-mono shrink-0">{e.time}</span>
+                  <span className="w-[10%] font-semibold text-stone-800 dark:text-stone-200 shrink-0">{e.duration}</span>
+                  <span className="w-[14%] flex items-center gap-1.5 shrink-0 min-w-0">
                     <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: PROJECT_COLORS[e.project] ?? '#6366f1' }} />
                     <span className="text-stone-700 dark:text-stone-300 truncate">{e.project}</span>
                   </span>
-                  <span className="text-stone-600 dark:text-stone-400 truncate">{e.description}</span>
-                  <span className="text-xs text-stone-400 dark:text-stone-500">{e.type}</span>
+                  <span className="flex-1 text-stone-600 dark:text-stone-400 truncate min-w-0 pr-4">{e.description}</span>
+                  <span className="w-[10%] text-xs text-stone-400 dark:text-stone-500 shrink-0">{e.type}</span>
                 </div>
               ))}
             </div>
