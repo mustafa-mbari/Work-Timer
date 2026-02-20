@@ -132,13 +132,13 @@ async function updateTimeEntry(entryId: string, date: string, updates: Partial<T
   }
 }
 
-async function broadcastTimerSync(state: TimerState): Promise<void> {
+async function broadcastTimerSync(state: TimerState, pomodoroState?: PomodoroState): Promise<void> {
   const result = await chrome.storage.local.get('projects')
   const projects = (result['projects'] as Array<{ id: string; name: string; color: string }> | undefined) ?? []
   const tabs = await chrome.tabs.query({})
   for (const tab of tabs) {
     if (tab.id) {
-      chrome.tabs.sendMessage(tab.id, { action: 'TIMER_SYNC', state, projects }).catch(() => {
+      chrome.tabs.sendMessage(tab.id, { action: 'TIMER_SYNC', state, projects, pomodoroState }).catch(() => {
         // Tab may not have content script loaded, ignore
       })
     }
@@ -688,6 +688,11 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 
     // Phase time is up — advance to next phase
     await advancePomodoroPhase(pomState)
+
+    // Broadcast updated state so the popup knows the phase changed
+    const newTimerState = await getTimerState()
+    const newPomState = await getPomodoroState()
+    void broadcastTimerSync(newTimerState, newPomState)
   }
 
   if (alarm.name === SUBSCRIPTION_ALARM) {

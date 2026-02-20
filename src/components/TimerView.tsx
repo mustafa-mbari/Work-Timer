@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import type { TimerMode } from '@/types'
 import { useTimer } from '@/hooks/useTimer'
 import { useProjects } from '@/hooks/useProjects'
 import { useEntries } from '@/hooks/useEntries'
 import { useTags } from '@/hooks/useTags'
-import { formatDuration, formatDurationShort, getToday } from '@/utils/date'
+import { formatDurationShort, getToday } from '@/utils/date'
 import { generateId } from '@/utils/id'
 import { useSettings } from '@/hooks/useSettings'
 import { msToHours } from '@/utils/date'
@@ -170,6 +170,39 @@ export default function TimerView() {
     longBreak: 'Long Break',
   }
 
+  // Pomodoro ring helpers
+
+  // Multi-stop color: red → orange → yellow → lime → green (t: 0..1)
+  const pomProgressToColor = (t: number): string => {
+    const c: [number, number, number][] = [
+      [239,  68,  68],  // red-500
+      [249, 115,  22],  // orange-500
+      [234, 179,   8],  // yellow-500
+      [132, 204,  22],  // lime-500
+      [ 34, 197,  94],  // green-500
+    ]
+    const s = Math.max(0, Math.min(1, t)) * (c.length - 1)
+    const lo = Math.floor(s), hi = Math.min(lo + 1, c.length - 1), f = s - lo
+    return `rgb(${Math.round(c[lo][0]+(c[hi][0]-c[lo][0])*f)},${Math.round(c[lo][1]+(c[hi][1]-c[lo][1])*f)},${Math.round(c[lo][2]+(c[hi][2]-c[lo][2])*f)})`
+  }
+
+  const pomProgress = pomodoroState.active
+    ? 1 - (pomodoroTimeRemaining / pomodoroState.phaseDuration)
+    : 0
+
+  const isWorkPhase = pomodoroState.phase === 'work'
+
+  // Dynamic accent that follows progress — used for cap glow and label colour
+  const pomAccent = isWorkPhase
+    ? pomProgressToColor(pomProgress)
+    : pomProgressToColor(1 - pomProgress)
+
+  // MM:SS formatter — Pomodoro sessions never exceed 60 min
+  const pomFormatTime = (ms: number) => {
+    const s = Math.max(0, Math.floor(ms / 1000))
+    return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
+  }
+
   return (
     <div className="flex flex-col px-5 py-4 gap-4">
       {/* Idle Detection Banner */}
@@ -311,47 +344,160 @@ export default function TimerView() {
           )}
         </div>
       ) : mode === 'pomodoro' ? (
-        <div className="text-center">
-          {/* Pomodoro progress ring */}
-          <div className="relative inline-flex items-center justify-center py-3">
-            <svg className="w-36 h-36 -rotate-90" viewBox="0 0 120 120" aria-hidden="true">
-              <circle cx="60" cy="60" r="52" fill="none" stroke="currentColor" className="text-stone-100 dark:text-dark-elevated" strokeWidth="6" />
+        <div className="flex flex-col items-center gap-3 py-1">
+          {/* Circular ring — viewBox 120×120 (same geometry as reference), scaled to 220px */}
+          <div className="relative">
+            <svg width="220" height="220" viewBox="0 0 120 120" aria-hidden="true">
+              {/* Track */}
+              <circle cx="60" cy="60" r="40" fill="none" stroke="currentColor"
+                className="text-stone-200 dark:text-dark-elevated"
+                strokeWidth="14" />
+
+              {/* Progress arc — 60 arc segments, each colored by its position along the arc.
+                  Segment i gets color pomProgressToColor(i/60), so:
+                    segment 0  → red    (arc start, 12 o'clock)
+                    segment 30 → yellow (arc midpoint, 6 o'clock)
+                    segment 59 → green  (arc end, back near 12 o'clock)
+                  Green only appears at the very last segments near 100% progress. */}
+              {pomodoroState.active && pomProgress > 0 && (() => {
+                const r = 40, ox = 60, oy = 60, N = 60
+                const totalDeg = pomProgress * 360
+                const segs: ReactNode[] = []
+                for (let i = 0; i < N; i++) {
+                  const startDeg = (i / N) * 360
+                  if (startDeg >= totalDeg) break
+                  const endDeg = Math.min(((i + 1) / N) * 360, totalDeg)
+                  const t = (i + 0.5) / N
+                  const color = isWorkPhase ? pomProgressToColor(t) : pomProgressToColor(1 - t)
+                  const s = (startDeg - 90) * Math.PI / 180
+                  const e = (endDeg - 90) * Math.PI / 180
+                  const x1 = (ox + r * Math.cos(s)).toFixed(3)
+                  const y1 = (oy + r * Math.sin(s)).toFixed(3)
+                  const x2 = (ox + r * Math.cos(e)).toFixed(3)
+                  const y2 = (oy + r * Math.sin(e)).toFixed(3)
+                  segs.push(
+                    <path key={i}
+                      d={`M ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2}`}
+                      fill="none" stroke={color} strokeWidth="14" strokeLinecap="round" />
+                  )
+                }
+                return <>{segs}</>
+              })()}
+
+              {/* Cap dot — white with glow in current tip color */}
               {pomodoroState.active && (() => {
-                const progress = 1 - (pomodoroTimeRemaining / pomodoroState.phaseDuration)
-                const circumference = 2 * Math.PI * 52
-                const offset = circumference * (1 - progress)
-                const color = pomodoroState.phase === 'work' ? '#6366F1' : '#10B981'
-                return <circle cx="60" cy="60" r="52" fill="none" stroke={color} strokeWidth="6"
-                  strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
-                  className="transition-all duration-1000" />
+                const ang = (-90 + 360 * pomProgress) * (Math.PI / 180)
+                const cx = 60 + 40 * Math.cos(ang)
+                const cy = 60 + 40 * Math.sin(ang)
+                return (
+                  <circle cx={cx} cy={cy} r="3.8"
+                    fill="rgba(255,255,255,0.95)"
+                    style={{ filter: `drop-shadow(0 0 5px ${pomAccent})` }}
+                  />
+                )
               })()}
             </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <div className={`text-3xl font-mono font-semibold tracking-tight ${
-                pomodoroState.active
-                  ? pomodoroState.phase === 'work' ? 'text-indigo-600 dark:text-indigo-400' : 'text-emerald-600 dark:text-emerald-400'
-                  : 'text-stone-800 dark:text-stone-200'
-              }`}>
-                {pomodoroState.active
-                  ? formatDuration(pomodoroTimeRemaining)
-                  : formatDuration(elapsed)}
-              </div>
-              {pomodoroState.active && (
-                <div className={`text-[11px] font-medium mt-1 ${
-                  pomodoroState.phase === 'work' ? 'text-indigo-500 dark:text-indigo-400' : 'text-emerald-500 dark:text-emerald-400'
-                }`}>
-                  {pomodoroPhaseLabel[pomodoroState.phase]}
-                </div>
+
+            {/* Center content */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              {pomodoroState.active ? (
+                <>
+                  <div className="font-mono font-bold tracking-tight leading-none text-stone-900 dark:text-stone-100"
+                    style={{ fontSize: 34 }}>
+                    {pomFormatTime(pomodoroTimeRemaining)}
+                  </div>
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.2em] mt-2"
+                    style={{ color: pomAccent }}>
+                    {pomodoroPhaseLabel[pomodoroState.phase]}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="font-mono font-semibold leading-none text-stone-400 dark:text-stone-500"
+                    style={{ fontSize: 28 }}>
+                    {`${String(settings?.pomodoro.workMinutes ?? 25).padStart(2, '0')}:00`}
+                  </div>
+                  <div className="text-[10px] font-medium uppercase tracking-[0.2em] mt-2 text-stone-400 dark:text-stone-500">
+                    Ready
+                  </div>
+                </>
               )}
             </div>
           </div>
 
-          {pomodoroState.active && (
-            <div className="text-[11px] text-stone-400 dark:text-stone-500 mt-1">
-              Session {pomodoroState.sessionsCompleted + (pomodoroState.phase === 'work' ? 1 : 0)}
-              {pomodoroState.totalWorkTime > 0 && ` · ${formatDurationShort(pomodoroState.totalWorkTime)} focused`}
-            </div>
-          )}
+          {/* Session dots */}
+          <div className="flex items-center gap-2">
+            {Array.from({ length: settings?.pomodoro.sessionsBeforeLongBreak ?? 4 }).map((_, i) => (
+              <div
+                key={i}
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                  i < pomodoroState.sessionsCompleted
+                    ? 'bg-emerald-500 dark:bg-emerald-400'
+                    : 'bg-stone-200 dark:bg-stone-700'
+                }`}
+              />
+            ))}
+            {pomodoroState.active && pomodoroState.totalWorkTime > 0 && (
+              <span className="text-[10px] text-stone-400 dark:text-stone-500 ml-1">
+                {formatDurationShort(pomodoroState.totalWorkTime)} focused
+              </span>
+            )}
+          </div>
+
+          {/* Pomodoro action buttons — above Project Selector */}
+          <div className="flex gap-2.5 w-full">
+            {!isActive ? (
+              <button
+                onClick={handleStart}
+                className="flex-1 flex items-center justify-center gap-2 bg-purple-500 hover:bg-purple-600 text-white py-2.5 rounded-xl font-medium text-sm transition-colors shadow-sm shadow-purple-500/20"
+                aria-label="Start Pomodoro"
+                title="Start timer (Alt+Shift+Up)"
+              >
+                <PlayIcon className="w-4 h-4" />
+                Start Focus
+              </button>
+            ) : pomodoroState.phase === 'work' ? (
+              <>
+                <button
+                  onClick={skipPhase}
+                  className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-emerald-600 transition-colors shadow-sm shadow-emerald-500/20"
+                  aria-label="Take break now"
+                >
+                  <SkipIcon className="w-4 h-4" />
+                  Break
+                </button>
+                <button
+                  onClick={handleStop}
+                  className="flex-1 flex items-center justify-center gap-2 bg-rose-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-rose-600 transition-colors shadow-sm shadow-rose-500/20"
+                  aria-label="Stop Pomodoro"
+                  title="Stop timer (Alt+Shift+Up)"
+                >
+                  <StopIcon className="w-4 h-4" />
+                  Stop
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={skipPhase}
+                  className="flex-1 flex items-center justify-center gap-2 bg-indigo-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-indigo-600 transition-colors shadow-sm shadow-indigo-500/20"
+                  aria-label="Resume focus"
+                >
+                  <PlayIcon className="w-4 h-4" />
+                  Focus
+                </button>
+                <button
+                  onClick={handleStop}
+                  className="flex-1 flex items-center justify-center gap-2 bg-rose-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-rose-600 transition-colors shadow-sm shadow-rose-500/20"
+                  aria-label="Stop Pomodoro"
+                  title="Stop timer (Alt+Shift+Up)"
+                >
+                  <StopIcon className="w-4 h-4" />
+                  Stop
+                </button>
+              </>
+            )}
+          </div>
         </div>
       ) : (
         <div className="text-center py-4">
@@ -453,7 +599,7 @@ export default function TimerView() {
         </>
       )}
 
-      {/* Action Buttons */}
+      {/* Action Buttons — manual and stopwatch only (pomodoro buttons live above project selector) */}
       {mode === 'manual' ? (
         <button
           onClick={handleManualSave}
@@ -467,106 +613,54 @@ export default function TimerView() {
         >
           Save Entry
         </button>
-      ) : (
+      ) : mode === 'stopwatch' ? (
         <div className="flex gap-2.5">
           {!isActive ? (
             <button
               onClick={handleStart}
-              className={`flex-1 flex items-center justify-center gap-2 text-white py-2.5 rounded-xl font-medium text-sm transition-colors shadow-sm ${
-                mode === 'pomodoro'
-                  ? 'bg-purple-500 hover:bg-purple-600 shadow-purple-500/20'
-                  : 'bg-indigo-500 hover:bg-indigo-600 shadow-indigo-500/20'
-              }`}
-              aria-label={mode === 'pomodoro' ? 'Start Pomodoro' : 'Start timer'}
+              className="flex-1 flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white py-2.5 rounded-xl font-medium text-sm transition-colors shadow-sm shadow-indigo-500/20"
+              aria-label="Start timer"
               title="Start timer (Alt+Shift+Up)"
             >
               <PlayIcon className="w-4 h-4" />
-              {mode === 'pomodoro' ? 'Start Focus' : 'Start'}
+              Start
             </button>
           ) : (
             <>
-              {pomodoroState.active ? (
-                <>
-                  {pomodoroState.phase === 'work' ? (
-                    <>
-                      <button
-                        onClick={skipPhase}
-                        className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-emerald-600 transition-colors shadow-sm shadow-emerald-500/20"
-                        aria-label="Take break now"
-                      >
-                        <SkipIcon className="w-4 h-4" />
-                        Break
-                      </button>
-                      <button
-                        onClick={handleStop}
-                        className="flex-1 flex items-center justify-center gap-2 bg-rose-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-rose-600 transition-colors shadow-sm shadow-rose-500/20"
-                        aria-label="Stop Pomodoro"
-                        title="Stop timer (Alt+Shift+Up)"
-                      >
-                        <StopIcon className="w-4 h-4" />
-                        Stop
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={skipPhase}
-                        className="flex-1 flex items-center justify-center gap-2 bg-indigo-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-indigo-600 transition-colors shadow-sm shadow-indigo-500/20"
-                        aria-label="Resume focus"
-                      >
-                        <PlayIcon className="w-4 h-4" />
-                        Focus
-                      </button>
-                      <button
-                        onClick={handleStop}
-                        className="flex-1 flex items-center justify-center gap-2 bg-rose-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-rose-600 transition-colors shadow-sm shadow-rose-500/20"
-                        aria-label="Stop Pomodoro"
-                        title="Stop timer (Alt+Shift+Up)"
-                      >
-                        <StopIcon className="w-4 h-4" />
-                        Stop
-                      </button>
-                    </>
-                  )}
-                </>
+              {isRunning ? (
+                <button
+                  onClick={pause}
+                  className="flex-1 flex items-center justify-center gap-2 bg-amber-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-amber-600 transition-colors shadow-sm shadow-amber-500/20"
+                  aria-label="Pause timer"
+                  title="Pause timer (Alt+Shift+Down)"
+                >
+                  <PauseIcon className="w-4 h-4" />
+                  Pause
+                </button>
               ) : (
-                <>
-                  {isRunning ? (
-                    <button
-                      onClick={pause}
-                      className="flex-1 flex items-center justify-center gap-2 bg-amber-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-amber-600 transition-colors shadow-sm shadow-amber-500/20"
-                      aria-label="Pause timer"
-                      title="Pause timer (Alt+Shift+Down)"
-                    >
-                      <PauseIcon className="w-4 h-4" />
-                      Pause
-                    </button>
-                  ) : (
-                    <button
-                      onClick={resume}
-                      className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-emerald-600 transition-colors shadow-sm shadow-emerald-500/20"
-                      aria-label="Resume timer"
-                      title="Resume timer (Alt+Shift+Down)"
-                    >
-                      <PlayIcon className="w-4 h-4" />
-                      Resume
-                    </button>
-                  )}
-                  <button
-                    onClick={handleStop}
-                    className="flex-1 flex items-center justify-center gap-2 bg-rose-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-rose-600 transition-colors shadow-sm shadow-rose-500/20"
-                    aria-label="Stop timer"
-                    title="Stop timer (Alt+Shift+Up)"
-                  >
-                    <StopIcon className="w-4 h-4" />
-                    Stop
-                  </button>
-                </>
+                <button
+                  onClick={resume}
+                  className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-emerald-600 transition-colors shadow-sm shadow-emerald-500/20"
+                  aria-label="Resume timer"
+                  title="Resume timer (Alt+Shift+Down)"
+                >
+                  <PlayIcon className="w-4 h-4" />
+                  Resume
+                </button>
               )}
+              <button
+                onClick={handleStop}
+                className="flex-1 flex items-center justify-center gap-2 bg-rose-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-rose-600 transition-colors shadow-sm shadow-rose-500/20"
+                aria-label="Stop timer"
+                title="Stop timer (Alt+Shift+Up)"
+              >
+                <StopIcon className="w-4 h-4" />
+                Stop
+              </button>
             </>
           )}
         </div>
-      )}
+      ) : null}
 
       {/* Daily Goal Progress */}
       {settings?.dailyTarget && (
