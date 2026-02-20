@@ -2,6 +2,7 @@
 import { supabase } from '@/auth/supabaseClient'
 import { getSession, getCachedSubscription } from '@/auth/authState'
 import { isPremiumSubscription } from '@/premium/featureGate'
+import { pushUserStats } from './statsSync'
 import { getQueue, dequeue } from './syncQueue'
 import {
   localEntryToDb, localProjectToDb, localSettingsToDb,
@@ -367,6 +368,7 @@ export async function syncAll(): Promise<void> {
       lastSyncAt: new Date().toISOString(),
       pendingCount: 0,
     })
+    void pushUserStats()
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Sync failed'
     await setSyncState({ status: 'error', errorMessage: message })

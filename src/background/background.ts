@@ -119,6 +119,7 @@ async function getTimeEntry(entryId: string, date: string): Promise<TimeEntry | 
 async function saveTimeEntry(entry: TimeEntry): Promise<void> {
   await saveEntry(entry)
   void syncAll()
+  void pushUserStats()
 }
 
 async function updateTimeEntry(entryId: string, date: string, updates: Partial<TimeEntry>): Promise<void> {
@@ -127,6 +128,7 @@ async function updateTimeEntry(entryId: string, date: string, updates: Partial<T
     const updated = { ...entry, ...updates }
     await updateEntry(updated)
     void syncAll()
+    void pushUserStats()
   }
 }
 
