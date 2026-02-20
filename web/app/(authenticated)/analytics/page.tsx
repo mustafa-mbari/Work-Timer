@@ -80,7 +80,7 @@ export default async function AnalyticsPage({
         </div>
         {/* Blurred preview + overlay */}
         <div className="relative">
-          <div className="blur-sm pointer-events-none select-none opacity-70 space-y-6">
+          <div className="blur-sm pointer-events-none select-none opacity-55 space-y-6">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {[
                 { icon: <Clock className="h-4 w-4 text-indigo-500" />,   label: 'Total Hours',   value: p.total_hours.toFixed(1) },
