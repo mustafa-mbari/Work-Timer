@@ -1,3 +1,4 @@
+import type { FC } from 'react'
 import type { View } from '@/types'
 import { TimerIcon, CalendarIcon, ChartIcon, SettingsIcon } from './Icons'
 
@@ -6,7 +7,7 @@ interface NavBarProps {
   onViewChange: (view: View) => void
 }
 
-const tabs: { view: View; label: string; Icon: React.FC<{ className?: string }> }[] = [
+const tabs: { view: View; label: string; Icon: FC<{ className?: string }> }[] = [
   { view: 'timer', label: 'Timer', Icon: TimerIcon },
   { view: 'week', label: 'Week', Icon: CalendarIcon },
   { view: 'stats', label: 'Stats', Icon: ChartIcon },
@@ -16,7 +17,7 @@ const tabs: { view: View; label: string; Icon: React.FC<{ className?: string }> 
 export default function NavBar({ currentView, onViewChange }: NavBarProps) {
   return (
     <nav
-      className="flex items-stretch border-t border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card"
+      className="flex border-t border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card"
       role="tablist"
       aria-label="Main navigation"
     >
@@ -29,15 +30,12 @@ export default function NavBar({ currentView, onViewChange }: NavBarProps) {
             aria-selected={isActive}
             aria-label={label}
             onClick={() => onViewChange(view)}
-            className={`flex-1 flex flex-col items-center justify-center gap-1 py-2.5 text-[11px] font-medium transition-colors relative ${
+            className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 text-[10px] font-medium transition-colors rounded-lg mx-0.5 ${
               isActive
-                ? 'text-indigo-600 dark:text-indigo-400'
+                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10'
                 : 'text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300'
             }`}
           >
-            {isActive && (
-              <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-indigo-500 dark:bg-indigo-400 rounded-full" />
-            )}
             <Icon className="w-[18px] h-[18px]" />
             <span>{label}</span>
           </button>

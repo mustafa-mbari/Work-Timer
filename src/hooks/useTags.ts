@@ -24,6 +24,15 @@ export function useTags() {
     return () => chrome.storage.onChanged.removeListener(listener)
   }, [fetch])
 
+  const activeTags = tags
+    .filter(t => !t.archived)
+    .sort((a, b) => {
+      const ao = a.order ?? Infinity
+      const bo = b.order ?? Infinity
+      if (ao !== bo) return ao - bo
+      return 0
+    })
+
   const create = useCallback(async (name: string) => {
     const tag: Tag = { id: generateId(), name }
     const current = await getTags()
@@ -44,5 +53,26 @@ export function useTags() {
     await fetch()
   }, [fetch])
 
-  return { tags, create, update, remove, refetch: fetch }
+  const archive = useCallback(async (id: string) => {
+    const current = await getTags()
+    await saveTags(current.map(t => t.id === id ? { ...t, archived: true } : t))
+    await fetch()
+  }, [fetch])
+
+  const setDefault = useCallback(async (id: string) => {
+    const current = await getTags()
+    await saveTags(current.map(t => ({ ...t, isDefault: t.id === id ? true : undefined })))
+    await fetch()
+  }, [fetch])
+
+  const reorder = useCallback(async (orderedIds: string[]) => {
+    const current = await getTags()
+    await saveTags(current.map(t => {
+      const idx = orderedIds.indexOf(t.id)
+      return idx !== -1 ? { ...t, order: idx } : t
+    }))
+    await fetch()
+  }, [fetch])
+
+  return { tags, activeTags, create, update, remove, archive, setDefault, reorder, refetch: fetch }
 }

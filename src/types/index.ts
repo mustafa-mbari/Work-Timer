@@ -27,11 +27,16 @@ export interface Project {
   targetHours: number | null
   archived: boolean
   createdAt: number
+  isDefault?: boolean
+  order?: number
 }
 
 export interface Tag {
   id: string
   name: string
+  isDefault?: boolean
+  order?: number
+  archived?: boolean
 }
 
 export interface ReminderSettings {

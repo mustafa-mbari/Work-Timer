@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from 'react'
+import { useState, useEffect, type ReactNode, type FC } from 'react'
 import type { TimerMode } from '@/types'
 import { useTimer } from '@/hooks/useTimer'
 import { useProjects } from '@/hooks/useProjects'
@@ -11,11 +11,17 @@ import { msToHours } from '@/utils/date'
 import ProjectSelector from './ProjectSelector'
 import EntryList from './EntryList'
 import GoalProgress from './GoalProgress'
-import { PlayIcon, PauseIcon, StopIcon, SkipIcon } from './Icons'
+import { PlayIcon, PauseIcon, StopIcon, SkipIcon, TimerIcon, PencilIcon, TomatoIcon } from './Icons'
 import RollingTimer from './RollingTimer'
 
 type ExtendedMode = TimerMode | 'pomodoro'
 type InputTab = 'description' | 'tag' | 'link'
+
+const TIMER_MODES: { id: ExtendedMode; label: string; Icon: FC<{ className?: string }> }[] = [
+  { id: 'stopwatch', label: 'Stopwatch', Icon: TimerIcon },
+  { id: 'manual', label: 'Manual', Icon: PencilIcon },
+  { id: 'pomodoro', label: 'Pomodoro', Icon: TomatoIcon },
+]
 
 export default function TimerView() {
   const {
@@ -25,7 +31,7 @@ export default function TimerView() {
   } = useTimer()
   const { activeProjects } = useProjects()
   const { entries, totalDuration, add, update, remove, refetch: refetchEntries } = useEntries()
-  const { tags } = useTags()
+  const { activeTags: tags } = useTags()
   const { settings } = useSettings()
 
   const [mode, setMode] = useState<ExtendedMode>('stopwatch')
@@ -52,6 +58,16 @@ export default function TimerView() {
       setMode('pomodoro') // eslint-disable-line react-hooks/set-state-in-effect
     }
   }, [pomodoroState.active])
+
+  // Auto-select default project when not running and no project chosen yet
+  useEffect(() => {
+    if (!isActive && selectedProjectId === null && activeProjects.length > 0) {
+      const defaultProject = activeProjects.find(p => p.isDefault)
+      if (defaultProject) {
+        setSelectedProjectId(defaultProject.id) // eslint-disable-line react-hooks/set-state-in-effect
+      }
+    }
+  }, [activeProjects, isActive, selectedProjectId])
 
   const handleStart = async () => {
     if (mode === 'pomodoro') {
@@ -232,19 +248,20 @@ export default function TimerView() {
 
       {/* Mode Toggle */}
       <div className="flex gap-1 bg-stone-100 dark:bg-dark-card rounded-xl p-1">
-        {(['stopwatch', 'manual', 'pomodoro'] as ExtendedMode[]).map((m) => (
+        {TIMER_MODES.map(({ id, label, Icon }) => (
           <button
-            key={m}
-            onClick={() => setMode(m)}
-            disabled={isActive && m !== mode}
-            className={`flex-1 text-xs font-medium py-2 rounded-lg transition-all ${
-              mode === m
+            key={id}
+            onClick={() => setMode(id)}
+            disabled={isActive && id !== mode}
+            className={`flex-1 flex flex-col items-center gap-0.5 py-1.5 rounded-lg text-[10px] font-medium transition-all ${
+              mode === id
                 ? 'bg-white dark:bg-dark-elevated text-stone-900 dark:text-stone-100 shadow-sm'
                 : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
-            } ${isActive && m !== mode ? 'opacity-40 cursor-not-allowed' : ''}`}
-            aria-label={`${m} mode`}
+            } ${isActive && id !== mode ? 'opacity-40 cursor-not-allowed' : ''}`}
+            aria-label={`${label} mode`}
           >
-            {m === 'stopwatch' ? 'Stopwatch' : m === 'manual' ? 'Manual' : 'Pomodoro'}
+            <Icon className="w-3.5 h-3.5" />
+            <span>{label}</span>
           </button>
         ))}
       </div>
@@ -673,7 +690,7 @@ export default function TimerView() {
 
       {/* Today's Summary */}
       <div className="flex items-center justify-between pt-3 border-t border-stone-100 dark:border-dark-border">
-        <span className="text-[11px] font-medium text-stone-400 dark:text-stone-500 uppercase tracking-wider">Today</span>
+        <span className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider">Today</span>
         <span className="text-sm font-semibold text-stone-700 dark:text-stone-200">
           {formatDurationShort(totalDuration + (isActive ? elapsed : 0))}
         </span>

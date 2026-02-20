@@ -185,3 +185,55 @@ export function LinkIcon({ className = 'w-3.5 h-3.5' }: IconProps) {
     </svg>
   )
 }
+
+export function PencilIcon({ className = 'w-4 h-4' }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+    </svg>
+  )
+}
+
+export function DotsIcon({ className = 'w-4 h-4' }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <circle cx="5" cy="12" r="1.5" />
+      <circle cx="12" cy="12" r="1.5" />
+      <circle cx="19" cy="12" r="1.5" />
+    </svg>
+  )
+}
+
+export function DragHandleIcon({ className = 'w-4 h-4' }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <circle cx="9" cy="7" r="1.5" />
+      <circle cx="15" cy="7" r="1.5" />
+      <circle cx="9" cy="12" r="1.5" />
+      <circle cx="15" cy="12" r="1.5" />
+      <circle cx="9" cy="17" r="1.5" />
+      <circle cx="15" cy="17" r="1.5" />
+    </svg>
+  )
+}
+
+export function StarIcon({ className = 'w-3 h-3', filled = false }: IconProps & { filled?: boolean }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
+    </svg>
+  )
+}
+
+export function TomatoIcon({ className = 'w-4 h-4' }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      {/* Stem */}
+      <path d="M12 4c0 0 .5-2 2.5-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+      {/* Leaf */}
+      <path d="M12 4c0 0-1-1.5 0-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+      {/* Body */}
+      <circle cx="12" cy="14" r="8" />
+    </svg>
+  )
+}

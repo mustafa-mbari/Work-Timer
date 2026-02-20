@@ -194,6 +194,31 @@ export async function archiveProject(id: string): Promise<void> {
   }
 }
 
+export async function deleteProject(id: string): Promise<void> {
+  const projects = await getProjects()
+  const filtered = projects.filter(p => p.id !== id)
+  await storageSet({ [KEYS.projects]: filtered })
+  await enqueueSyncItem('projects', id, 'delete')
+}
+
+export async function setDefaultProject(id: string): Promise<void> {
+  const projects = await getProjects()
+  for (const p of projects) {
+    p.isDefault = p.id === id ? true : undefined
+  }
+  await storageSet({ [KEYS.projects]: projects })
+  await enqueueSyncItem('projects', id, 'upsert')
+}
+
+export async function reorderProjects(orderedIds: string[]): Promise<void> {
+  const projects = await getProjects()
+  for (const p of projects) {
+    const idx = orderedIds.indexOf(p.id)
+    p.order = idx !== -1 ? idx : undefined
+  }
+  await storageSet({ [KEYS.projects]: projects })
+}
+
 // --- Tags ---
 
 function isValidTag(t: unknown): t is Tag {

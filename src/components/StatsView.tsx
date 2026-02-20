@@ -87,9 +87,9 @@ export default function StatsView() {
 
       {/* Weekly Bar Chart */}
       <div>
-        <h3 className="text-[11px] font-medium text-stone-400 dark:text-stone-500 mb-2.5 uppercase tracking-wider">This Week</h3>
+        <h3 className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 mb-2.5 uppercase tracking-wider">This Week</h3>
         <div className="h-36 bg-white dark:bg-dark-card rounded-xl p-3 border border-stone-100 dark:border-dark-border">
-          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={120}>
+          <ResponsiveContainer width="100%" height={120} minWidth={0} debounce={1}>
             <BarChart data={barData}>
               <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#A8A29E' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10, fill: '#A8A29E' }} width={20} axisLine={false} tickLine={false} />
@@ -112,7 +112,7 @@ export default function StatsView() {
       {/* Today by Project */}
       {pieData.length > 0 && (
         <div>
-          <h3 className="text-[11px] font-medium text-stone-400 dark:text-stone-500 mb-2.5 uppercase tracking-wider">Today by Project</h3>
+          <h3 className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 mb-2.5 uppercase tracking-wider">Today by Project</h3>
           <div className="flex items-center gap-5 bg-white dark:bg-dark-card rounded-xl p-4 border border-stone-100 dark:border-dark-border">
             <div className="w-24 h-24 flex-shrink-0">
               <PieChart width={96} height={96}>
@@ -152,7 +152,7 @@ export default function StatsView() {
       {/* Monthly Overview Heatmap — Premium only */}
       {isPremium ? (
         <div>
-          <h3 className="text-[11px] font-medium text-stone-400 dark:text-stone-500 mb-2.5 uppercase tracking-wider">Monthly Overview</h3>
+          <h3 className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 mb-2.5 uppercase tracking-wider">Monthly Overview</h3>
           <CalendarHeatmap
             year={displayYear}
             month={displayMonth}
@@ -162,7 +162,7 @@ export default function StatsView() {
         </div>
       ) : (
         <div>
-          <h3 className="text-[11px] font-medium text-stone-400 dark:text-stone-500 mb-2.5 uppercase tracking-wider">Monthly Overview</h3>
+          <h3 className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 mb-2.5 uppercase tracking-wider">Monthly Overview</h3>
           <button
             onClick={() => setShowUpgrade(true)}
             className="w-full rounded-xl border border-dashed border-stone-200 dark:border-dark-border p-4 flex flex-col items-center gap-2 text-center hover:bg-stone-50 dark:hover:bg-dark-hover transition-colors"

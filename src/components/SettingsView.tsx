@@ -4,7 +4,7 @@ import { getSettings, updateSettings } from '@/storage'
 import { useProjects, ProjectLimitError } from '@/hooks/useProjects'
 import { useTags } from '@/hooks/useTags'
 import { useTheme, THEMES } from '@/hooks/useTheme'
-import { MonitorIcon, PlusIcon, XIcon } from './Icons'
+import { MonitorIcon, PlusIcon, XIcon, PencilIcon, DotsIcon, DragHandleIcon, StarIcon } from './Icons'
 import { PROJECT_COLORS } from '@/constants/colors'
 import { inputClass, labelClass } from '@/constants/styles'
 import ConfirmDialog from './ConfirmDialog'
@@ -17,8 +17,8 @@ type SettingsTab = 'general' | 'timer' | 'data' | 'account'
 
 export default function SettingsView() {
   const [settings, setSettings] = useState<Settings | null>(null)
-  const { activeProjects, projects, create, update, archive } = useProjects()
-  const { tags, create: createTag, update: updateTag, remove: removeTag } = useTags()
+  const { activeProjects, projects, create, update, archive, remove, setDefault, reorder } = useProjects()
+  const { tags, activeTags, create: createTag, update: updateTag, remove: removeTag, archive: archiveTag, setDefault: setDefaultTag, reorder: reorderTags } = useTags()
   const { theme, setTheme } = useTheme()
   const { session, loading: authLoading, signIn, signOut } = useAuth()
   const { isPremium, subscription } = usePremium()
@@ -35,7 +35,17 @@ export default function SettingsView() {
   const [editingTag, setEditingTag] = useState<{ id: string; name: string } | null>(null)
 
   const [confirmArchive, setConfirmArchive] = useState<{ id: string; name: string } | null>(null)
+  const [confirmDeleteProject, setConfirmDeleteProject] = useState<{ id: string; name: string } | null>(null)
   const [confirmDeleteTag, setConfirmDeleteTag] = useState<{ id: string; name: string } | null>(null)
+  const [confirmArchiveTag, setConfirmArchiveTag] = useState<{ id: string; name: string } | null>(null)
+  const [showArchivedTags, setShowArchivedTags] = useState(false)
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [openTagMenuId, setOpenTagMenuId] = useState<string | null>(null)
+  const [colorPickerProjectId, setColorPickerProjectId] = useState<string | null>(null)
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const [dragOverId, setDragOverId] = useState<string | null>(null)
+  const [draggingTagId, setDraggingTagId] = useState<string | null>(null)
+  const [dragOverTagId, setDragOverTagId] = useState<string | null>(null)
 
   const [syncing, setSyncing] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -110,6 +120,20 @@ export default function SettingsView() {
     })
   }
 
+  useEffect(() => {
+    if (!openMenuId) return
+    const close = () => setOpenMenuId(null)
+    document.addEventListener('click', close)
+    return () => document.removeEventListener('click', close)
+  }, [openMenuId])
+
+  useEffect(() => {
+    if (!openTagMenuId) return
+    const close = () => setOpenTagMenuId(null)
+    document.addEventListener('click', close)
+    return () => document.removeEventListener('click', close)
+  }, [openTagMenuId])
+
   const handleSettingChange = async <K extends keyof Settings>(key: K, value: Settings[K]) => {
     if (!settings) return
     const updated = { ...settings, [key]: value }
@@ -134,8 +158,34 @@ export default function SettingsView() {
     if (!editingProject || !editingProject.name.trim()) return
     const project = projects.find(p => p.id === editingProject.id)
     if (!project) return
-    await update({ ...project, name: editingProject.name.trim(), color: editingProject.color })
+    await update({ ...project, name: editingProject.name.trim() })
     setEditingProject(null)
+  }
+
+  const handleDrop = (targetId: string) => {
+    if (!draggingId || draggingId === targetId) return
+    const ids = activeProjects.map(p => p.id)
+    const fromIdx = ids.indexOf(draggingId)
+    const toIdx = ids.indexOf(targetId)
+    const reordered = [...ids]
+    reordered.splice(fromIdx, 1)
+    reordered.splice(toIdx, 0, draggingId)
+    void reorder(reordered)
+    setDragOverId(null)
+    setDraggingId(null)
+  }
+
+  const handleTagDrop = (targetId: string) => {
+    if (!draggingTagId || draggingTagId === targetId) return
+    const ids = activeTags.map(t => t.id)
+    const fromIdx = ids.indexOf(draggingTagId)
+    const toIdx = ids.indexOf(targetId)
+    const reordered = [...ids]
+    reordered.splice(fromIdx, 1)
+    reordered.splice(toIdx, 0, draggingTagId)
+    void reorderTags(reordered)
+    setDragOverTagId(null)
+    setDraggingTagId(null)
   }
 
   const handleCreateTag = async () => {
@@ -153,6 +203,7 @@ export default function SettingsView() {
   if (!settings) return null
 
   const archivedProjects = projects.filter(p => p.archived)
+  const archivedTags = tags.filter(t => t.archived)
 
   const toggleButton = (isActive: boolean) =>
     `flex-1 py-2 text-sm font-medium rounded-lg border transition-all ${
@@ -509,17 +560,6 @@ export default function SettingsView() {
                         className={inputClass}
                         autoFocus
                       />
-                      <div className="flex gap-1.5 flex-wrap">
-                        {PROJECT_COLORS.map((color) => (
-                          <button
-                            key={color}
-                            onClick={() => setEditingProject({ ...editingProject, color })}
-                            className={`w-5 h-5 rounded-full border-2 transition-all ${editingProject.color === color ? 'border-stone-800 dark:border-stone-200 scale-110' : 'border-transparent'}`}
-                            style={{ backgroundColor: color }}
-                            aria-label={`Select color ${color}`}
-                          />
-                        ))}
-                      </div>
                       <div className="flex gap-2">
                         <button onClick={handleSaveProject} disabled={!editingProject.name.trim()}
                           className="flex-1 bg-indigo-500 text-white py-1.5 rounded-lg text-xs font-medium hover:bg-indigo-600 disabled:opacity-40 transition-colors">
@@ -532,23 +572,96 @@ export default function SettingsView() {
                       </div>
                     </div>
                   ) : (
-                    <div key={project.id} className="flex items-center gap-2.5 p-2.5 rounded-xl border border-stone-100 dark:border-dark-border bg-white dark:bg-dark-card">
-                      <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: project.color }} aria-hidden="true" />
-                      <span className="text-sm text-stone-700 dark:text-stone-200 flex-1">{project.name}</span>
-                      <button
-                        onClick={() => setEditingProject({ id: project.id, name: project.name, color: project.color })}
-                        className="text-[10px] font-medium text-stone-400 dark:text-stone-500 hover:text-indigo-500 dark:hover:text-indigo-400 px-1.5 py-0.5 rounded transition-colors"
-                        aria-label={`Edit ${project.name}`}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => setConfirmArchive({ id: project.id, name: project.name })}
-                        className="text-[10px] font-medium text-stone-400 dark:text-stone-500 hover:text-rose-500 dark:hover:text-rose-400 px-1.5 py-0.5 rounded transition-colors"
-                        aria-label={`Archive ${project.name}`}
-                      >
-                        Archive
-                      </button>
+                    <div
+                      key={project.id}
+                      draggable
+                      onDragStart={() => setDraggingId(project.id)}
+                      onDragEnd={() => { setDraggingId(null); setDragOverId(null) }}
+                      onDragOver={(e) => { e.preventDefault(); setDragOverId(project.id) }}
+                      onDrop={() => handleDrop(project.id)}
+                      className={`flex flex-col rounded-xl border bg-white dark:bg-dark-card transition-colors ${
+                        dragOverId === project.id
+                          ? 'border-indigo-400 dark:border-indigo-500'
+                          : 'border-stone-100 dark:border-dark-border'
+                      } ${draggingId === project.id ? 'opacity-50' : ''}`}
+                    >
+                      <div className="flex items-center gap-2 p-2.5">
+                        <span
+                          className="text-stone-300 dark:text-stone-600 cursor-grab active:cursor-grabbing flex-shrink-0"
+                          aria-hidden="true"
+                        >
+                          <DragHandleIcon className="w-3.5 h-3.5" />
+                        </span>
+                        <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: project.color }} aria-hidden="true" />
+                        <span className="text-sm text-stone-700 dark:text-stone-200 flex-1 min-w-0 truncate">{project.name}</span>
+                        {project.isDefault && (
+                          <span className="text-amber-400 dark:text-amber-300 flex-shrink-0" aria-label="Default project">
+                            <StarIcon className="w-3 h-3" filled />
+                          </span>
+                        )}
+                        <button
+                          onClick={() => setEditingProject({ id: project.id, name: project.name, color: project.color })}
+                          className="text-stone-400 dark:text-stone-500 hover:text-indigo-500 dark:hover:text-indigo-400 p-1 rounded transition-colors flex-shrink-0"
+                          aria-label={`Edit ${project.name}`}
+                        >
+                          <PencilIcon className="w-3.5 h-3.5" />
+                        </button>
+                        <div className="relative flex-shrink-0">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === project.id ? null : project.id) }}
+                            className="text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 p-1 rounded transition-colors"
+                            aria-label={`More options for ${project.name}`}
+                          >
+                            <DotsIcon className="w-3.5 h-3.5" />
+                          </button>
+                          {openMenuId === project.id && (
+                            <div
+                              className="absolute right-0 top-full mt-1 z-50 bg-white dark:bg-dark-elevated rounded-xl shadow-lg border border-stone-200 dark:border-dark-border py-1 min-w-[148px]"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                onClick={() => { void setDefault(project.id); setOpenMenuId(null) }}
+                                className="w-full text-left px-3 py-2 text-xs text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-dark-hover transition-colors flex items-center gap-2"
+                              >
+                                <StarIcon className="w-3 h-3" filled={!!project.isDefault} />
+                                {project.isDefault ? 'Remove Default' : 'Set as Default'}
+                              </button>
+                              <button
+                                onClick={() => { setColorPickerProjectId(colorPickerProjectId === project.id ? null : project.id); setOpenMenuId(null) }}
+                                className="w-full text-left px-3 py-2 text-xs text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-dark-hover transition-colors"
+                              >
+                                Change Color
+                              </button>
+                              <button
+                                onClick={() => { setConfirmArchive({ id: project.id, name: project.name }); setOpenMenuId(null) }}
+                                className="w-full text-left px-3 py-2 text-xs text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-dark-hover transition-colors"
+                              >
+                                Archive
+                              </button>
+                              <div className="border-t border-stone-100 dark:border-dark-border my-1" />
+                              <button
+                                onClick={() => { setConfirmDeleteProject({ id: project.id, name: project.name }); setOpenMenuId(null) }}
+                                className="w-full text-left px-3 py-2 text-xs text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {colorPickerProjectId === project.id && (
+                        <div className="flex gap-1.5 flex-wrap px-3 pb-2.5">
+                          {PROJECT_COLORS.map((color) => (
+                            <button
+                              key={color}
+                              onClick={() => { void update({ ...project, color }); setColorPickerProjectId(null) }}
+                              className={`w-5 h-5 rounded-full border-2 transition-all ${project.color === color ? 'border-stone-800 dark:border-stone-200 scale-110' : 'border-transparent'}`}
+                              style={{ backgroundColor: color }}
+                              aria-label={`Select color ${color}`}
+                            />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )
                 ))}
@@ -612,10 +725,20 @@ export default function SettingsView() {
 
             {/* Tags */}
             <div>
-              <label className={labelClass}>Tags</label>
+              <div className="flex justify-between items-center mb-2.5">
+                <label className={labelClass + ' mb-0'}>Tags</label>
+                {archivedTags.length > 0 && (
+                  <button
+                    onClick={() => setShowArchivedTags(!showArchivedTags)}
+                    className="text-[10px] font-medium text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300"
+                  >
+                    {showArchivedTags ? 'Hide archived' : `Show archived (${archivedTags.length})`}
+                  </button>
+                )}
+              </div>
 
               <div className="flex flex-col gap-1.5 mb-3">
-                {tags.map((tag) => (
+                {activeTags.map((tag) => (
                   editingTag?.id === tag.id ? (
                     <div key={tag.id} className="flex items-center gap-2 p-2.5 rounded-xl border border-indigo-200 dark:border-indigo-700/40 bg-white dark:bg-dark-card">
                       <input
@@ -642,28 +765,94 @@ export default function SettingsView() {
                       </button>
                     </div>
                   ) : (
-                    <div key={tag.id} className="flex items-center gap-2.5 p-2.5 rounded-xl border border-stone-100 dark:border-dark-border bg-white dark:bg-dark-card">
-                      <span className="text-sm text-stone-700 dark:text-stone-200 flex-1">{tag.name}</span>
+                    <div
+                      key={tag.id}
+                      draggable
+                      onDragStart={() => setDraggingTagId(tag.id)}
+                      onDragEnd={() => { setDraggingTagId(null); setDragOverTagId(null) }}
+                      onDragOver={(e) => { e.preventDefault(); setDragOverTagId(tag.id) }}
+                      onDrop={() => handleTagDrop(tag.id)}
+                      className={`flex items-center gap-2 p-2.5 rounded-xl border bg-white dark:bg-dark-card transition-colors ${
+                        dragOverTagId === tag.id
+                          ? 'border-indigo-400 dark:border-indigo-500'
+                          : 'border-stone-100 dark:border-dark-border'
+                      } ${draggingTagId === tag.id ? 'opacity-50' : ''}`}
+                    >
+                      <span
+                        className="text-stone-300 dark:text-stone-600 cursor-grab active:cursor-grabbing flex-shrink-0"
+                        aria-hidden="true"
+                      >
+                        <DragHandleIcon className="w-3.5 h-3.5" />
+                      </span>
+                      <span className="text-sm text-stone-700 dark:text-stone-200 flex-1 min-w-0 truncate">{tag.name}</span>
+                      {tag.isDefault && (
+                        <span className="text-amber-400 dark:text-amber-300 flex-shrink-0" aria-label="Default tag">
+                          <StarIcon className="w-3 h-3" filled />
+                        </span>
+                      )}
                       <button
                         onClick={() => setEditingTag({ id: tag.id, name: tag.name })}
-                        className="text-[10px] font-medium text-stone-400 dark:text-stone-500 hover:text-indigo-500 dark:hover:text-indigo-400 px-1.5 py-0.5 rounded transition-colors"
+                        className="text-stone-400 dark:text-stone-500 hover:text-indigo-500 dark:hover:text-indigo-400 p-1 rounded transition-colors flex-shrink-0"
                         aria-label={`Edit ${tag.name}`}
                       >
-                        Edit
+                        <PencilIcon className="w-3.5 h-3.5" />
                       </button>
-                      <button
-                        onClick={() => setConfirmDeleteTag({ id: tag.id, name: tag.name })}
-                        className="text-[10px] font-medium text-stone-400 dark:text-stone-500 hover:text-rose-500 dark:hover:text-rose-400 px-1.5 py-0.5 rounded transition-colors"
-                        aria-label={`Delete ${tag.name}`}
-                      >
-                        Delete
-                      </button>
+                      <div className="relative flex-shrink-0">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setOpenTagMenuId(openTagMenuId === tag.id ? null : tag.id) }}
+                          className="text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 p-1 rounded transition-colors"
+                          aria-label={`More options for ${tag.name}`}
+                        >
+                          <DotsIcon className="w-3.5 h-3.5" />
+                        </button>
+                        {openTagMenuId === tag.id && (
+                          <div
+                            className="absolute right-0 top-full mt-1 z-50 bg-white dark:bg-dark-elevated rounded-xl shadow-lg border border-stone-200 dark:border-dark-border py-1 min-w-[148px]"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              onClick={() => { void setDefaultTag(tag.id); setOpenTagMenuId(null) }}
+                              className="w-full text-left px-3 py-2 text-xs text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-dark-hover transition-colors flex items-center gap-2"
+                            >
+                              <StarIcon className="w-3 h-3" filled={!!tag.isDefault} />
+                              {tag.isDefault ? 'Remove Default' : 'Set as Default'}
+                            </button>
+                            <button
+                              onClick={() => { setConfirmArchiveTag({ id: tag.id, name: tag.name }); setOpenTagMenuId(null) }}
+                              className="w-full text-left px-3 py-2 text-xs text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-dark-hover transition-colors"
+                            >
+                              Archive
+                            </button>
+                            <div className="border-t border-stone-100 dark:border-dark-border my-1" />
+                            <button
+                              onClick={() => { setConfirmDeleteTag({ id: tag.id, name: tag.name }); setOpenTagMenuId(null) }}
+                              className="w-full text-left px-3 py-2 text-xs text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )
                 ))}
-                {tags.length === 0 && (
+
+                {activeTags.length === 0 && (
                   <div className="text-xs text-stone-400 dark:text-stone-600 text-center py-3">No tags yet</div>
                 )}
+
+                {showArchivedTags && archivedTags.map((tag) => (
+                  <div key={tag.id} className="flex items-center gap-2.5 p-2.5 rounded-xl border border-stone-100 dark:border-dark-border bg-stone-50 dark:bg-dark-card opacity-60">
+                    <span className="text-sm text-stone-400 dark:text-stone-500 flex-1 line-through">{tag.name}</span>
+                    <button
+                      onClick={() => void updateTag({ ...tag, archived: false })}
+                      className="text-[10px] font-medium text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 px-1.5 py-0.5 rounded"
+                      aria-label={`Restore ${tag.name}`}
+                    >
+                      Restore
+                    </button>
+                  </div>
+                ))}
               </div>
 
               <div className="flex gap-2 items-end">
@@ -956,6 +1145,22 @@ export default function SettingsView() {
       />
 
       <ConfirmDialog
+        isOpen={!!confirmDeleteProject}
+        title="Delete Project?"
+        message={`Are you sure you want to permanently delete "${confirmDeleteProject?.name}"? This cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={() => {
+          if (confirmDeleteProject) {
+            void remove(confirmDeleteProject.id)
+            setConfirmDeleteProject(null)
+          }
+        }}
+        onCancel={() => setConfirmDeleteProject(null)}
+      />
+
+      <ConfirmDialog
         isOpen={!!confirmDeleteTag}
         title="Delete Tag?"
         message={`Are you sure you want to delete "${confirmDeleteTag?.name}"? This will remove it from all entries that use it.`}
@@ -969,6 +1174,22 @@ export default function SettingsView() {
           }
         }}
         onCancel={() => setConfirmDeleteTag(null)}
+      />
+
+      <ConfirmDialog
+        isOpen={!!confirmArchiveTag}
+        title="Archive Tag?"
+        message={`Are you sure you want to archive "${confirmArchiveTag?.name}"? You can restore it later from the archived tags section.`}
+        confirmText="Archive"
+        cancelText="Cancel"
+        variant="warning"
+        onConfirm={() => {
+          if (confirmArchiveTag) {
+            void archiveTag(confirmArchiveTag.id)
+            setConfirmArchiveTag(null)
+          }
+        }}
+        onCancel={() => setConfirmArchiveTag(null)}
       />
     </div>
   )

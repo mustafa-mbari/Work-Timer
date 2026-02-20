@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { Project } from '@/types'
-import { getProjects, saveProject, updateProject, archiveProject } from '@/storage'
+import { getProjects, saveProject, updateProject, archiveProject, deleteProject, setDefaultProject, reorderProjects } from '@/storage'
 import { generateId } from '@/utils/id'
 import { getCachedSubscription } from '@/auth/authState'
 import { getLimits } from '@/premium/featureGate'
@@ -35,7 +35,14 @@ export function useProjects() {
     return () => chrome.storage.onChanged.removeListener(listener)
   }, [fetch])
 
-  const activeProjects = projects.filter(p => !p.archived)
+  const activeProjects = projects
+    .filter(p => !p.archived)
+    .sort((a, b) => {
+      const ao = a.order ?? Infinity
+      const bo = b.order ?? Infinity
+      if (ao !== bo) return ao - bo
+      return a.createdAt - b.createdAt
+    })
 
   const syncNow = () => {
     chrome.runtime.sendMessage({ action: 'SYNC_NOW' }).catch(() => { })
@@ -74,5 +81,21 @@ export function useProjects() {
     syncNow()
   }, [fetch])
 
-  return { projects, activeProjects, loading, create, update, archive, refetch: fetch }
+  const remove = useCallback(async (id: string) => {
+    await deleteProject(id)
+    await fetch()
+    syncNow()
+  }, [fetch])
+
+  const setDefault = useCallback(async (id: string) => {
+    await setDefaultProject(id)
+    await fetch()
+  }, [fetch])
+
+  const reorder = useCallback(async (orderedIds: string[]) => {
+    await reorderProjects(orderedIds)
+    await fetch()
+  }, [fetch])
+
+  return { projects, activeProjects, loading, create, update, archive, remove, setDefault, reorder, refetch: fetch }
 }
