@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import {
@@ -13,9 +12,6 @@ import {
   Settings2,
   Zap,
   Shield,
-  MoreHorizontal,
-  LogOut,
-  Settings,
   PanelLeft,
   Check,
   type LucideIcon,
@@ -28,7 +24,6 @@ import {
   SidebarSeparator,
   useSidebar,
 } from '@/components/ui/sidebar'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,7 +33,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useSidebarLock, type SidebarMode } from '@/hooks/use-sidebar-lock'
-import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
 interface UserInfo {
@@ -118,34 +112,13 @@ function NavItem({
 
 function SidebarFooterContent({
   isPremium,
-  userInfo,
 }: {
   isPremium?: boolean
-  userInfo?: UserInfo
 }) {
   const { state, setOpen } = useSidebar()
   const { mode, setMode } = useSidebarLock()
   const isCollapsed = state === 'collapsed'
   const ts = useTranslations('common.sidebar')
-  const router = useRouter()
-  const supabase = createClient()
-
-  const initials = userInfo
-    ? (userInfo.displayName || userInfo.email)
-        .split(/[\s@]/)
-        .slice(0, 2)
-        .map((s) => s[0]?.toUpperCase() || '')
-        .join('')
-    : '?'
-
-  const displayLabel = userInfo?.displayName || userInfo?.email || ''
-
-  async function handleSignOut() {
-    await supabase.auth.signOut()
-    router.push('/login')
-    router.refresh()
-  }
-
   function handleSetMode(next: SidebarMode) {
     setMode(next)
     if (next === 'expanded') setOpen(true)
@@ -181,84 +154,6 @@ function SidebarFooterContent({
           </div>
           <SidebarSeparator className="mb-2" />
         </>
-      )}
-
-      {/* User profile */}
-      {userInfo && (
-        <div className="px-2 mb-1">
-          {isCollapsed ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  className="w-full flex justify-center py-1 rounded-lg hover:bg-stone-100 dark:hover:bg-[var(--dark-hover)] transition-colors"
-                  aria-label="User menu"
-                >
-                  <Avatar className="h-7 w-7 shrink-0">
-                    <AvatarFallback className="text-[10px] font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent side="right" align="end" className="w-48">
-                <DropdownMenuItem onClick={() => router.push('/settings')}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={handleSignOut}
-                  className="text-rose-600 dark:text-rose-400 focus:text-rose-600"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Sign out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-stone-50 dark:bg-[var(--dark-elevated)] border border-stone-100 dark:border-[var(--dark-border)]">
-              <Avatar className="h-9 w-9 shrink-0">
-                <AvatarFallback className="text-sm font-semibold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-stone-800 dark:text-stone-100 truncate leading-tight">
-                  {displayLabel}
-                </p>
-                {userInfo.displayName && (
-                  <p className="text-xs text-stone-400 dark:text-stone-500 truncate leading-tight mt-0.5">
-                    {userInfo.email}
-                  </p>
-                )}
-              </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    className="h-7 w-7 flex items-center justify-center rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-200 dark:hover:bg-[var(--dark-hover)] transition-colors"
-                    aria-label="User options"
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent side="top" align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => router.push('/settings')}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={handleSignOut}
-                    className="text-rose-600 dark:text-rose-400 focus:text-rose-600"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
-        </div>
       )}
 
       {/* Sidebar control */}
@@ -433,7 +328,7 @@ export default function AppSidebar({ isAdmin, isPremium, userInfo }: Props) {
         )}
       </SidebarContent>
 
-      <SidebarFooterContent isPremium={isPremium} userInfo={userInfo} />
+      <SidebarFooterContent isPremium={isPremium} />
     </Sidebar>
   )
 }
