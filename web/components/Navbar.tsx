@@ -1,11 +1,11 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { NavLink } from '@/components/NavLink'
 import { UserMenu } from '@/components/UserMenu'
 import { MobileMenu } from '@/components/MobileMenu'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Button } from '@/components/ui/button'
-import { Timer } from 'lucide-react'
 
 export default async function Navbar() {
   const supabase = await createClient()
@@ -34,9 +34,15 @@ export default async function Navbar() {
   return (
     <nav className="border-b border-stone-200 bg-white/80 backdrop-blur-sm sticky top-0 z-40 dark:bg-[var(--dark)]/80 dark:border-[var(--dark-border)]">
       <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 font-semibold text-stone-900 dark:text-stone-100 text-sm tracking-tight">
-          <Timer className="h-5 w-5 text-indigo-500" />
-          Work Timer
+        <Link href="/" className="flex items-center">
+          <Image
+            src="/logos/WT_logoWithText.png"
+            alt="Work Timer"
+            width={140}
+            height={40}
+            className="h-8 w-auto"
+            priority
+          />
         </Link>
 
         {/* Desktop nav */}

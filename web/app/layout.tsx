@@ -9,6 +9,9 @@ import type { Theme } from '@/lib/theme'
 export const metadata: Metadata = {
   title: 'Work Timer — Time Tracking for Focused Work',
   description: 'Track your work time with a privacy-first Chrome extension. Free, offline, and blazing fast.',
+  icons: {
+    icon: '/favicon.png',
+  },
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
