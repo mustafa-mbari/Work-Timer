@@ -1,24 +1,25 @@
 'use client'
 
+import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { Bell, Search } from 'lucide-react'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { UserMenu } from '@/components/UserMenu'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar'
-import { useSidebarLock } from '@/hooks/use-sidebar-lock'
 
-const PAGE_META: { match: string; breadcrumb: string; title: string }[] = [
-  { match: '/dashboard',           breadcrumb: 'Pages / Dashboard',           title: 'Main Dashboard' },
-  { match: '/analytics',           breadcrumb: 'Pages / Analytics',           title: 'Analytics' },
-  { match: '/entries',             breadcrumb: 'Pages / Entries',             title: 'Time Entries' },
-  { match: '/billing',             breadcrumb: 'Pages / Billing',             title: 'Billing & Plans' },
-  { match: '/settings',            breadcrumb: 'Pages / Settings',            title: 'Settings' },
-  { match: '/admin/users',         breadcrumb: 'Admin / Users',               title: 'Users' },
-  { match: '/admin/stats',         breadcrumb: 'Admin / Statistics',          title: 'Statistics' },
-  { match: '/admin/domains',       breadcrumb: 'Admin / Domains',             title: 'Domains' },
-  { match: '/admin/promos',        breadcrumb: 'Admin / Promo Codes',         title: 'Promo Codes' },
-  { match: '/admin/subscriptions', breadcrumb: 'Admin / Subscriptions',       title: 'Subscriptions' },
-  { match: '/admin',               breadcrumb: 'Admin / Overview',            title: 'Admin Dashboard' },
+const PAGE_META: { match: string; title: string; description?: string }[] = [
+  { match: '/dashboard', title: 'Dashboard', description: 'Main overview of your activity' },
+  { match: '/analytics', title: 'Analytics', description: 'Detailed productivity reports' },
+  { match: '/entries', title: 'Time Entries', description: 'Review and manage your logs' },
+  { match: '/billing', title: 'Billing & Plans', description: 'Manage your subscription' },
+  { match: '/settings', title: 'Settings', description: 'App and account preferences' },
+  { match: '/admin/users', title: 'Users', description: 'Administration control' },
+  { match: '/admin/stats', title: 'Statistics', description: 'System-wide performance' },
+  { match: '/admin/domains', title: 'Domains', description: 'Whitelist management' },
+  { match: '/admin/promos', title: 'Promo Codes', description: 'Discounts and offers' },
+  { match: '/admin/subscriptions', title: 'Subscriptions', description: 'Active member list' },
+  { match: '/admin', title: 'Admin Dashboard', description: 'Platform overview' },
 ]
 
 interface UserInfo {
@@ -34,55 +35,68 @@ interface Props {
 export default function AppHeader({ userInfo }: Props) {
   const pathname = usePathname()
   const { isMobile } = useSidebar()
-  const { locked } = useSidebarLock()
 
   const page = PAGE_META.find(p => pathname === p.match || pathname.startsWith(p.match + '/'))
-    ?? { breadcrumb: 'Pages', title: 'Dashboard' }
-
-  // On desktop, hover handles open/close — only show trigger on mobile
-  const showTrigger = isMobile
+    ?? { title: 'Dashboard', description: 'Main overview of your activity' }
 
   return (
-    <header className="sticky top-0 z-20 flex items-center justify-between h-16 px-4 bg-white dark:bg-[var(--dark-card)] border-b border-stone-100 dark:border-[var(--dark-border)] shrink-0">
-      {/* Left: sidebar toggle + breadcrumb */}
-      <div className="flex items-center gap-3 min-w-0">
-        {showTrigger && <SidebarTrigger aria-label="Toggle sidebar" />}
-        <div className="min-w-0">
-          <p className="text-[11px] font-medium text-stone-400 dark:text-stone-500 uppercase tracking-wider leading-none mb-0.5">
-            {page.breadcrumb}
-          </p>
-          <h1 className="text-lg font-bold text-stone-800 dark:text-stone-100 leading-tight truncate">
-            {page.title}
-          </h1>
-        </div>
+    <header className="sticky top-0 z-20 flex items-center h-14 bg-white dark:bg-[var(--dark-card)] border-b border-[var(--sidebar-border)] shrink-0 px-0">
+      {/* Sidebar-width Logo Area */}
+      <div
+        className="flex items-center h-full px-5 transition-[width] duration-300 ease-in-out overflow-hidden"
+        style={{ width: isMobile ? '0px' : 'var(--sidebar-width)' }}
+      >
+        {isMobile && (
+          <div className="mr-2">
+            <SidebarTrigger aria-label="Toggle sidebar" />
+          </div>
+        )}
+
+        <Link href="/dashboard" className="shrink-0">
+          <Image
+            src="/logos/LogoText.png"
+            alt="Work Timer"
+            width={140}
+            height={36}
+            className="h-7 w-auto"
+            priority
+          />
+        </Link>
       </div>
 
-      {/* Right: actions */}
-      <div className="flex items-center gap-2 shrink-0 ml-4">
-        {/* Search bar */}
-        <div className="hidden lg:flex items-center gap-2 h-9 px-3.5 rounded-full bg-stone-100 dark:bg-[var(--dark-elevated)] text-sm text-stone-400 dark:text-stone-500 w-52 cursor-text">
-          <Search className="h-3.5 w-3.5 shrink-0" />
-          <span className="text-xs">Search</span>
+      {/* Vertical Divider / Line matching sidebar border */}
+      <div className="hidden sm:block h-full w-px bg-[var(--sidebar-border)]" />
+
+      {/* Main header content (Page info + Actions) */}
+      <div className="flex-1 flex items-center justify-between px-6 min-w-0">
+        <div className="flex items-baseline gap-3 min-w-0">
+          <h1 className="text-base font-bold text-stone-800 dark:text-stone-100 leading-tight truncate shrink-0">
+            {page.title}
+          </h1>
+          {page.description && (
+            <p className="text-[11px] font-medium text-stone-400 dark:text-stone-500 uppercase tracking-wider truncate">
+              {page.description}
+            </p>
+          )}
         </div>
 
-        {/* Notification bell */}
-        <button
-          className="relative h-9 w-9 rounded-full bg-stone-100 dark:bg-[var(--dark-elevated)] flex items-center justify-center text-stone-500 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-[var(--dark-hover)] transition-colors"
-          aria-label="Notifications"
-        >
-          <Bell className="h-4 w-4" />
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-indigo-500 ring-2 ring-white dark:ring-[var(--dark-card)]" />
-        </button>
+        {/* Right: actions (Opposite order) */}
+        <div className="flex items-center gap-6 shrink-0">
+          {/* Language selector */}
+          <div className="hidden sm:block">
+            <LanguageSwitcher compact />
+          </div>
 
-        {/* Theme toggle */}
-        <ThemeToggle />
+          {/* Theme toggle */}
+          <ThemeToggle />
 
-        {/* User avatar/menu */}
-        <UserMenu
-          email={userInfo.email}
-          displayName={userInfo.displayName}
-          role={userInfo.role}
-        />
+          {/* User avatar/menu */}
+          <UserMenu
+            email={userInfo.email}
+            displayName={userInfo.displayName}
+            role={userInfo.role}
+          />
+        </div>
       </div>
     </header>
   )

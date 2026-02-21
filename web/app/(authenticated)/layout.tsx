@@ -54,16 +54,20 @@ export default async function AuthenticatedLayout({
   return (
     <SidebarProvider defaultOpen={sidebarOpen}>
       <SidebarLockProvider defaultMode={sidebarMode}>
-        <AppSidebar isAdmin={userInfo.role === 'admin'} isPremium={premium} userInfo={userInfo} />
-        <SidebarInset className="bg-stone-50 dark:bg-[var(--dark)]">
+        <div className="flex flex-col h-screen w-full">
           <AppHeader userInfo={userInfo} />
-          <div className="flex-1 overflow-y-auto">
-            <div className="mx-auto w-full max-w-[1280px] px-8 py-8">
-              <LastPageTracker />
-              {children}
-            </div>
+          <div className="flex flex-1 overflow-hidden">
+            <AppSidebar isAdmin={userInfo.role === 'admin'} isPremium={premium} userInfo={userInfo} />
+            <SidebarInset className="bg-stone-50 dark:bg-[var(--dark)] flex flex-col overflow-hidden">
+              <div className="flex-1 overflow-y-auto">
+                <div className="mx-auto w-full max-w-[1280px] px-8 py-8">
+                  <LastPageTracker />
+                  {children}
+                </div>
+              </div>
+            </SidebarInset>
           </div>
-        </SidebarInset>
+        </div>
       </SidebarLockProvider>
     </SidebarProvider>
   )

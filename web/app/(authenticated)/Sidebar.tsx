@@ -235,51 +235,8 @@ export default function AppSidebar({ isAdmin, isPremium, userInfo }: Props) {
       collapsible="icon"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      className="pt-14"
     >
-      {/* Logo — opacity-based transition, no display:none snap */}
-      <SidebarHeader className="h-14 border-b border-sidebar-border relative overflow-hidden flex items-center">
-        {/* Small logo: visible when collapsed */}
-        <div
-          className="absolute inset-0 flex items-center justify-center"
-          style={{
-            opacity: open ? 0 : 1,
-            transition: 'opacity 250ms ease-in-out',
-            pointerEvents: open ? 'none' : 'auto',
-          }}
-        >
-          <Link href="/">
-            <Image
-              src="/logos/WT_justLogo.png"
-              alt="Work Timer"
-              width={32}
-              height={32}
-              className="h-7 w-7"
-              priority
-            />
-          </Link>
-        </div>
-        {/* Full logo: visible when expanded */}
-        <div
-          className="absolute inset-0 flex items-center px-3"
-          style={{
-            opacity: open ? 1 : 0,
-            transition: 'opacity 250ms ease-in-out',
-            pointerEvents: open ? 'auto' : 'none',
-          }}
-        >
-          <Link href="/">
-            <Image
-              src="/logos/WT_logoWithText.png"
-              alt="Work Timer"
-              width={260}
-              height={64}
-              className="h-8 w-auto"
-              priority
-            />
-          </Link>
-        </div>
-      </SidebarHeader>
-
       <SidebarContent>
         {/* Main nav */}
         <div className="flex flex-col gap-1 pt-3">
