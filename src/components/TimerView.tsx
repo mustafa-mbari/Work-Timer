@@ -378,7 +378,7 @@ export default function TimerView() {
                   <div className="flex items-center gap-3">
                     <button
                       onClick={() => setManualHours(h => String(Math.max(0, (parseInt(h) || 0) - 1)))}
-                      className="w-8 h-8 rounded-full border-2 border-stone-300 dark:border-stone-600 text-stone-400 dark:text-stone-500 flex items-center justify-center hover:border-indigo-400 hover:text-indigo-500 dark:hover:border-indigo-400 dark:hover:text-indigo-400 transition-colors active:scale-95 text-lg leading-none"
+                      className="w-8 h-8 rounded-full border-2 border-stone-300 dark:border-stone-600 bg-white dark:bg-dark-elevated text-stone-400 dark:text-stone-500 flex items-center justify-center hover:border-indigo-400 hover:text-indigo-500 dark:hover:border-indigo-400 dark:hover:text-indigo-400 transition-colors active:scale-95 text-lg leading-none"
                       aria-label="Decrease hours"
                     >−</button>
                     <span className="text-2xl font-semibold w-9 text-center tabular-nums text-stone-900 dark:text-stone-100">
@@ -386,7 +386,7 @@ export default function TimerView() {
                     </span>
                     <button
                       onClick={() => setManualHours(h => String(Math.min(23, (parseInt(h) || 0) + 1)))}
-                      className="w-8 h-8 rounded-full border-2 border-stone-300 dark:border-stone-600 text-stone-400 dark:text-stone-500 flex items-center justify-center hover:border-indigo-400 hover:text-indigo-500 dark:hover:border-indigo-400 dark:hover:text-indigo-400 transition-colors active:scale-95 text-lg leading-none"
+                      className="w-8 h-8 rounded-full border-2 border-stone-300 dark:border-stone-600 bg-white dark:bg-dark-elevated text-stone-400 dark:text-stone-500 flex items-center justify-center hover:border-indigo-400 hover:text-indigo-500 dark:hover:border-indigo-400 dark:hover:text-indigo-400 transition-colors active:scale-95 text-lg leading-none"
                       aria-label="Increase hours"
                     >+</button>
                   </div>
@@ -400,7 +400,7 @@ export default function TimerView() {
                   <div className="flex items-center gap-3">
                     <button
                       onClick={() => setManualMinutes(m => String(Math.max(0, (parseInt(m) || 0) - 5)))}
-                      className="w-8 h-8 rounded-full border-2 border-stone-300 dark:border-stone-600 text-stone-400 dark:text-stone-500 flex items-center justify-center hover:border-indigo-400 hover:text-indigo-500 dark:hover:border-indigo-400 dark:hover:text-indigo-400 transition-colors active:scale-95 text-lg leading-none"
+                      className="w-8 h-8 rounded-full border-2 border-stone-300 dark:border-stone-600 bg-white dark:bg-dark-elevated text-stone-400 dark:text-stone-500 flex items-center justify-center hover:border-indigo-400 hover:text-indigo-500 dark:hover:border-indigo-400 dark:hover:text-indigo-400 transition-colors active:scale-95 text-lg leading-none"
                       aria-label="Decrease minutes"
                     >−</button>
                     <span className="text-2xl font-semibold w-9 text-center tabular-nums text-stone-900 dark:text-stone-100">
@@ -408,7 +408,7 @@ export default function TimerView() {
                     </span>
                     <button
                       onClick={() => setManualMinutes(m => String(Math.min(55, (parseInt(m) || 0) + 5)))}
-                      className="w-8 h-8 rounded-full border-2 border-stone-300 dark:border-stone-600 text-stone-400 dark:text-stone-500 flex items-center justify-center hover:border-indigo-400 hover:text-indigo-500 dark:hover:border-indigo-400 dark:hover:text-indigo-400 transition-colors active:scale-95 text-lg leading-none"
+                      className="w-8 h-8 rounded-full border-2 border-stone-300 dark:border-stone-600 bg-white dark:bg-dark-elevated text-stone-400 dark:text-stone-500 flex items-center justify-center hover:border-indigo-400 hover:text-indigo-500 dark:hover:border-indigo-400 dark:hover:text-indigo-400 transition-colors active:scale-95 text-lg leading-none"
                       aria-label="Increase minutes"
                     >+</button>
                   </div>

@@ -73,12 +73,12 @@ const STEPS = [
 ]
 
 const ALL_FEATURES = [
-  { icon: Timer,            title: 'Stopwatch, Manual & Pomodoro', desc: 'Three timer modes. Switch anytime, description carries over.' },
-  { icon: FolderKanban,    title: 'Project Tracking',              desc: 'Colour-coded projects with optional hour targets.' },
-  { icon: BarChart3,       title: 'Weekly & Monthly Stats',        desc: 'Clear charts showing exactly where your time goes.' },
-  { icon: ShieldCheck,     title: 'Privacy First',                 desc: 'Data lives in your browser. No tracking, no ads.' },
-  { icon: Cloud,           title: 'Cloud Sync (Premium)',          desc: 'Sync across all your devices in real time.' },
-  { icon: FileSpreadsheet, title: 'Export (Premium)',              desc: 'Export to CSV or Excel for invoicing or reporting.' },
+  { icon: Timer, title: 'Stopwatch, Manual & Pomodoro', desc: 'Three timer modes. Switch anytime, description carries over.' },
+  { icon: FolderKanban, title: 'Project Tracking', desc: 'Colour-coded projects with optional hour targets.' },
+  { icon: BarChart3, title: 'Weekly & Monthly Stats', desc: 'Clear charts showing exactly where your time goes.' },
+  { icon: ShieldCheck, title: 'Privacy First', desc: 'Data lives in your browser. No tracking, no ads.' },
+  { icon: Cloud, title: 'Cloud Sync (Premium)', desc: 'Sync across all your devices in real time.' },
+  { icon: FileSpreadsheet, title: 'Export (Premium)', desc: 'Export to CSV or Excel for invoicing or reporting.' },
 ]
 
 const TESTIMONIALS = [
@@ -148,8 +148,8 @@ const FAQS = [
 
 const TRUST_BADGES = [
   { icon: ShieldCheck, label: 'Privacy first' },
-  { icon: WifiOff,     label: 'Offline-first' },
-  { icon: Zap,         label: 'No account needed' },
+  { icon: WifiOff, label: 'Offline-first' },
+  { icon: Zap, label: 'No account needed' },
 ]
 
 // ─── Shared container class ───────────────────────────────────────────────────
@@ -209,7 +209,7 @@ export default async function LandingPage() {
             {/* Social proof strip */}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 justify-center lg:justify-start">
               <div className="flex items-center gap-0.5" aria-label="5 star rating">
-                {[0,1,2,3,4].map(i => (
+                {[0, 1, 2, 3, 4].map(i => (
                   <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" aria-hidden="true" />
                 ))}
                 <span className="ml-1.5 text-sm font-medium text-stone-600 dark:text-stone-400">5.0</span>
@@ -224,7 +224,7 @@ export default async function LandingPage() {
           </div>
 
           {/* Right: Extension mockup */}
-          <div className="flex-none w-full sm:w-[380px] lg:w-[460px] xl:w-[520px] mx-auto lg:mx-0">
+          <div className="flex-none w-full sm:w-[380px] lg:w-[360px] xl:w-[320px] mx-auto lg:mx-0">
             <ExtensionMockup />
           </div>
         </div>

@@ -117,7 +117,7 @@ export default function ExtensionMockup() {
 
         {/* Bottom tab nav */}
         <div className="flex border-t border-stone-100 dark:border-[var(--dark-border)]" role="tablist" aria-label="Extension views">
-          {(['Timer', 'Week', 'Stats'] as const).map((label, i) => (
+          {(['Timer', 'Manual', 'Pomodoro'] as const).map((label, i) => (
             <div
               key={label}
               role="tab"

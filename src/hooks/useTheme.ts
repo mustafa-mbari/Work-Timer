@@ -13,12 +13,12 @@ export interface ThemeMeta {
 }
 
 export const THEMES: ThemeMeta[] = [
+  { id: 'light-sepia',   label: 'White',    isDark: false, swatchBg: '#FAFAFA', swatchAccent: '#6366F1' },
   { id: 'light-soft',    label: 'Soft',     isDark: false, swatchBg: '#F2F2F0', swatchAccent: '#6366F1' },
   { id: 'light-paper',   label: 'Paper',    isDark: false, swatchBg: '#F4EFE6', swatchAccent: '#6366F1' },
-  { id: 'light-sepia',   label: 'Sepia',    isDark: false, swatchBg: '#EDE3D5', swatchAccent: '#8B6A4A' },
-  { id: 'dark-charcoal', label: 'Charcoal', isDark: true,  swatchBg: '#2C2C2C', swatchAccent: '#818CF8' },
-  { id: 'dark-mocha',    label: 'Mocha',    isDark: true,  swatchBg: '#221A16', swatchAccent: '#818CF8' },
-  { id: 'dark-midnight', label: 'Midnight', isDark: true,  swatchBg: '#141820', swatchAccent: '#818CF8' },
+  { id: 'dark-charcoal', label: 'Charcoal', isDark: true,  swatchBg: '#3A3A3A', swatchAccent: '#818CF8' },
+  { id: 'dark-midnight', label: 'Midnight', isDark: true,  swatchBg: '#1C2638', swatchAccent: '#818CF8' },
+  { id: 'dark-mocha',    label: 'Black',    isDark: true,  swatchBg: '#0A0806', swatchAccent: '#818CF8' },
 ]
 
 function migrateTheme(stored: string): ThemeId {

@@ -84,11 +84,11 @@
   --color-red-500: #EF4444;
 
   /* Dark mode surfaces */
-  --color-dark: #161616;
-  --color-dark-card: #1E1E1E;
-  --color-dark-elevated: #262626;
-  --color-dark-border: #303030;
-  --color-dark-hover: #2A2A2A;
+  --color-dark: #1E1E1E;
+  --color-dark-card: #282828;
+  --color-dark-elevated: #333333;
+  --color-dark-border: #404040;
+  --color-dark-hover: #363636;
 
   /* White & Black */
   --color-white: #FFFFFF;
@@ -181,7 +181,7 @@ body {
 }
 
 html.dark body {
-  background-color: #161616;
+  background-color: #1E1E1E;
   color: #F5F5F4;
 }
 
@@ -250,33 +250,33 @@ select {
 
 /* --- Dark: Charcoal (medium gray, easier on eyes than pure black) --- */
 [data-theme="dark-charcoal"] {
-  --color-dark:          #242424;
-  --color-dark-card:     #2C2C2C;
-  --color-dark-elevated: #343434;
-  --color-dark-border:   #424242;
-  --color-dark-hover:    #383838;
+  --color-dark:          #303030;
+  --color-dark-card:     #3A3A3A;
+  --color-dark-elevated: #454545;
+  --color-dark-border:   #525252;
+  --color-dark-hover:    #484848;
 }
-[data-theme="dark-charcoal"] body { background-color: #242424; }
+[data-theme="dark-charcoal"] body { background-color: #303030; }
 
-/* --- Dark: Mocha (warm dark brown/charcoal) --- */
+/* --- Dark: Mocha (warm black — rich dark with brown undertones) --- */
 [data-theme="dark-mocha"] {
-  --color-dark:          #1A1512;
-  --color-dark-card:     #221A16;
-  --color-dark-elevated: #2A2018;
-  --color-dark-border:   #3A2E26;
-  --color-dark-hover:    #2E2318;
+  --color-dark:          #0A0806;
+  --color-dark-card:     #1C1612;
+  --color-dark-elevated: #261E18;
+  --color-dark-border:   #382C24;
+  --color-dark-hover:    #2C2018;
 }
-[data-theme="dark-mocha"] body { background-color: #1A1512; }
+[data-theme="dark-mocha"] body { background-color: #0A0806; }
 
 /* --- Dark: Midnight (dark navy / blue-black) --- */
 [data-theme="dark-midnight"] {
-  --color-dark:          #0E1119;
-  --color-dark-card:     #141820;
-  --color-dark-elevated: #1B2030;
-  --color-dark-border:   #26304A;
-  --color-dark-hover:    #1D2638;
+  --color-dark:          #141C2A;
+  --color-dark-card:     #1C2638;
+  --color-dark-elevated: #243046;
+  --color-dark-border:   #2E3E5C;
+  --color-dark-hover:    #273544;
 }
-[data-theme="dark-midnight"] body { background-color: #0E1119; }
+[data-theme="dark-midnight"] body { background-color: #141C2A; }
 
 /* --- Light: Soft (gentle off-white, less glare) --- */
 [data-theme="light-soft"] {
@@ -296,11 +296,11 @@ select {
 }
 [data-theme="light-paper"] body { background-color: #F4EFE6; }
 
-/* --- Light: Sepia (warm brownish / magazine feel) --- */
+/* --- Light: Sepia (crisp white / high contrast) --- */
 [data-theme="light-sepia"] {
-  --color-white:       #F2E8DA;
-  --color-stone-50:    #EDE3D5;
-  --color-stone-100:   #E2D8C8;
-  --color-stone-200:   #D4C9B7;
+  --color-white:       #FFFFFF;
+  --color-stone-50:    #FAFAFA;
+  --color-stone-100:   #F4F4F4;
+  --color-stone-200:   #E8E8E8;
 }
-[data-theme="light-sepia"] body { background-color: #EDE3D5; }
+[data-theme="light-sepia"] body { background-color: #FFFFFF; }
