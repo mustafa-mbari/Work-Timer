@@ -45,13 +45,15 @@ export default async function AuthenticatedLayout({
   // Read sidebar preferences from cookies (written client-side by shadcn sidebar)
   // to match initial server-render state and prevent layout shift on hydration.
   const cookieStore = await cookies()
-  const sidebarLocked = cookieStore.get('sidebar_locked')?.value === 'true'
-  // Sidebar starts collapsed unless the user has pinned it open
-  const sidebarOpen = sidebarLocked
+  const rawMode = cookieStore.get('sidebar_mode')?.value
+  const sidebarMode = (['expanded', 'collapsed', 'hover'].includes(rawMode ?? '')
+    ? rawMode
+    : 'hover') as 'expanded' | 'collapsed' | 'hover'
+  const sidebarOpen = sidebarMode === 'expanded'
 
   return (
     <SidebarProvider defaultOpen={sidebarOpen}>
-      <SidebarLockProvider defaultLocked={sidebarLocked}>
+      <SidebarLockProvider defaultMode={sidebarMode}>
         <AppSidebar isAdmin={userInfo.role === 'admin'} isPremium={premium} userInfo={userInfo} />
         <SidebarInset className="bg-stone-50 dark:bg-[var(--dark)]">
           <AppHeader userInfo={userInfo} />

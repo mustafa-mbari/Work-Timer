@@ -13,22 +13,18 @@ import {
   Settings2,
   Zap,
   Shield,
-  Pin,
-  PinOff,
   MoreHorizontal,
   LogOut,
   Settings,
+  PanelLeft,
+  Check,
+  type LucideIcon,
 } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
   SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
   SidebarSeparator,
   useSidebar,
 } from '@/components/ui/sidebar'
@@ -37,11 +33,13 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useSidebarLock } from '@/hooks/use-sidebar-lock'
+import { useSidebarLock, type SidebarMode } from '@/hooks/use-sidebar-lock'
 import { createClient } from '@/lib/supabase/client'
+import { cn } from '@/lib/utils'
 
 interface UserInfo {
   email: string
@@ -55,6 +53,69 @@ interface Props {
   userInfo?: UserInfo
 }
 
+const SIDEBAR_MODES: { value: SidebarMode; label: string }[] = [
+  { value: 'expanded', label: 'Expanded' },
+  { value: 'collapsed', label: 'Collapsed' },
+  { value: 'hover', label: 'Expand on hover' },
+]
+
+// NavItem: no group-data-[collapsible=icon] classes — icon never moves,
+// text is hidden via overflow-hidden on the link + opacity transition.
+// mx-2 makes the link (48-16)=32px wide in collapsed mode, perfectly
+// centered in the 48px sidebar strip.
+function NavItem({
+  href,
+  label,
+  icon: Icon,
+  isActive,
+  open,
+}: {
+  href: string
+  label: string
+  icon: LucideIcon
+  isActive: boolean
+  open: boolean
+}) {
+  return (
+    <Link
+      href={href}
+      aria-current={isActive ? 'page' : undefined}
+      className="group/nav flex items-center h-10 rounded-lg mx-2 overflow-hidden transition-colors hover:bg-[#ebebeb] dark:hover:bg-[var(--dark-hover)]"
+    >
+      {/* Icon container: ALWAYS 32×32 — carries the active background.
+          Centered in the 48px sidebar strip regardless of sidebar CSS width. */}
+      <span
+        className={cn(
+          'w-8 h-8 flex items-center justify-center shrink-0 rounded-lg transition-colors',
+          isActive
+            ? 'bg-[#e8e6ff] dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400'
+            : 'text-stone-500 dark:text-stone-400 group-hover/nav:text-stone-800 dark:group-hover/nav:text-stone-100',
+        )}
+      >
+        <Icon className="h-5 w-5" />
+      </span>
+      {/* Text: max-width transition hides it from layout when collapsed,
+          opacity fades it visually. Double mechanism for reliability. */}
+      <span
+        className={cn(
+          'text-[13px] whitespace-nowrap overflow-hidden',
+          isActive
+            ? 'text-indigo-600 dark:text-indigo-400'
+            : 'text-stone-500 dark:text-stone-400 group-hover/nav:text-stone-800 dark:group-hover/nav:text-stone-100',
+        )}
+        style={{
+          maxWidth: open ? '200px' : '0px',
+          opacity: open ? 1 : 0,
+          marginLeft: open ? '8px' : '0px',
+          transition: 'max-width 200ms ease-linear, opacity 150ms ease-linear 60ms, margin-left 200ms ease-linear',
+        }}
+      >
+        {label}
+      </span>
+    </Link>
+  )
+}
+
 function SidebarFooterContent({
   isPremium,
   userInfo,
@@ -62,19 +123,19 @@ function SidebarFooterContent({
   isPremium?: boolean
   userInfo?: UserInfo
 }) {
-  const { state } = useSidebar()
-  const { locked, toggleLock } = useSidebarLock()
+  const { state, setOpen } = useSidebar()
+  const { mode, setMode } = useSidebarLock()
   const isCollapsed = state === 'collapsed'
   const ts = useTranslations('common.sidebar')
   const router = useRouter()
   const supabase = createClient()
 
   const initials = userInfo
-    ? ((userInfo.displayName || userInfo.email)
+    ? (userInfo.displayName || userInfo.email)
         .split(/[\s@]/)
         .slice(0, 2)
         .map((s) => s[0]?.toUpperCase() || '')
-        .join(''))
+        .join('')
     : '?'
 
   const displayLabel = userInfo?.displayName || userInfo?.email || ''
@@ -85,9 +146,15 @@ function SidebarFooterContent({
     router.refresh()
   }
 
+  function handleSetMode(next: SidebarMode) {
+    setMode(next)
+    if (next === 'expanded') setOpen(true)
+    if (next === 'collapsed') setOpen(false)
+  }
+
   return (
-    <SidebarFooter className="gap-0 pb-3 pt-0">
-      {/* Upgrade to PRO card — hidden when collapsed */}
+    <SidebarFooter className="gap-0 pb-2 pt-0">
+      {/* Upgrade card — hidden when collapsed */}
       {!isPremium && !isCollapsed && (
         <>
           <div className="px-3 pb-3">
@@ -112,13 +179,13 @@ function SidebarFooterContent({
               </div>
             </div>
           </div>
-          <SidebarSeparator className="mb-3" />
+          <SidebarSeparator className="mb-2" />
         </>
       )}
 
       {/* User profile */}
       {userInfo && (
-        <div className="px-2">
+        <div className="px-2 mb-1">
           {isCollapsed ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -165,44 +232,78 @@ function SidebarFooterContent({
                   </p>
                 )}
               </div>
-              <div className="flex items-center gap-0.5 shrink-0">
-                <button
-                  onClick={toggleLock}
-                  className="h-7 w-7 flex items-center justify-center rounded-lg text-stone-300 hover:text-stone-500 dark:hover:text-stone-300 hover:bg-stone-200 dark:hover:bg-[var(--dark-hover)] transition-colors"
-                  aria-label={locked ? 'Unpin sidebar' : 'Pin sidebar open'}
-                  title={locked ? 'Unpin sidebar' : 'Pin sidebar open'}
-                >
-                  {locked ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
-                </button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      className="h-7 w-7 flex items-center justify-center rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-200 dark:hover:bg-[var(--dark-hover)] transition-colors"
-                      aria-label="User options"
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent side="top" align="end" className="w-48">
-                    <DropdownMenuItem onClick={() => router.push('/settings')}>
-                      <Settings className="mr-2 h-4 w-4" />
-                      Settings
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={handleSignOut}
-                      className="text-rose-600 dark:text-rose-400 focus:text-rose-600"
-                    >
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Sign out
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="h-7 w-7 flex items-center justify-center rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-200 dark:hover:bg-[var(--dark-hover)] transition-colors"
+                    aria-label="User options"
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="top" align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => router.push('/settings')}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleSignOut}
+                    className="text-rose-600 dark:text-rose-400 focus:text-rose-600"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           )}
         </div>
       )}
+
+      {/* Sidebar control */}
+      <div className={`px-2 ${isCollapsed ? 'flex justify-center' : ''}`}>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            {isCollapsed ? (
+              <button
+                className="h-8 w-8 flex items-center justify-center rounded-lg text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-[var(--dark-hover)] transition-colors"
+                aria-label="Sidebar control"
+              >
+                <PanelLeft className="h-4 w-4" />
+              </button>
+            ) : (
+              <button
+                className="w-full flex items-center gap-2 px-3 h-9 rounded-lg text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-[var(--dark-hover)] transition-colors text-xs"
+                aria-label="Sidebar control"
+              >
+                <PanelLeft className="h-4 w-4 shrink-0" />
+                <span>Sidebar control</span>
+              </button>
+            )}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            side={isCollapsed ? 'right' : 'top'}
+            align={isCollapsed ? 'end' : 'start'}
+            className="w-48"
+          >
+            <DropdownMenuLabel className="text-xs text-stone-400 font-medium">
+              Sidebar control
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {SIDEBAR_MODES.map(({ value, label }) => (
+              <DropdownMenuItem
+                key={value}
+                onClick={() => handleSetMode(value)}
+                className="flex items-center justify-between"
+              >
+                <span>{label}</span>
+                {mode === value && <Check className="h-3.5 w-3.5 text-[#625fff]" />}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </SidebarFooter>
   )
 }
@@ -210,18 +311,17 @@ function SidebarFooterContent({
 export default function AppSidebar({ isAdmin, isPremium, userInfo }: Props) {
   const pathname = usePathname()
   const tn = useTranslations('common.nav')
-  const { setOpen, isMobile } = useSidebar()
-  const { locked } = useSidebarLock()
+  const { setOpen, isMobile, open } = useSidebar()
+  const { mode } = useSidebarLock()
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + '/')
 
-  // Hover-to-expand: only on desktop and when not pinned open
   const handleMouseEnter = () => {
-    if (!isMobile && !locked) setOpen(true)
+    if (!isMobile && mode === 'hover') setOpen(true)
   }
   const handleMouseLeave = () => {
-    if (!isMobile && !locked) setOpen(false)
+    if (!isMobile && mode === 'hover') setOpen(false)
   }
 
   const NAV_MAIN = [
@@ -235,116 +335,100 @@ export default function AppSidebar({ isAdmin, isPremium, userInfo }: Props) {
     { href: '/settings', label: tn('settings'), icon: Settings2 },
   ]
 
-  const navItemClass =
-    'h-10 rounded-lg px-3 text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-100 hover:bg-[#ebebeb] dark:hover:bg-[var(--dark-hover)]'
-
   return (
     <Sidebar
       collapsible="icon"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Logo */}
-      <SidebarHeader className="h-14 border-b border-sidebar-border flex flex-row items-center px-3 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center">
-        {/* Full logo — shown when expanded */}
-        <Link href="/" className="flex items-center group-data-[collapsible=icon]:hidden">
-          <Image
-            src="/logos/WT_logoWithText.png"
-            alt="Work Timer"
-            width={260}
-            height={64}
-            className="h-8 w-auto"
-            priority
-          />
-        </Link>
-        {/* Icon-only logo — shown when collapsed */}
-        <Link href="/" className="hidden group-data-[collapsible=icon]:flex items-center justify-center">
-          <Image
-            src="/logos/WT_justLogo.png"
-            alt="Work Timer"
-            width={32}
-            height={32}
-            className="h-7 w-7"
-            priority
-          />
-        </Link>
+      {/* Logo — opacity-based transition, no display:none snap */}
+      <SidebarHeader className="h-14 border-b border-sidebar-border relative overflow-hidden flex items-center">
+        {/* Small logo: visible when collapsed */}
+        <div
+          className="absolute inset-0 flex items-center justify-center"
+          style={{
+            opacity: open ? 0 : 1,
+            transition: 'opacity 150ms ease-linear',
+            pointerEvents: open ? 'none' : 'auto',
+          }}
+        >
+          <Link href="/">
+            <Image
+              src="/logos/WT_justLogo.png"
+              alt="Work Timer"
+              width={32}
+              height={32}
+              className="h-7 w-7"
+              priority
+            />
+          </Link>
+        </div>
+        {/* Full logo: visible when expanded */}
+        <div
+          className="absolute inset-0 flex items-center px-3"
+          style={{
+            opacity: open ? 1 : 0,
+            transition: 'opacity 150ms ease-linear',
+            pointerEvents: open ? 'auto' : 'none',
+          }}
+        >
+          <Link href="/">
+            <Image
+              src="/logos/WT_logoWithText.png"
+              alt="Work Timer"
+              width={260}
+              height={64}
+              className="h-8 w-auto"
+              priority
+            />
+          </Link>
+        </div>
       </SidebarHeader>
 
-      <SidebarContent className="py-3">
+      <SidebarContent>
         {/* Main nav */}
-        <SidebarGroup className="px-3 py-0">
-          <SidebarGroupContent>
-            <SidebarMenu className="gap-0.5">
-              {NAV_MAIN.map(({ href, label, icon: Icon }) => (
-                <SidebarMenuItem key={href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(href)}
-                    tooltip={label}
-                    aria-current={isActive(href) ? 'page' : undefined}
-                    className={navItemClass}
-                  >
-                    <Link href={href}>
-                      <Icon aria-hidden="true" className="h-[18px] w-[18px] shrink-0" />
-                      <span className="text-[13px]">{label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <div className="flex flex-col gap-1 pt-3">
+          {NAV_MAIN.map(({ href, label, icon }) => (
+            <NavItem
+              key={href}
+              href={href}
+              label={label}
+              icon={icon}
+              isActive={isActive(href)}
+              open={open}
+            />
+          ))}
+        </div>
 
         <SidebarSeparator className="my-3" />
 
         {/* Account nav */}
-        <SidebarGroup className="px-3 py-0">
-          <SidebarGroupContent>
-            <SidebarMenu className="gap-0.5">
-              {NAV_ACCOUNT.map(({ href, label, icon: Icon }) => (
-                <SidebarMenuItem key={href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(href)}
-                    tooltip={label}
-                    aria-current={isActive(href) ? 'page' : undefined}
-                    className={navItemClass}
-                  >
-                    <Link href={href}>
-                      <Icon aria-hidden="true" className="h-[18px] w-[18px] shrink-0" />
-                      <span className="text-[13px]">{label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <div className="flex flex-col gap-1">
+          {NAV_ACCOUNT.map(({ href, label, icon }) => (
+            <NavItem
+              key={href}
+              href={href}
+              label={label}
+              icon={icon}
+              isActive={isActive(href)}
+              open={open}
+            />
+          ))}
+        </div>
 
         {/* Admin nav */}
         {isAdmin && (
           <>
             <SidebarSeparator className="my-3" />
-            <SidebarGroup className="px-3 py-0">
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-0.5">
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive('/admin')}
-                      tooltip="Admin Panel"
-                      aria-current={isActive('/admin') ? 'page' : undefined}
-                      className={navItemClass}
-                    >
-                      <Link href="/admin">
-                        <Shield aria-hidden="true" className="h-4 w-4 shrink-0" />
-                        <span className="text-[13px]">{tn('adminPanel')}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+            <div className="flex flex-col gap-1">
+              <NavItem
+                href="/admin"
+                label={tn('adminPanel')}
+                icon={Shield}
+                isActive={isActive('/admin')}
+                open={open}
+              />
+            </div>
           </>
         )}
       </SidebarContent>

@@ -2,38 +2,55 @@
 
 import * as React from 'react'
 
-const COOKIE_NAME = 'sidebar_locked'
+export type SidebarMode = 'expanded' | 'collapsed' | 'hover'
+
+const COOKIE_NAME = 'sidebar_mode'
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30 // 30 days
 
 interface SidebarLockContextValue {
+  mode: SidebarMode
+  setMode: (mode: SidebarMode) => void
+  /** True when mode === 'expanded' (pinned open) */
   locked: boolean
+  /** Legacy toggle — switches between 'expanded' and 'hover' */
   toggleLock: () => void
 }
 
 const SidebarLockContext = React.createContext<SidebarLockContextValue>({
+  mode: 'hover',
+  setMode: () => {},
   locked: false,
   toggleLock: () => {},
 })
 
 export function SidebarLockProvider({
   children,
-  defaultLocked = false,
+  defaultMode = 'hover',
 }: {
   children: React.ReactNode
+  defaultMode?: SidebarMode
+  /** @deprecated use defaultMode */
   defaultLocked?: boolean
 }) {
-  const [locked, setLocked] = React.useState(defaultLocked)
+  const [mode, setModeState] = React.useState<SidebarMode>(defaultMode)
+
+  const setMode = React.useCallback((next: SidebarMode) => {
+    setModeState(next)
+    document.cookie = `${COOKIE_NAME}=${next}; path=/; max-age=${COOKIE_MAX_AGE}`
+  }, [])
 
   const toggleLock = React.useCallback(() => {
-    setLocked((prev) => {
-      const next = !prev
+    setModeState((prev) => {
+      const next: SidebarMode = prev === 'expanded' ? 'hover' : 'expanded'
       document.cookie = `${COOKIE_NAME}=${next}; path=/; max-age=${COOKIE_MAX_AGE}`
       return next
     })
   }, [])
 
   return (
-    <SidebarLockContext.Provider value={{ locked, toggleLock }}>
+    <SidebarLockContext.Provider
+      value={{ mode, setMode, locked: mode === 'expanded', toggleLock }}
+    >
       {children}
     </SidebarLockContext.Provider>
   )
