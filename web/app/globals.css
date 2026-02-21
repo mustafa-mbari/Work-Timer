@@ -83,3 +83,45 @@ body {
 @utility animate-fade-in {
   animation: fade-in 0.25s ease-out both;
 }
+
+/* ----------------------------------------------------------------
+   Extension Mockup — flip-clock tile (mirrors extension's rolling-face)
+   ---------------------------------------------------------------- */
+
+.mockup-tile {
+  background: #d8d8d8;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.dark .mockup-tile {
+  background: #727272;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.mockup-tile-gradient {
+  background: linear-gradient(
+    180deg,
+    #d8d8d8 0%,
+    rgba(216, 216, 216, 0.6) 20%,
+    transparent 35%,
+    transparent 65%,
+    rgba(216, 216, 216, 0.6) 80%,
+    #d8d8d8 100%
+  );
+}
+
+.dark .mockup-tile-gradient {
+  background: linear-gradient(
+    180deg,
+    #727272 0%,
+    rgba(114, 114, 114, 0.6) 20%,
+    transparent 35%,
+    transparent 65%,
+    rgba(114, 114, 114, 0.6) 80%,
+    #727272 100%
+  );
+}

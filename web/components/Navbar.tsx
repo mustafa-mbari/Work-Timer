@@ -33,7 +33,7 @@ export default async function Navbar() {
 
   return (
     <nav className="border-b border-stone-200 bg-white/80 backdrop-blur-sm sticky top-0 z-40 dark:bg-[var(--dark)]/80 dark:border-[var(--dark-border)]">
-      <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+      <div className="max-w-[1600px] mx-auto px-8 lg:px-12 xl:px-16 h-14 flex items-center justify-between">
         <Link href="/" className="flex items-center">
           <Image
             src="/logos/WT_logoWithText.png"

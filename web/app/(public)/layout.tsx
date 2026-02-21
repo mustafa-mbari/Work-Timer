@@ -8,7 +8,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         {children}
       </main>
       <footer className="border-t border-stone-200 py-8 mt-16 dark:border-[var(--dark-border)]">
-        <div className="max-w-5xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-stone-500 dark:text-stone-400">
+        <div className="max-w-[1600px] mx-auto px-8 lg:px-12 xl:px-16 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-stone-500 dark:text-stone-400">
           <span suppressHydrationWarning>&copy; {new Date().getFullYear()} Work Timer. All rights reserved.</span>
           <div className="flex gap-6">
             <a href="/privacy" className="hover:text-stone-700 dark:hover:text-stone-300 transition-colors">Privacy</a>
