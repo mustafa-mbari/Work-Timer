@@ -8,10 +8,10 @@ import { cn } from '@/lib/utils'
 
 const LINKS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/analytics', label: 'Analytics',  icon: BarChart2 },
-  { href: '/entries',   label: 'Entries',    icon: Clock },
-  { href: '/billing',   label: 'Billing',    icon: CreditCard },
-  { href: '/settings',  label: 'Settings',   icon: Settings2 },
+  { href: '/analytics', label: 'Analytics', icon: BarChart2 },
+  { href: '/entries', label: 'Entries', icon: Clock },
+  { href: '/billing', label: 'Billing', icon: CreditCard },
+  { href: '/settings', label: 'Settings', icon: Settings2 },
 ]
 
 interface Props {
@@ -30,9 +30,9 @@ export default function Sidebar({ isAdmin, isPremium }: Props) {
           <Image
             src="/logos/WT_logoWithText.png"
             alt="Work Timer"
-            width={160}
-            height={46}
-            className="h-11 w-auto"
+            width={260}
+            height={64}
+            className="h-20 w-auto"
             priority
           />
         </Link>
