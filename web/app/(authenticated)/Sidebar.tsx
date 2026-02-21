@@ -8,6 +8,8 @@ import {
   LayoutDashboard,
   BarChart2,
   Clock,
+  DollarSign,
+  Users,
   CreditCard,
   Settings2,
   Zap,
@@ -44,6 +46,7 @@ interface UserInfo {
 interface Props {
   isAdmin?: boolean
   isPremium?: boolean
+  isAllIn?: boolean
   userInfo?: UserInfo
 }
 
@@ -203,7 +206,7 @@ function SidebarFooterContent({
   )
 }
 
-export default function AppSidebar({ isAdmin, isPremium, userInfo }: Props) {
+export default function AppSidebar({ isAdmin, isPremium, isAllIn, userInfo }: Props) {
   const pathname = usePathname()
   const tn = useTranslations('common.nav')
   const { setOpen, isMobile, open } = useSidebar()
@@ -223,6 +226,8 @@ export default function AppSidebar({ isAdmin, isPremium, userInfo }: Props) {
     { href: '/dashboard', label: tn('dashboard'), icon: LayoutDashboard },
     { href: '/analytics', label: tn('analytics'), icon: BarChart2 },
     { href: '/entries', label: tn('entries'), icon: Clock },
+    { href: '/earnings', label: 'Earnings', icon: DollarSign },
+    ...(isAllIn ? [{ href: '/groups', label: 'Groups', icon: Users }] : []),
   ]
 
   const NAV_ACCOUNT = [

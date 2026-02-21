@@ -7,14 +7,14 @@ export type ProjectSummary = Pick<Project, 'id' | 'name' | 'color' | 'archived'>
 
 export type ProjectFull = Pick<
   Project,
-  'id' | 'name' | 'color' | 'archived' | 'is_default' | 'sort_order' | 'target_hours' | 'created_at'
+  'id' | 'name' | 'color' | 'archived' | 'is_default' | 'sort_order' | 'target_hours' | 'hourly_rate' | 'created_at'
 >
 
 export async function getUserProjects(userId: string): Promise<ProjectFull[]> {
   const supabase = await createClient()
   const { data } = await supabase
     .from('projects')
-    .select('id, name, color, archived, is_default, sort_order, target_hours, created_at')
+    .select('id, name, color, archived, is_default, sort_order, target_hours, hourly_rate, created_at')
     .eq('user_id', userId)
     .is('deleted_at', null)
     .order('sort_order', { ascending: true, nullsFirst: false })
@@ -35,7 +35,7 @@ export async function countUserProjects(userId: string): Promise<number> {
 
 export async function createProject(
   userId: string,
-  data: { id: string; name: string; color: string; target_hours?: number | null },
+  data: { id: string; name: string; color: string; target_hours?: number | null; hourly_rate?: number | null },
 ): Promise<{ error: { message: string } | null }> {
   const supabase = await createClient()
   const { error } = await (supabase.from('projects') as any).insert({
@@ -44,6 +44,7 @@ export async function createProject(
     name: data.name,
     color: data.color,
     target_hours: data.target_hours ?? null,
+    hourly_rate: data.hourly_rate ?? null,
     archived: false,
     is_default: false,
     sort_order: null,
@@ -56,7 +57,7 @@ export async function createProject(
 export async function updateProject(
   userId: string,
   id: string,
-  data: { name?: string; color?: string; target_hours?: number | null; archived?: boolean },
+  data: { name?: string; color?: string; target_hours?: number | null; hourly_rate?: number | null; archived?: boolean },
 ): Promise<{ error: { message: string } | null }> {
   const supabase = await createClient()
   const { error } = await (supabase.from('projects') as any)

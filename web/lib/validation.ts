@@ -1,10 +1,10 @@
 import { z } from 'zod'
 
-const VALID_PLANS = ['premium_monthly', 'premium_yearly', 'premium_lifetime'] as const
+const VALID_PLANS = ['premium_monthly', 'premium_yearly', 'premium_lifetime', 'allin_monthly', 'allin_yearly'] as const
 
 // --- Checkout ---
 export const checkoutSchema = z.object({
-  plan: z.enum(['monthly', 'yearly', 'lifetime']),
+  plan: z.enum(['monthly', 'yearly', 'lifetime', 'allin_monthly', 'allin_yearly']),
 })
 
 // --- Promo codes ---
@@ -74,6 +74,8 @@ export const updateSettingsSchema = z.object({
   daily_target: z.number().min(0).max(24).nullable().optional(),
   weekly_target: z.number().min(0).max(168).nullable().optional(),
   pomodoro_config: pomodoroConfigSchema.optional(),
+  default_hourly_rate: z.number().min(0).max(10000).nullable().optional(),
+  currency: z.string().min(3).max(3).optional(),
   floating_timer_auto: z.boolean().optional(),
   reminder: reminderConfigSchema.nullable().optional(),
 })
@@ -115,12 +117,14 @@ export const createProjectSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Invalid color'),
   target_hours: z.number().min(0).max(10000).nullable().optional(),
+  hourly_rate: z.number().min(0).max(10000).nullable().optional(),
 })
 
 export const updateProjectSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   target_hours: z.number().min(0).max(10000).nullable().optional(),
+  hourly_rate: z.number().min(0).max(10000).nullable().optional(),
   archived: z.boolean().optional(),
 })
 
@@ -142,6 +146,44 @@ export const updateTagSchema = z.object({
 export const analyticsFilterSchema = z.object({
   dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   dateTo:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+})
+
+// --- Groups ---
+export const createGroupSchema = z.object({
+  name: z.string().min(1, 'Group name is required').max(100),
+})
+
+export const updateGroupSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+})
+
+export const inviteMemberSchema = z.object({
+  email: z.string().email('Valid email is required'),
+})
+
+export const joinGroupSchema = z.object({
+  code: z.string().min(1, 'Join code is required').max(20),
+})
+
+export const updateGroupMemberSchema = z.object({
+  role: z.enum(['admin', 'member']),
+})
+
+export const invitationActionSchema = z.object({
+  invitation_id: z.string().min(1),
+  action: z.enum(['accept', 'decline']),
+})
+
+// --- Earnings ---
+export const earningsFilterSchema = z.object({
+  dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+})
+
+// --- Admin Groups ---
+export const adminUpdateGroupSchema = z.object({
+  group_id: z.string().min(1),
+  max_members: z.number().int().min(1).max(1000),
 })
 
 // Helper to parse and return a typed result or a 400 response

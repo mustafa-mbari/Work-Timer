@@ -24,6 +24,8 @@ interface Props {
   stats: UserStats | null
   isPremium: boolean
   userEmail: string
+  defaultHourlyRate: number | null
+  currency: string
 }
 
 type TabId = 'overview' | 'devices' | 'recent'
@@ -37,6 +39,8 @@ export default function DashboardTabs({
   stats,
   isPremium,
   userEmail,
+  defaultHourlyRate,
+  currency,
 }: Props) {
   const t = useTranslations('dashboard.tabs')
   const router = useRouter()
@@ -93,6 +97,8 @@ export default function DashboardTabs({
           userEmail={userEmail}
           projects={projects}
           tags={tags}
+          defaultHourlyRate={defaultHourlyRate}
+          currency={currency}
         />
       )}
       {activeTab === 'devices' && (

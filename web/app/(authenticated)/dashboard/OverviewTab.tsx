@@ -24,6 +24,8 @@ interface Props {
   userEmail: string
   projects: ProjectFull[]
   tags: TagFull[]
+  defaultHourlyRate: number | null
+  currency: string
 }
 
 const PLAN_LABEL: Record<string, string> = {
@@ -38,7 +40,7 @@ function formatHours(h: number): string {
   return h % 1 === 0 ? String(h) : h.toFixed(1)
 }
 
-export default function OverviewTab({ subscription, stats, isPremium, userEmail, projects, tags }: Props) {
+export default function OverviewTab({ subscription, stats, isPremium, userEmail, projects, tags, defaultHourlyRate, currency }: Props) {
   const t = useTranslations('dashboard.overview')
   const plan = subscription?.plan ?? 'free'
 
@@ -126,7 +128,7 @@ export default function OverviewTab({ subscription, stats, isPremium, userEmail,
 
       {/* ── Projects & Tags cards ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <ProjectsCard initialProjects={projects} isPremium={isPremium} />
+        <ProjectsCard initialProjects={projects} isPremium={isPremium} defaultHourlyRate={defaultHourlyRate} currency={currency} />
         <TagsCard initialTags={tags} />
       </div>
 

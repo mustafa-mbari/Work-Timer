@@ -16,13 +16,14 @@ export interface DbSubscription {
   user_id: string
   stripe_customer_id: string | null
   stripe_subscription_id: string | null
-  plan: 'free' | 'premium_monthly' | 'premium_yearly' | 'premium_lifetime'
+  plan: 'free' | 'premium_monthly' | 'premium_yearly' | 'premium_lifetime' | 'allin_monthly' | 'allin_yearly'
   status: 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete'
   current_period_start: string | null
   current_period_end: string | null
   cancel_at_period_end: boolean
   granted_by: 'stripe' | 'domain' | 'promo' | 'admin_manual' | null
   promo_code_id: string | null
+  group_id: string | null
   created_at: string
   updated_at: string
 }
@@ -33,6 +34,7 @@ export interface DbProject {
   name: string
   color: string               // Hex color
   target_hours: number | null
+  hourly_rate: number | null
   archived: boolean
   is_default: boolean
   sort_order: number | null
@@ -87,7 +89,15 @@ export interface DbUserSettings {
     sessionsBeforeLongBreak: number
     soundEnabled: boolean
   }
+  default_hourly_rate: number | null
+  currency: string
   floating_timer_auto: boolean
+  reminder: {
+    enabled: boolean
+    dayOfWeek: number
+    hour: number
+    minute: number
+  }
   updated_at: string
 }
 
@@ -103,7 +113,7 @@ export interface DbPromoCode {
   id: string
   code: string
   discount_pct: number
-  plan: 'premium_monthly' | 'premium_yearly' | 'premium_lifetime'
+  plan: 'premium_monthly' | 'premium_yearly' | 'premium_lifetime' | 'allin_monthly' | 'allin_yearly'
   max_uses: number | null
   current_uses: number
   valid_from: string
@@ -133,11 +143,37 @@ export interface DbUserStats {
 export interface DbWhitelistedDomain {
   id: string
   domain: string
-  plan: 'premium_monthly' | 'premium_yearly' | 'premium_lifetime'
+  plan: 'premium_monthly' | 'premium_yearly' | 'premium_lifetime' | 'allin_monthly' | 'allin_yearly'
   notes: string | null
   active: boolean
   created_at: string
   created_by: string | null
+}
+
+export interface DbGroup {
+  id: string
+  name: string
+  owner_id: string
+  join_code: string | null
+  max_members: number
+  created_at: string
+}
+
+export interface DbGroupMember {
+  group_id: string
+  user_id: string
+  role: 'admin' | 'member'
+  created_at: string
+}
+
+export interface DbGroupInvitation {
+  id: string
+  group_id: string
+  email: string
+  invited_by: string
+  status: 'pending' | 'accepted' | 'declined' | 'expired'
+  created_at: string
+  expires_at: string
 }
 
 // ---------------------------------------------------------------------------
@@ -170,13 +206,14 @@ interface DbSubscriptionInsert {
   id?: string
   stripe_customer_id?: string | null
   stripe_subscription_id?: string | null
-  plan?: 'free' | 'premium_monthly' | 'premium_yearly' | 'premium_lifetime'
-  status?: 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete'
+  plan?: DbSubscription['plan']
+  status?: DbSubscription['status']
   current_period_start?: string | null
   current_period_end?: string | null
   cancel_at_period_end?: boolean
   granted_by?: 'stripe' | 'domain' | 'promo' | 'admin_manual' | null
   promo_code_id?: string | null
+  group_id?: string | null
   created_at?: string
   updated_at?: string
 }
@@ -185,13 +222,14 @@ interface DbSubscriptionUpdate {
   id?: string
   stripe_customer_id?: string | null
   stripe_subscription_id?: string | null
-  plan?: 'free' | 'premium_monthly' | 'premium_yearly' | 'premium_lifetime'
-  status?: 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete'
+  plan?: DbSubscription['plan']
+  status?: DbSubscription['status']
   current_period_start?: string | null
   current_period_end?: string | null
   cancel_at_period_end?: boolean
   granted_by?: 'stripe' | 'domain' | 'promo' | 'admin_manual' | null
   promo_code_id?: string | null
+  group_id?: string | null
   created_at?: string
   updated_at?: string
 }
@@ -202,6 +240,7 @@ interface DbProjectInsert {
   name: string
   color: string
   target_hours?: number | null
+  hourly_rate?: number | null
   archived?: boolean
   is_default?: boolean
   sort_order?: number | null
@@ -215,6 +254,7 @@ interface DbProjectUpdate {
   name?: string
   color?: string
   target_hours?: number | null
+  hourly_rate?: number | null
   archived?: boolean
   is_default?: boolean
   sort_order?: number | null
@@ -290,7 +330,10 @@ interface DbUserSettingsInsert {
   daily_target?: number | null
   weekly_target?: number | null
   pomodoro_config?: DbUserSettings['pomodoro_config']
+  default_hourly_rate?: number | null
+  currency?: string
   floating_timer_auto?: boolean
+  reminder?: DbUserSettings['reminder']
   updated_at?: string
 }
 interface DbUserSettingsUpdate {
@@ -304,7 +347,10 @@ interface DbUserSettingsUpdate {
   daily_target?: number | null
   weekly_target?: number | null
   pomodoro_config?: DbUserSettings['pomodoro_config']
+  default_hourly_rate?: number | null
+  currency?: string
   floating_timer_auto?: boolean
+  reminder?: DbUserSettings['reminder']
   updated_at?: string
 }
 
@@ -326,7 +372,7 @@ interface DbSyncCursorUpdate {
 interface DbPromoCodeInsert {
   code: string
   discount_pct: number
-  plan: 'premium_monthly' | 'premium_yearly' | 'premium_lifetime'
+  plan: DbPromoCode['plan']
   id?: string
   max_uses?: number | null
   current_uses?: number
@@ -384,7 +430,7 @@ interface DbUserStatsUpdate {
 
 interface DbWhitelistedDomainInsert {
   domain: string
-  plan: 'premium_monthly' | 'premium_yearly' | 'premium_lifetime'
+  plan: DbWhitelistedDomain['plan']
   id?: string
   notes?: string | null
   active?: boolean
@@ -399,6 +445,56 @@ interface DbWhitelistedDomainUpdate {
   active?: boolean
   created_at?: string
   created_by?: string | null
+}
+
+// --- Group types ---
+interface DbGroupInsert {
+  name: string
+  owner_id: string
+  id?: string
+  join_code?: string | null
+  max_members?: number
+  created_at?: string
+}
+interface DbGroupUpdate {
+  name?: string
+  owner_id?: string
+  id?: string
+  join_code?: string | null
+  max_members?: number
+  created_at?: string
+}
+
+interface DbGroupMemberInsert {
+  group_id: string
+  user_id: string
+  role?: 'admin' | 'member'
+  created_at?: string
+}
+interface DbGroupMemberUpdate {
+  group_id?: string
+  user_id?: string
+  role?: 'admin' | 'member'
+  created_at?: string
+}
+
+interface DbGroupInvitationInsert {
+  group_id: string
+  email: string
+  invited_by: string
+  id?: string
+  status?: DbGroupInvitation['status']
+  created_at?: string
+  expires_at?: string
+}
+interface DbGroupInvitationUpdate {
+  group_id?: string
+  email?: string
+  invited_by?: string
+  id?: string
+  status?: DbGroupInvitation['status']
+  created_at?: string
+  expires_at?: string
 }
 
 // Database type map for @supabase/supabase-js typed client
@@ -416,6 +512,9 @@ export type Database = {
       promo_redemptions: { Row: DbPromoRedemption; Insert: DbPromoRedemptionInsert; Update: DbPromoRedemptionUpdate; Relationships: [] }
       whitelisted_domains: { Row: DbWhitelistedDomain; Insert: DbWhitelistedDomainInsert; Update: DbWhitelistedDomainUpdate; Relationships: [] }
       user_stats: { Row: DbUserStats; Insert: DbUserStatsInsert; Update: DbUserStatsUpdate; Relationships: [] }
+      groups: { Row: DbGroup; Insert: DbGroupInsert; Update: DbGroupUpdate; Relationships: [] }
+      group_members: { Row: DbGroupMember; Insert: DbGroupMemberInsert; Update: DbGroupMemberUpdate; Relationships: [] }
+      group_invitations: { Row: DbGroupInvitation; Insert: DbGroupInvitationInsert; Update: DbGroupInvitationUpdate; Relationships: [] }
     }
     Views: Record<string, never>
     Functions: {
@@ -482,6 +581,55 @@ export type Database = {
         discount_pct: number | null
         promo_id: string | null
         promo_code: string | null
+      }}
+      get_earnings_report: { Args: { p_user_id: string; p_date_from?: string; p_date_to?: string }; Returns: {
+        currency: string
+        default_rate: number
+        projects: Array<{
+          id: string
+          name: string
+          color: string
+          hours: number
+          rate: number
+          total: number
+        }>
+        grand_total: number
+        total_hours: number
+        total_projects: number
+      }}
+      get_group_analytics: { Args: { p_group_id: string; p_user_id: string; p_date_from?: string; p_date_to?: string }; Returns: {
+        total_hours: number
+        total_entries: number
+        member_count: number
+        member_stats: Array<{
+          user_id: string
+          display_name: string
+          email: string
+          hours: number
+          entries: number
+        }>
+        project_stats: Array<{
+          name: string
+          color: string
+          hours: number
+          entries: number
+        }>
+        weekly_data: Array<{ week: string; hours: number }> | null
+        error?: string
+      }}
+      admin_get_groups: { Args: Record<string, never>; Returns: Array<{
+        id: string
+        name: string
+        owner_id: string
+        owner_email: string
+        join_code: string | null
+        max_members: number
+        member_count: number
+        created_at: string
+      }>}
+      admin_update_group: { Args: { p_group_id: string; p_max_members: number }; Returns: {
+        success: boolean
+        error?: string
       }}
     }
     Enums: Record<string, never>

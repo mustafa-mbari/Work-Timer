@@ -477,3 +477,329 @@ Mark items with `[x]` as you test them, or add notes if something fails.
 - [ ] Animation plays correctly in both light mode and dark mode
 - [ ] Animation does NOT play inside the same page (e.g. switching settings tabs or analytics filter changes should not retrigger fade-in)
 - [ ] `prefers-reduced-motion` — if OS has reduced motion enabled, animation should not be jarring (verify the `both` fill mode keeps content visible at rest)
+
+---
+
+## Phase 7 — Project Hourly Pricing & Earnings
+
+### Task 7.1 — Earnings Settings Tab
+
+**Setup:** Sign in with any authenticated account.
+
+- [ ] Navigate to `/settings?tab=earnings` → confirm the "Earnings" tab renders with DollarSign icon
+- [ ] **Default Hourly Rate** field starts empty (or shows previously saved value)
+- [ ] Enter a rate (e.g. `50`) → click "Save" → toast "Settings saved"
+- [ ] Refresh page → confirm `50` persists in the input
+- [ ] Clear the rate field → save → confirm `null` is accepted (no error)
+- [ ] **Currency** dropdown shows supported currencies (USD, EUR, GBP, CAD, AUD, JPY, CHF, INR, BRL, SEK)
+- [ ] Select "EUR" → save → refresh → confirm "EUR" persists
+- [ ] Light mode and dark mode render correctly
+- [ ] Responsive at 375px mobile width
+
+---
+
+### Task 7.2 — Per-Project Hourly Rate (Dashboard)
+
+**Setup:** Premium user with at least one project synced.
+
+- [ ] Navigate to `/dashboard` → Projects card shows existing projects
+- [ ] Click the edit (pencil) icon on a project → inline edit row expands
+- [ ] Confirm "Rate/hr" input appears in the edit form
+- [ ] Rate field shows placeholder "Default ($50)" when project has no rate and default rate is set to 50
+- [ ] Enter a per-project rate (e.g. `75`) → save → confirm the project card shows an emerald rate badge "USD 75/hr"
+- [ ] Clear the rate → save → confirm badge disappears (falls back to default rate)
+- [ ] When both project rate and default rate are `null` → no rate badge displayed
+- [ ] Creating a new project → hourly rate starts as `null`
+
+---
+
+### Task 7.3 — Earnings Page (Premium Gate)
+
+**Setup:** Test with both a free and a premium account.
+
+- [ ] **Free user**: navigate to `/earnings` → confirm blurred/locked preview with "Upgrade to Premium" prompt and link to `/billing`
+- [ ] **Premium user**: navigate to `/earnings` → confirm page loads with real earnings data
+
+---
+
+### Task 7.4 — Earnings Report (Premium)
+
+**Setup:** Premium user with projects that have hourly rates set.
+
+- [ ] Summary cards visible: Grand Total, Avg Rate, Total Hours, Total Projects
+- [ ] Grand Total shows in correct currency (e.g. "€1,250.00" for EUR)
+- [ ] Table columns: Project, Hours, Rate, Total
+- [ ] Each project row shows: project name/color dot, tracked hours, effective rate, calculated total
+- [ ] Grand total row at bottom in emerald accent
+- [ ] Project with `hourly_rate` set → uses that rate
+- [ ] Project with `hourly_rate = null` → uses default hourly rate from settings
+- [ ] Both rates `null` → shows $0.00 for that project (no error)
+- [ ] Light mode and dark mode render correctly
+- [ ] Responsive at 375px mobile width
+
+---
+
+### Task 7.5 — Earnings Date Filter
+
+- [ ] Filter bar shows preset buttons: Week, Month, Quarter, Year
+- [ ] Click "Week" → URL updates with `dateFrom`/`dateTo` → summary cards and table update
+- [ ] Click "Month" → data updates to current month range
+- [ ] Click "Quarter" → data updates to current quarter range
+- [ ] Click "Year" → data updates to current year range
+- [ ] Manual "From" and "To" date inputs work correctly
+- [ ] Clear button resets filters → all-time data shown
+- [ ] Refresh with date params in URL → correct filter still active
+
+---
+
+### Task 7.6 — Earnings CSV Export
+
+- [ ] Click "Export CSV" → browser downloads a file
+- [ ] File named `earnings_<from>_<to>.csv` (or `earnings_all.csv` if no filter)
+- [ ] CSV content includes: Project, Hours, Rate, Total columns
+- [ ] Data in CSV matches what's shown in the table
+- [ ] Currency values are properly formatted
+
+---
+
+### Task 7.7 — Rate Fallback Logic
+
+- [ ] Project with `hourly_rate = 75` and `default_hourly_rate = 50` → earnings use 75
+- [ ] Project with `hourly_rate = null` and `default_hourly_rate = 50` → earnings use 50
+- [ ] Project with `hourly_rate = null` and `default_hourly_rate = null` → earnings show $0.00 (no crash)
+- [ ] All projects `null` rates → Grand Total is $0.00
+
+---
+
+### Sidebar & Header Updates
+
+- [ ] `/earnings` appears in the sidebar navigation with DollarSign icon (after Analytics)
+- [ ] `/earnings` page title shows "Earnings" with description "Track project revenue" in the header
+- [ ] `/groups` appears in the sidebar (All-In users only) with Users icon
+
+---
+
+### Phase 7 — API Sanity Checks
+
+- [ ] `PUT /api/settings` with `{ default_hourly_rate: 50, currency: "EUR" }` → returns 200
+- [ ] `PUT /api/settings` with `{ default_hourly_rate: null }` → returns 200
+- [ ] `PUT /api/projects/<id>` with `{ hourly_rate: 75 }` → returns 200
+- [ ] `PUT /api/projects/<id>` with `{ hourly_rate: null }` → returns 200
+- [ ] All earnings-related endpoints return 401 without auth
+
+---
+
+## Phase 8 — All-In Subscription & Billing
+
+### Task 8.1 — All-In Plan Cards on Billing Page
+
+**Setup:** Sign in with a free or premium account.
+
+- [ ] Navigate to `/billing` → confirm "All-In Plans" section appears
+- [ ] Two cards visible: "All-In Monthly" ($29.99/mo) and "All-In Yearly" ($299/yr, "Save 17%")
+- [ ] Feature list on each card includes: "Everything in Premium", "Team groups", "Shared time tracking", "Group analytics", "Earnings reports"
+- [ ] "Upgrade to All-In Monthly" and "Upgrade to All-In Yearly" checkout buttons are clickable
+- [ ] **Already All-In user**: current plan card shows "Current Plan" badge instead of checkout button
+- [ ] Active All-In banner at top shows "All-In Monthly" or "All-In Yearly" with renewal date and "Manage Subscription" button
+
+---
+
+### Task 8.2 — All-In Checkout Flow
+
+**Setup:** Test Stripe checkout with test card `4242 4242 4242 4242`.
+
+- [ ] Click "Upgrade to All-In Monthly" → redirects to Stripe Checkout
+- [ ] Stripe Checkout shows correct price ($29.99/mo) and plan name
+- [ ] Complete payment → redirect back to `/billing` with active All-In plan
+- [ ] Subscription record in Supabase shows `plan: 'allin_monthly'`, `status: 'active'`
+- [ ] `isPremiumUser()` returns `true` for All-In user
+- [ ] `isAllInUser()` returns `true` for All-In user
+
+---
+
+### Task 8.3 — Stripe Webhooks for All-In Plans
+
+- [ ] `checkout.session.completed` with `metadata.plan = 'allin_monthly'` → subscription upserted correctly
+- [ ] `checkout.session.completed` with `metadata.plan = 'allin_yearly'` → subscription upserted correctly
+- [ ] `customer.subscription.updated` with all-in price ID → plan and status updated
+- [ ] `customer.subscription.deleted` for all-in → plan set to `'free'`, status `'canceled'`
+- [ ] After cancellation → user loses access to groups and earnings features
+
+---
+
+## Phase 9 — Groups
+
+### Task 9.1 — Groups Page (All-In Gate)
+
+**Setup:** Test with both a non-all-in user and an all-in user.
+
+- [ ] **Free / Premium user**: navigate to `/groups` → confirm upgrade prompt with team icon and "Upgrade to All-In" button linking to `/billing`
+- [ ] **All-In user**: navigate to `/groups` → confirm page loads with "My Groups" and "Invitations" tabs
+
+---
+
+### Task 9.2 — Create a Group
+
+**Setup:** All-In user.
+
+- [ ] Click "Create Group" → dialog opens with name input
+- [ ] Enter a group name → click "Create" → toast success → group card appears
+- [ ] Group card shows: name, member count (1), your role (admin), join code
+- [ ] Creator is automatically added as `admin` member
+- [ ] Creating a group without a name → validation error
+
+---
+
+### Task 9.3 — Group Detail (Inline Expand)
+
+- [ ] Click a group card → card expands inline showing members list, invite form, join code
+- [ ] Members list shows: avatar initial, name/email, role badge (admin/member)
+- [ ] Admin sees: invite input, remove member buttons, role toggle buttons, join code copy, delete group button
+- [ ] Non-admin member sees: members list only (no admin actions)
+
+---
+
+### Task 9.4 — Copy Join Code
+
+- [ ] Click the copy icon next to join code → code copied to clipboard → toast "Join code copied"
+- [ ] Verify copied code matches what's displayed
+
+---
+
+### Task 9.5 — Invite Member by Email
+
+**Setup:** All-In admin of a group.
+
+- [ ] Enter an email in the invite input → click "Invite" → toast "Invitation sent to [email]"
+- [ ] Invitation appears in the group's invitations list (if visible to admin)
+- [ ] Invited user sees the invitation in their "Invitations" tab on `/groups`
+
+---
+
+### Task 9.6 — Accept / Decline Invitation
+
+**Setup:** All-In user with a pending invitation.
+
+- [ ] "Invitations" tab shows badge with pending count
+- [ ] Each invitation shows: group name, expiry date, Accept and Decline buttons
+- [ ] Click "Accept" → invitation card removed → group appears in "My Groups" tab
+- [ ] Click "Decline" → invitation card removed → group does NOT appear
+- [ ] Badge count updates after accept/decline
+
+---
+
+### Task 9.7 — Join Group via Code
+
+**Setup:** All-In user who is NOT already a member of the target group.
+
+- [ ] Click "Join" button → dialog opens with code input
+- [ ] Enter a valid join code → click "Join" → toast "Joined [group name]" → group appears in list
+- [ ] Enter an **invalid** code → toast error "Invalid join code"
+- [ ] Enter code for a group you're **already in** → toast error "You are already a member of this group"
+- [ ] Enter code for a **full** group → toast error "Group is at maximum capacity"
+
+---
+
+### Task 9.8 — Join Without All-In Subscription
+
+- [ ] Free or Premium user calls `POST /api/groups/join` → returns 403 "All-In subscription required"
+
+---
+
+### Task 9.9 — Member Management
+
+**Setup:** Group admin with at least 2 other members.
+
+- [ ] **Promote to admin**: click role toggle on a member → role badge changes to "admin" → toast "Role updated"
+- [ ] **Demote to member**: click role toggle on another admin → role badge changes to "member"
+- [ ] **Remove member**: click trash icon on a member → member disappears from list
+- [ ] **Cannot remove owner**: trash icon hidden or disabled for the group owner
+- [ ] If trying to remove owner via API → returns 400 "Owner cannot be removed"
+
+---
+
+### Task 9.10 — Leave a Group (Self-Remove)
+
+- [ ] Non-owner member can leave via a "Leave Group" action
+- [ ] After leaving → group no longer appears in "My Groups"
+
+---
+
+### Task 9.11 — Delete a Group
+
+**Setup:** Group owner.
+
+- [ ] Click "Delete Group" → confirmation prompt appears
+- [ ] Confirm → group, members, and invitations are deleted → card removed
+- [ ] Non-owner trying to delete via API → returns 403
+
+---
+
+### Task 9.12 — Invitation Capacity Check
+
+**Setup:** Group at maximum member count.
+
+- [ ] Admin tries to invite → toast error "Group is at maximum capacity"
+- [ ] API returns 400
+
+---
+
+### Phase 9 — Groups API Sanity Checks
+
+- [ ] `GET /api/groups` → returns 200 + array of user's groups (All-In required)
+- [ ] `POST /api/groups` with `{ name: "Team" }` → returns 201 + new group (All-In required)
+- [ ] `GET /api/groups/<id>` → returns 200 + group details + members (membership required)
+- [ ] `PATCH /api/groups/<id>` with `{ name: "New Name" }` → returns 200 (owner only)
+- [ ] `DELETE /api/groups/<id>` → returns 200 (owner only)
+- [ ] `POST /api/groups/<id>/members` with `{ email: "user@test.com" }` → returns 200 (admin only)
+- [ ] `DELETE /api/groups/<id>/members?userId=<id>` → returns 200 (admin or self)
+- [ ] `PATCH /api/groups/<id>/members/<userId>` with `{ role: "admin" }` → returns 200 (admin only)
+- [ ] `POST /api/groups/join` with `{ code: "abc123" }` → returns 200 (All-In + valid code)
+- [ ] `GET /api/groups/invitations` → returns 200 + pending invitations
+- [ ] `POST /api/groups/invitations` with `{ id: "...", action: "accept" }` → returns 200
+- [ ] `POST /api/groups/invitations` with `{ id: "...", action: "decline" }` → returns 200
+- [ ] All group API routes return 401 without auth
+- [ ] All group API routes return 403 for non-all-in users (except invitations)
+
+---
+
+## Phase 10 — Admin Group Management
+
+### Task 10.1 — Admin Groups Tab
+
+**Setup:** Sign in with an admin account.
+
+- [ ] Admin navigation bar shows "Groups" tab with `UsersRound` icon
+- [ ] Click "Groups" → navigates to `/admin/groups`
+- [ ] Page loads with a table of all groups
+
+---
+
+### Task 10.2 — Admin Groups Table
+
+- [ ] Table columns: Name, Owner (email), Members (count), Max Members (editable), Join Code, Created
+- [ ] Member count is accurate for each group
+- [ ] Owner email is displayed correctly
+
+---
+
+### Task 10.3 — Edit Group Max Members
+
+- [ ] Change the max members input for a group (e.g. from 10 to 25)
+- [ ] Click "Save" → toast "Max members updated"
+- [ ] Refresh page → confirm new max persists
+- [ ] Set max lower than current member count → should warn or reject
+
+---
+
+### Task 10.4 — Admin Groups Page Header
+
+- [ ] `/admin/groups` shows title "Groups" with description "Group management" in AppHeader
+
+---
+
+### Phase 10 — Admin API Sanity Checks
+
+- [ ] `PATCH /api/admin/groups` with `{ groupId: "...", maxMembers: 25 }` → returns 200 (admin only)
+- [ ] `PATCH /api/admin/groups` without admin role → returns 403
+- [ ] `PATCH /api/admin/groups` without auth → returns 401

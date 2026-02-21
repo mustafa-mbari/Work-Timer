@@ -20,13 +20,16 @@ function generateId(): string {
 interface Props {
   initialProjects: ProjectFull[]
   isPremium: boolean
+  defaultHourlyRate?: number | null
+  currency?: string
 }
 
-export default function ProjectsCard({ initialProjects, isPremium }: Props) {
+export default function ProjectsCard({ initialProjects, isPremium, defaultHourlyRate, currency = 'USD' }: Props) {
   const [projects, setProjects] = useState<ProjectFull[]>(initialProjects)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
   const [editColor, setEditColor] = useState('')
+  const [editRate, setEditRate] = useState('')
   const [showAddForm, setShowAddForm] = useState(false)
   const [newName, setNewName] = useState('')
   const [newColor, setNewColor] = useState(PROJECT_COLORS[0]!)
@@ -107,19 +110,21 @@ export default function ProjectsCard({ initialProjects, isPremium }: Props) {
     setEditingId(project.id)
     setEditName(project.name)
     setEditColor(project.color)
+    setEditRate(project.hourly_rate != null ? String(project.hourly_rate) : '')
   }
 
   async function saveEdit(id: string) {
     if (!editName.trim()) return
     setSaving(true)
+    const parsedRate = editRate.trim() === '' ? null : parseFloat(editRate)
     const prev = projects
-    setProjects(projects.map(p => p.id === id ? { ...p, name: editName.trim(), color: editColor } : p))
+    setProjects(projects.map(p => p.id === id ? { ...p, name: editName.trim(), color: editColor, hourly_rate: parsedRate } : p))
     setEditingId(null)
 
     const res = await fetch(`/api/projects/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: editName.trim(), color: editColor }),
+      body: JSON.stringify({ name: editName.trim(), color: editColor, hourly_rate: parsedRate }),
     })
     setSaving(false)
     if (!res.ok) {
@@ -188,6 +193,7 @@ export default function ProjectsCard({ initialProjects, isPremium }: Props) {
       is_default: false,
       sort_order: activeProjects.length,
       target_hours: null,
+      hourly_rate: null,
       created_at: Date.now(),
     }
     setProjects([...projects, newProject])
@@ -312,15 +318,33 @@ export default function ProjectsCard({ initialProjects, isPremium }: Props) {
 
               {/* Name / Edit inline */}
               {editingId === project.id ? (
-                <div className="flex-1 flex items-center gap-1.5 min-w-0">
-                  <input
-                    type="text"
-                    value={editName}
-                    onChange={e => setEditName(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') saveEdit(project.id); if (e.key === 'Escape') setEditingId(null) }}
-                    autoFocus
-                    className="flex-1 text-sm bg-white dark:bg-[var(--dark-card)] border border-indigo-400 rounded-md px-2 py-0.5 text-stone-800 dark:text-stone-100 focus:outline-none min-w-0"
-                  />
+                <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={e => setEditName(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') saveEdit(project.id); if (e.key === 'Escape') setEditingId(null) }}
+                      autoFocus
+                      className="flex-1 text-sm bg-white dark:bg-[var(--dark-card)] border border-indigo-400 rounded-md px-2 py-0.5 text-stone-800 dark:text-stone-100 focus:outline-none min-w-0"
+                    />
+                    <input
+                      type="number"
+                      value={editRate}
+                      onChange={e => setEditRate(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') saveEdit(project.id); if (e.key === 'Escape') setEditingId(null) }}
+                      placeholder={defaultHourlyRate ? `Default (${defaultHourlyRate})` : 'Rate/hr'}
+                      min="0"
+                      step="0.01"
+                      className="w-24 text-sm bg-white dark:bg-[var(--dark-card)] border border-stone-300 dark:border-[var(--dark-border)] rounded-md px-2 py-0.5 text-stone-800 dark:text-stone-100 placeholder-stone-400 focus:outline-none focus:border-indigo-400 flex-shrink-0"
+                    />
+                    <button onClick={() => saveEdit(project.id)} disabled={saving} className="text-indigo-500 hover:text-indigo-700 flex-shrink-0">
+                      <Check className="h-3.5 w-3.5" />
+                    </button>
+                    <button onClick={() => setEditingId(null)} className="text-stone-400 hover:text-stone-600 flex-shrink-0">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
                     {PROJECT_COLORS.map(c => (
                       <button
@@ -331,18 +355,15 @@ export default function ProjectsCard({ initialProjects, isPremium }: Props) {
                       />
                     ))}
                   </div>
-                  <button onClick={() => saveEdit(project.id)} disabled={saving} className="text-indigo-500 hover:text-indigo-700 flex-shrink-0">
-                    <Check className="h-3.5 w-3.5" />
-                  </button>
-                  <button onClick={() => setEditingId(null)} className="text-stone-400 hover:text-stone-600 flex-shrink-0">
-                    <X className="h-3.5 w-3.5" />
-                  </button>
                 </div>
               ) : (
                 <>
                   <span className="flex-1 text-sm text-stone-700 dark:text-stone-200 truncate">
                     {project.name}
                   </span>
+                  {project.hourly_rate != null && (
+                    <span className="text-xs text-emerald-600 dark:text-emerald-400 flex-shrink-0">{currency} {project.hourly_rate}/hr</span>
+                  )}
                   {project.target_hours != null && (
                     <span className="text-xs text-stone-400 dark:text-stone-500 flex-shrink-0">{project.target_hours}h</span>
                   )}

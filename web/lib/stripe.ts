@@ -17,10 +17,12 @@ function requireEnv(name: string): string {
   return value
 }
 
-export const STRIPE_PRICES = {
+export const STRIPE_PRICES: Record<string, string> = {
   monthly: requireEnv('STRIPE_PRICE_MONTHLY'),
   yearly: requireEnv('STRIPE_PRICE_YEARLY'),
   lifetime: requireEnv('STRIPE_PRICE_LIFETIME'),
-} as const
+  ...(process.env.STRIPE_PRICE_ALLIN_MONTHLY && { allin_monthly: process.env.STRIPE_PRICE_ALLIN_MONTHLY }),
+  ...(process.env.STRIPE_PRICE_ALLIN_YEARLY && { allin_yearly: process.env.STRIPE_PRICE_ALLIN_YEARLY }),
+}
 
-export type PricePlan = keyof typeof STRIPE_PRICES
+export type PricePlan = 'monthly' | 'yearly' | 'lifetime' | 'allin_monthly' | 'allin_yearly'

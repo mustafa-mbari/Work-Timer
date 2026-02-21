@@ -1,4 +1,4 @@
-import { Check, X, Zap, Star, Infinity as InfinityIcon } from 'lucide-react'
+import { Check, X, Zap, Star, Infinity as InfinityIcon, Users } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
 
@@ -22,6 +22,7 @@ export default async function BillingPage() {
   const currentPlan = subscription?.plan ?? 'free'
   const isPremium = currentPlan !== 'free'
   const isLifetime = currentPlan === 'premium_lifetime'
+  const isAllIn = currentPlan.startsWith('allin')
 
   const FREE_FEATURES = [
     { text: t('freePlanFeatures.0'), included: true },
@@ -100,6 +101,8 @@ export default async function BillingPage() {
               {currentPlan === 'premium_monthly' && `${t('plans.monthly.name')} Premium`}
               {currentPlan === 'premium_yearly' && `${t('plans.yearly.name')} Premium`}
               {currentPlan === 'premium_lifetime' && `${t('plans.lifetime.name')} Premium`}
+              {currentPlan === 'allin_monthly' && 'All-In Monthly'}
+              {currentPlan === 'allin_yearly' && 'All-In Yearly'}
             </p>
             {renewalInfo && (
               <p className="text-sm text-indigo-200 mt-0.5">{renewalInfo}</p>
@@ -222,6 +225,92 @@ export default async function BillingPage() {
                   <UpgradeButton plan="yearly" label={t('upgradeToYearly')} />
                 ) : (currentPlan === 'premium_monthly' || currentPlan === 'premium_yearly') && plan.id === 'lifetime' ? (
                   <UpgradeButton plan="lifetime" label={t('upgradeToLifetime')} />
+                ) : (
+                  <div className="py-2.5 px-4 rounded-xl text-sm font-semibold text-center text-stone-400 dark:text-stone-500 bg-stone-100 dark:bg-[var(--dark-elevated)]">
+                    {t('notAvailable')}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* All-In Plans Section */}
+      <div>
+        <div className="flex items-center gap-2 mb-1">
+          <Users className="h-4 w-4 text-indigo-500" />
+          <h2 className="text-base font-semibold text-stone-900 dark:text-stone-100">All-In Plans</h2>
+        </div>
+        <p className="text-sm text-stone-500 dark:text-stone-400 mb-5">
+          Everything in Premium plus team groups, shared time tracking, group analytics, and earnings reports.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {[
+            {
+              id: 'allin_monthly' as const,
+              planKey: 'allin_monthly',
+              name: 'All-In Monthly',
+              price: PRICING.allinMonthly,
+              per: '/month',
+              description: 'Billed monthly, cancel anytime',
+            },
+            {
+              id: 'allin_yearly' as const,
+              planKey: 'allin_yearly',
+              name: 'All-In Yearly',
+              price: PRICING.allinYearly,
+              per: '/year',
+              description: 'Save 17% with annual billing',
+            },
+          ].map(plan => {
+            const isActive = currentPlan === plan.planKey
+            return (
+              <div
+                key={plan.id}
+                className={`relative rounded-2xl border p-6 flex flex-col ${
+                  isActive
+                    ? 'border-2 border-indigo-400 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30 shadow-lg'
+                    : 'border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)]'
+                }`}
+              >
+                {isActive && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span className="inline-flex items-center gap-1 bg-indigo-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                      {t('currentPlan')}
+                    </span>
+                  </div>
+                )}
+                <div className="mb-5">
+                  <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-2">
+                    {plan.name}
+                  </p>
+                  <div className="flex items-end gap-0.5">
+                    <span className="text-4xl font-bold text-stone-900 dark:text-stone-100">${plan.price}</span>
+                    <span className="text-sm text-stone-400 dark:text-stone-500 mb-1">{plan.per}</span>
+                  </div>
+                  <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">{plan.description}</p>
+                </div>
+                <ul className="space-y-2.5 mb-6 flex-1">
+                  {[
+                    'Everything in Premium',
+                    'Team groups (up to 10 members)',
+                    'Shared time tracking',
+                    'Group analytics',
+                    'Earnings reports',
+                  ].map(f => (
+                    <li key={f} className="flex items-start gap-2 text-sm text-stone-600 dark:text-stone-400">
+                      <Check className="h-4 w-4 mt-0.5 shrink-0 text-indigo-500" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                {isActive ? (
+                  <div className="py-2.5 px-4 rounded-xl text-sm font-semibold text-center text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/30">
+                    {t('currentPlan')}
+                  </div>
+                ) : !isPremium || !isAllIn ? (
+                  <CheckoutButton plan={plan.id} label={`Upgrade to ${plan.name}`} highlight={false} />
                 ) : (
                   <div className="py-2.5 px-4 rounded-xl text-sm font-semibold text-center text-stone-400 dark:text-stone-500 bg-stone-100 dark:bg-[var(--dark-elevated)]">
                     {t('notAvailable')}

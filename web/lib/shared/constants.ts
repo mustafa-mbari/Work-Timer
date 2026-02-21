@@ -25,6 +25,8 @@ export const PLANS = {
   premiumMonthly: 'premium_monthly',
   premiumYearly: 'premium_yearly',
   premiumLifetime: 'premium_lifetime',
+  allinMonthly: 'allin_monthly',
+  allinYearly: 'allin_yearly',
 } as const
 
 export type Plan = (typeof PLANS)[keyof typeof PLANS]
@@ -44,6 +46,15 @@ export const PRICING = {
   monthly: 1.99,
   yearly: 9.99,
   lifetime: 29.99,
+  allinMonthly: 29.99,
+  allinYearly: 299,
+} as const
+
+export const ALLIN_LIMITS = {
+  ...PREMIUM_LIMITS,
+  allowGroups: true,
+  allowEarnings: true,
+  defaultMaxGroupMembers: 10,
 } as const
 
 export const WEBSITE_URL = 'https://w-timer.com'

@@ -104,3 +104,28 @@ export async function findAuthUserByEmail(email: string) {
   const { data } = await supabase.auth.admin.listUsers({ perPage: 1000 })
   return data?.users?.find(u => u.email === email) ?? null
 }
+
+// --- Admin Group Management ---
+
+export async function getAdminGroups() {
+  const { data, error } = await callRpc('admin_get_groups')
+  if (error) throw new Error(`admin_get_groups failed: ${(error as any).message}`)
+  return (data ?? []) as Array<{
+    id: string
+    name: string
+    owner_id: string
+    owner_email: string
+    join_code: string
+    max_members: number
+    member_count: number
+    created_at: string
+  }>
+}
+
+export async function updateGroupMaxMembers(groupId: string, maxMembers: number) {
+  const { error } = await callRpc('admin_update_group', {
+    p_group_id: groupId,
+    p_max_members: maxMembers,
+  })
+  if (error) throw new Error(`admin_update_group failed: ${(error as any).message}`)
+}

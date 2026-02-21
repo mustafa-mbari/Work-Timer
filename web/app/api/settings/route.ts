@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuthApi } from '@/lib/services/auth'
-import { getUserSettings, upsertUserSettings } from '@/lib/repositories/userSettings'
+import { getUserSettings, upsertUserSettings, type SettingsUpdate } from '@/lib/repositories/userSettings'
 import { updateSettingsSchema, parseBody } from '@/lib/validation'
 
 export async function GET() {
@@ -18,7 +18,7 @@ export async function PUT(request: NextRequest) {
   const parsed = parseBody(updateSettingsSchema, await request.json())
   if (!parsed.success) return NextResponse.json({ error: parsed.error }, { status: 400 })
 
-  const { error } = await upsertUserSettings(user.id, parsed.data)
+  const { error } = await upsertUserSettings(user.id, parsed.data as SettingsUpdate)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   return NextResponse.json({ success: true })

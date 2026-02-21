@@ -12,18 +12,20 @@ import { getUserTimeEntries } from '@/lib/repositories/timeEntries'
 import { getUserProjects } from '@/lib/repositories/projects'
 import { getUserTags } from '@/lib/repositories/tags'
 import { getUserStats } from '@/lib/repositories/userStats'
+import { getUserSettings } from '@/lib/repositories/userSettings'
 import DashboardTabs from './DashboardTabs'
 
 export default async function DashboardPage() {
   const user = await requireAuth()
 
-  const [{ data: subscription }, cursors, entriesPage, projects, tags, stats] = await Promise.all([
+  const [{ data: subscription }, cursors, entriesPage, projects, tags, stats, settings] = await Promise.all([
     getUserSubscription(user.id),
     getUserSyncCursors(user.id),
     getUserTimeEntries(user.id, { pageSize: 10 }),
     getUserProjects(user.id),
     getUserTags(user.id),
     getUserStats(user.id),
+    getUserSettings(user.id),
   ])
 
   const isPremium = subscription?.plan !== 'free' && subscription?.status === 'active'
@@ -38,6 +40,8 @@ export default async function DashboardPage() {
       stats={stats}
       isPremium={isPremium}
       userEmail={user.email ?? ''}
+      defaultHourlyRate={settings?.default_hourly_rate ?? null}
+      currency={settings?.currency ?? 'USD'}
     />
   )
 }

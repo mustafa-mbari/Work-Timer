@@ -12,6 +12,8 @@ const PAGE_META: { match: string; title: string; description?: string }[] = [
   { match: '/dashboard', title: 'Dashboard', description: 'Main overview of your activity' },
   { match: '/analytics', title: 'Analytics', description: 'Detailed productivity reports' },
   { match: '/entries', title: 'Time Entries', description: 'Review and manage your logs' },
+  { match: '/earnings', title: 'Earnings', description: 'Track project revenue' },
+  { match: '/groups', title: 'Groups', description: 'Team collaboration' },
   { match: '/billing', title: 'Billing & Plans', description: 'Manage your subscription' },
   { match: '/settings', title: 'Settings', description: 'App and account preferences' },
   { match: '/admin/users', title: 'Users', description: 'Administration control' },
@@ -19,6 +21,7 @@ const PAGE_META: { match: string; title: string; description?: string }[] = [
   { match: '/admin/domains', title: 'Domains', description: 'Whitelist management' },
   { match: '/admin/promos', title: 'Promo Codes', description: 'Discounts and offers' },
   { match: '/admin/subscriptions', title: 'Subscriptions', description: 'Active member list' },
+  { match: '/admin/groups', title: 'Groups', description: 'Group management' },
   { match: '/admin', title: 'Admin Dashboard', description: 'Platform overview' },
 ]
 

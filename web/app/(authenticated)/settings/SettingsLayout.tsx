@@ -2,7 +2,7 @@
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { User, Clock, Palette, Shield, Monitor } from 'lucide-react'
+import { User, Clock, Palette, Shield, Monitor, DollarSign } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { UserSettingsFull } from '@/lib/repositories/userSettings'
 import type { Database } from '@/lib/shared/types'
@@ -11,6 +11,7 @@ import TimeTrackingTab from './TimeTrackingTab'
 import AppearanceTab from './AppearanceTab'
 import SecurityTab from './SecurityTab'
 import SessionsTab from './SessionsTab'
+import EarningsSettingsTab from './EarningsSettingsTab'
 
 type Subscription = Pick<
   Database['public']['Tables']['subscriptions']['Row'],
@@ -33,9 +34,9 @@ interface Props {
   cursors: Cursor[]
 }
 
-type TabId = 'profile' | 'time' | 'appearance' | 'security' | 'sessions'
+type TabId = 'profile' | 'time' | 'earnings' | 'appearance' | 'security' | 'sessions'
 
-const TAB_IDS = ['profile', 'time', 'appearance', 'security', 'sessions'] as const
+const TAB_IDS = ['profile', 'time', 'earnings', 'appearance', 'security', 'sessions'] as const
 
 export default function SettingsLayout({ user, profile, subscription, settings, cursors }: Props) {
   const t = useTranslations('settings')
@@ -46,6 +47,7 @@ export default function SettingsLayout({ user, profile, subscription, settings, 
   const TABS = [
     { id: 'profile' as TabId,    label: t('tabs.profile'),      icon: User },
     { id: 'time' as TabId,       label: t('tabs.timeTracking'),  icon: Clock },
+    { id: 'earnings' as TabId,   label: 'Earnings',              icon: DollarSign },
     { id: 'appearance' as TabId, label: t('tabs.appearance'),    icon: Palette },
     { id: 'security' as TabId,   label: t('tabs.security'),      icon: Shield },
     { id: 'sessions' as TabId,   label: t('tabs.sessions'),      icon: Monitor },
@@ -99,6 +101,9 @@ export default function SettingsLayout({ user, profile, subscription, settings, 
         )}
         {activeTab === 'time' && (
           <TimeTrackingTab settings={settings} />
+        )}
+        {activeTab === 'earnings' && (
+          <EarningsSettingsTab settings={settings} />
         )}
         {activeTab === 'appearance' && (
           <AppearanceTab />

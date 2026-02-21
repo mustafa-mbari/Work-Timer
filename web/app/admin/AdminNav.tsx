@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
-import { LayoutDashboard, Users, BarChart3, Globe, Ticket, CreditCard } from 'lucide-react'
+import { LayoutDashboard, Users, UsersRound, BarChart3, Globe, Ticket, CreditCard } from 'lucide-react'
 
 export function AdminNav() {
   const pathname = usePathname()
@@ -17,6 +17,7 @@ export function AdminNav() {
     { href: '/admin/domains',       label: t('domains'),       icon: Globe },
     { href: '/admin/promos',        label: t('promoCodes'),    icon: Ticket },
     { href: '/admin/subscriptions', label: t('subscriptions'), icon: CreditCard },
+    { href: '/admin/groups',        label: 'Groups',          icon: UsersRound },
   ]
 
   return (

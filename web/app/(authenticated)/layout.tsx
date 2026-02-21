@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
-import { isPremiumUser } from '@/lib/services/billing'
+import { isPremiumUser, isAllInUser } from '@/lib/services/billing'
 import LastPageTracker from '@/components/LastPageTracker'
 import AppSidebar from './Sidebar'
 import AppHeader from './AppHeader'
@@ -28,12 +28,13 @@ export default async function AuthenticatedLayout({
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [{ data }, premium] = await Promise.all([
+  const [{ data }, premium, allIn] = await Promise.all([
     (supabase.from('profiles') as any)
       .select('display_name, role')
       .eq('id', user.id)
       .single(),
     isPremiumUser(user.id),
+    isAllInUser(user.id),
   ])
 
   const userInfo = {
@@ -54,20 +55,16 @@ export default async function AuthenticatedLayout({
   return (
     <SidebarProvider defaultOpen={sidebarOpen}>
       <SidebarLockProvider defaultMode={sidebarMode}>
-        <div className="flex flex-col h-screen w-full">
+        <AppSidebar isAdmin={userInfo.role === 'admin'} isPremium={premium} isAllIn={allIn} userInfo={userInfo} />
+        <SidebarInset className="bg-stone-50 dark:bg-[var(--dark)]">
           <AppHeader userInfo={userInfo} />
-          <div className="flex flex-1 overflow-hidden">
-            <AppSidebar isAdmin={userInfo.role === 'admin'} isPremium={premium} userInfo={userInfo} />
-            <SidebarInset className="bg-stone-50 dark:bg-[var(--dark)] flex flex-col overflow-hidden">
-              <div className="flex-1 overflow-y-auto">
-                <div className="mx-auto w-full max-w-[1280px] px-8 py-8">
-                  <LastPageTracker />
-                  {children}
-                </div>
-              </div>
-            </SidebarInset>
+          <div className="flex-1 overflow-y-auto">
+            <div className="mx-auto w-full max-w-[1280px] px-8 py-8">
+              <LastPageTracker />
+              {children}
+            </div>
           </div>
-        </div>
+        </SidebarInset>
       </SidebarLockProvider>
     </SidebarProvider>
   )
