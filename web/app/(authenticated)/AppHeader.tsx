@@ -43,7 +43,7 @@ export default function AppHeader({ userInfo }: Props) {
     <header className="sticky top-0 z-20 flex items-center h-14 bg-white dark:bg-[var(--dark-card)] border-b border-[var(--sidebar-border)] shrink-0 px-0">
       {/* Sidebar-width Logo Area */}
       <div
-        className="flex items-center h-full px-5 transition-[width] duration-300 ease-in-out overflow-hidden"
+        className="flex items-center h-full px-1 transition-[width] duration-300 ease-in-out overflow-hidden"
         style={{ width: isMobile ? '0px' : 'var(--sidebar-width)' }}
       >
         {isMobile && (
@@ -52,13 +52,13 @@ export default function AppHeader({ userInfo }: Props) {
           </div>
         )}
 
-        <Link href="/dashboard" className="shrink-0">
+        <Link href="/dashboard" className="shrink-0 flex items-center">
           <Image
             src="/logos/LogoText.png"
             alt="Work Timer"
-            width={140}
-            height={36}
-            className="h-7 w-auto"
+            width={160}
+            height={40}
+            className="h-10 w-auto"
             priority
           />
         </Link>
