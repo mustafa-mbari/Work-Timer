@@ -101,7 +101,7 @@ function NavItem({
           maxWidth: open ? '200px' : '0px',
           opacity: open ? 1 : 0,
           marginLeft: open ? '8px' : '0px',
-          transition: 'max-width 200ms ease-linear, opacity 150ms ease-linear 60ms, margin-left 200ms ease-linear',
+          transition: 'max-width 300ms ease-in-out, opacity 250ms ease-in-out 50ms, margin-left 300ms ease-in-out',
         }}
       >
         {label}
@@ -243,7 +243,7 @@ export default function AppSidebar({ isAdmin, isPremium, userInfo }: Props) {
           className="absolute inset-0 flex items-center justify-center"
           style={{
             opacity: open ? 0 : 1,
-            transition: 'opacity 150ms ease-linear',
+            transition: 'opacity 250ms ease-in-out',
             pointerEvents: open ? 'none' : 'auto',
           }}
         >
@@ -263,7 +263,7 @@ export default function AppSidebar({ isAdmin, isPremium, userInfo }: Props) {
           className="absolute inset-0 flex items-center px-3"
           style={{
             opacity: open ? 1 : 0,
-            transition: 'opacity 150ms ease-linear',
+            transition: 'opacity 250ms ease-in-out',
             pointerEvents: open ? 'auto' : 'none',
           }}
         >
