@@ -4,6 +4,13 @@ import { Badge } from '@/components/ui/badge'
 import {
   Clock, FileText, TrendingUp, Flame, CalendarDays, Timer, FolderKanban, BarChart2, AlertTriangle, Lock,
 } from 'lucide-react'
+import { getTranslations } from 'next-intl/server'
+import type { Metadata } from 'next'
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('analytics')
+  return { title: t('title') }
+}
 import AnalyticsCharts from './AnalyticsCharts'
 import AnalyticsFilters from './AnalyticsFilters'
 import { requireAuth } from '@/lib/services/auth'
@@ -51,19 +58,20 @@ const PREVIEW_DATA = {
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 
-const HEADER = (
-  <div>
-    <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100">Analytics & Reports</h1>
-    <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">Advanced insights into your time tracking</p>
-  </div>
-)
-
 export default async function AnalyticsPage({
   searchParams,
 }: {
   searchParams: Promise<{ dateFrom?: string; dateTo?: string }>
 }) {
+  const t = await getTranslations('analytics')
   const user = await requireAuth()
+
+  const HEADER = (
+    <div>
+      <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100">{t('title')}</h1>
+      <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">{t('description')}</p>
+    </div>
+  )
 
   const premium = await isPremiumUser(user.id)
 
@@ -83,12 +91,12 @@ export default async function AnalyticsPage({
           <div className="blur-[2px] pointer-events-none select-none opacity-60 space-y-6">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {[
-                { icon: <Clock className="h-4 w-4 text-indigo-500" />,   label: 'Total Hours',   value: p.total_hours.toFixed(1) },
-                { icon: <FileText className="h-4 w-4 text-emerald-500" />, label: 'Total Entries', value: p.total_entries },
-                { icon: <TrendingUp className="h-4 w-4 text-amber-500" />, label: 'Avg Hours/Day', value: avgPerDay.toFixed(1) },
-                { icon: <Timer className="h-4 w-4 text-purple-500" />,    label: 'Avg Session',   value: `${avgSessionMin}m` },
-                { icon: <Flame className="h-4 w-4 text-rose-500" />,      label: 'Streak',        value: `${p.streak}d` },
-                { icon: <CalendarDays className="h-4 w-4 text-sky-500" />, label: 'Best Day',     value: bestDay.name },
+                { icon: <Clock className="h-4 w-4 text-indigo-500" />,   label: t('stats.totalHours'),   value: p.total_hours.toFixed(1) },
+                { icon: <FileText className="h-4 w-4 text-emerald-500" />, label: t('stats.totalEntries'), value: p.total_entries },
+                { icon: <TrendingUp className="h-4 w-4 text-amber-500" />, label: t('stats.avgPerDay'), value: avgPerDay.toFixed(1) },
+                { icon: <Timer className="h-4 w-4 text-purple-500" />,    label: t('stats.avgSession'),   value: `${avgSessionMin}m` },
+                { icon: <Flame className="h-4 w-4 text-rose-500" />,      label: t('stats.streak'),        value: `${p.streak}d` },
+                { icon: <CalendarDays className="h-4 w-4 text-sky-500" />, label: t('stats.bestDay'),     value: bestDay.name },
               ].map(({ icon, label, value }) => (
                 <Card key={label}><CardContent className="pt-5 pb-4">
                   <div className="flex items-center gap-2 mb-1">{icon}<span className="text-xs text-stone-500">{label}</span></div>
@@ -112,17 +120,17 @@ export default async function AnalyticsPage({
               <div className="w-14 h-14 rounded-2xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center mx-auto mb-4">
                 <Lock className="h-7 w-7 text-indigo-500 dark:text-indigo-400" />
               </div>
-              <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100 mb-2">Unlock Analytics</h2>
+              <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100 mb-2">{t('freePlan.lockTitle')}</h2>
               <p className="text-sm text-stone-500 dark:text-stone-400 mb-6">
-                See your productivity trends, project breakdowns, peak working hours, streaks and more — with Premium.
+                {t('freePlan.lockDesc')}
               </p>
               <a
                 href="/billing"
                 className="inline-block w-full px-5 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold transition-colors"
               >
-                Upgrade to Premium
+                {t('freePlan.upgradeCta')}
               </a>
-              <p className="text-xs text-stone-400 dark:text-stone-500 mt-3">Starting at $1.99 / month</p>
+              <p className="text-xs text-stone-400 dark:text-stone-500 mt-3">{t('freePlan.startingAt')}</p>
             </div>
           </div>
 
@@ -161,9 +169,9 @@ export default async function AnalyticsPage({
         <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
           <AlertTriangle className="h-12 w-12 text-amber-400" />
           <div>
-            <p className="text-base font-medium text-stone-700 dark:text-stone-300">Could not load analytics</p>
+            <p className="text-base font-medium text-stone-700 dark:text-stone-300">{t('error.title')}</p>
             <p className="text-sm text-stone-400 dark:text-stone-500 mt-1">
-              {fetchError ?? 'An unexpected error occurred. Please try refreshing.'}
+              {fetchError ?? t('error.desc')}
             </p>
           </div>
         </div>
@@ -181,10 +189,8 @@ export default async function AnalyticsPage({
         <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
           <BarChart2 className="h-12 w-12 text-stone-300 dark:text-stone-600" />
           <div>
-            <p className="text-base font-medium text-stone-700 dark:text-stone-300">No data yet</p>
-            <p className="text-sm text-stone-400 dark:text-stone-500 mt-1">
-              Start tracking time in the extension to see your analytics here.
-            </p>
+            <p className="text-base font-medium text-stone-700 dark:text-stone-300">{t('empty.title')}</p>
+            <p className="text-sm text-stone-400 dark:text-stone-500 mt-1">{t('empty.desc')}</p>
           </div>
         </div>
       </div>
@@ -232,9 +238,7 @@ export default async function AnalyticsPage({
       {data.total_entries === 0 && isFiltered && (
         <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
           <BarChart2 className="h-10 w-10 text-stone-300 dark:text-stone-600" />
-          <p className="text-sm text-stone-500 dark:text-stone-400">
-            No entries found for the selected date range.
-          </p>
+          <p className="text-sm text-stone-500 dark:text-stone-400">{t('filteredEmpty')}</p>
         </div>
       )}
 
@@ -246,7 +250,7 @@ export default async function AnalyticsPage({
               <CardContent className="pt-5 pb-4">
                 <div className="flex items-center gap-2 mb-1">
                   <Clock className="h-4 w-4 text-indigo-500" />
-                  <span className="text-xs text-stone-500 dark:text-stone-400">Total Hours</span>
+                  <span className="text-xs text-stone-500 dark:text-stone-400">{t('stats.totalHours')}</span>
                 </div>
                 <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{(data.total_hours ?? 0).toFixed(1)}</p>
               </CardContent>
@@ -255,7 +259,7 @@ export default async function AnalyticsPage({
               <CardContent className="pt-5 pb-4">
                 <div className="flex items-center gap-2 mb-1">
                   <FileText className="h-4 w-4 text-emerald-500" />
-                  <span className="text-xs text-stone-500 dark:text-stone-400">Total Entries</span>
+                  <span className="text-xs text-stone-500 dark:text-stone-400">{t('stats.totalEntries')}</span>
                 </div>
                 <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{data.total_entries}</p>
               </CardContent>
@@ -264,7 +268,7 @@ export default async function AnalyticsPage({
               <CardContent className="pt-5 pb-4">
                 <div className="flex items-center gap-2 mb-1">
                   <TrendingUp className="h-4 w-4 text-amber-500" />
-                  <span className="text-xs text-stone-500 dark:text-stone-400">Avg Hours/Day</span>
+                  <span className="text-xs text-stone-500 dark:text-stone-400">{t('stats.avgPerDay')}</span>
                 </div>
                 <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{avgPerDay.toFixed(1)}</p>
               </CardContent>
@@ -273,7 +277,7 @@ export default async function AnalyticsPage({
               <CardContent className="pt-5 pb-4">
                 <div className="flex items-center gap-2 mb-1">
                   <Timer className="h-4 w-4 text-purple-500" />
-                  <span className="text-xs text-stone-500 dark:text-stone-400">Avg Session</span>
+                  <span className="text-xs text-stone-500 dark:text-stone-400">{t('stats.avgSession')}</span>
                 </div>
                 <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{avgSessionMin}m</p>
               </CardContent>
@@ -282,7 +286,7 @@ export default async function AnalyticsPage({
               <CardContent className="pt-5 pb-4">
                 <div className="flex items-center gap-2 mb-1">
                   <Flame className="h-4 w-4 text-rose-500" />
-                  <span className="text-xs text-stone-500 dark:text-stone-400">Streak</span>
+                  <span className="text-xs text-stone-500 dark:text-stone-400">{t('stats.streak')}</span>
                 </div>
                 <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{data.streak ?? 0}d</p>
               </CardContent>
@@ -291,7 +295,7 @@ export default async function AnalyticsPage({
               <CardContent className="pt-5 pb-4">
                 <div className="flex items-center gap-2 mb-1">
                   <CalendarDays className="h-4 w-4 text-sky-500" />
-                  <span className="text-xs text-stone-500 dark:text-stone-400">Best Day</span>
+                  <span className="text-xs text-stone-500 dark:text-stone-400">{t('stats.bestDay')}</span>
                 </div>
                 <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{bestDay.name}</p>
               </CardContent>
@@ -304,9 +308,9 @@ export default async function AnalyticsPage({
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FolderKanban className="h-5 w-5 text-indigo-500" />
-                  Project Progress
+                  {t('projectProgress.title')}
                 </CardTitle>
-                <CardDescription>Hours tracked vs target goals</CardDescription>
+                <CardDescription>{t('projectProgress.description')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">

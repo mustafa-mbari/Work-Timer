@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useTransition } from 'react'
+import { useTranslations } from 'next-intl'
 import OverviewTab from './OverviewTab'
 import DevicesTab from './DevicesTab'
 import RecentTab from './RecentTab'
@@ -25,13 +26,7 @@ interface Props {
   userEmail: string
 }
 
-const TABS = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'devices', label: 'Devices' },
-  { id: 'recent', label: 'Recent Entries' },
-] as const
-
-type TabId = (typeof TABS)[number]['id']
+type TabId = 'overview' | 'devices' | 'recent'
 
 export default function DashboardTabs({
   subscription,
@@ -43,11 +38,18 @@ export default function DashboardTabs({
   isPremium,
   userEmail,
 }: Props) {
+  const t = useTranslations('dashboard.tabs')
   const router = useRouter()
   const searchParams = useSearchParams()
   const [, startTransition] = useTransition()
 
   const activeTab = (searchParams.get('tab') as TabId) || 'overview'
+
+  const TABS = [
+    { id: 'overview' as TabId, label: t('overview') },
+    { id: 'devices' as TabId, label: t('devices') },
+    { id: 'recent' as TabId, label: t('recent') },
+  ]
 
   function switchTab(tab: TabId) {
     const sp = new URLSearchParams(searchParams.toString())
@@ -61,7 +63,7 @@ export default function DashboardTabs({
   return (
     <div>
       {/* Tab bar */}
-      <div className="flex items-center gap-1 bg-white dark:bg-[var(--dark-card)] border border-slate-200 dark:border-[var(--dark-border)] rounded-2xl shadow-sm px-2 py-1.5 mb-6">
+      <div className="flex items-center gap-1 bg-white dark:bg-[var(--dark-card)] border border-stone-200 dark:border-[var(--dark-border)] rounded-2xl shadow-sm px-2 py-1.5 mb-6">
         {TABS.map(tab => (
           <button
             key={tab.id}
@@ -69,7 +71,7 @@ export default function DashboardTabs({
             className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-xl whitespace-nowrap transition-all ${
               activeTab === tab.id
                 ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
-                : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-[var(--dark-hover)]'
+                : 'text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-50 dark:hover:bg-[var(--dark-hover)]'
             }`}
           >
             {tab.label}

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 import { Monitor, Trash2, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export default function DevicesTab({ initialCursors, isPremium }: Props) {
+  const t = useTranslations('dashboard.devices')
   const router = useRouter()
   const [cursors, setCursors] = useState(initialCursors)
   const [disconnecting, setDisconnecting] = useState<string | null>(null)
@@ -23,7 +25,6 @@ export default function DevicesTab({ initialCursors, isPremium }: Props) {
   async function handleDisconnect(deviceId: string) {
     setDisconnecting(deviceId)
     const prev = cursors
-    // Optimistic remove
     setCursors(c => c.filter(x => x.device_id !== deviceId))
 
     try {
@@ -35,14 +36,14 @@ export default function DevicesTab({ initialCursors, isPremium }: Props) {
       if (!res.ok) {
         setCursors(prev)
         const data = await res.json()
-        toast.error(data.error ?? 'Failed to disconnect device')
+        toast.error(data.error ?? t('disconnectError'))
       } else {
-        toast.success('Device disconnected')
+        toast.success(t('disconnected'))
         router.refresh()
       }
     } catch {
       setCursors(prev)
-      toast.error('Network error')
+      toast.error(t('networkError'))
     } finally {
       setDisconnecting(null)
     }
@@ -51,35 +52,32 @@ export default function DevicesTab({ initialCursors, isPremium }: Props) {
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
-        <CardTitle>Connected Devices</CardTitle>
+        <CardTitle>{t('title')}</CardTitle>
         {isPremium && (
           <Button asChild variant="link" size="sm" className="gap-1 pr-0 text-indigo-500">
             <a href="/settings?tab=sessions">
-              Manage in Settings <ExternalLink className="h-3.5 w-3.5" />
+              {t('manageInSettings')} <ExternalLink className="h-3.5 w-3.5" />
             </a>
           </Button>
         )}
       </CardHeader>
       <CardContent>
-        {/* Free-plan upsell — shown only when they already have a device or have none */}
         {!isPremium && (
           <div className="mb-4 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 px-4 py-3 flex items-start gap-3">
             <Monitor className="h-5 w-5 text-indigo-500 dark:text-indigo-400 mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-indigo-800 dark:text-indigo-200">
-                {cursors.length >= 1 ? 'Want to connect more devices?' : 'Free plan includes 1 device'}
+                {cursors.length >= 1 ? t('morePlanTitle') : t('freePlanTitle')}
               </p>
               <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-0.5">
-                {cursors.length >= 1
-                  ? 'You are using your 1 free device slot. Upgrade to Premium to sync across unlimited devices.'
-                  : 'Connect one device for free. Upgrade to Premium to sync across unlimited devices.'}
+                {cursors.length >= 1 ? t('morePlanDesc') : t('freePlanDesc')}
               </p>
             </div>
             <a
               href="/billing"
               className="flex-shrink-0 text-xs font-medium px-3 py-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white transition-colors"
             >
-              Upgrade
+              {t('upgrade')}
             </a>
           </div>
         )}
@@ -87,10 +85,8 @@ export default function DevicesTab({ initialCursors, isPremium }: Props) {
         {cursors.length === 0 ? (
           <div className="py-8 flex flex-col items-center gap-2 text-center">
             <Monitor className="h-10 w-10 text-stone-300 dark:text-stone-600" />
-            <p className="text-sm text-stone-500 dark:text-stone-400">No devices connected yet.</p>
-            <p className="text-xs text-stone-400 dark:text-stone-600">
-              Open the extension and go to Settings → Account to sync.
-            </p>
+            <p className="text-sm text-stone-500 dark:text-stone-400">{t('empty')}</p>
+            <p className="text-xs text-stone-400 dark:text-stone-600">{t('emptyHint')}</p>
           </div>
         ) : (
           <ul className="divide-y divide-stone-100 dark:divide-[var(--dark-border)]">
@@ -101,7 +97,7 @@ export default function DevicesTab({ initialCursors, isPremium }: Props) {
                     <Monitor className="w-4 h-4 text-stone-500 dark:text-stone-400" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-stone-800 dark:text-stone-200">Chrome Extension</p>
+                    <p className="text-sm font-medium text-stone-800 dark:text-stone-200">{t('chromeExtension')}</p>
                     <p className="text-xs text-stone-400 dark:text-stone-600 font-mono">
                       {c.device_id.substring(0, 12)}&hellip;
                     </p>
@@ -115,7 +111,7 @@ export default function DevicesTab({ initialCursors, isPremium }: Props) {
                     onClick={() => handleDisconnect(c.device_id)}
                     disabled={disconnecting === c.device_id}
                     className="p-1.5 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:text-rose-400 dark:hover:bg-rose-900/20 transition-colors disabled:opacity-50"
-                    aria-label="Disconnect device"
+                    aria-label={t('disconnectLabel')}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -126,7 +122,7 @@ export default function DevicesTab({ initialCursors, isPremium }: Props) {
         )}
         {cursors.length > 0 && (
           <p className="text-xs text-stone-400 dark:text-stone-600 mt-4">
-            Disconnecting a device removes its sync cursor. The extension will re-sync on next use.
+            {t('footerNote')}
           </p>
         )}
       </CardContent>

@@ -6,10 +6,13 @@ import {
 import { Users, Crown, UserPlus, Clock, CreditCard, Tag, Globe, ShieldCheck } from 'lucide-react'
 import { getAllAuthUsers, getPlatformStats, getPremiumBreakdown } from '@/lib/repositories/admin'
 import { getAllSubscriptions } from '@/lib/repositories/subscriptions'
+import { getTranslations } from 'next-intl/server'
 
 export const revalidate = 60
 
 export default async function AdminOverviewPage() {
+  const t = await getTranslations('admin.overview')
+
   const [authUsers, subscriptions, platformStats, premiumBreakdown] = await Promise.all([
     getAllAuthUsers(),
     getAllSubscriptions(),
@@ -35,28 +38,28 @@ export default async function AdminOverviewPage() {
 
   const stats = [
     {
-      label: 'Total Users',
+      label: t('totalUsers'),
       value: total,
       icon: Users,
       iconBg: 'bg-indigo-100 dark:bg-indigo-900/30',
       iconColor: 'text-indigo-600 dark:text-indigo-400',
     },
     {
-      label: 'Premium Users',
+      label: t('premiumUsers'),
       value: premium,
       icon: Crown,
       iconBg: 'bg-emerald-100 dark:bg-emerald-900/30',
       iconColor: 'text-emerald-600 dark:text-emerald-400',
     },
     {
-      label: 'Free Users',
+      label: t('freeUsers'),
       value: free,
       icon: UserPlus,
       iconBg: 'bg-stone-100 dark:bg-stone-800',
       iconColor: 'text-stone-600 dark:text-stone-400',
     },
     {
-      label: 'Total Hours Tracked',
+      label: t('totalHours'),
       value: totalHours.toFixed(0),
       icon: Clock,
       iconBg: 'bg-amber-100 dark:bg-amber-900/30',
@@ -89,10 +92,10 @@ export default async function AdminOverviewPage() {
       {premiumBreakdown.by_source && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
-            { label: 'Manual Grant', key: 'admin_manual', icon: ShieldCheck, iconBg: 'bg-purple-100 dark:bg-purple-900/30', iconColor: 'text-purple-600 dark:text-purple-400' },
-            { label: 'Stripe Payment', key: 'stripe', icon: CreditCard, iconBg: 'bg-blue-100 dark:bg-blue-900/30', iconColor: 'text-blue-600 dark:text-blue-400' },
-            { label: 'Promo Code', key: 'promo', icon: Tag, iconBg: 'bg-pink-100 dark:bg-pink-900/30', iconColor: 'text-pink-600 dark:text-pink-400' },
-            { label: 'Domain Whitelist', key: 'domain', icon: Globe, iconBg: 'bg-teal-100 dark:bg-teal-900/30', iconColor: 'text-teal-600 dark:text-teal-400' },
+            { label: t('manualGrant'), key: 'admin_manual', icon: ShieldCheck, iconBg: 'bg-purple-100 dark:bg-purple-900/30', iconColor: 'text-purple-600 dark:text-purple-400' },
+            { label: t('stripePayment'), key: 'stripe', icon: CreditCard, iconBg: 'bg-blue-100 dark:bg-blue-900/30', iconColor: 'text-blue-600 dark:text-blue-400' },
+            { label: t('promoCode'), key: 'promo', icon: Tag, iconBg: 'bg-pink-100 dark:bg-pink-900/30', iconColor: 'text-pink-600 dark:text-pink-400' },
+            { label: t('domainWhitelist'), key: 'domain', icon: Globe, iconBg: 'bg-teal-100 dark:bg-teal-900/30', iconColor: 'text-teal-600 dark:text-teal-400' },
           ].map(card => (
             <Card key={card.key}>
               <CardContent className="pt-6">
@@ -119,7 +122,7 @@ export default async function AdminOverviewPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-stone-500 dark:text-stone-400">Conversion Rate</p>
+                <p className="text-sm text-stone-500 dark:text-stone-400">{t('conversionRate')}</p>
                 <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">
                   {((premium / total) * 100).toFixed(1)}%
                 </p>
@@ -132,8 +135,8 @@ export default async function AdminOverviewPage() {
                   />
                 </div>
                 <div className="flex justify-between mt-1">
-                  <span className="text-xs text-stone-500 dark:text-stone-400">Free: {free}</span>
-                  <span className="text-xs text-emerald-600 dark:text-emerald-400">Premium: {premium}</span>
+                  <span className="text-xs text-stone-500 dark:text-stone-400">{t('freeCount', { count: free })}</span>
+                  <span className="text-xs text-emerald-600 dark:text-emerald-400">{t('premiumCount', { count: premium })}</span>
                 </div>
               </div>
             </div>
@@ -145,15 +148,15 @@ export default async function AdminOverviewPage() {
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-stone-900 dark:text-stone-100">Recent Sign-ups</h2>
-            <Badge variant="secondary">{recentUsers.length} latest</Badge>
+            <h2 className="font-semibold text-stone-900 dark:text-stone-100">{t('recentSignups')}</h2>
+            <Badge variant="secondary">{t('latest', { count: recentUsers.length })}</Badge>
           </div>
           {recentUsers.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead className="text-right">Joined</TableHead>
+                  <TableHead>{t('colUser')}</TableHead>
+                  <TableHead className="text-right">{t('colJoined')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -168,7 +171,7 @@ export default async function AdminOverviewPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-right text-sm text-stone-500 dark:text-stone-400">
-                      {new Date(u.created_at).toLocaleDateString('en-US', {
+                      {new Date(u.created_at).toLocaleDateString(undefined, {
                         month: 'short',
                         day: 'numeric',
                         year: 'numeric',
@@ -179,7 +182,7 @@ export default async function AdminOverviewPage() {
               </TableBody>
             </Table>
           ) : (
-            <p className="text-sm text-stone-500 dark:text-stone-400">No users yet</p>
+            <p className="text-sm text-stone-500 dark:text-stone-400">{t('noUsers')}</p>
           )}
         </CardContent>
       </Card>

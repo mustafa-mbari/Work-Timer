@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -21,11 +22,11 @@ function isRateLimitError(message: string) {
 }
 
 export default function LoginForm() {
+  const t = useTranslations('auth.login')
   const searchParams = useSearchParams()
   const router = useRouter()
   const isExtension = searchParams.get('ext') === 'true'
 
-  // Show a success banner if redirected from password-reset flow
   const message = searchParams.get('message')
 
   const [email, setEmail] = useState('')
@@ -42,8 +43,6 @@ export default function LoginForm() {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
 
       if (error) {
-        // Email not confirmed — redirect to verify-email so the user can
-        // resend the confirmation link rather than seeing a cryptic error.
         if (
           error.message.toLowerCase().includes('email not confirmed') ||
           error.message.toLowerCase().includes('email_not_confirmed')
@@ -54,12 +53,9 @@ export default function LoginForm() {
         throw error
       }
 
-      // Password login creates a session directly in cookies — skip OAuth code exchange
-      // and go straight to the extension bridge page which reads the session from cookies.
       if (isExtension) {
         window.location.href = '/auth/callback/extension'
       } else {
-        // Return to last visited page if available
         let destination = '/dashboard'
         try {
           const lastPage = localStorage.getItem('lastPage')
@@ -72,10 +68,7 @@ export default function LoginForm() {
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Login failed'
-      toast.error(isRateLimitError(msg)
-        ? 'Too many login attempts. Please wait a moment and try again.'
-        : msg
-      )
+      toast.error(isRateLimitError(msg) ? t('tooManyAttempts') : msg)
     } finally {
       setLoading(false)
     }
@@ -92,13 +85,10 @@ export default function LoginForm() {
         options: { emailRedirectTo: redirectUrl },
       })
       if (error) throw error
-      toast.success('Check your email for the login link!')
+      toast.success(t('magicLinkSent'))
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to send magic link'
-      toast.error(isRateLimitError(msg)
-        ? 'Too many attempts. Please wait a moment and try again.'
-        : msg
-      )
+      toast.error(isRateLimitError(msg) ? t('tooManyMagicAttempts') : msg)
     } finally {
       setLoading(false)
     }
@@ -116,15 +106,15 @@ export default function LoginForm() {
     <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-sm">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100">Sign in to Work Timer</h1>
+          <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100">{t('title')}</h1>
           <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
-            {isExtension ? 'Logging in will connect your extension' : 'Continue to your dashboard'}
+            {isExtension ? t('extensionSubtitle') : t('dashboardSubtitle')}
           </p>
         </div>
 
         {message === 'password-updated' && (
           <div className="mb-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">
-            Password updated successfully. Sign in with your new password.
+            {t('passwordUpdated')}
           </div>
         )}
 
@@ -132,31 +122,31 @@ export default function LoginForm() {
           <CardContent className="pt-6">
             <Tabs defaultValue="password">
               <TabsList className="w-full mb-4">
-                <TabsTrigger value="password" className="flex-1">Password</TabsTrigger>
-                <TabsTrigger value="magic" className="flex-1">Magic Link</TabsTrigger>
+                <TabsTrigger value="password" className="flex-1">{t('tabPassword')}</TabsTrigger>
+                <TabsTrigger value="magic" className="flex-1">{t('tabMagicLink')}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="password">
                 <form onSubmit={handlePasswordLogin} className="space-y-3">
                   <div className="space-y-1.5">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">{t('emailLabel')}</Label>
                     <Input
                       id="email"
                       type="email"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
                       required
-                      placeholder="you@example.com"
+                      placeholder={t('emailPlaceholder')}
                     />
                   </div>
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="password">Password</Label>
+                      <Label htmlFor="password">{t('passwordLabel')}</Label>
                       <Link
                         href="/forgot-password"
                         className="text-xs text-indigo-500 hover:text-indigo-600 dark:text-indigo-400"
                       >
-                        Forgot password?
+                        {t('forgotPassword')}
                       </Link>
                     </div>
                     <Input
@@ -169,7 +159,7 @@ export default function LoginForm() {
                     />
                   </div>
                   <Button type="submit" disabled={loading} className="w-full">
-                    {loading ? 'Signing in...' : 'Sign in'}
+                    {loading ? t('submitting') : t('submit')}
                   </Button>
                 </form>
               </TabsContent>
@@ -177,18 +167,18 @@ export default function LoginForm() {
               <TabsContent value="magic">
                 <form onSubmit={handleMagicLink} className="space-y-3">
                   <div className="space-y-1.5">
-                    <Label htmlFor="magic-email">Email</Label>
+                    <Label htmlFor="magic-email">{t('emailLabel')}</Label>
                     <Input
                       id="magic-email"
                       type="email"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
                       required
-                      placeholder="you@example.com"
+                      placeholder={t('emailPlaceholder')}
                     />
                   </div>
                   <Button type="submit" disabled={loading} className="w-full">
-                    {loading ? 'Sending...' : 'Send magic link'}
+                    {loading ? t('sendingMagicLink') : t('sendMagicLink')}
                   </Button>
                 </form>
               </TabsContent>
@@ -198,7 +188,7 @@ export default function LoginForm() {
               <Separator />
               <div className="absolute inset-0 flex items-center justify-center">
                 <span className="bg-white dark:bg-[var(--dark-card)] px-2 text-xs text-stone-500 dark:text-stone-400">
-                  Or continue with
+                  {t('orContinueWith')}
                 </span>
               </div>
             </div>
@@ -210,15 +200,15 @@ export default function LoginForm() {
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
               </svg>
-              Google
+              {t('google')}
             </Button>
           </CardContent>
         </Card>
 
         <p className="text-center text-sm text-stone-500 dark:text-stone-400 mt-4">
-          Don&apos;t have an account?{' '}
+          {t('noAccount')}{' '}
           <Link href={`/register${isExtension ? '?ext=true' : ''}`} className="text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 font-medium">
-            Sign up
+            {t('signUp')}
           </Link>
         </p>
       </div>

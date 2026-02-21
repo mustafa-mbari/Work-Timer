@@ -17,6 +17,45 @@
   --dark-elevated: #3a3633;
   --dark-border: #44403c;
   --dark-hover: #3a3633;
+
+  /* Semantic color tokens */
+  --color-primary: #6366f1;
+  --color-primary-hover: #4f46e5;
+  --color-surface: #fafaf9;
+  --color-card: #ffffff;
+  --color-border: #e7e5e4;
+  --color-muted: #78716c;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #f43f5e;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #44403c;
+  --sidebar-primary: #625fff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f5f5f4;
+  --sidebar-accent-foreground: #44403c;
+  --sidebar-border: #e7e5e4;
+  --sidebar-ring: #625fff;
+}
+
+.dark {
+  --color-primary: #818cf8;
+  --color-primary-hover: #6366f1;
+  --color-surface: #1c1917;
+  --color-card: #292524;
+  --color-border: #44403c;
+  --color-muted: #a8a29e;
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-danger: #fb7185;
+  --sidebar: #292524;
+  --sidebar-foreground: #d6d3d1;
+  --sidebar-primary: #625fff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #3a3633;
+  --sidebar-accent-foreground: #f5f5f4;
+  --sidebar-border: #44403c;
+  --sidebar-ring: #625fff;
 }
 
 /* ----------------------------------------------------------------
@@ -85,6 +124,40 @@ body {
 }
 
 /* ----------------------------------------------------------------
+   Sidebar — active item: neutral gray bg + accent icon
+   ---------------------------------------------------------------- */
+
+[data-sidebar="menu-button"][data-active="true"] {
+  background-color: #ebebeb;
+  color: #1c1917;
+  font-weight: 500;
+}
+[data-sidebar="menu-button"][data-active="true"] svg {
+  color: #625fff;
+}
+.dark [data-sidebar="menu-button"][data-active="true"] {
+  background-color: #3a3633;
+  color: #fafaf9;
+}
+.dark [data-sidebar="menu-button"][data-active="true"] svg {
+  color: #625fff;
+}
+
+/* Collapsed icon state: subtle bg, accent icon color (no heavy fill) */
+[data-collapsible="icon"] [data-sidebar="menu-button"][data-active="true"] {
+  background-color: #e8e6ff;
+}
+[data-collapsible="icon"] [data-sidebar="menu-button"][data-active="true"] svg {
+  color: #625fff;
+}
+.dark [data-collapsible="icon"] [data-sidebar="menu-button"][data-active="true"] {
+  background-color: rgba(98, 95, 255, 0.15);
+}
+.dark [data-collapsible="icon"] [data-sidebar="menu-button"][data-active="true"] svg {
+  color: #625fff;
+}
+
+/* ----------------------------------------------------------------
    Extension Mockup — flip-clock tile (mirrors extension's rolling-face)
    ---------------------------------------------------------------- */
 
@@ -124,4 +197,15 @@ body {
     rgba(114, 114, 114, 0.6) 80%,
     #727272 100%
   );
+}
+
+@theme inline {
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
 }

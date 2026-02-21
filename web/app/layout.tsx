@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
+import { NextIntlClientProvider } from 'next-intl'
+import { getLocale, getMessages } from 'next-intl/server'
 import './globals.css'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { Toaster } from '@/components/ui/sonner'
@@ -21,8 +23,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     ? themeCookie
     : 'system'
 
+  const locale = await getLocale()
+  const messages = await getMessages()
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -31,10 +36,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body className="min-h-screen dark:bg-[var(--dark)] dark:text-stone-200">
-        <ThemeProvider initialTheme={initialTheme}>
-          {children}
-          <Toaster position="bottom-right" />
-        </ThemeProvider>
+        <NextIntlClientProvider messages={messages}>
+          <ThemeProvider initialTheme={initialTheme}>
+            {children}
+            <Toaster position="bottom-right" />
+          </ThemeProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   )

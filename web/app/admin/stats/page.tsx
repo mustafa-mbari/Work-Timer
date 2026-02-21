@@ -9,6 +9,7 @@ import {
   FolderKanban,
 } from 'lucide-react'
 import { getAdminStats } from '@/lib/services/analytics'
+import { getTranslations } from 'next-intl/server'
 
 export const revalidate = 60
 
@@ -55,6 +56,7 @@ function BreakdownRow({ label, value, total }: { label: string; value: number; t
 }
 
 export default async function AdminStatsPage() {
+  const t = await getTranslations('admin.stats')
   const stats = await getAdminStats()
 
   const avgEntriesPerUser = stats.userCount > 0 ? (stats.totalEntries / stats.userCount).toFixed(1) : '0'
@@ -67,31 +69,31 @@ export default async function AdminStatsPage() {
   return (
     <div>
       <div className="mb-8">
-        <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100">Global Statistics</h2>
-        <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">Platform-wide metrics and engagement</p>
+        <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100">{t('title')}</h2>
+        <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">{t('description')}</p>
       </div>
 
       {/* User Metrics */}
       <div className="mb-8">
         <h3 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-3 flex items-center gap-2">
-          <Users className="h-4 w-4" /> Users
+          <Users className="h-4 w-4" /> {t('sectionUsers')}
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard
             icon={Users} iconBg="bg-indigo-100 dark:bg-indigo-900/30" iconColor="text-indigo-600 dark:text-indigo-400"
-            label="Total Users" value={stats.userCount} sub={`+${stats.newUsersThisWeek} this week`}
+            label={t('totalUsers')} value={stats.userCount} sub={t('newThisWeek', { count: stats.newUsersThisWeek })}
           />
           <StatCard
             icon={Activity} iconBg="bg-emerald-100 dark:bg-emerald-900/30" iconColor="text-emerald-600 dark:text-emerald-400"
-            label="DAU" value={stats.dau} sub="Daily active"
+            label={t('dau')} value={stats.dau} sub={t('dauSub')}
           />
           <StatCard
             icon={TrendingUp} iconBg="bg-amber-100 dark:bg-amber-900/30" iconColor="text-amber-600 dark:text-amber-400"
-            label="WAU" value={stats.wau} sub="Weekly active"
+            label={t('wau')} value={stats.wau} sub={t('wauSub')}
           />
           <StatCard
             icon={UserCheck} iconBg="bg-purple-100 dark:bg-purple-900/30" iconColor="text-purple-600 dark:text-purple-400"
-            label="MAU" value={stats.mau} sub="Monthly active"
+            label={t('mau')} value={stats.mau} sub={t('mauSub')}
           />
         </div>
       </div>
@@ -99,7 +101,7 @@ export default async function AdminStatsPage() {
       {/* User Growth */}
       <div className="mb-8">
         <h3 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-3 flex items-center gap-2">
-          <CalendarDays className="h-4 w-4" /> User Growth (Last 8 Weeks)
+          <CalendarDays className="h-4 w-4" /> {t('userGrowth')}
         </h3>
         <Card>
           <CardContent className="pt-6">
@@ -128,28 +130,28 @@ export default async function AdminStatsPage() {
       {/* Premium Breakdown */}
       <div className="mb-8">
         <h3 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-3 flex items-center gap-2">
-          <Crown className="h-4 w-4" /> Premium Subscriptions
-          <Badge variant="secondary">{stats.premiumCount} active</Badge>
+          <Crown className="h-4 w-4" /> {t('premiumSubs')}
+          <Badge variant="secondary">{t('premiumActive', { count: stats.premiumCount })}</Badge>
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card>
             <CardContent className="pt-6">
-              <p className="text-xs font-medium text-stone-500 dark:text-stone-400 mb-4">By Plan Type</p>
+              <p className="text-xs font-medium text-stone-500 dark:text-stone-400 mb-4">{t('byPlanType')}</p>
               <div className="space-y-3">
-                <BreakdownRow label="Monthly" value={stats.premiumByType.monthly} total={stats.premiumCount} />
-                <BreakdownRow label="Yearly" value={stats.premiumByType.yearly} total={stats.premiumCount} />
-                <BreakdownRow label="Lifetime" value={stats.premiumByType.lifetime} total={stats.premiumCount} />
+                <BreakdownRow label={t('planMonthly')} value={stats.premiumByType.monthly} total={stats.premiumCount} />
+                <BreakdownRow label={t('planYearly')} value={stats.premiumByType.yearly} total={stats.premiumCount} />
+                <BreakdownRow label={t('planLifetime')} value={stats.premiumByType.lifetime} total={stats.premiumCount} />
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <p className="text-xs font-medium text-stone-500 dark:text-stone-400 mb-4">By Source</p>
+              <p className="text-xs font-medium text-stone-500 dark:text-stone-400 mb-4">{t('bySource')}</p>
               <div className="space-y-3">
-                <BreakdownRow label="Stripe (Paid)" value={stats.premiumBySource.stripe} total={stats.premiumCount} />
-                <BreakdownRow label="Domain Whitelist" value={stats.premiumBySource.domain} total={stats.premiumCount} />
-                <BreakdownRow label="Promo Code" value={stats.premiumBySource.promo} total={stats.premiumCount} />
-                <BreakdownRow label="Manual Grant" value={stats.premiumBySource.manual} total={stats.premiumCount} />
+                <BreakdownRow label={t('sourceStripePaid')} value={stats.premiumBySource.stripe} total={stats.premiumCount} />
+                <BreakdownRow label={t('sourceDomain')} value={stats.premiumBySource.domain} total={stats.premiumCount} />
+                <BreakdownRow label={t('sourcePromo')} value={stats.premiumBySource.promo} total={stats.premiumCount} />
+                <BreakdownRow label={t('sourceManual')} value={stats.premiumBySource.manual} total={stats.premiumCount} />
               </div>
             </CardContent>
           </Card>
@@ -159,24 +161,24 @@ export default async function AdminStatsPage() {
       {/* Usage Metrics */}
       <div className="mb-8">
         <h3 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-3 flex items-center gap-2">
-          <Clock className="h-4 w-4" /> Platform Usage
+          <Clock className="h-4 w-4" /> {t('sectionUsage')}
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard
             icon={Clock} iconBg="bg-indigo-100 dark:bg-indigo-900/30" iconColor="text-indigo-600 dark:text-indigo-400"
-            label="Total Hours" value={stats.totalHours.toFixed(0)} sub={`${avgHoursPerUser}h per user`}
+            label={t('totalHours')} value={stats.totalHours.toFixed(0)} sub={t('hoursPerUser', { count: avgHoursPerUser })}
           />
           <StatCard
             icon={FileText} iconBg="bg-emerald-100 dark:bg-emerald-900/30" iconColor="text-emerald-600 dark:text-emerald-400"
-            label="Total Entries" value={stats.totalEntries} sub={`${avgEntriesPerUser} per user`}
+            label={t('totalEntries')} value={stats.totalEntries} sub={t('entriesPerUser', { count: avgEntriesPerUser })}
           />
           <StatCard
             icon={Activity} iconBg="bg-amber-100 dark:bg-amber-900/30" iconColor="text-amber-600 dark:text-amber-400"
-            label="Avg Session" value={`${avgSessionMin}m`} sub="Average duration"
+            label={t('avgSession')} value={`${avgSessionMin}m`} sub={t('avgDuration')}
           />
           <StatCard
             icon={Percent} iconBg="bg-purple-100 dark:bg-purple-900/30" iconColor="text-purple-600 dark:text-purple-400"
-            label="Conversion Rate" value={`${conversionRate}%`} sub={`${stats.userCount - stats.premiumCount} free / ${stats.premiumCount} premium`}
+            label={t('conversionRate')} value={`${conversionRate}%`} sub={t('conversionSub', { free: stats.userCount - stats.premiumCount, premium: stats.premiumCount })}
           />
         </div>
       </div>
@@ -184,37 +186,37 @@ export default async function AdminStatsPage() {
       {/* Entry Type & Projects */}
       <div className="mb-8">
         <h3 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-3 flex items-center gap-2">
-          <FolderKanban className="h-4 w-4" /> Content Breakdown
+          <FolderKanban className="h-4 w-4" /> {t('sectionContent')}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card>
             <CardContent className="pt-6">
-              <p className="text-xs font-medium text-stone-500 dark:text-stone-400 mb-4">Entry Types</p>
+              <p className="text-xs font-medium text-stone-500 dark:text-stone-400 mb-4">{t('entryTypes')}</p>
               <div className="space-y-3">
-                <BreakdownRow label="Manual" value={stats.entryByType.manual} total={stats.totalEntries} />
-                <BreakdownRow label="Stopwatch" value={stats.entryByType.stopwatch} total={stats.totalEntries} />
-                <BreakdownRow label="Pomodoro" value={stats.entryByType.pomodoro} total={stats.totalEntries} />
+                <BreakdownRow label={t('entryManual')} value={stats.entryByType.manual} total={stats.totalEntries} />
+                <BreakdownRow label={t('entryStopwatch')} value={stats.entryByType.stopwatch} total={stats.totalEntries} />
+                <BreakdownRow label={t('entryPomodoro')} value={stats.entryByType.pomodoro} total={stats.totalEntries} />
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <p className="text-xs font-medium text-stone-500 dark:text-stone-400 mb-4">Quick Stats</p>
+              <p className="text-xs font-medium text-stone-500 dark:text-stone-400 mb-4">{t('quickStats')}</p>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-stone-600 dark:text-stone-300">Total Projects</span>
+                  <span className="text-sm text-stone-600 dark:text-stone-300">{t('totalProjects')}</span>
                   <span className="text-sm font-semibold text-stone-900 dark:text-stone-100">{stats.projectCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-stone-600 dark:text-stone-300">Avg Projects/User</span>
+                  <span className="text-sm text-stone-600 dark:text-stone-300">{t('avgProjectsPerUser')}</span>
                   <span className="text-sm font-semibold text-stone-900 dark:text-stone-100">{avgProjectsPerUser}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-stone-600 dark:text-stone-300">Avg Entries/Day (30d)</span>
+                  <span className="text-sm text-stone-600 dark:text-stone-300">{t('avgEntriesPerDay')}</span>
                   <span className="text-sm font-semibold text-stone-900 dark:text-stone-100">{avgEntriesPerDay}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-stone-600 dark:text-stone-300">Avg Session Duration</span>
+                  <span className="text-sm text-stone-600 dark:text-stone-300">{t('avgSessionDuration')}</span>
                   <span className="text-sm font-semibold text-stone-900 dark:text-stone-100">{avgSessionMin}m</span>
                 </div>
               </div>
@@ -227,16 +229,16 @@ export default async function AdminStatsPage() {
       {stats.topUsers.length > 0 && (
         <div className="mb-8">
           <h3 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-3 flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" /> Top Users by Hours Tracked
+            <TrendingUp className="h-4 w-4" /> {t('topUsers')}
           </h3>
           <Card>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-12">#</TableHead>
-                    <TableHead>User</TableHead>
-                    <TableHead className="text-right">Hours</TableHead>
+                    <TableHead className="w-12">{t('colRank')}</TableHead>
+                    <TableHead>{t('colUser')}</TableHead>
+                    <TableHead className="text-right">{t('colHours')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -259,20 +261,20 @@ export default async function AdminStatsPage() {
       {/* Promo & Domain Stats */}
       <div>
         <h3 className="text-sm font-medium text-stone-700 dark:text-stone-300 mb-3 flex items-center gap-2">
-          <Ticket className="h-4 w-4" /> Promotions & Domains
+          <Ticket className="h-4 w-4" /> {t('sectionPromos')}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <StatCard
             icon={Ticket} iconBg="bg-indigo-100 dark:bg-indigo-900/30" iconColor="text-indigo-600 dark:text-indigo-400"
-            label="Active Promos" value={stats.activePromos} sub={`${stats.totalPromoUses} total uses`}
+            label={t('activePromos')} value={stats.activePromos} sub={t('totalUses', { count: stats.totalPromoUses })}
           />
           <StatCard
             icon={Globe} iconBg="bg-emerald-100 dark:bg-emerald-900/30" iconColor="text-emerald-600 dark:text-emerald-400"
-            label="Whitelisted Domains" value={stats.activeDomains} sub={`${stats.premiumBySource.domain} users granted`}
+            label={t('whitelistedDomains')} value={stats.activeDomains} sub={t('usersGranted', { count: stats.premiumBySource.domain })}
           />
           <StatCard
             icon={CreditCard} iconBg="bg-amber-100 dark:bg-amber-900/30" iconColor="text-amber-600 dark:text-amber-400"
-            label="Manual Grants" value={stats.premiumBySource.manual} sub="Admin-granted premium"
+            label={t('manualGrants')} value={stats.premiumBySource.manual} sub={t('adminGrantedPremium')}
           />
         </div>
       </div>

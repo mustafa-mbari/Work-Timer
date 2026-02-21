@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { ArrowRight, Clock } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import type { TimeEntry } from '@/lib/repositories/timeEntries'
@@ -15,7 +16,7 @@ interface Props {
 
 function formatDate(date: string): string {
   const [y, m, d] = date.split('-').map(Number)
-  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
 function formatTime(ms: number): string {
@@ -33,6 +34,7 @@ function formatDuration(ms: number): string {
 }
 
 export default function RecentTab({ entries, projects, isPremium }: Props) {
+  const t = useTranslations('dashboard.recent')
   const projectMap = new Map(projects.map(p => [p.id, p]))
 
   if (!isPremium) {
@@ -40,11 +42,9 @@ export default function RecentTab({ entries, projects, isPremium }: Props) {
       <Card>
         <CardContent className="py-10 flex flex-col items-center gap-3 text-center">
           <Clock className="h-10 w-10 text-stone-300 dark:text-stone-600" />
-          <p className="text-sm text-stone-500 dark:text-stone-400">
-            Recent entries are available on Premium.
-          </p>
+          <p className="text-sm text-stone-500 dark:text-stone-400">{t('premiumOnly')}</p>
           <Button asChild size="sm">
-            <Link href="/billing">Upgrade</Link>
+            <Link href="/billing">{t('upgrade')}</Link>
           </Button>
         </CardContent>
       </Card>
@@ -54,10 +54,10 @@ export default function RecentTab({ entries, projects, isPremium }: Props) {
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
-        <CardTitle>Recent Entries</CardTitle>
+        <CardTitle>{t('title')}</CardTitle>
         <Button asChild variant="link" size="sm" className="gap-1 pr-0 text-indigo-500">
           <Link href="/entries">
-            View all <ArrowRight className="h-3.5 w-3.5" />
+            {t('viewAll')} <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </Button>
       </CardHeader>
@@ -65,10 +65,8 @@ export default function RecentTab({ entries, projects, isPremium }: Props) {
         {entries.length === 0 ? (
           <div className="py-10 flex flex-col items-center gap-2 text-center px-6">
             <Clock className="h-10 w-10 text-stone-300 dark:text-stone-600" />
-            <p className="text-sm text-stone-500 dark:text-stone-400">No entries yet.</p>
-            <p className="text-xs text-stone-400 dark:text-stone-600">
-              Start the timer in the extension to create your first entry.
-            </p>
+            <p className="text-sm text-stone-500 dark:text-stone-400">{t('empty')}</p>
+            <p className="text-xs text-stone-400 dark:text-stone-600">{t('emptyHint')}</p>
           </div>
         ) : (
           <ul className="divide-y divide-stone-100 dark:divide-[var(--dark-border)]">
@@ -76,7 +74,6 @@ export default function RecentTab({ entries, projects, isPremium }: Props) {
               const project = entry.project_id ? projectMap.get(entry.project_id) : null
               return (
                 <li key={entry.id} className="flex items-center gap-3 px-6 py-3">
-                  {/* Date + time */}
                   <div className="w-20 flex-shrink-0">
                     <p className="text-xs font-medium text-stone-700 dark:text-stone-300">
                       {formatDate(entry.date)}
@@ -86,7 +83,6 @@ export default function RecentTab({ entries, projects, isPremium }: Props) {
                     </p>
                   </div>
 
-                  {/* Project dot */}
                   {project ? (
                     <div className="flex items-center gap-1.5 w-24 flex-shrink-0">
                       <span
@@ -101,14 +97,12 @@ export default function RecentTab({ entries, projects, isPremium }: Props) {
                     <div className="w-24 flex-shrink-0" />
                   )}
 
-                  {/* Description */}
                   <p className="flex-1 text-sm text-stone-700 dark:text-stone-300 truncate min-w-0">
                     {entry.description || (
-                      <span className="text-stone-400 dark:text-stone-600 italic text-xs">No description</span>
+                      <span className="text-stone-400 dark:text-stone-600 italic text-xs">{t('noDescription')}</span>
                     )}
                   </p>
 
-                  {/* Duration */}
                   <span className="text-xs font-medium text-stone-600 dark:text-stone-400 tabular-nums flex-shrink-0">
                     {formatDuration(entry.duration)}
                   </span>

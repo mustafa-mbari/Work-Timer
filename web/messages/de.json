@@ -1,0 +1,733 @@
+{
+  "common": {
+    "nav": {
+      "dashboard": "Dashboard",
+      "analytics": "Analysen",
+      "entries": "Einträge",
+      "billing": "Abrechnung",
+      "settings": "Einstellungen",
+      "adminPanel": "Admin-Bereich",
+      "signIn": "Anmelden",
+      "getStarted": "Jetzt starten"
+    },
+    "actions": {
+      "save": "Änderungen speichern",
+      "cancel": "Abbrechen",
+      "delete": "Löschen",
+      "edit": "Bearbeiten",
+      "create": "Erstellen",
+      "update": "Aktualisieren",
+      "confirm": "Bestätigen",
+      "back": "Zurück",
+      "signOut": "Abmelden",
+      "learnMore": "Mehr erfahren",
+      "upgrade": "Auf PRO upgraden",
+      "upgradeNow": "Jetzt upgraden",
+      "getStarted": "Jetzt starten"
+    },
+    "status": {
+      "loading": "Lädt...",
+      "error": "Etwas ist schiefgelaufen",
+      "empty": "Noch keine Daten",
+      "saving": "Speichert...",
+      "saved": "Gespeichert",
+      "deleting": "Löscht..."
+    },
+    "footer": {
+      "copyright": "Work Timer. Alle Rechte vorbehalten.",
+      "privacy": "Datenschutz",
+      "terms": "Nutzungsbedingungen"
+    },
+    "sidebar": {
+      "mainGroup": "Hauptnavigation",
+      "accountGroup": "Konto",
+      "adminGroup": "Admin",
+      "upgradeTitle": "Auf PRO upgraden",
+      "upgradeSubtitle": "Alle Funktionen freischalten"
+    }
+  },
+  "landing": {
+    "hero": {
+      "badge": "Kostenlose Chrome-Erweiterung",
+      "headlineStart": "Hör auf zu raten,",
+      "headlineAccent": "wo deine Zeit bleibt",
+      "subtitle": "Work Timer ist eine kostenlose Chrome-Erweiterung, die jede Arbeitsstunde still erfasst — ohne Aufwand, ohne Account. Einfach öffnen und loslegen.",
+      "ctaPrimary": "Zu Chrome hinzufügen — Kostenlos",
+      "ctaSecondary": "Kostenlosen Account erstellen",
+      "ratingLabel": "5-Sterne-Bewertung",
+      "rating": "5,0",
+      "usersCount": "Vertraut von <strong>2.400+</strong> Profis",
+      "noAds": "Keine Werbung, nie"
+    },
+    "problem": {
+      "badge": "Kommt dir das bekannt vor?",
+      "title": "Zeiterfassung sollte sich nicht wie Mehrarbeit anfühlen",
+      "painLabel": "Das Problem",
+      "solutionLabel": "Work Timer löst das",
+      "painPoints": [
+        "Abrechnungsstunden bei Kundenprojekten aus dem Blick verlieren",
+        "Tabellen, die du mitten in der Aufgabe zu aktualisieren vergisst",
+        "Apps, die einen Account brauchen, nur um einen Timer zu starten",
+        "Schwere Desktop-Apps, die RAM und Speicherplatz fressen"
+      ],
+      "solutions": [
+        "Ein Klick zum Starten — kein Login, keine Einrichtung nötig",
+        "In deiner Browser-Symbolleiste, immer einen Klick entfernt",
+        "Alle Daten bleiben standardmäßig auf deinem Gerät, offline-first",
+        "Geräteübergreifende Cloud-Synchronisierung bei Bedarf (Premium)"
+      ]
+    },
+    "features": {
+      "badge": "Funktionen",
+      "title": "Für echte Arbeit entwickelt, nicht für Demos",
+      "subtitle": "Jede Funktion existiert, weil jemand sie brauchte. Nichts ist hier, nur um eine Preistabelle zu füllen.",
+      "featureLabel": "Funktion",
+      "items": [
+        {
+          "title": "Drei Modi, eine Erweiterung",
+          "body": "Stoppuhr, manuelle Eingabe oder disziplinierte Pomodoro-Fokussitzungen — jederzeit wechseln. Projekt und Beschreibung werden automatisch übernommen, damit du nie den Faden verlierst."
+        },
+        {
+          "title": "Deine Daten, dein Browser",
+          "body": "Alles wird direkt in deinem Browser über chrome.storage.local gespeichert. Kein Server sieht deine Daten, es sei denn, du aktivierst die Cloud-Synchronisierung. Funktioniert vollständig offline — im Flugzeug, in einer Hütte, wo auch immer du arbeitest."
+        },
+        {
+          "title": "Kenne deine Muster",
+          "body": "Wochen- und Monatsanalysen: Zeit nach Projekt, tägliche Sitzungsdiagramme und exportfertige Übersichten für die Rechnungsstellung. Erkenne, wo deine Stunden hingehen, und gewinne deinen Fokus zurück."
+        }
+      ]
+    },
+    "howItWorks": {
+      "badge": "So funktioniert's",
+      "title": "In unter einer Minute einsatzbereit",
+      "stepLabel": "Schritt",
+      "steps": [
+        {
+          "title": "In Sekunden installieren",
+          "desc": "Klicke auf 'Zu Chrome hinzufügen'. Keine Berechtigungen außer Speicher und Alarme. Das Erweiterungssymbol erscheint sofort in deiner Symbolleiste."
+        },
+        {
+          "title": "Projekt erstellen",
+          "desc": "Benenne es, wähle eine Farbe, setze ein optionales Stundenziel. Dauert 10 Sekunden. Bis zu 5 Projekte im kostenlosen Plan."
+        },
+        {
+          "title": "Tracking starten",
+          "desc": "Drücke den Play-Button. Pausiere für Pausen. Stoppe, wenn du fertig bist. Dein Verlauf wird automatisch aufgebaut — nichts zu merken."
+        }
+      ]
+    },
+    "featureGrid": {
+      "title": "Alles was du brauchst, nichts was du nicht brauchst",
+      "subtitle": "Leistungsstark genug für Profis, einfach genug für jeden.",
+      "items": [
+        { "title": "Stoppuhr, Manuell & Pomodoro", "desc": "Drei Timer-Modi. Jederzeit wechseln, Beschreibung wird übernommen." },
+        { "title": "Projektverfolgung", "desc": "Farbcodierte Projekte mit optionalen Stundenzielen." },
+        { "title": "Wochen- & Monatsstatistiken", "desc": "Übersichtliche Diagramme, die genau zeigen, wo deine Zeit hingeht." },
+        { "title": "Datenschutz zuerst", "desc": "Daten bleiben in deinem Browser. Kein Tracking, keine Werbung." },
+        { "title": "Cloud-Sync (Premium)", "desc": "Synchronisiere über alle deine Geräte in Echtzeit." },
+        { "title": "Export (Premium)", "desc": "Als CSV oder Excel exportieren für Rechnungen oder Berichte." }
+      ]
+    },
+    "testimonials": {
+      "badge": "Erfahrungsberichte",
+      "title": "Menschen, die es wirklich nutzen",
+      "starsLabel": "von 5 Sternen",
+      "items": [
+        {
+          "initials": "SK",
+          "name": "Sarah K.",
+          "role": "Freiberufliche Designerin",
+          "quote": "Ich habe jeden Zeiterfasser ausprobiert. Work Timer ist der erste, den ich wirklich weiternutze. Er ist in meinem Browser, nervt mich nicht und funktioniert einfach."
+        },
+        {
+          "initials": "MT",
+          "name": "Marcus T.",
+          "role": "Software-Entwickler",
+          "quote": "Die Pomodoro-Integration allein lohnt sich schon. Ich kombiniere sie mit meinem Projektboard und weiß genau, wie lange jedes Feature gedauert hat. Die Kundenabrechnung ist ein Kinderspiel."
+        },
+        {
+          "initials": "PR",
+          "name": "Priya R.",
+          "role": "Agentur-Projektmanagerin",
+          "quote": "Wir brauchten etwas, das das ganze Team ohne IT-Budget nutzen kann. Die kostenlose Version deckt 80% unserer Bedürfnisse ab, und der Jahresplan ist eine Selbstverständlichkeit."
+        }
+      ]
+    },
+    "pricing": {
+      "badge": "Preise",
+      "title": "Einfache, transparente Preise",
+      "subtitle": "Für die wesentlichen Funktionen dauerhaft kostenlos. Upgrade, wenn du mehr brauchst.",
+      "freePlan": {
+        "name": "Kostenloser Plan",
+        "badge": "Dauerhaft",
+        "description": "5 Projekte · 30-Tage-Verlauf · Alle Timer-Modi · Nur lokale Speicherung",
+        "price": "0 €",
+        "noCreditCard": "Keine Kreditkarte erforderlich"
+      },
+      "trustBadges": [
+        "Datenschutz zuerst",
+        "Offline-first",
+        "Kein Account nötig"
+      ]
+    },
+    "faq": {
+      "badge": "FAQ",
+      "title": "Häufig gestellte Fragen",
+      "items": [
+        {
+          "q": "Brauche ich einen Account, um es zu nutzen?",
+          "a": "Nein. Die Erweiterung funktioniert vollständig offline ohne Account. Erstelle einen Account nur, wenn du Cloud-Synchronisierung oder Zugang zum Begleiter-Dashboard möchtest."
+        },
+        {
+          "q": "Wo werden meine Daten gespeichert?",
+          "a": "Lokal in deinem Browser über chrome.storage.local. Premium-Nutzer können optional die Supabase-Cloud-Synchronisierung aktivieren — deine Daten werden niemals verkauft oder an Dritte weitergegeben."
+        },
+        {
+          "q": "Was ist der Unterschied zwischen Kostenlos und Premium?",
+          "a": "Kostenlos bietet bis zu 5 Projekte, 30 Tage Verlauf und alle drei Timer-Modi. Premium schaltet unbegrenzte Projekte, vollständigen Verlauf, CSV- und Excel-Export, Cloud-Synchronisierung und erweiterte Analysen frei."
+        },
+        {
+          "q": "Kann ich meine Zeiteinträge exportieren?",
+          "a": "Ja, mit einem Premium-Plan. Als CSV oder Excel exportieren, gefiltert nach Projekt und Datumsbereich — formatiert und bereit für die Kundenabrechnung."
+        },
+        {
+          "q": "Funktioniert es offline?",
+          "a": "Vollständig. Die Erweiterung nutzt Browser-Speicher und Chrome-Alarme — eine Internetverbindung ist nie erforderlich. Die Cloud-Synchronisierung läuft im Hintergrund, wenn Konnektivität verfügbar ist."
+        },
+        {
+          "q": "Gibt es eine mobile App?",
+          "a": "Work Timer ist heute eine Chrome-Erweiterung. Ein Begleiter-Web-Dashboard ist für Premium-Nutzer unter w-timer.com verfügbar für Analysen und Eintrags-Management auf jedem Bildschirm."
+        }
+      ]
+    },
+    "cta": {
+      "title": "Deine produktivste Woche beginnt mit einem Klick.",
+      "subtitle": "Installiere Work Timer kostenlos und sieh, wo deine Zeit wirklich hingeht. Keine Anmeldung erforderlich, um zu starten.",
+      "ctaPrimary": "Zu Chrome hinzufügen — Kostenlos",
+      "ctaSecondary": "Account erstellen",
+      "disclaimer": "Keine Kreditkarte erforderlich · Funktioniert offline · Kernfunktionen dauerhaft kostenlos"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Bei Work Timer anmelden",
+      "extensionSubtitle": "Durch die Anmeldung wird deine Erweiterung verbunden",
+      "dashboardSubtitle": "Weiter zu deinem Dashboard",
+      "tabPassword": "Passwort",
+      "tabMagicLink": "Magic Link",
+      "emailLabel": "E-Mail",
+      "emailPlaceholder": "du@beispiel.de",
+      "passwordLabel": "Passwort",
+      "forgotPassword": "Passwort vergessen?",
+      "submit": "Anmelden",
+      "submitting": "Anmeldung läuft...",
+      "sendMagicLink": "Magic Link senden",
+      "sendingMagicLink": "Wird gesendet...",
+      "orContinueWith": "Oder fortfahren mit",
+      "google": "Google",
+      "noAccount": "Noch kein Konto?",
+      "signUp": "Registrieren",
+      "passwordUpdated": "Passwort erfolgreich aktualisiert. Melde dich mit deinem neuen Passwort an.",
+      "tooManyAttempts": "Zu viele Anmeldeversuche. Bitte warte einen Moment und versuche es erneut.",
+      "tooManyMagicAttempts": "Zu viele Versuche. Bitte warte einen Moment und versuche es erneut.",
+      "magicLinkSent": "Überprüfe deine E-Mail auf den Anmelde-Link!"
+    },
+    "register": {
+      "title": "Konto erstellen",
+      "subtitle": "Jetzt mit Work Timer loslegen",
+      "extensionSubtitle": "Registriere dich, um deine Zeitdaten geräteübergreifend zu synchronisieren",
+      "emailLabel": "E-Mail",
+      "emailPlaceholder": "du@beispiel.de",
+      "passwordLabel": "Passwort",
+      "passwordHint": "Mindestens 8 Zeichen",
+      "submit": "Registrieren",
+      "submitting": "Konto wird erstellt...",
+      "orContinueWith": "Oder fortfahren mit",
+      "google": "Google",
+      "hasAccount": "Bereits ein Konto?",
+      "signIn": "Anmelden",
+      "termsPrefix": "Mit der Registrierung stimmst du unseren",
+      "termsLink": "Nutzungsbedingungen",
+      "and": "und",
+      "privacyLink": "Datenschutzrichtlinien",
+      "tooManyAttempts": "Zu viele Registrierungsversuche. Bitte warte einen Moment und versuche es erneut."
+    },
+    "forgotPassword": {
+      "title": "Passwort zurücksetzen",
+      "subtitle": "Gib deine E-Mail ein und wir senden dir einen Reset-Link",
+      "emailLabel": "E-Mail",
+      "emailPlaceholder": "du@beispiel.de",
+      "submit": "Reset-Link senden",
+      "submitting": "Wird gesendet…",
+      "tooManyAttempts": "Zu viele Versuche. Bitte warte einen Moment und versuche es erneut.",
+      "checkInbox": "Überprüfe deinen Posteingang",
+      "sentTo": "Wir haben einen Passwort-Reset-Link an {email} gesendet. Der Link läuft in 1 Stunde ab.",
+      "didNotReceive": "Nicht erhalten? Prüfe deinen Spam-Ordner, oder",
+      "tryAgain": "versuche es erneut",
+      "rememberPassword": "Passwort noch parat?",
+      "backToSignIn": "Zurück zur Anmeldung"
+    },
+    "verifyEmail": {
+      "title": "E-Mail bestätigen",
+      "subtitle": "Wir haben einen Bestätigungslink an {email} gesendet",
+      "resend": "E-Mail erneut senden",
+      "resending": "Wird gesendet...",
+      "backToLogin": "Zurück zur Anmeldung"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "tabs": {
+      "overview": "Übersicht",
+      "devices": "Geräte",
+      "recent": "Letzte Einträge"
+    },
+    "overview": {
+      "noActivityTitle": "Noch keine Aktivität",
+      "noActivityDesc": "Starte die Work Timer-Erweiterung, um deinen ersten Zeiteintrag zu erfassen.",
+      "stats": {
+        "totalHours": "Gesamtstunden",
+        "totalHoursDesc": "insgesamt erfasst",
+        "timeEntries": "Zeiteinträge",
+        "timeEntriesDesc": "Sitzungen gesamt",
+        "activeDays": "Aktive Tage",
+        "activeDaysDesc": "Tage mit Einträgen",
+        "projects": "Projekte",
+        "noActivity": "noch keine Aktivität",
+        "lastActive": "zuletzt: {date}"
+      },
+      "plan": {
+        "title": "Dein Plan",
+        "freeDesc": "Du nutzt den kostenlosen Plan. Upgrade, um Cloud-Sync, Export und unbegrenzte Projekte freizuschalten.",
+        "monthlyDesc": "1,99 €/Monat",
+        "yearlyDesc": "9,99 €/Jahr",
+        "lifetimeDesc": "Lebenslanger Zugang · Keine Verlängerungen.",
+        "cancels": "Endet",
+        "renews": "Verlängert sich",
+        "manageBilling": "Abrechnung verwalten"
+      },
+      "quickActions": {
+        "title": "Schnellaktionen",
+        "analytics": "Analysen ansehen",
+        "entries": "Einträge verwalten",
+        "settings": "Einstellungen",
+        "upgrade": "Auf Premium upgraden"
+      }
+    },
+    "devices": {
+      "title": "Verbundene Geräte",
+      "manageInSettings": "In den Einstellungen verwalten",
+      "freePlanTitle": "Kostenloser Plan: 1 Gerät inklusive",
+      "morePlanTitle": "Möchtest du weitere Geräte verbinden?",
+      "freePlanDesc": "Verbinde ein Gerät kostenlos. Upgrade auf Premium, um über unbegrenzte Geräte zu synchronisieren.",
+      "morePlanDesc": "Du verwendest deinen 1 kostenlosen Geräteplatz. Upgrade auf Premium, um über unbegrenzte Geräte zu synchronisieren.",
+      "upgrade": "Upgraden",
+      "empty": "Noch keine Geräte verbunden.",
+      "emptyHint": "Öffne die Erweiterung und gehe zu Einstellungen → Konto, um zu synchronisieren.",
+      "chromeExtension": "Chrome-Erweiterung",
+      "footerNote": "Beim Trennen eines Geräts wird dessen Sync-Cursor entfernt. Die Erweiterung synchronisiert sich bei der nächsten Nutzung erneut.",
+      "disconnectLabel": "Gerät trennen",
+      "disconnected": "Gerät getrennt",
+      "disconnectError": "Gerät konnte nicht getrennt werden",
+      "networkError": "Netzwerkfehler"
+    },
+    "recent": {
+      "title": "Letzte Einträge",
+      "viewAll": "Alle ansehen",
+      "premiumOnly": "Letzte Einträge sind nur im Premium-Plan verfügbar.",
+      "upgrade": "Upgraden",
+      "empty": "Noch keine Einträge.",
+      "emptyHint": "Starte den Timer in der Erweiterung, um deinen ersten Eintrag zu erstellen.",
+      "noDescription": "Keine Beschreibung"
+    }
+  },
+  "entries": {
+    "title": "Zeiteinträge",
+    "description": "Alle erfassten Zeiten anzeigen und verwalten",
+    "freePlan": {
+      "description": "Vollständiger Verlauf über alle deine Projekte",
+      "lockTitle": "Vollständigen Verlauf freischalten",
+      "lockDesc": "Durchsuche, filtere, bearbeite und exportiere alle deine Zeiteinträge mit Premium. Der kostenlose Plan zeigt nur die letzten 30 Tage in der Erweiterung.",
+      "upgradeCta": "Auf Premium upgraden",
+      "startingAt": "Ab 1,99 € / Monat"
+    },
+    "entryCount": "{count} Eintrag gesamt",
+    "entriesCount": "{count} Einträge gesamt",
+    "table": {
+      "date": "Datum",
+      "time": "Uhrzeit",
+      "project": "Projekt",
+      "description": "Beschreibung",
+      "duration": "Dauer",
+      "type": "Typ",
+      "actions": "Aktionen"
+    },
+    "filters": {
+      "allProjects": "Alle Projekte",
+      "dateFrom": "Von",
+      "dateTo": "Bis",
+      "search": "Einträge suchen...",
+      "allTypes": "Alle Typen",
+      "manual": "Manuell",
+      "stopwatch": "Stoppuhr",
+      "pomodoro": "Pomodoro",
+      "clear": "Zurücksetzen",
+      "addEntry": "Eintrag hinzufügen",
+      "filtersActive": "Filter aktiv"
+    },
+    "empty": "Keine Einträge gefunden. Starte den Timer, um deine erste Sitzung zu erfassen.",
+    "edit": "Eintrag bearbeiten",
+    "delete": "Eintrag löschen",
+    "deleteConfirm": "Möchtest du diesen Eintrag wirklich löschen?",
+    "types": {
+      "stopwatch": "Stoppuhr",
+      "manual": "Manuell",
+      "pomodoro": "Pomodoro"
+    }
+  },
+  "analytics": {
+    "title": "Analysen & Berichte",
+    "description": "Erweiterte Einblicke in deine Zeiterfassung",
+    "freePlan": {
+      "lockTitle": "Analysen freischalten",
+      "lockDesc": "Sieh deine Produktivitätstrends, Projektaufschlüsselungen, Spitzenarbeitszeiten, Serien und mehr — mit Premium.",
+      "upgradeCta": "Auf Premium upgraden",
+      "startingAt": "Ab 1,99 € / Monat"
+    },
+    "filters": {
+      "week": "7T",
+      "month": "30T",
+      "quarter": "90T",
+      "clear": "Zurücksetzen"
+    },
+    "stats": {
+      "totalHours": "Gesamtstunden",
+      "totalEntries": "Einträge gesamt",
+      "avgPerDay": "Ø Std./Tag",
+      "avgSession": "Ø Sitzung",
+      "streak": "Serie",
+      "bestDay": "Bester Tag"
+    },
+    "projectProgress": {
+      "title": "Projektfortschritt",
+      "description": "Erfasste Stunden vs. Ziele"
+    },
+    "error": {
+      "title": "Analysen konnten nicht geladen werden",
+      "desc": "Ein unerwarteter Fehler ist aufgetreten. Bitte lade die Seite neu."
+    },
+    "empty": {
+      "title": "Noch keine Daten",
+      "desc": "Starte das Zeiterfassen in der Erweiterung, um deine Analysen hier zu sehen."
+    },
+    "filteredEmpty": "Keine Einträge für den ausgewählten Zeitraum gefunden."
+  },
+  "billing": {
+    "title": "Abrechnung",
+    "description": "Abonnement und Zahlung verwalten",
+    "activePlanLabel": "AKTIVER PLAN",
+    "lifetimeAccess": "Lebenslanger Zugang · Keine Verlängerungen",
+    "planOverview": "Dein Planüberblick",
+    "choosePlan": "Plan auswählen",
+    "premiumActive": "Alle Premium-Funktionen sind auf deinem Konto aktiv.",
+    "upgradePrompt": "Upgrade, um Cloud-Sync, unbegrenzte Projekte, Analysen und mehr freizuschalten.",
+    "currentPlan": "Aktueller Plan",
+    "free": "Kostenlos",
+    "premium": "Premium",
+    "upgrade": "Upgraden",
+    "manageSubscription": "Abonnement verwalten",
+    "cancelAnytime": "Jederzeit kündbar",
+    "freePlan": {
+      "name": "Kostenlos",
+      "price": "0 €",
+      "period": "/Monat",
+      "noCreditCard": "Keine Kreditkarte erforderlich",
+      "currentPlan": "Aktueller Plan",
+      "freeTier": "Kostenloses Kontingent"
+    },
+    "promoCode": "Aktionscode vorhanden?",
+    "promoDesc": "Gib deinen Code ein, um einen Rabatt oder kostenlosen Zugang zu erhalten.",
+    "promoPlaceholder": "AKTIONSCODE",
+    "promoApply": "Anwenden",
+    "promoApplying": "Wird angewendet...",
+    "plans": {
+      "monthly": {
+        "name": "Monatlich",
+        "period": "/Monat",
+        "description": "Vollzugriff, jederzeit kündbar"
+      },
+      "yearly": {
+        "name": "Jährlich",
+        "period": "/Jahr",
+        "description": "58% sparen gegenüber monatlich",
+        "badge": "Bestes Angebot"
+      },
+      "lifetime": {
+        "name": "Lebenslang",
+        "period": " einmalig",
+        "description": "Einmal zahlen, für immer besitzen"
+      }
+    },
+    "freePlanFeatures": [
+      "Bis zu 5 Projekte",
+      "30-Tage-Verlauf",
+      "Nur lokale Speicherung"
+    ],
+    "features": [
+      "Unbegrenzte Projekte",
+      "Vollständiger Verlauf (kein 30-Tage-Limit)",
+      "CSV- und Excel-Export",
+      "Cloud-Synchronisierung über alle Geräte",
+      "Erweiterte Analysen",
+      "Prioritäts-Support"
+    ],
+    "portalOpening": "Wird geöffnet...",
+    "checkoutRedirecting": "Weiterleitung...",
+    "upgradeProcessing": "Verarbeitung...",
+    "notAvailable": "Nicht verfügbar",
+    "upgradeTo": "{plan} holen",
+    "upgradeToYearly": "Auf Jährlich upgraden",
+    "upgradeToLifetime": "Auf Lebenslang upgraden"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "description": "Konto, Einstellungen und verbundene Geräte verwalten",
+    "tabs": {
+      "profile": "Profil",
+      "appearance": "Erscheinungsbild",
+      "security": "Sicherheit",
+      "sessions": "Sitzungen & Geräte",
+      "timeTracking": "Zeiterfassung"
+    },
+    "profile": {
+      "title": "Persönliche Informationen",
+      "subtitle": "Aktualisiere deinen in der App angezeigten Namen",
+      "displayName": "Anzeigename",
+      "displayNamePlaceholder": "Dein Name",
+      "displayNameHint": "Leer lassen, um stattdessen deine E-Mail-Adresse anzuzeigen",
+      "email": "E-Mail-Adresse",
+      "emailHint": "Die E-Mail kann hier nicht geändert werden. Kontaktiere den Support, falls nötig.",
+      "saveChanges": "Änderungen speichern",
+      "saving": "Speichert…",
+      "saved": "Profil aktualisiert"
+    },
+    "appearance": {
+      "theme": "Design",
+      "light": "Hell",
+      "dark": "Dunkel",
+      "system": "System"
+    },
+    "security": {
+      "changePassword": "Passwort ändern",
+      "currentPassword": "Aktuelles Passwort",
+      "newPassword": "Neues Passwort",
+      "confirmPassword": "Neues Passwort bestätigen"
+    }
+  },
+  "admin": {
+    "title": "Admin-Dashboard",
+    "nav": {
+      "overview": "Übersicht",
+      "users": "Benutzer",
+      "statistics": "Statistiken",
+      "domains": "Domains",
+      "promoCodes": "Aktionscodes",
+      "subscriptions": "Abonnements"
+    },
+    "overview": {
+      "totalUsers": "Benutzer gesamt",
+      "premiumUsers": "Premium-Benutzer",
+      "freeUsers": "Free-Benutzer",
+      "totalHours": "Erfasste Stunden gesamt",
+      "manualGrant": "Manuell vergeben",
+      "stripePayment": "Stripe-Zahlung",
+      "promoCode": "Aktionscode",
+      "domainWhitelist": "Domain-Whitelist",
+      "conversionRate": "Konversionsrate",
+      "freeCount": "Free: {count}",
+      "premiumCount": "Premium: {count}",
+      "recentSignups": "Neue Registrierungen",
+      "latest": "{count} neueste",
+      "colUser": "Benutzer",
+      "colJoined": "Beigetreten",
+      "noUsers": "Noch keine Benutzer"
+    },
+    "users": {
+      "searchPlaceholder": "Nach E-Mail suchen...",
+      "search": "Suchen",
+      "clear": "Löschen",
+      "userFound": "{count} Benutzer gefunden",
+      "usersFound": "{count} Benutzer gefunden",
+      "matching": "passend zu \"{search}\"",
+      "page": "Seite {page} von {total}",
+      "colUser": "Benutzer",
+      "colPlan": "Plan",
+      "colRole": "Rolle",
+      "colJoined": "Beigetreten",
+      "planFree": "Free",
+      "planMonthly": "Premium Monatlich",
+      "planYearly": "Premium Jährlich",
+      "planLifetime": "Premium Lifetime",
+      "noUsersFound": "Keine Benutzer gefunden",
+      "previous": "Zurück",
+      "next": "Weiter"
+    },
+    "stats": {
+      "title": "Globale Statistiken",
+      "description": "Plattformweite Metriken und Engagement",
+      "sectionUsers": "Benutzer",
+      "totalUsers": "Benutzer gesamt",
+      "newThisWeek": "+{count} diese Woche",
+      "dau": "TAU",
+      "dauSub": "Täglich aktiv",
+      "wau": "WAU",
+      "wauSub": "Wöchentlich aktiv",
+      "mau": "MAU",
+      "mauSub": "Monatlich aktiv",
+      "userGrowth": "Benutzerwachstum (letzte 8 Wochen)",
+      "premiumSubs": "Premium-Abonnements",
+      "premiumActive": "{count} aktiv",
+      "byPlanType": "Nach Plantyp",
+      "bySource": "Nach Quelle",
+      "planMonthly": "Monatlich",
+      "planYearly": "Jährlich",
+      "planLifetime": "Lifetime",
+      "sourceStripePaid": "Stripe (bezahlt)",
+      "sourceDomain": "Domain-Whitelist",
+      "sourcePromo": "Aktionscode",
+      "sourceManual": "Manuell vergeben",
+      "sectionUsage": "Plattformnutzung",
+      "totalHours": "Stunden gesamt",
+      "hoursPerUser": "{count}h pro Benutzer",
+      "totalEntries": "Einträge gesamt",
+      "entriesPerUser": "{count} pro Benutzer",
+      "avgSession": "Ø Sitzung",
+      "avgDuration": "Durchschnittliche Dauer",
+      "conversionRate": "Konversionsrate",
+      "conversionSub": "{free} Free / {premium} Premium",
+      "sectionContent": "Inhaltsaufschlüsselung",
+      "entryTypes": "Eintragstypen",
+      "entryManual": "Manuell",
+      "entryStopwatch": "Stoppuhr",
+      "entryPomodoro": "Pomodoro",
+      "quickStats": "Schnellstatistiken",
+      "totalProjects": "Projekte gesamt",
+      "avgProjectsPerUser": "Ø Projekte/Benutzer",
+      "avgEntriesPerDay": "Ø Einträge/Tag (30T)",
+      "avgSessionDuration": "Ø Sitzungsdauer",
+      "topUsers": "Top-Benutzer nach erfassten Stunden",
+      "colRank": "#",
+      "colUser": "Benutzer",
+      "colHours": "Stunden",
+      "sectionPromos": "Aktionen & Domains",
+      "activePromos": "Aktive Aktionen",
+      "totalUses": "{count} Nutzungen gesamt",
+      "whitelistedDomains": "Freigegebene Domains",
+      "usersGranted": "{count} Benutzer gewährt",
+      "manualGrants": "Manuelle Vergaben",
+      "adminGrantedPremium": "Admin-vergebenes Premium"
+    },
+    "domains": {
+      "addTitle": "Freigegebene Domain hinzufügen",
+      "colDomain": "Domain",
+      "colPlan": "Plan",
+      "colStatus": "Status",
+      "colActions": "Aktionen",
+      "planMonthly": "Monatlich",
+      "planYearly": "Jährlich",
+      "planLifetime": "Lifetime",
+      "planPremiumMonthly": "Premium Monatlich",
+      "planPremiumYearly": "Premium Jährlich",
+      "planPremiumLifetime": "Premium Lifetime",
+      "adding": "Wird hinzugefügt...",
+      "add": "Hinzufügen",
+      "tableTitle": "Freigegebene Domains",
+      "total": "{count} gesamt",
+      "statusActive": "Aktiv",
+      "statusInactive": "Inaktiv",
+      "activate": "Aktivieren",
+      "deactivate": "Deaktivieren",
+      "confirmActivateTitle": "{domain} aktivieren?",
+      "confirmDeactivateTitle": "{domain} deaktivieren?",
+      "confirmActivateDesc": "Benutzer mit dieser Domain erhalten automatisch Premium-Zugang.",
+      "confirmDeactivateDesc": "Benutzer mit dieser Domain erhalten keinen automatischen Premium-Zugang mehr.",
+      "cancel": "Abbrechen",
+      "confirm": "Bestätigen",
+      "empty": "Noch keine Domains freigegeben",
+      "invalidFormat": "Ungültiges Domain-Format (z. B. example.com)",
+      "alreadyWhitelisted": "Diese Domain ist bereits freigegeben",
+      "added": "Domain \"{domain}\" hinzugefügt",
+      "addFailed": "Domain konnte nicht hinzugefügt werden",
+      "activated": "{domain} aktiviert",
+      "deactivated": "{domain} deaktiviert",
+      "updateFailed": "Domain konnte nicht aktualisiert werden"
+    },
+    "promos": {
+      "createTitle": "Aktionscode erstellen",
+      "code": "Code",
+      "discount": "Rabatt %",
+      "maxUses": "Max. Nutzungen (optional)",
+      "colCode": "Code",
+      "colDiscount": "Rabatt",
+      "colPlan": "Plan",
+      "colUses": "Nutzungen",
+      "colStatus": "Status",
+      "colActions": "Aktionen",
+      "planMonthly": "Monatlich",
+      "planYearly": "Jährlich",
+      "planLifetime": "Lifetime",
+      "creating": "Wird erstellt...",
+      "create": "Code erstellen",
+      "tableTitle": "Aktionscodes",
+      "total": "{count} gesamt",
+      "statusActive": "Aktiv",
+      "statusInactive": "Inaktiv",
+      "activate": "Aktivieren",
+      "deactivate": "Deaktivieren",
+      "confirmActivateTitle": "Aktionscode {code} aktivieren?",
+      "confirmDeactivateTitle": "Aktionscode {code} deaktivieren?",
+      "confirmActivateDesc": "Dieser Code kann von Benutzern wieder eingelöst werden.",
+      "confirmDeactivateDesc": "Dieser Code kann von Benutzern nicht mehr eingelöst werden.",
+      "cancel": "Abbrechen",
+      "confirm": "Bestätigen",
+      "empty": "Noch keine Aktionscodes erstellt",
+      "invalidCode": "Code muss 3–50 Zeichen lang sein",
+      "invalidDiscount": "Rabatt muss zwischen 1 % und 100 % liegen",
+      "invalidMaxUses": "Max. Nutzungen müssen eine positive Zahl sein",
+      "created": "Aktionscode \"{code}\" erstellt",
+      "createFailed": "Aktionscode konnte nicht erstellt werden",
+      "activated": "{code} aktiviert",
+      "deactivated": "{code} deaktiviert",
+      "updateFailed": "Aktionscode konnte nicht aktualisiert werden"
+    },
+    "subscriptions": {
+      "grantTitle": "Premium manuell vergeben",
+      "userEmail": "Benutzer-E-Mail",
+      "endDate": "Enddatum",
+      "granting": "Wird vergeben...",
+      "grant": "Vergeben",
+      "tableTitle": "Alle Abonnements",
+      "total": "{count} gesamt",
+      "colUser": "Benutzer",
+      "colPlan": "Plan",
+      "colStatus": "Status",
+      "colSource": "Quelle",
+      "colPeriodEnd": "Laufzeit-Ende",
+      "planFree": "Free",
+      "planMonthly": "Premium Monatlich",
+      "planYearly": "Premium Jährlich",
+      "planLifetime": "Premium Lifetime",
+      "selectMonthly": "Monatlich",
+      "selectYearly": "Jährlich",
+      "selectLifetime": "Lifetime",
+      "sourceStripe": "Stripe",
+      "sourceDomain": "Domain-Whitelist",
+      "sourcePromo": "Aktionscode",
+      "sourceManual": "Manuell vergeben",
+      "empty": "Keine Abonnements gefunden",
+      "emailRequired": "E-Mail ist erforderlich",
+      "granted": "Premium an {email} vergeben",
+      "grantFailed": "Premium konnte nicht vergeben werden"
+    }
+  }
+}

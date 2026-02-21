@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -15,21 +16,8 @@ import {
 import { toast } from 'sonner'
 import { Crown, UserPlus } from 'lucide-react'
 
-const PLAN_LABELS: Record<string, string> = {
-  free: 'Free',
-  premium_monthly: 'Premium Monthly',
-  premium_yearly: 'Premium Yearly',
-  premium_lifetime: 'Premium Lifetime',
-}
-
-const SOURCE_LABELS: Record<string, string> = {
-  stripe: 'Stripe',
-  domain: 'Domain Whitelist',
-  promo: 'Promo Code',
-  admin_manual: 'Manual Grant',
-}
-
 export default function AdminSubscriptionsPage() {
+  const t = useTranslations('admin.subscriptions')
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [subscriptions, setSubscriptions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -37,6 +25,20 @@ export default function AdminSubscriptionsPage() {
   const [email, setEmail] = useState('')
   const [plan, setPlan] = useState('premium_monthly')
   const [endDate, setEndDate] = useState('')
+
+  const PLAN_LABELS: Record<string, string> = {
+    free: t('planFree'),
+    premium_monthly: t('planMonthly'),
+    premium_yearly: t('planYearly'),
+    premium_lifetime: t('planLifetime'),
+  }
+
+  const SOURCE_LABELS: Record<string, string> = {
+    stripe: t('sourceStripe'),
+    domain: t('sourceDomain'),
+    promo: t('sourcePromo'),
+    admin_manual: t('sourceManual'),
+  }
 
   async function fetchSubscriptions() {
     const res = await fetch('/api/admin/subscriptions')
@@ -56,7 +58,7 @@ export default function AdminSubscriptionsPage() {
     const trimmedEmail = email.trim()
 
     if (!trimmedEmail) {
-      toast.error('Email is required')
+      toast.error(t('emailRequired'))
       setSubmitting(false)
       return
     }
@@ -73,9 +75,9 @@ export default function AdminSubscriptionsPage() {
     const data = await res.json()
 
     if (!res.ok) {
-      toast.error(data.error || 'Failed to grant premium')
+      toast.error(data.error || t('grantFailed'))
     } else {
-      toast.success(`Premium granted to ${trimmedEmail}`)
+      toast.success(t('granted', { email: trimmedEmail }))
       setEmail('')
     }
 
@@ -99,11 +101,11 @@ export default function AdminSubscriptionsPage() {
         <CardContent className="pt-6">
           <div className="flex items-center gap-2 mb-4">
             <Crown className="h-5 w-5 text-indigo-500" />
-            <h2 className="font-semibold text-stone-900 dark:text-stone-100">Grant Premium Manually</h2>
+            <h2 className="font-semibold text-stone-900 dark:text-stone-100">{t('grantTitle')}</h2>
           </div>
           <form onSubmit={grantPremium} className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1 space-y-1.5">
-              <Label htmlFor="email">User Email</Label>
+              <Label htmlFor="email">{t('userEmail')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -114,20 +116,20 @@ export default function AdminSubscriptionsPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Plan</Label>
+              <Label>{t('colPlan')}</Label>
               <Select value={plan} onValueChange={setPlan}>
                 <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="premium_monthly">Monthly</SelectItem>
-                  <SelectItem value="premium_yearly">Yearly</SelectItem>
-                  <SelectItem value="premium_lifetime">Lifetime</SelectItem>
+                  <SelectItem value="premium_monthly">{t('selectMonthly')}</SelectItem>
+                  <SelectItem value="premium_yearly">{t('selectYearly')}</SelectItem>
+                  <SelectItem value="premium_lifetime">{t('selectLifetime')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>End Date</Label>
+              <Label>{t('endDate')}</Label>
               <Input
                 type="date"
                 value={endDate}
@@ -139,7 +141,7 @@ export default function AdminSubscriptionsPage() {
             <div className="flex items-end">
               <Button type="submit" disabled={submitting}>
                 <UserPlus className="h-4 w-4 mr-1" />
-                {submitting ? 'Granting...' : 'Grant'}
+                {submitting ? t('granting') : t('grant')}
               </Button>
             </div>
           </form>
@@ -151,18 +153,18 @@ export default function AdminSubscriptionsPage() {
         <CardContent className="p-0">
           <div className="px-6 py-4 border-b border-stone-100 dark:border-[var(--dark-border)]">
             <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-stone-900 dark:text-stone-100">All Subscriptions</h2>
-              <Badge variant="secondary">{subscriptions.length} total</Badge>
+              <h2 className="font-semibold text-stone-900 dark:text-stone-100">{t('tableTitle')}</h2>
+              <Badge variant="secondary">{t('total', { count: subscriptions.length })}</Badge>
             </div>
           </div>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Plan</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead>Period End</TableHead>
+                <TableHead>{t('colUser')}</TableHead>
+                <TableHead>{t('colPlan')}</TableHead>
+                <TableHead>{t('colStatus')}</TableHead>
+                <TableHead>{t('colSource')}</TableHead>
+                <TableHead>{t('colPeriodEnd')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -198,7 +200,7 @@ export default function AdminSubscriptionsPage() {
               }) : (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-8 text-stone-500 dark:text-stone-400">
-                    No subscriptions found
+                    {t('empty')}
                   </TableCell>
                 </TableRow>
               )}

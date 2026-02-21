@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { useTranslations } from 'next-intl'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -40,6 +41,7 @@ function getInitials(name: string | null, email: string) {
 }
 
 export default function ProfileTab({ user, profile, subscription }: Props) {
+  const t = useTranslations('settings.profile')
   const [displayName, setDisplayName] = useState(profile?.display_name ?? '')
   const [loading, setLoading] = useState(false)
 
@@ -60,7 +62,7 @@ export default function ProfileTab({ user, profile, subscription }: Props) {
         const data = await res.json()
         throw new Error(data.error ?? 'Failed to save')
       }
-      toast.success('Profile updated')
+      toast.success(t('saved'))
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
@@ -91,37 +93,33 @@ export default function ProfileTab({ user, profile, subscription }: Props) {
       {/* Edit form */}
       <Card>
         <CardHeader>
-          <CardTitle>Personal information</CardTitle>
-          <CardDescription>Update your display name shown across the app</CardDescription>
+          <CardTitle>{t('title')}</CardTitle>
+          <CardDescription>{t('subtitle')}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSave} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="displayName">Display name</Label>
+              <Label htmlFor="displayName">{t('displayName')}</Label>
               <Input
                 id="displayName"
                 value={displayName}
                 onChange={e => setDisplayName(e.target.value)}
                 maxLength={100}
-                placeholder="Your name"
+                placeholder={t('displayNamePlaceholder')}
                 autoComplete="name"
               />
-              <p className="text-xs text-stone-400 dark:text-stone-500">
-                Leave blank to show your email address instead
-              </p>
+              <p className="text-xs text-stone-400 dark:text-stone-500">{t('displayNameHint')}</p>
             </div>
 
             <div className="space-y-1.5">
-              <Label>Email address</Label>
+              <Label>{t('email')}</Label>
               <Input value={user.email} disabled readOnly className="opacity-60 cursor-not-allowed" />
-              <p className="text-xs text-stone-400 dark:text-stone-500">
-                Email cannot be changed here. Contact support if needed.
-              </p>
+              <p className="text-xs text-stone-400 dark:text-stone-500">{t('emailHint')}</p>
             </div>
 
             <div className="flex justify-end">
               <Button type="submit" disabled={loading}>
-                {loading ? 'Saving…' : 'Save changes'}
+                {loading ? t('saving') : t('saveChanges')}
               </Button>
             </div>
           </form>

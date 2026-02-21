@@ -1,4 +1,11 @@
+import { getTranslations } from 'next-intl/server'
+import type { Metadata } from 'next'
 import { requireAuth } from '@/lib/services/auth'
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('dashboard')
+  return { title: t('title') }
+}
 import { getUserSubscription } from '@/lib/repositories/subscriptions'
 import { getUserSyncCursors } from '@/lib/repositories/syncCursors'
 import { getUserTimeEntries } from '@/lib/repositories/timeEntries'

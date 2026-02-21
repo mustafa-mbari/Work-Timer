@@ -1,5 +1,12 @@
 import { Suspense } from 'react'
 import { Lock } from 'lucide-react'
+import { getTranslations } from 'next-intl/server'
+import type { Metadata } from 'next'
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('entries')
+  return { title: t('title') }
+}
 import { requireAuth } from '@/lib/services/auth'
 import { isPremiumUser } from '@/lib/services/billing'
 import { getUserTimeEntries } from '@/lib/repositories/timeEntries'
@@ -45,6 +52,7 @@ interface Props {
 }
 
 export default async function EntriesPage({ searchParams }: Props) {
+  const t = await getTranslations('entries')
   const user = await requireAuth()
   const premium = await isPremiumUser(user.id)
 
@@ -52,8 +60,8 @@ export default async function EntriesPage({ searchParams }: Props) {
     return (
       <div className="animate-fade-in">
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-stone-900 dark:text-stone-100">Time Entries</h1>
-          <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">Full history across all your projects</p>
+          <h1 className="text-2xl font-semibold text-stone-900 dark:text-stone-100">{t('title')}</h1>
+          <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">{t('freePlan.description')}</p>
         </div>
 
         <div className="relative">
@@ -102,17 +110,17 @@ export default async function EntriesPage({ searchParams }: Props) {
               <div className="w-14 h-14 rounded-2xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center mx-auto mb-4">
                 <Lock className="h-7 w-7 text-indigo-500 dark:text-indigo-400" />
               </div>
-              <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100 mb-2">Unlock Full History</h2>
+              <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100 mb-2">{t('freePlan.lockTitle')}</h2>
               <p className="text-sm text-stone-500 dark:text-stone-400 mb-6">
-                Browse, filter, edit and export all your time entries with Premium. Free plan shows only the last 30 days in the extension.
+                {t('freePlan.lockDesc')}
               </p>
               <a
                 href="/billing"
                 className="inline-block w-full px-5 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold transition-colors"
               >
-                Upgrade to Premium
+                {t('freePlan.upgradeCta')}
               </a>
-              <p className="text-xs text-stone-400 dark:text-stone-500 mt-3">Starting at $1.99 / month</p>
+              <p className="text-xs text-stone-400 dark:text-stone-500 mt-3">{t('freePlan.startingAt')}</p>
             </div>
           </div>
 
@@ -143,9 +151,9 @@ export default async function EntriesPage({ searchParams }: Props) {
   return (
     <div className="animate-fade-in">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-stone-900 dark:text-stone-100">Time Entries</h1>
+        <h1 className="text-2xl font-semibold text-stone-900 dark:text-stone-100">{t('title')}</h1>
         <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-          {entriesPage.total} {entriesPage.total === 1 ? 'entry' : 'entries'} total
+          {entriesPage.total === 1 ? t('entryCount', { count: entriesPage.total }) : t('entriesCount', { count: entriesPage.total })}
         </p>
       </div>
 

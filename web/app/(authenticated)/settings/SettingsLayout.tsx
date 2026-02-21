@@ -1,6 +1,7 @@
 'use client'
 
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { User, Clock, Palette, Shield, Monitor } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { UserSettingsFull } from '@/lib/repositories/userSettings'
@@ -32,23 +33,26 @@ interface Props {
   cursors: Cursor[]
 }
 
-const TABS = [
-  { id: 'profile',    label: 'Profile',           icon: User },
-  { id: 'time',       label: 'Time Tracking',      icon: Clock },
-  { id: 'appearance', label: 'Appearance',          icon: Palette },
-  { id: 'security',   label: 'Security',            icon: Shield },
-  { id: 'sessions',   label: 'Sessions & Devices',  icon: Monitor },
-] as const
+type TabId = 'profile' | 'time' | 'appearance' | 'security' | 'sessions'
 
-type TabId = (typeof TABS)[number]['id']
+const TAB_IDS = ['profile', 'time', 'appearance', 'security', 'sessions'] as const
 
 export default function SettingsLayout({ user, profile, subscription, settings, cursors }: Props) {
+  const t = useTranslations('settings')
   const searchParams = useSearchParams()
   const router = useRouter()
   const pathname = usePathname()
 
+  const TABS = [
+    { id: 'profile' as TabId,    label: t('tabs.profile'),      icon: User },
+    { id: 'time' as TabId,       label: t('tabs.timeTracking'),  icon: Clock },
+    { id: 'appearance' as TabId, label: t('tabs.appearance'),    icon: Palette },
+    { id: 'security' as TabId,   label: t('tabs.security'),      icon: Shield },
+    { id: 'sessions' as TabId,   label: t('tabs.sessions'),      icon: Monitor },
+  ]
+
   const rawTab = searchParams.get('tab')
-  const activeTab: TabId = TABS.some(t => t.id === rawTab)
+  const activeTab: TabId = TAB_IDS.some(id => id === rawTab)
     ? (rawTab as TabId)
     : 'profile'
 
@@ -61,14 +65,12 @@ export default function SettingsLayout({ user, profile, subscription, settings, 
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100">Settings</h1>
-        <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
-          Manage your account, preferences, and connected devices
-        </p>
+        <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100">{t('title')}</h1>
+        <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">{t('description')}</p>
       </div>
 
       {/* Tab navigation */}
-      <div className="flex items-center gap-1 bg-white dark:bg-[var(--dark-card)] border border-slate-200 dark:border-[var(--dark-border)] rounded-2xl shadow-sm px-2 py-1.5 overflow-x-auto">
+      <div className="flex items-center gap-1 bg-white dark:bg-[var(--dark-card)] border border-stone-200 dark:border-[var(--dark-border)] rounded-2xl shadow-sm px-2 py-1.5 overflow-x-auto">
         {TABS.map(tab => {
           const Icon = tab.icon
           const active = activeTab === tab.id
@@ -80,7 +82,7 @@ export default function SettingsLayout({ user, profile, subscription, settings, 
                 'flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-xl whitespace-nowrap transition-all',
                 active
                   ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
-                  : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-[var(--dark-hover)]'
+                  : 'text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-50 dark:hover:bg-[var(--dark-hover)]'
               )}
             >
               <Icon className="h-4 w-4" />

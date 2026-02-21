@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState, useTransition } from 'react'
+import { useTranslations } from 'next-intl'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -10,20 +11,6 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
-
-const PLAN_LABELS: Record<string, string> = {
-  free: 'Free',
-  premium_monthly: 'Premium Monthly',
-  premium_yearly: 'Premium Yearly',
-  premium_lifetime: 'Premium Lifetime',
-}
-
-const PLAN_VARIANTS: Record<string, 'default' | 'secondary' | 'outline'> = {
-  free: 'secondary',
-  premium_monthly: 'default',
-  premium_yearly: 'default',
-  premium_lifetime: 'default',
-}
 
 interface User {
   id: string
@@ -43,12 +30,27 @@ interface UsersTableProps {
 }
 
 export default function UsersTable({ users, totalCount, page, pageSize, search }: UsersTableProps) {
+  const t = useTranslations('admin.users')
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
   const [searchValue, setSearchValue] = useState(search)
 
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
+
+  const PLAN_LABELS: Record<string, string> = {
+    free: t('planFree'),
+    premium_monthly: t('planMonthly'),
+    premium_yearly: t('planYearly'),
+    premium_lifetime: t('planLifetime'),
+  }
+
+  const PLAN_VARIANTS: Record<string, 'default' | 'secondary' | 'outline'> = {
+    free: 'secondary',
+    premium_monthly: 'default',
+    premium_yearly: 'default',
+    premium_lifetime: 'default',
+  }
 
   function navigate(params: Record<string, string>) {
     const sp = new URLSearchParams(searchParams.toString())
@@ -85,12 +87,12 @@ export default function UsersTable({ users, totalCount, page, pageSize, search }
           <Input
             value={searchValue}
             onChange={e => setSearchValue(e.target.value)}
-            placeholder="Search by email..."
+            placeholder={t('searchPlaceholder')}
             className="pl-9"
           />
         </div>
         <Button type="submit" variant="outline" disabled={isPending}>
-          Search
+          {t('search')}
         </Button>
         {search && (
           <Button
@@ -98,7 +100,7 @@ export default function UsersTable({ users, totalCount, page, pageSize, search }
             variant="outline"
             onClick={() => { setSearchValue(''); navigate({ search: '', page: '1' }) }}
           >
-            Clear
+            {t('clear')}
           </Button>
         )}
       </form>
@@ -106,11 +108,11 @@ export default function UsersTable({ users, totalCount, page, pageSize, search }
       {/* Results info */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-stone-500 dark:text-stone-400">
-          {totalCount} user{totalCount !== 1 ? 's' : ''} found
-          {search && <> matching &ldquo;{search}&rdquo;</>}
+          {totalCount === 1 ? t('userFound', { count: totalCount }) : t('usersFound', { count: totalCount })}
+          {search && <> {t('matching', { search })}</>}
         </p>
         <p className="text-sm text-stone-500 dark:text-stone-400">
-          Page {page} of {totalPages}
+          {t('page', { page, total: totalPages })}
         </p>
       </div>
 
@@ -120,10 +122,10 @@ export default function UsersTable({ users, totalCount, page, pageSize, search }
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Plan</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead className="text-right">Joined</TableHead>
+                <TableHead>{t('colUser')}</TableHead>
+                <TableHead>{t('colPlan')}</TableHead>
+                <TableHead>{t('colRole')}</TableHead>
+                <TableHead className="text-right">{t('colJoined')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -149,7 +151,7 @@ export default function UsersTable({ users, totalCount, page, pageSize, search }
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right text-sm text-stone-500 dark:text-stone-400">
-                        {new Date(u.created_at).toLocaleDateString('en-US', {
+                        {new Date(u.created_at).toLocaleDateString(undefined, {
                           month: 'short',
                           day: 'numeric',
                           year: 'numeric',
@@ -161,7 +163,7 @@ export default function UsersTable({ users, totalCount, page, pageSize, search }
               ) : (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-8 text-stone-500 dark:text-stone-400">
-                    No users found
+                    {t('noUsersFound')}
                   </TableCell>
                 </TableRow>
               )}
@@ -180,7 +182,7 @@ export default function UsersTable({ users, totalCount, page, pageSize, search }
             onClick={() => navigate({ page: String(page - 1) })}
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
-            Previous
+            {t('previous')}
           </Button>
           <div className="flex gap-1">
             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
@@ -214,7 +216,7 @@ export default function UsersTable({ users, totalCount, page, pageSize, search }
             disabled={page >= totalPages || isPending}
             onClick={() => navigate({ page: String(page + 1) })}
           >
-            Next
+            {t('next')}
             <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         </div>

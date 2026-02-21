@@ -1,9 +1,12 @@
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { isPremiumUser } from '@/lib/services/billing'
 import LastPageTracker from '@/components/LastPageTracker'
-import Sidebar from './Sidebar'
+import AppSidebar from './Sidebar'
 import AppHeader from './AppHeader'
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
+import { SidebarLockProvider } from '@/hooks/use-sidebar-lock'
 
 export default async function AuthenticatedLayout({
   children,
@@ -24,7 +27,6 @@ export default async function AuthenticatedLayout({
     redirect(`/verify-email${emailParam}`)
   }
 
-  // Fetch profile for the top header user menu
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [{ data }, premium] = await Promise.all([
     (supabase.from('profiles') as any)
@@ -40,18 +42,27 @@ export default async function AuthenticatedLayout({
     role: (data?.role ?? 'user') as 'user' | 'admin',
   }
 
+  // Read sidebar preferences from cookies (written client-side by shadcn sidebar)
+  // to match initial server-render state and prevent layout shift on hydration.
+  const cookieStore = await cookies()
+  const sidebarLocked = cookieStore.get('sidebar_locked')?.value === 'true'
+  // Sidebar starts collapsed unless the user has pinned it open
+  const sidebarOpen = sidebarLocked
+
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-[var(--dark)]">
-      <Sidebar isAdmin={userInfo.role === 'admin'} isPremium={premium} />
-      <div className="flex flex-col flex-1 overflow-hidden min-w-0">
-        <AppHeader userInfo={userInfo} />
-        <main className="flex-1 overflow-y-auto">
-          <div className="py-6 lg:py-8 px-[10%] w-full">
-            <LastPageTracker />
-            {children}
+    <SidebarProvider defaultOpen={sidebarOpen}>
+      <SidebarLockProvider defaultLocked={sidebarLocked}>
+        <AppSidebar isAdmin={userInfo.role === 'admin'} isPremium={premium} userInfo={userInfo} />
+        <SidebarInset className="bg-stone-50 dark:bg-[var(--dark)]">
+          <AppHeader userInfo={userInfo} />
+          <div className="flex-1 overflow-y-auto">
+            <div className="mx-auto w-full max-w-[1280px] px-8 py-8">
+              <LastPageTracker />
+              {children}
+            </div>
           </div>
-        </main>
-      </div>
-    </div>
+        </SidebarInset>
+      </SidebarLockProvider>
+    </SidebarProvider>
   )
 }

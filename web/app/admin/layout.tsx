@@ -1,8 +1,11 @@
+import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { requireAdminPage } from '@/lib/services/auth'
-import Sidebar from '@/app/(authenticated)/Sidebar'
+import AppSidebar from '@/app/(authenticated)/Sidebar'
 import AppHeader from '@/app/(authenticated)/AppHeader'
 import { AdminNav } from './AdminNav'
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
+import { SidebarLockProvider } from '@/hooks/use-sidebar-lock'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   await requireAdminPage()
@@ -22,18 +25,24 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     role: (data?.role ?? 'admin') as 'user' | 'admin',
   }
 
+  const cookieStore = await cookies()
+  const sidebarOpen = cookieStore.get('sidebar_state')?.value !== 'false'
+  const sidebarLocked = cookieStore.get('sidebar_locked')?.value === 'true'
+
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-[var(--dark)]">
-      <Sidebar isAdmin={true} />
-      <div className="flex flex-col flex-1 overflow-hidden min-w-0">
-        <AppHeader userInfo={userInfo} />
-        <main className="flex-1 overflow-y-auto">
-          <div className="py-6 lg:py-8 px-[10%] w-full">
-            <AdminNav />
-            {children}
+    <SidebarProvider defaultOpen={sidebarOpen}>
+      <SidebarLockProvider defaultLocked={sidebarLocked}>
+        <AppSidebar isAdmin={true} />
+        <SidebarInset className="bg-stone-50 dark:bg-[var(--dark)]">
+          <AppHeader userInfo={userInfo} />
+          <div className="flex-1 overflow-y-auto">
+            <div className="mx-auto w-full max-w-[1280px] px-8 py-8">
+              <AdminNav />
+              {children}
+            </div>
           </div>
-        </main>
-      </div>
-    </div>
+        </SidebarInset>
+      </SidebarLockProvider>
+    </SidebarProvider>
   )
 }

@@ -1,0 +1,733 @@
+{
+  "common": {
+    "nav": {
+      "dashboard": "Dashboard",
+      "analytics": "Analytics",
+      "entries": "Entries",
+      "billing": "Billing",
+      "settings": "Settings",
+      "adminPanel": "Admin Panel",
+      "signIn": "Sign in",
+      "getStarted": "Get started"
+    },
+    "actions": {
+      "save": "Save changes",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "edit": "Edit",
+      "create": "Create",
+      "update": "Update",
+      "confirm": "Confirm",
+      "back": "Back",
+      "signOut": "Sign out",
+      "learnMore": "Learn more",
+      "upgrade": "Upgrade to PRO",
+      "upgradeNow": "Upgrade Now",
+      "getStarted": "Get started"
+    },
+    "status": {
+      "loading": "Loading...",
+      "error": "Something went wrong",
+      "empty": "No data yet",
+      "saving": "Saving...",
+      "saved": "Saved",
+      "deleting": "Deleting..."
+    },
+    "footer": {
+      "copyright": "Work Timer. All rights reserved.",
+      "privacy": "Privacy",
+      "terms": "Terms"
+    },
+    "sidebar": {
+      "mainGroup": "Main",
+      "accountGroup": "Account",
+      "adminGroup": "Admin",
+      "upgradeTitle": "Upgrade to PRO",
+      "upgradeSubtitle": "Unlock all features"
+    }
+  },
+  "landing": {
+    "hero": {
+      "badge": "Free Chrome Extension",
+      "headlineStart": "Stop Guessing",
+      "headlineAccent": "Where Your Time Goes",
+      "subtitle": "Work Timer is a free Chrome extension that quietly tracks every hour — no friction, no account required. Just open it and start.",
+      "ctaPrimary": "Add to Chrome — It's Free",
+      "ctaSecondary": "Create Free Account",
+      "ratingLabel": "5 star rating",
+      "rating": "5.0",
+      "usersCount": "Trusted by <strong>2,400+</strong> professionals",
+      "noAds": "No ads, ever"
+    },
+    "problem": {
+      "badge": "Sound familiar?",
+      "title": "Time tracking shouldn't feel like extra work",
+      "painLabel": "The problem",
+      "solutionLabel": "Work Timer fixes this",
+      "painPoints": [
+        "Losing track of billable hours across client projects",
+        "Spreadsheets you forget to update mid-task",
+        "Apps that need an account just to start a timer",
+        "Heavy desktop apps eating RAM and disk space"
+      ],
+      "solutions": [
+        "One click to start — no login, no setup required",
+        "Lives in your browser toolbar, always one click away",
+        "All data stays on your device by default, offline-first",
+        "Cloud sync across devices when you're ready (Premium)"
+      ]
+    },
+    "features": {
+      "badge": "Features",
+      "title": "Built for real work, not demos",
+      "subtitle": "Every feature exists because someone needed it. Nothing is here just to fill a pricing table.",
+      "featureLabel": "Feature",
+      "items": [
+        {
+          "title": "Three Modes, One Extension",
+          "body": "Stopwatch, manual entry, or disciplined Pomodoro focus sessions — switch any time. Your project and description carry over automatically so you never lose context."
+        },
+        {
+          "title": "Your Data, Your Browser",
+          "body": "Everything is stored directly in your browser via chrome.storage.local. No server ever sees your data unless you choose cloud sync. Works fully offline — on a plane, in a cabin, wherever you work."
+        },
+        {
+          "title": "Know Your Patterns",
+          "body": "Weekly and monthly analytics: time by project, daily session charts, and export-ready breakdowns for invoicing. Spot where your hours go and reclaim your focus."
+        }
+      ]
+    },
+    "howItWorks": {
+      "badge": "How it works",
+      "title": "Up and running in under a minute",
+      "stepLabel": "Step",
+      "steps": [
+        {
+          "title": "Install in seconds",
+          "desc": "Click \"Add to Chrome\". No permissions beyond storage and alarms. The extension icon appears instantly in your toolbar."
+        },
+        {
+          "title": "Create a project",
+          "desc": "Name it, pick a colour, set an optional hour target. Takes 10 seconds. Up to 5 projects on the free plan."
+        },
+        {
+          "title": "Start tracking",
+          "desc": "Hit the play button. Pause for breaks. Stop when done. Your history builds automatically — nothing to remember."
+        }
+      ]
+    },
+    "featureGrid": {
+      "title": "Everything you need, nothing you don't",
+      "subtitle": "Powerful enough for professionals, simple enough for anyone.",
+      "items": [
+        { "title": "Stopwatch, Manual & Pomodoro", "desc": "Three timer modes. Switch anytime, description carries over." },
+        { "title": "Project Tracking", "desc": "Colour-coded projects with optional hour targets." },
+        { "title": "Weekly & Monthly Stats", "desc": "Clear charts showing exactly where your time goes." },
+        { "title": "Privacy First", "desc": "Data lives in your browser. No tracking, no ads." },
+        { "title": "Cloud Sync (Premium)", "desc": "Sync across all your devices in real time." },
+        { "title": "Export (Premium)", "desc": "Export to CSV or Excel for invoicing or reporting." }
+      ]
+    },
+    "testimonials": {
+      "badge": "Testimonials",
+      "title": "People who actually use it",
+      "starsLabel": "out of 5 stars",
+      "items": [
+        {
+          "initials": "SK",
+          "name": "Sarah K.",
+          "role": "Freelance Designer",
+          "quote": "I've tried every time tracker out there. Work Timer is the first one I actually keep using. It's in my browser, doesn't nag me, and just works."
+        },
+        {
+          "initials": "MT",
+          "name": "Marcus T.",
+          "role": "Software Engineer",
+          "quote": "The Pomodoro integration alone is worth it. I pair it with my project board and know exactly how long each feature took. Billing clients is a breeze."
+        },
+        {
+          "initials": "PR",
+          "name": "Priya R.",
+          "role": "Agency Project Manager",
+          "quote": "We needed something the whole team could use without an IT budget. The free tier covers 80% of what we need, and the yearly plan is a no-brainer."
+        }
+      ]
+    },
+    "pricing": {
+      "badge": "Pricing",
+      "title": "Simple, transparent pricing",
+      "subtitle": "Free forever for essential use. Upgrade when you need more.",
+      "freePlan": {
+        "name": "Free Plan",
+        "badge": "Forever",
+        "description": "5 projects · 30-day history · All timer modes · Local storage only",
+        "price": "$0",
+        "noCreditCard": "No credit card required"
+      },
+      "trustBadges": [
+        "Privacy first",
+        "Offline-first",
+        "No account needed"
+      ]
+    },
+    "faq": {
+      "badge": "FAQ",
+      "title": "Frequently asked questions",
+      "items": [
+        {
+          "q": "Do I need an account to use it?",
+          "a": "No. The extension works completely offline with zero account required. Create an account only when you want cloud sync or access to the companion dashboard."
+        },
+        {
+          "q": "Where is my data stored?",
+          "a": "Locally in your browser via chrome.storage.local. Premium users can optionally enable Supabase cloud sync — your data is never sold or shared with third parties."
+        },
+        {
+          "q": "What's the difference between Free and Premium?",
+          "a": "Free gives you up to 5 projects, 30 days of history, and all three timer modes. Premium unlocks unlimited projects, full history, CSV & Excel export, cloud sync, and advanced analytics."
+        },
+        {
+          "q": "Can I export my time entries?",
+          "a": "Yes, with a Premium plan. Export to CSV or Excel filtered by project and date range — formatted and ready for client invoicing."
+        },
+        {
+          "q": "Does it work offline?",
+          "a": "Entirely. The extension uses browser storage and Chrome alarms — no internet connection is ever required. Cloud sync runs in the background when connectivity is available."
+        },
+        {
+          "q": "Is there a mobile app?",
+          "a": "Work Timer is a Chrome extension today. A companion web dashboard is available for Premium users at w-timer.com for analytics and entry management on any screen."
+        }
+      ]
+    },
+    "cta": {
+      "title": "Your most productive week starts with one click.",
+      "subtitle": "Install Work Timer for free and see where your time actually goes. No sign-up required to start.",
+      "ctaPrimary": "Add to Chrome — Free",
+      "ctaSecondary": "Create an Account",
+      "disclaimer": "No credit card required · Works offline · Free forever for core features"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in to Work Timer",
+      "extensionSubtitle": "Logging in will connect your extension",
+      "dashboardSubtitle": "Continue to your dashboard",
+      "tabPassword": "Password",
+      "tabMagicLink": "Magic Link",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@example.com",
+      "passwordLabel": "Password",
+      "forgotPassword": "Forgot password?",
+      "submit": "Sign in",
+      "submitting": "Signing in...",
+      "sendMagicLink": "Send magic link",
+      "sendingMagicLink": "Sending...",
+      "orContinueWith": "Or continue with",
+      "google": "Google",
+      "noAccount": "Don't have an account?",
+      "signUp": "Sign up",
+      "passwordUpdated": "Password updated successfully. Sign in with your new password.",
+      "tooManyAttempts": "Too many login attempts. Please wait a moment and try again.",
+      "tooManyMagicAttempts": "Too many attempts. Please wait a moment and try again.",
+      "magicLinkSent": "Check your email for the login link!"
+    },
+    "register": {
+      "title": "Create your account",
+      "subtitle": "Get started with Work Timer",
+      "extensionSubtitle": "Sign up to sync your time data across devices",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@example.com",
+      "passwordLabel": "Password",
+      "passwordHint": "At least 8 characters",
+      "submit": "Sign up",
+      "submitting": "Creating account...",
+      "orContinueWith": "Or continue with",
+      "google": "Google",
+      "hasAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "termsPrefix": "By signing up, you agree to our",
+      "termsLink": "Terms",
+      "and": "and",
+      "privacyLink": "Privacy Policy",
+      "tooManyAttempts": "Too many sign-up attempts. Please wait a moment and try again."
+    },
+    "forgotPassword": {
+      "title": "Reset your password",
+      "subtitle": "Enter your email and we'll send you a reset link",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@example.com",
+      "submit": "Send reset link",
+      "submitting": "Sending…",
+      "tooManyAttempts": "Too many attempts. Please wait a moment and try again.",
+      "checkInbox": "Check your inbox",
+      "sentTo": "We've sent a password reset link to {email}. The link expires in 1 hour.",
+      "didNotReceive": "Didn't receive it? Check your spam folder, or",
+      "tryAgain": "try again",
+      "rememberPassword": "Remember your password?",
+      "backToSignIn": "Back to sign in"
+    },
+    "verifyEmail": {
+      "title": "Verify your email",
+      "subtitle": "We sent a verification link to {email}",
+      "resend": "Resend email",
+      "resending": "Resending...",
+      "backToLogin": "Back to sign in"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "tabs": {
+      "overview": "Overview",
+      "devices": "Devices",
+      "recent": "Recent Entries"
+    },
+    "overview": {
+      "noActivityTitle": "No activity yet",
+      "noActivityDesc": "Start the Work Timer extension to record your first time entry.",
+      "stats": {
+        "totalHours": "Total Hours",
+        "totalHoursDesc": "all time tracked",
+        "timeEntries": "Time Entries",
+        "timeEntriesDesc": "total sessions",
+        "activeDays": "Active Days",
+        "activeDaysDesc": "days with entries",
+        "projects": "Projects",
+        "noActivity": "no activity yet",
+        "lastActive": "last: {date}"
+      },
+      "plan": {
+        "title": "Your Plan",
+        "freeDesc": "You're on the free plan. Upgrade to unlock cloud sync, export, and unlimited projects.",
+        "monthlyDesc": "$1.99/month",
+        "yearlyDesc": "$9.99/year",
+        "lifetimeDesc": "Lifetime access · No renewals ever.",
+        "cancels": "Cancels",
+        "renews": "Renews",
+        "manageBilling": "Manage billing"
+      },
+      "quickActions": {
+        "title": "Quick Actions",
+        "analytics": "View Analytics",
+        "entries": "Manage Entries",
+        "settings": "Settings",
+        "upgrade": "Upgrade to Premium"
+      }
+    },
+    "devices": {
+      "title": "Connected Devices",
+      "manageInSettings": "Manage in Settings",
+      "freePlanTitle": "Free plan includes 1 device",
+      "morePlanTitle": "Want to connect more devices?",
+      "freePlanDesc": "Connect one device for free. Upgrade to Premium to sync across unlimited devices.",
+      "morePlanDesc": "You are using your 1 free device slot. Upgrade to Premium to sync across unlimited devices.",
+      "upgrade": "Upgrade",
+      "empty": "No devices connected yet.",
+      "emptyHint": "Open the extension and go to Settings → Account to sync.",
+      "chromeExtension": "Chrome Extension",
+      "footerNote": "Disconnecting a device removes its sync cursor. The extension will re-sync on next use.",
+      "disconnectLabel": "Disconnect device",
+      "disconnected": "Device disconnected",
+      "disconnectError": "Failed to disconnect device",
+      "networkError": "Network error"
+    },
+    "recent": {
+      "title": "Recent Entries",
+      "viewAll": "View all",
+      "premiumOnly": "Recent entries are available on Premium.",
+      "upgrade": "Upgrade",
+      "empty": "No entries yet.",
+      "emptyHint": "Start the timer in the extension to create your first entry.",
+      "noDescription": "No description"
+    }
+  },
+  "entries": {
+    "title": "Time Entries",
+    "description": "View and manage all your tracked time",
+    "freePlan": {
+      "description": "Full history across all your projects",
+      "lockTitle": "Unlock Full History",
+      "lockDesc": "Browse, filter, edit and export all your time entries with Premium. Free plan shows only the last 30 days in the extension.",
+      "upgradeCta": "Upgrade to Premium",
+      "startingAt": "Starting at $1.99 / month"
+    },
+    "entryCount": "{count} entry total",
+    "entriesCount": "{count} entries total",
+    "table": {
+      "date": "Date",
+      "time": "Time",
+      "project": "Project",
+      "description": "Description",
+      "duration": "Duration",
+      "type": "Type",
+      "actions": "Actions"
+    },
+    "filters": {
+      "allProjects": "All projects",
+      "dateFrom": "From",
+      "dateTo": "To",
+      "search": "Search entries...",
+      "allTypes": "All types",
+      "manual": "Manual",
+      "stopwatch": "Stopwatch",
+      "pomodoro": "Pomodoro",
+      "clear": "Clear",
+      "addEntry": "Add Entry",
+      "filtersActive": "Filters active"
+    },
+    "empty": "No entries found. Start the timer to track your first session.",
+    "edit": "Edit entry",
+    "delete": "Delete entry",
+    "deleteConfirm": "Are you sure you want to delete this entry?",
+    "types": {
+      "stopwatch": "Stopwatch",
+      "manual": "Manual",
+      "pomodoro": "Pomodoro"
+    }
+  },
+  "analytics": {
+    "title": "Analytics & Reports",
+    "description": "Advanced insights into your time tracking",
+    "freePlan": {
+      "lockTitle": "Unlock Analytics",
+      "lockDesc": "See your productivity trends, project breakdowns, peak working hours, streaks and more — with Premium.",
+      "upgradeCta": "Upgrade to Premium",
+      "startingAt": "Starting at $1.99 / month"
+    },
+    "filters": {
+      "week": "7d",
+      "month": "30d",
+      "quarter": "90d",
+      "clear": "Clear"
+    },
+    "stats": {
+      "totalHours": "Total Hours",
+      "totalEntries": "Total Entries",
+      "avgPerDay": "Avg Hours/Day",
+      "avgSession": "Avg Session",
+      "streak": "Streak",
+      "bestDay": "Best Day"
+    },
+    "projectProgress": {
+      "title": "Project Progress",
+      "description": "Hours tracked vs target goals"
+    },
+    "error": {
+      "title": "Could not load analytics",
+      "desc": "An unexpected error occurred. Please try refreshing."
+    },
+    "empty": {
+      "title": "No data yet",
+      "desc": "Start tracking time in the extension to see your analytics here."
+    },
+    "filteredEmpty": "No entries found for the selected date range."
+  },
+  "billing": {
+    "title": "Billing",
+    "description": "Manage your subscription and payment",
+    "activePlanLabel": "ACTIVE PLAN",
+    "lifetimeAccess": "Lifetime access · No renewals",
+    "planOverview": "Your plan overview",
+    "choosePlan": "Choose a plan",
+    "premiumActive": "All premium features are active on your account.",
+    "upgradePrompt": "Upgrade to unlock cloud sync, unlimited projects, analytics, and more.",
+    "currentPlan": "Current plan",
+    "free": "Free",
+    "premium": "Premium",
+    "upgrade": "Upgrade",
+    "manageSubscription": "Manage subscription",
+    "cancelAnytime": "Cancel anytime",
+    "freePlan": {
+      "name": "Free",
+      "price": "$0",
+      "period": "/mo",
+      "noCreditCard": "No credit card required",
+      "currentPlan": "Current Plan",
+      "freeTier": "Free tier"
+    },
+    "promoCode": "Have a promo code?",
+    "promoDesc": "Enter your code to get a discount or free access.",
+    "promoPlaceholder": "PROMO CODE",
+    "promoApply": "Apply",
+    "promoApplying": "Applying...",
+    "plans": {
+      "monthly": {
+        "name": "Monthly",
+        "period": "/month",
+        "description": "Full access, cancel anytime"
+      },
+      "yearly": {
+        "name": "Yearly",
+        "period": "/year",
+        "description": "Save 58% vs monthly",
+        "badge": "Best value"
+      },
+      "lifetime": {
+        "name": "Lifetime",
+        "period": " one-time",
+        "description": "Pay once, own forever"
+      }
+    },
+    "freePlanFeatures": [
+      "Up to 5 projects",
+      "30-day history",
+      "Local storage only"
+    ],
+    "features": [
+      "Unlimited projects",
+      "Full history (no 30-day limit)",
+      "CSV & Excel export",
+      "Cloud sync across devices",
+      "Advanced analytics",
+      "Priority support"
+    ],
+    "portalOpening": "Opening...",
+    "checkoutRedirecting": "Redirecting...",
+    "upgradeProcessing": "Processing...",
+    "notAvailable": "Not available",
+    "upgradeTo": "Get {plan}",
+    "upgradeToYearly": "Upgrade to Yearly",
+    "upgradeToLifetime": "Upgrade to Lifetime"
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Manage your account, preferences, and connected devices",
+    "tabs": {
+      "profile": "Profile",
+      "appearance": "Appearance",
+      "security": "Security",
+      "sessions": "Sessions & Devices",
+      "timeTracking": "Time Tracking"
+    },
+    "profile": {
+      "title": "Personal information",
+      "subtitle": "Update your display name shown across the app",
+      "displayName": "Display name",
+      "displayNamePlaceholder": "Your name",
+      "displayNameHint": "Leave blank to show your email address instead",
+      "email": "Email address",
+      "emailHint": "Email cannot be changed here. Contact support if needed.",
+      "saveChanges": "Save changes",
+      "saving": "Saving…",
+      "saved": "Profile updated"
+    },
+    "appearance": {
+      "theme": "Theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "security": {
+      "changePassword": "Change password",
+      "currentPassword": "Current password",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm new password"
+    }
+  },
+  "admin": {
+    "title": "Admin Dashboard",
+    "nav": {
+      "overview": "Overview",
+      "users": "Users",
+      "statistics": "Statistics",
+      "domains": "Domains",
+      "promoCodes": "Promo Codes",
+      "subscriptions": "Subscriptions"
+    },
+    "overview": {
+      "totalUsers": "Total Users",
+      "premiumUsers": "Premium Users",
+      "freeUsers": "Free Users",
+      "totalHours": "Total Hours Tracked",
+      "manualGrant": "Manual Grant",
+      "stripePayment": "Stripe Payment",
+      "promoCode": "Promo Code",
+      "domainWhitelist": "Domain Whitelist",
+      "conversionRate": "Conversion Rate",
+      "freeCount": "Free: {count}",
+      "premiumCount": "Premium: {count}",
+      "recentSignups": "Recent Sign-ups",
+      "latest": "{count} latest",
+      "colUser": "User",
+      "colJoined": "Joined",
+      "noUsers": "No users yet"
+    },
+    "users": {
+      "searchPlaceholder": "Search by email...",
+      "search": "Search",
+      "clear": "Clear",
+      "userFound": "{count} user found",
+      "usersFound": "{count} users found",
+      "matching": "matching \"{search}\"",
+      "page": "Page {page} of {total}",
+      "colUser": "User",
+      "colPlan": "Plan",
+      "colRole": "Role",
+      "colJoined": "Joined",
+      "planFree": "Free",
+      "planMonthly": "Premium Monthly",
+      "planYearly": "Premium Yearly",
+      "planLifetime": "Premium Lifetime",
+      "noUsersFound": "No users found",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "stats": {
+      "title": "Global Statistics",
+      "description": "Platform-wide metrics and engagement",
+      "sectionUsers": "Users",
+      "totalUsers": "Total Users",
+      "newThisWeek": "+{count} this week",
+      "dau": "DAU",
+      "dauSub": "Daily active",
+      "wau": "WAU",
+      "wauSub": "Weekly active",
+      "mau": "MAU",
+      "mauSub": "Monthly active",
+      "userGrowth": "User Growth (Last 8 Weeks)",
+      "premiumSubs": "Premium Subscriptions",
+      "premiumActive": "{count} active",
+      "byPlanType": "By Plan Type",
+      "bySource": "By Source",
+      "planMonthly": "Monthly",
+      "planYearly": "Yearly",
+      "planLifetime": "Lifetime",
+      "sourceStripePaid": "Stripe (Paid)",
+      "sourceDomain": "Domain Whitelist",
+      "sourcePromo": "Promo Code",
+      "sourceManual": "Manual Grant",
+      "sectionUsage": "Platform Usage",
+      "totalHours": "Total Hours",
+      "hoursPerUser": "{count}h per user",
+      "totalEntries": "Total Entries",
+      "entriesPerUser": "{count} per user",
+      "avgSession": "Avg Session",
+      "avgDuration": "Average duration",
+      "conversionRate": "Conversion Rate",
+      "conversionSub": "{free} free / {premium} premium",
+      "sectionContent": "Content Breakdown",
+      "entryTypes": "Entry Types",
+      "entryManual": "Manual",
+      "entryStopwatch": "Stopwatch",
+      "entryPomodoro": "Pomodoro",
+      "quickStats": "Quick Stats",
+      "totalProjects": "Total Projects",
+      "avgProjectsPerUser": "Avg Projects/User",
+      "avgEntriesPerDay": "Avg Entries/Day (30d)",
+      "avgSessionDuration": "Avg Session Duration",
+      "topUsers": "Top Users by Hours Tracked",
+      "colRank": "#",
+      "colUser": "User",
+      "colHours": "Hours",
+      "sectionPromos": "Promotions & Domains",
+      "activePromos": "Active Promos",
+      "totalUses": "{count} total uses",
+      "whitelistedDomains": "Whitelisted Domains",
+      "usersGranted": "{count} users granted",
+      "manualGrants": "Manual Grants",
+      "adminGrantedPremium": "Admin-granted premium"
+    },
+    "domains": {
+      "addTitle": "Add Whitelisted Domain",
+      "colDomain": "Domain",
+      "colPlan": "Plan",
+      "colStatus": "Status",
+      "colActions": "Actions",
+      "planMonthly": "Monthly",
+      "planYearly": "Yearly",
+      "planLifetime": "Lifetime",
+      "planPremiumMonthly": "Premium Monthly",
+      "planPremiumYearly": "Premium Yearly",
+      "planPremiumLifetime": "Premium Lifetime",
+      "adding": "Adding...",
+      "add": "Add",
+      "tableTitle": "Whitelisted Domains",
+      "total": "{count} total",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "confirmActivateTitle": "Activate {domain}?",
+      "confirmDeactivateTitle": "Deactivate {domain}?",
+      "confirmActivateDesc": "Users with this domain will automatically receive premium access.",
+      "confirmDeactivateDesc": "Users with this domain will no longer receive automatic premium access.",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "empty": "No domains whitelisted yet",
+      "invalidFormat": "Invalid domain format (e.g. example.com)",
+      "alreadyWhitelisted": "This domain is already whitelisted",
+      "added": "Domain \"{domain}\" added",
+      "addFailed": "Failed to add domain",
+      "activated": "{domain} activated",
+      "deactivated": "{domain} deactivated",
+      "updateFailed": "Failed to update domain"
+    },
+    "promos": {
+      "createTitle": "Create Promo Code",
+      "code": "Code",
+      "discount": "Discount %",
+      "maxUses": "Max Uses (optional)",
+      "colCode": "Code",
+      "colDiscount": "Discount",
+      "colPlan": "Plan",
+      "colUses": "Uses",
+      "colStatus": "Status",
+      "colActions": "Actions",
+      "planMonthly": "Monthly",
+      "planYearly": "Yearly",
+      "planLifetime": "Lifetime",
+      "creating": "Creating...",
+      "create": "Create Code",
+      "tableTitle": "Promo Codes",
+      "total": "{count} total",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "confirmActivateTitle": "Activate promo code {code}?",
+      "confirmDeactivateTitle": "Deactivate promo code {code}?",
+      "confirmActivateDesc": "This code will become redeemable by users again.",
+      "confirmDeactivateDesc": "This code will no longer be redeemable by users.",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "empty": "No promo codes created yet",
+      "invalidCode": "Code must be 3-50 characters",
+      "invalidDiscount": "Discount must be between 1% and 100%",
+      "invalidMaxUses": "Max uses must be a positive number",
+      "created": "Promo code \"{code}\" created",
+      "createFailed": "Failed to create promo code",
+      "activated": "{code} activated",
+      "deactivated": "{code} deactivated",
+      "updateFailed": "Failed to update promo code"
+    },
+    "subscriptions": {
+      "grantTitle": "Grant Premium Manually",
+      "userEmail": "User Email",
+      "endDate": "End Date",
+      "granting": "Granting...",
+      "grant": "Grant",
+      "tableTitle": "All Subscriptions",
+      "total": "{count} total",
+      "colUser": "User",
+      "colPlan": "Plan",
+      "colStatus": "Status",
+      "colSource": "Source",
+      "colPeriodEnd": "Period End",
+      "planFree": "Free",
+      "planMonthly": "Premium Monthly",
+      "planYearly": "Premium Yearly",
+      "planLifetime": "Premium Lifetime",
+      "selectMonthly": "Monthly",
+      "selectYearly": "Yearly",
+      "selectLifetime": "Lifetime",
+      "sourceStripe": "Stripe",
+      "sourceDomain": "Domain Whitelist",
+      "sourcePromo": "Promo Code",
+      "sourceManual": "Manual Grant",
+      "empty": "No subscriptions found",
+      "emailRequired": "Email is required",
+      "granted": "Premium granted to {email}",
+      "grantFailed": "Failed to grant premium"
+    }
+  }
+}

@@ -2,10 +2,12 @@
 
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { ExternalLink } from 'lucide-react'
 
 export default function PortalButton() {
+  const t = useTranslations('billing')
   const [loading, setLoading] = useState(false)
 
   async function handleClick() {
@@ -32,7 +34,7 @@ export default function PortalButton() {
       className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors disabled:opacity-60 shrink-0"
     >
       <ExternalLink className="h-4 w-4" />
-      {loading ? 'Opening...' : 'Manage Subscription'}
+      {loading ? t('portalOpening') : t('manageSubscription')}
     </button>
   )
 }

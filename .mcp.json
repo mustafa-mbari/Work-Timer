@@ -1,5 +1,13 @@
 {
   "mcpServers": {
+    "browsermcp": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "@browsermcp/mcp@latest"
+      ]
+    },
     "shadcn": {
       "command": "cmd",
       "args": [

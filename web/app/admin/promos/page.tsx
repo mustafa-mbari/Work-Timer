@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -20,13 +21,8 @@ import {
 import { toast } from 'sonner'
 import { Ticket, Plus, Power, PowerOff } from 'lucide-react'
 
-const PLAN_LABELS: Record<string, string> = {
-  premium_monthly: 'Monthly',
-  premium_yearly: 'Yearly',
-  premium_lifetime: 'Lifetime',
-}
-
 export default function AdminPromosPage() {
+  const t = useTranslations('admin.promos')
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [promos, setPromos] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -35,6 +31,12 @@ export default function AdminPromosPage() {
   const [discountPct, setDiscountPct] = useState('')
   const [plan, setPlan] = useState('premium_monthly')
   const [maxUses, setMaxUses] = useState('')
+
+  const PLAN_LABELS: Record<string, string> = {
+    premium_monthly: t('planMonthly'),
+    premium_yearly: t('planYearly'),
+    premium_lifetime: t('planLifetime'),
+  }
 
   async function fetchPromos() {
     const res = await fetch('/api/admin/promos')
@@ -56,19 +58,19 @@ export default function AdminPromosPage() {
     const uses = maxUses ? parseInt(maxUses) : null
 
     if (!trimmedCode || trimmedCode.length < 3 || trimmedCode.length > 50) {
-      toast.error('Code must be 3-50 characters')
+      toast.error(t('invalidCode'))
       setSubmitting(false)
       return
     }
 
     if (isNaN(discount) || discount < 1 || discount > 100) {
-      toast.error('Discount must be between 1% and 100%')
+      toast.error(t('invalidDiscount'))
       setSubmitting(false)
       return
     }
 
     if (uses !== null && (isNaN(uses) || uses < 1)) {
-      toast.error('Max uses must be a positive number')
+      toast.error(t('invalidMaxUses'))
       setSubmitting(false)
       return
     }
@@ -81,9 +83,9 @@ export default function AdminPromosPage() {
     const data = await res.json()
 
     if (!res.ok) {
-      toast.error(data.error || 'Failed to create promo code')
+      toast.error(data.error || t('createFailed'))
     } else {
-      toast.success(`Promo code "${trimmedCode}" created`)
+      toast.success(t('created', { code: trimmedCode }))
       setCode('')
       setDiscountPct('')
       setMaxUses('')
@@ -101,9 +103,9 @@ export default function AdminPromosPage() {
     })
 
     if (res.ok) {
-      toast.success(`${promoCode} ${active ? 'deactivated' : 'activated'}`)
+      toast.success(active ? t('deactivated', { code: promoCode }) : t('activated', { code: promoCode }))
     } else {
-      toast.error('Failed to update promo code')
+      toast.error(t('updateFailed'))
     }
 
     await fetchPromos()
@@ -125,11 +127,11 @@ export default function AdminPromosPage() {
         <CardContent className="pt-6">
           <div className="flex items-center gap-2 mb-4">
             <Ticket className="h-5 w-5 text-indigo-500" />
-            <h2 className="font-semibold text-stone-900 dark:text-stone-100">Create Promo Code</h2>
+            <h2 className="font-semibold text-stone-900 dark:text-stone-100">{t('createTitle')}</h2>
           </div>
           <form onSubmit={addPromo} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="code">Code</Label>
+              <Label htmlFor="code">{t('code')}</Label>
               <Input
                 id="code"
                 value={code}
@@ -139,7 +141,7 @@ export default function AdminPromosPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="discount">Discount %</Label>
+              <Label htmlFor="discount">{t('discount')}</Label>
               <Input
                 id="discount"
                 type="number"
@@ -152,20 +154,20 @@ export default function AdminPromosPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Plan</Label>
+              <Label>{t('colPlan')}</Label>
               <Select value={plan} onValueChange={setPlan}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="premium_monthly">Monthly</SelectItem>
-                  <SelectItem value="premium_yearly">Yearly</SelectItem>
-                  <SelectItem value="premium_lifetime">Lifetime</SelectItem>
+                  <SelectItem value="premium_monthly">{t('planMonthly')}</SelectItem>
+                  <SelectItem value="premium_yearly">{t('planYearly')}</SelectItem>
+                  <SelectItem value="premium_lifetime">{t('planLifetime')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="maxUses">Max Uses (optional)</Label>
+              <Label htmlFor="maxUses">{t('maxUses')}</Label>
               <Input
                 id="maxUses"
                 type="number"
@@ -178,7 +180,7 @@ export default function AdminPromosPage() {
             <div className="sm:col-span-2">
               <Button type="submit" disabled={submitting} className="w-full">
                 <Plus className="h-4 w-4 mr-1" />
-                {submitting ? 'Creating...' : 'Create Code'}
+                {submitting ? t('creating') : t('create')}
               </Button>
             </div>
           </form>
@@ -190,19 +192,19 @@ export default function AdminPromosPage() {
         <CardContent className="p-0">
           <div className="px-6 py-4 border-b border-stone-100 dark:border-[var(--dark-border)]">
             <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-stone-900 dark:text-stone-100">Promo Codes</h2>
-              <Badge variant="secondary">{promos.length} total</Badge>
+              <h2 className="font-semibold text-stone-900 dark:text-stone-100">{t('tableTitle')}</h2>
+              <Badge variant="secondary">{t('total', { count: promos.length })}</Badge>
             </div>
           </div>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Discount</TableHead>
-                <TableHead>Plan</TableHead>
-                <TableHead>Uses</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t('colCode')}</TableHead>
+                <TableHead>{t('colDiscount')}</TableHead>
+                <TableHead>{t('colPlan')}</TableHead>
+                <TableHead>{t('colUses')}</TableHead>
+                <TableHead>{t('colStatus')}</TableHead>
+                <TableHead className="text-right">{t('colActions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -222,7 +224,7 @@ export default function AdminPromosPage() {
                   </TableCell>
                   <TableCell>
                     <Badge variant={p.active ? 'default' : 'secondary'}>
-                      {p.active ? 'Active' : 'Inactive'}
+                      {p.active ? t('statusActive') : t('statusInactive')}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -230,24 +232,22 @@ export default function AdminPromosPage() {
                       <AlertDialogTrigger asChild>
                         <Button variant="outline" size="sm">
                           {p.active ? <PowerOff className="h-3.5 w-3.5 mr-1" /> : <Power className="h-3.5 w-3.5 mr-1" />}
-                          {p.active ? 'Deactivate' : 'Activate'}
+                          {p.active ? t('deactivate') : t('activate')}
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>
-                            {p.active ? 'Deactivate' : 'Activate'} promo code {p.code}?
+                            {p.active ? t('confirmDeactivateTitle', { code: p.code }) : t('confirmActivateTitle', { code: p.code })}
                           </AlertDialogTitle>
                           <AlertDialogDescription>
-                            {p.active
-                              ? 'This code will no longer be redeemable by users.'
-                              : 'This code will become redeemable by users again.'}
+                            {p.active ? t('confirmDeactivateDesc') : t('confirmActivateDesc')}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
                           <AlertDialogAction onClick={() => toggleActive(p.id, p.active, p.code)}>
-                            Confirm
+                            {t('confirm')}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
@@ -257,7 +257,7 @@ export default function AdminPromosPage() {
               )) : (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8 text-stone-500 dark:text-stone-400">
-                    No promo codes created yet
+                    {t('empty')}
                   </TableCell>
                 </TableRow>
               )}

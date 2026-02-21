@@ -1,4 +1,11 @@
 import { Check, X, Zap, Star, Infinity as InfinityIcon } from 'lucide-react'
+import { getTranslations } from 'next-intl/server'
+import type { Metadata } from 'next'
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('billing')
+  return { title: t('title') }
+}
 import CheckoutButton from './CheckoutButton'
 import UpgradeButton from './UpgradeButton'
 import PortalButton from './PortalButton'
@@ -7,64 +14,65 @@ import { PRICING } from '@/lib/shared/constants'
 import { requireAuth } from '@/lib/services/auth'
 import { getUserSubscriptionForBilling } from '@/lib/repositories/subscriptions'
 
-const FREE_FEATURES = [
-  { text: 'Up to 5 projects', included: true },
-  { text: '30-day history', included: true },
-  { text: 'Local storage only', included: true },
-  { text: 'Cloud sync', included: false },
-  { text: 'Data export', included: false },
-  { text: 'Advanced analytics', included: false },
-]
-
-const PREMIUM_FEATURES = [
-  'Unlimited projects',
-  'Full history (unlimited)',
-  'Cloud sync across devices',
-  'CSV & Excel export',
-  'Advanced analytics',
-  'Priority support',
-]
-
-const PAID_PLANS = [
-  {
-    id: 'monthly' as const,
-    planKey: 'premium_monthly',
-    name: 'Monthly',
-    price: PRICING.monthly,
-    per: '/mo',
-    badge: null as string | null,
-    description: 'Cancel anytime',
-    highlight: false,
-  },
-  {
-    id: 'yearly' as const,
-    planKey: 'premium_yearly',
-    name: 'Yearly',
-    price: PRICING.yearly,
-    per: '/yr',
-    badge: 'Best Value' as string | null,
-    description: 'Save 58% vs monthly',
-    highlight: true,
-  },
-  {
-    id: 'lifetime' as const,
-    planKey: 'premium_lifetime',
-    name: 'Lifetime',
-    price: PRICING.lifetime,
-    per: ' once',
-    badge: null as string | null,
-    description: 'Pay once, use forever',
-    highlight: false,
-  },
-]
-
 export default async function BillingPage() {
+  const t = await getTranslations('billing')
   const user = await requireAuth()
   const { data: subscription } = await getUserSubscriptionForBilling(user.id)
 
   const currentPlan = subscription?.plan ?? 'free'
   const isPremium = currentPlan !== 'free'
   const isLifetime = currentPlan === 'premium_lifetime'
+
+  const FREE_FEATURES = [
+    { text: t('freePlanFeatures.0'), included: true },
+    { text: t('freePlanFeatures.1'), included: true },
+    { text: t('freePlanFeatures.2'), included: true },
+    { text: t('features.3'), included: false },
+    { text: t('features.4'), included: false },
+    { text: t('features.5'), included: false },
+  ]
+
+  const PREMIUM_FEATURES = [
+    t('features.0'),
+    t('features.1'),
+    t('features.2'),
+    t('features.3'),
+    t('features.4'),
+    t('features.5'),
+  ]
+
+  const PAID_PLANS = [
+    {
+      id: 'monthly' as const,
+      planKey: 'premium_monthly',
+      name: t('plans.monthly.name'),
+      price: PRICING.monthly,
+      per: t('plans.monthly.period'),
+      badge: null as string | null,
+      description: t('plans.monthly.description'),
+      highlight: false,
+    },
+    {
+      id: 'yearly' as const,
+      planKey: 'premium_yearly',
+      name: t('plans.yearly.name'),
+      price: PRICING.yearly,
+      per: t('plans.yearly.period'),
+      badge: t('plans.yearly.badge') as string | null,
+      description: t('plans.yearly.description'),
+      highlight: true,
+    },
+    {
+      id: 'lifetime' as const,
+      planKey: 'premium_lifetime',
+      name: t('plans.lifetime.name'),
+      price: PRICING.lifetime,
+      per: t('plans.lifetime.period'),
+      badge: null as string | null,
+      description: t('plans.lifetime.description'),
+      highlight: false,
+    },
+  ]
 
   const renewalInfo = (() => {
     if (!isPremium || isLifetime) return null
@@ -76,10 +84,8 @@ export default async function BillingPage() {
   return (
     <div className="space-y-8 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100">Billing</h1>
-        <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
-          Manage your subscription and payment
-        </p>
+        <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100">{t('title')}</h1>
+        <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">{t('description')}</p>
       </div>
 
       {/* Active plan banner — premium only */}
@@ -88,18 +94,18 @@ export default async function BillingPage() {
           <div>
             <div className="flex items-center gap-2 mb-0.5">
               <Zap className="h-3.5 w-3.5" />
-              <span className="text-xs font-semibold uppercase tracking-widest text-indigo-200">Active Plan</span>
+              <span className="text-xs font-semibold uppercase tracking-widest text-indigo-200">{t('activePlanLabel')}</span>
             </div>
             <p className="font-bold text-lg leading-tight">
-              {currentPlan === 'premium_monthly' && 'Premium Monthly'}
-              {currentPlan === 'premium_yearly' && 'Premium Yearly'}
-              {currentPlan === 'premium_lifetime' && 'Premium Lifetime'}
+              {currentPlan === 'premium_monthly' && `${t('plans.monthly.name')} Premium`}
+              {currentPlan === 'premium_yearly' && `${t('plans.yearly.name')} Premium`}
+              {currentPlan === 'premium_lifetime' && `${t('plans.lifetime.name')} Premium`}
             </p>
             {renewalInfo && (
               <p className="text-sm text-indigo-200 mt-0.5">{renewalInfo}</p>
             )}
             {isLifetime && (
-              <p className="text-sm text-indigo-200 mt-0.5">Lifetime access · No renewals</p>
+              <p className="text-sm text-indigo-200 mt-0.5">{t('lifetimeAccess')}</p>
             )}
           </div>
           {!isLifetime && subscription?.stripe_customer_id && <PortalButton />}
@@ -109,12 +115,10 @@ export default async function BillingPage() {
       {/* Plan cards — always shown */}
       <div>
         <h2 className="text-base font-semibold text-stone-900 dark:text-stone-100 mb-1">
-          {isPremium ? 'Your plan overview' : 'Choose a plan'}
+          {isPremium ? t('planOverview') : t('choosePlan')}
         </h2>
         <p className="text-sm text-stone-500 dark:text-stone-400 mb-5">
-          {isPremium
-            ? 'All premium features are active on your account.'
-            : 'Upgrade to unlock cloud sync, unlimited projects, analytics, and more.'}
+          {isPremium ? t('premiumActive') : t('upgradePrompt')}
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
@@ -128,17 +132,17 @@ export default async function BillingPage() {
             {currentPlan === 'free' && (
               <div className="absolute -top-3 left-4">
                 <span className="inline-flex items-center bg-indigo-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                  Current Plan
+                  {t('freePlan.currentPlan')}
                 </span>
               </div>
             )}
             <div className="mb-5 pt-1">
-              <p className="text-sm font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">Free</p>
+              <p className="text-sm font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">{t('freePlan.name')}</p>
               <div className="flex items-end gap-1">
-                <span className="text-4xl font-bold text-stone-900 dark:text-stone-100">$0</span>
-                <span className="text-sm text-stone-400 dark:text-stone-500 mb-1">/mo</span>
+                <span className="text-4xl font-bold text-stone-900 dark:text-stone-100">{t('freePlan.price')}</span>
+                <span className="text-sm text-stone-400 dark:text-stone-500 mb-1">{t('freePlan.period')}</span>
               </div>
-              <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">No credit card required</p>
+              <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">{t('freePlan.noCreditCard')}</p>
             </div>
             <ul className="space-y-2.5 flex-1">
               {FREE_FEATURES.map(f => (
@@ -154,7 +158,7 @@ export default async function BillingPage() {
               ))}
             </ul>
             <div className="mt-6 py-2.5 px-4 rounded-xl text-sm font-semibold text-center text-stone-400 dark:text-stone-500 bg-stone-100 dark:bg-[var(--dark-elevated)]">
-              {currentPlan === 'free' ? 'Your current plan' : 'Free tier'}
+              {currentPlan === 'free' ? t('freePlan.currentPlan') : t('freePlan.freeTier')}
             </div>
           </div>
 
@@ -176,7 +180,7 @@ export default async function BillingPage() {
                 {isActive ? (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                     <span className="inline-flex items-center gap-1 bg-indigo-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                      Current Plan
+                      {t('currentPlan')}
                     </span>
                   </div>
                 ) : plan.badge && !isPremium ? (
@@ -206,27 +210,21 @@ export default async function BillingPage() {
                       {f}
                     </li>
                   ))}
-                  {plan.id === 'lifetime' && (
-                    <li className="flex items-start gap-2 text-sm text-stone-600 dark:text-stone-400">
-                      <InfinityIcon className="h-4 w-4 mt-0.5 shrink-0 text-emerald-500" />
-                      No recurring charges
-                    </li>
-                  )}
                 </ul>
 
                 {isActive ? (
                   <div className="py-2.5 px-4 rounded-xl text-sm font-semibold text-center text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/30">
-                    Active
+                    {t('currentPlan')}
                   </div>
                 ) : !isPremium ? (
-                  <CheckoutButton plan={plan.id} label={`Get ${plan.name}`} highlight={plan.highlight} />
+                  <CheckoutButton plan={plan.id} label={t('upgradeTo', { plan: plan.name })} highlight={plan.highlight} />
                 ) : currentPlan === 'premium_monthly' && plan.id === 'yearly' ? (
-                  <UpgradeButton plan="yearly" label="Upgrade to Yearly" />
+                  <UpgradeButton plan="yearly" label={t('upgradeToYearly')} />
                 ) : (currentPlan === 'premium_monthly' || currentPlan === 'premium_yearly') && plan.id === 'lifetime' ? (
-                  <UpgradeButton plan="lifetime" label="Upgrade to Lifetime" />
+                  <UpgradeButton plan="lifetime" label={t('upgradeToLifetime')} />
                 ) : (
                   <div className="py-2.5 px-4 rounded-xl text-sm font-semibold text-center text-stone-400 dark:text-stone-500 bg-stone-100 dark:bg-[var(--dark-elevated)]">
-                    Not available
+                    {t('notAvailable')}
                   </div>
                 )}
               </div>
@@ -238,8 +236,8 @@ export default async function BillingPage() {
       {/* Promo code */}
       {!isLifetime && (
         <div className="rounded-2xl border border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)] p-6">
-          <h3 className="text-sm font-semibold text-stone-800 dark:text-stone-200 mb-1">Have a promo code?</h3>
-          <p className="text-xs text-stone-400 dark:text-stone-500 mb-4">Enter your code to get a discount or free access.</p>
+          <h3 className="text-sm font-semibold text-stone-800 dark:text-stone-200 mb-1">{t('promoCode')}</h3>
+          <p className="text-xs text-stone-400 dark:text-stone-500 mb-4">{t('promoDesc')}</p>
           <PromoCodeInput />
         </div>
       )}

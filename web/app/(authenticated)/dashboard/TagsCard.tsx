@@ -157,17 +157,17 @@ export default function TagsCard({ initialTags }: Props) {
   }
 
   return (
-    <div className="rounded-2xl bg-white dark:bg-[var(--dark-card)] border border-slate-100 dark:border-[var(--dark-border)] shadow-sm flex flex-col">
+    <div className="rounded-2xl bg-white dark:bg-[var(--dark-card)] border border-stone-100 dark:border-[var(--dark-border)] shadow-sm flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-[var(--dark-border)]">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100 dark:border-[var(--dark-border)]">
         <div className="flex items-center gap-2">
           <div className="h-9 w-9 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
             <Tag className="h-4 w-4 text-emerald-500" />
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="font-semibold text-slate-800 dark:text-slate-100">Tags</span>
+            <span className="font-semibold text-stone-800 dark:text-stone-100">Tags</span>
             {tags.length > 0 && (
-              <span className="text-xs text-slate-400 dark:text-slate-500">{tags.length}</span>
+              <span className="text-xs text-stone-400 dark:text-stone-500">{tags.length}</span>
             )}
           </div>
         </div>
@@ -185,7 +185,7 @@ export default function TagsCard({ initialTags }: Props) {
       <div className="flex-1 overflow-hidden">
         {/* Add form */}
         {showAddForm && (
-          <div className="px-5 py-3 border-b border-slate-100 dark:border-[var(--dark-border)] bg-slate-50 dark:bg-[var(--dark-elevated)]">
+          <div className="px-5 py-3 border-b border-stone-100 dark:border-[var(--dark-border)] bg-stone-50 dark:bg-[var(--dark-elevated)]">
             <div className="flex items-center gap-2">
               <input
                 type="text"
@@ -194,7 +194,7 @@ export default function TagsCard({ initialTags }: Props) {
                 onKeyDown={e => { if (e.key === 'Enter') handleAdd(); if (e.key === 'Escape') setShowAddForm(false) }}
                 placeholder="Tag name"
                 autoFocus
-                className="flex-1 text-sm bg-white dark:bg-[var(--dark-card)] border border-slate-200 dark:border-[var(--dark-border)] rounded-lg px-3 py-1.5 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="flex-1 text-sm bg-white dark:bg-[var(--dark-card)] border border-stone-200 dark:border-[var(--dark-border)] rounded-lg px-3 py-1.5 text-stone-800 dark:text-stone-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
               <button
                 onClick={handleAdd}
@@ -205,7 +205,7 @@ export default function TagsCard({ initialTags }: Props) {
               </button>
               <button
                 onClick={() => setShowAddForm(false)}
-                className="h-8 w-8 rounded-lg hover:bg-slate-200 dark:hover:bg-[var(--dark-hover)] flex items-center justify-center text-slate-400 flex-shrink-0"
+                className="h-8 w-8 rounded-lg hover:bg-stone-200 dark:hover:bg-[var(--dark-hover)] flex items-center justify-center text-stone-400 flex-shrink-0"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -214,9 +214,9 @@ export default function TagsCard({ initialTags }: Props) {
         )}
 
         {/* Tags list */}
-        <div className="divide-y divide-slate-50 dark:divide-[var(--dark-border)] max-h-72 overflow-y-auto">
+        <div className="divide-y divide-stone-50 dark:divide-[var(--dark-border)] max-h-72 overflow-y-auto">
           {tags.length === 0 && !showAddForm && (
-            <div className="px-5 py-6 text-center text-sm text-slate-400 dark:text-slate-500">
+            <div className="px-5 py-6 text-center text-sm text-stone-400 dark:text-stone-500">
               No tags yet. Click + to add one.
             </div>
           )}
@@ -230,13 +230,13 @@ export default function TagsCard({ initialTags }: Props) {
               onDrop={() => handleDrop(tag.id)}
               className={`flex items-center gap-2 px-4 py-2.5 group transition-colors ${
                 draggingId === tag.id ? 'opacity-40' : ''
-              } ${dragOverId === tag.id ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'hover:bg-slate-50 dark:hover:bg-[var(--dark-hover)]'}`}
+              } ${dragOverId === tag.id ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'hover:bg-stone-50 dark:hover:bg-[var(--dark-hover)]'}`}
             >
               {/* Drag handle */}
-              <GripVertical className="h-4 w-4 text-slate-300 dark:text-slate-600 cursor-grab flex-shrink-0 opacity-0 group-hover:opacity-100" />
+              <GripVertical className="h-4 w-4 text-stone-300 dark:text-stone-600 cursor-grab flex-shrink-0 opacity-0 group-hover:opacity-100" />
 
               {/* Tag indicator */}
-              <Tag className="h-3 w-3 text-slate-300 dark:text-slate-600 flex-shrink-0" />
+              <Tag className="h-3 w-3 text-stone-300 dark:text-stone-600 flex-shrink-0" />
 
               {/* Name / Edit inline */}
               {editingId === tag.id ? (
@@ -247,17 +247,17 @@ export default function TagsCard({ initialTags }: Props) {
                     onChange={e => setEditName(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') saveEdit(tag.id); if (e.key === 'Escape') setEditingId(null) }}
                     autoFocus
-                    className="flex-1 text-sm bg-white dark:bg-[var(--dark-card)] border border-emerald-400 rounded-md px-2 py-0.5 text-slate-800 dark:text-slate-100 focus:outline-none min-w-0"
+                    className="flex-1 text-sm bg-white dark:bg-[var(--dark-card)] border border-emerald-400 rounded-md px-2 py-0.5 text-stone-800 dark:text-stone-100 focus:outline-none min-w-0"
                   />
                   <button onClick={() => saveEdit(tag.id)} disabled={saving} className="text-emerald-500 hover:text-emerald-700 flex-shrink-0">
                     <Check className="h-3.5 w-3.5" />
                   </button>
-                  <button onClick={() => setEditingId(null)} className="text-slate-400 hover:text-slate-600 flex-shrink-0">
+                  <button onClick={() => setEditingId(null)} className="text-stone-400 hover:text-stone-600 flex-shrink-0">
                     <X className="h-3.5 w-3.5" />
                   </button>
                 </div>
               ) : (
-                <span className="flex-1 text-sm text-slate-700 dark:text-slate-200 truncate">
+                <span className="flex-1 text-sm text-stone-700 dark:text-stone-200 truncate">
                   {tag.name}
                 </span>
               )}
@@ -271,7 +271,7 @@ export default function TagsCard({ initialTags }: Props) {
                     className={`h-6 w-6 rounded-md flex items-center justify-center transition-colors ${
                       tag.is_default
                         ? 'text-amber-400'
-                        : 'text-slate-200 dark:text-slate-700 hover:text-amber-400 opacity-0 group-hover:opacity-100'
+                        : 'text-stone-200 dark:text-stone-700 hover:text-amber-400 opacity-0 group-hover:opacity-100'
                     }`}
                   >
                     <Star className={`h-3.5 w-3.5 ${tag.is_default ? 'fill-amber-400' : ''}`} />
@@ -279,14 +279,14 @@ export default function TagsCard({ initialTags }: Props) {
                   <button
                     onClick={() => startEdit(tag)}
                     title="Edit"
-                    className="h-6 w-6 rounded-md flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-300 opacity-0 group-hover:opacity-100 transition-colors"
+                    className="h-6 w-6 rounded-md flex items-center justify-center text-stone-300 dark:text-stone-600 hover:text-stone-600 dark:hover:text-stone-300 opacity-0 group-hover:opacity-100 transition-colors"
                   >
                     <Pencil className="h-3 w-3" />
                   </button>
                   <button
                     onClick={() => handleDelete(tag.id)}
                     title="Delete"
-                    className="h-6 w-6 rounded-md flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-colors"
+                    className="h-6 w-6 rounded-md flex items-center justify-center text-stone-300 dark:text-stone-600 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-colors"
                   >
                     <Trash2 className="h-3 w-3" />
                   </button>

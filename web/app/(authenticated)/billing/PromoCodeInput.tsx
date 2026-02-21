@@ -2,10 +2,12 @@
 
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { useTranslations } from 'next-intl'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
 export default function PromoCodeInput() {
+  const t = useTranslations('billing')
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -59,11 +61,11 @@ export default function PromoCodeInput() {
         type="text"
         value={code}
         onChange={e => setCode(e.target.value.toUpperCase())}
-        placeholder="PROMO CODE"
+        placeholder={t('promoPlaceholder')}
         className="flex-1 font-mono tracking-wider"
       />
       <Button type="submit" disabled={loading || !code.trim()}>
-        {loading ? 'Applying...' : 'Apply'}
+        {loading ? t('promoApplying') : t('promoApply')}
       </Button>
     </form>
   )

@@ -212,17 +212,17 @@ export default function ProjectsCard({ initialProjects, isPremium }: Props) {
   }
 
   return (
-    <div className="rounded-2xl bg-white dark:bg-[var(--dark-card)] border border-slate-100 dark:border-[var(--dark-border)] shadow-sm flex flex-col">
+    <div className="rounded-2xl bg-white dark:bg-[var(--dark-card)] border border-stone-100 dark:border-[var(--dark-border)] shadow-sm flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-[var(--dark-border)]">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100 dark:border-[var(--dark-border)]">
         <div className="flex items-center gap-2">
           <div className="h-9 w-9 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
             <FolderOpen className="h-4 w-4 text-indigo-500" />
           </div>
           <div>
-            <span className="font-semibold text-slate-800 dark:text-slate-100">Projects</span>
+            <span className="font-semibold text-stone-800 dark:text-stone-100">Projects</span>
             {!isPremium && (
-              <span className="ml-2 text-xs text-slate-400 dark:text-slate-500">
+              <span className="ml-2 text-xs text-stone-400 dark:text-stone-500">
                 {activeProjects.length}/{FREE_PROJECT_LIMIT}
               </span>
             )}
@@ -242,7 +242,7 @@ export default function ProjectsCard({ initialProjects, isPremium }: Props) {
       <div className="flex-1 overflow-hidden">
         {/* Add form */}
         {showAddForm && (
-          <div className="px-5 py-3 border-b border-slate-100 dark:border-[var(--dark-border)] bg-slate-50 dark:bg-[var(--dark-elevated)]">
+          <div className="px-5 py-3 border-b border-stone-100 dark:border-[var(--dark-border)] bg-stone-50 dark:bg-[var(--dark-elevated)]">
             <div className="flex items-center gap-2 mb-2">
               <input
                 type="text"
@@ -251,7 +251,7 @@ export default function ProjectsCard({ initialProjects, isPremium }: Props) {
                 onKeyDown={e => { if (e.key === 'Enter') handleAdd(); if (e.key === 'Escape') setShowAddForm(false) }}
                 placeholder="Project name"
                 autoFocus
-                className="flex-1 text-sm bg-white dark:bg-[var(--dark-card)] border border-slate-200 dark:border-[var(--dark-border)] rounded-lg px-3 py-1.5 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="flex-1 text-sm bg-white dark:bg-[var(--dark-card)] border border-stone-200 dark:border-[var(--dark-border)] rounded-lg px-3 py-1.5 text-stone-800 dark:text-stone-100 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
               <button
                 onClick={handleAdd}
@@ -262,7 +262,7 @@ export default function ProjectsCard({ initialProjects, isPremium }: Props) {
               </button>
               <button
                 onClick={() => setShowAddForm(false)}
-                className="h-8 w-8 rounded-lg hover:bg-slate-200 dark:hover:bg-[var(--dark-hover)] flex items-center justify-center text-slate-400 flex-shrink-0"
+                className="h-8 w-8 rounded-lg hover:bg-stone-200 dark:hover:bg-[var(--dark-hover)] flex items-center justify-center text-stone-400 flex-shrink-0"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -273,7 +273,7 @@ export default function ProjectsCard({ initialProjects, isPremium }: Props) {
                 <button
                   key={c}
                   onClick={() => setNewColor(c)}
-                  className={`h-5 w-5 rounded-full transition-transform ${newColor === c ? 'ring-2 ring-offset-1 ring-slate-400 scale-110' : 'hover:scale-110'}`}
+                  className={`h-5 w-5 rounded-full transition-transform ${newColor === c ? 'ring-2 ring-offset-1 ring-stone-400 scale-110' : 'hover:scale-110'}`}
                   style={{ backgroundColor: c }}
                   title={c}
                 />
@@ -283,9 +283,9 @@ export default function ProjectsCard({ initialProjects, isPremium }: Props) {
         )}
 
         {/* Active projects list */}
-        <div className="divide-y divide-slate-50 dark:divide-[var(--dark-border)] max-h-64 overflow-y-auto">
+        <div className="divide-y divide-stone-50 dark:divide-[var(--dark-border)] max-h-64 overflow-y-auto">
           {activeProjects.length === 0 && !showAddForm && (
-            <div className="px-5 py-6 text-center text-sm text-slate-400 dark:text-slate-500">
+            <div className="px-5 py-6 text-center text-sm text-stone-400 dark:text-stone-500">
               No projects yet. Click + to add one.
             </div>
           )}
@@ -299,10 +299,10 @@ export default function ProjectsCard({ initialProjects, isPremium }: Props) {
               onDrop={() => handleDrop(project.id)}
               className={`flex items-center gap-2 px-4 py-2.5 group transition-colors ${
                 draggingId === project.id ? 'opacity-40' : ''
-              } ${dragOverId === project.id ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'hover:bg-slate-50 dark:hover:bg-[var(--dark-hover)]'}`}
+              } ${dragOverId === project.id ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'hover:bg-stone-50 dark:hover:bg-[var(--dark-hover)]'}`}
             >
               {/* Drag handle */}
-              <GripVertical className="h-4 w-4 text-slate-300 dark:text-slate-600 cursor-grab flex-shrink-0 opacity-0 group-hover:opacity-100" />
+              <GripVertical className="h-4 w-4 text-stone-300 dark:text-stone-600 cursor-grab flex-shrink-0 opacity-0 group-hover:opacity-100" />
 
               {/* Color dot */}
               <span
@@ -319,14 +319,14 @@ export default function ProjectsCard({ initialProjects, isPremium }: Props) {
                     onChange={e => setEditName(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') saveEdit(project.id); if (e.key === 'Escape') setEditingId(null) }}
                     autoFocus
-                    className="flex-1 text-sm bg-white dark:bg-[var(--dark-card)] border border-indigo-400 rounded-md px-2 py-0.5 text-slate-800 dark:text-slate-100 focus:outline-none min-w-0"
+                    className="flex-1 text-sm bg-white dark:bg-[var(--dark-card)] border border-indigo-400 rounded-md px-2 py-0.5 text-stone-800 dark:text-stone-100 focus:outline-none min-w-0"
                   />
                   <div className="flex items-center gap-1 flex-shrink-0">
                     {PROJECT_COLORS.map(c => (
                       <button
                         key={c}
                         onClick={() => setEditColor(c)}
-                        className={`h-4 w-4 rounded-full transition-transform ${editColor === c ? 'ring-2 ring-offset-1 ring-slate-400 scale-110' : 'hover:scale-110'}`}
+                        className={`h-4 w-4 rounded-full transition-transform ${editColor === c ? 'ring-2 ring-offset-1 ring-stone-400 scale-110' : 'hover:scale-110'}`}
                         style={{ backgroundColor: c }}
                       />
                     ))}
@@ -334,17 +334,17 @@ export default function ProjectsCard({ initialProjects, isPremium }: Props) {
                   <button onClick={() => saveEdit(project.id)} disabled={saving} className="text-indigo-500 hover:text-indigo-700 flex-shrink-0">
                     <Check className="h-3.5 w-3.5" />
                   </button>
-                  <button onClick={() => setEditingId(null)} className="text-slate-400 hover:text-slate-600 flex-shrink-0">
+                  <button onClick={() => setEditingId(null)} className="text-stone-400 hover:text-stone-600 flex-shrink-0">
                     <X className="h-3.5 w-3.5" />
                   </button>
                 </div>
               ) : (
                 <>
-                  <span className="flex-1 text-sm text-slate-700 dark:text-slate-200 truncate">
+                  <span className="flex-1 text-sm text-stone-700 dark:text-stone-200 truncate">
                     {project.name}
                   </span>
                   {project.target_hours != null && (
-                    <span className="text-xs text-slate-400 dark:text-slate-500 flex-shrink-0">{project.target_hours}h</span>
+                    <span className="text-xs text-stone-400 dark:text-stone-500 flex-shrink-0">{project.target_hours}h</span>
                   )}
                 </>
               )}
@@ -358,7 +358,7 @@ export default function ProjectsCard({ initialProjects, isPremium }: Props) {
                     className={`h-6 w-6 rounded-md flex items-center justify-center transition-colors ${
                       project.is_default
                         ? 'text-amber-400'
-                        : 'text-slate-200 dark:text-slate-700 hover:text-amber-400 opacity-0 group-hover:opacity-100'
+                        : 'text-stone-200 dark:text-stone-700 hover:text-amber-400 opacity-0 group-hover:opacity-100'
                     }`}
                   >
                     <Star className={`h-3.5 w-3.5 ${project.is_default ? 'fill-amber-400' : ''}`} />
@@ -366,21 +366,21 @@ export default function ProjectsCard({ initialProjects, isPremium }: Props) {
                   <button
                     onClick={() => startEdit(project)}
                     title="Edit"
-                    className="h-6 w-6 rounded-md flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-300 opacity-0 group-hover:opacity-100 transition-colors"
+                    className="h-6 w-6 rounded-md flex items-center justify-center text-stone-300 dark:text-stone-600 hover:text-stone-600 dark:hover:text-stone-300 opacity-0 group-hover:opacity-100 transition-colors"
                   >
                     <Pencil className="h-3 w-3" />
                   </button>
                   <button
                     onClick={() => handleArchive(project.id)}
                     title="Archive"
-                    className="h-6 w-6 rounded-md flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-amber-500 opacity-0 group-hover:opacity-100 transition-colors"
+                    className="h-6 w-6 rounded-md flex items-center justify-center text-stone-300 dark:text-stone-600 hover:text-amber-500 opacity-0 group-hover:opacity-100 transition-colors"
                   >
                     <Archive className="h-3 w-3" />
                   </button>
                   <button
                     onClick={() => handleDelete(project.id)}
                     title="Delete"
-                    className="h-6 w-6 rounded-md flex items-center justify-center text-slate-300 dark:text-slate-600 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-colors"
+                    className="h-6 w-6 rounded-md flex items-center justify-center text-stone-300 dark:text-stone-600 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-colors"
                   >
                     <Trash2 className="h-3 w-3" />
                   </button>
@@ -392,32 +392,32 @@ export default function ProjectsCard({ initialProjects, isPremium }: Props) {
 
         {/* Archived section */}
         {archivedProjects.length > 0 && (
-          <div className="border-t border-slate-100 dark:border-[var(--dark-border)]">
+          <div className="border-t border-stone-100 dark:border-[var(--dark-border)]">
             <button
               onClick={() => setShowArchived(!showArchived)}
-              className="w-full flex items-center justify-between px-5 py-2.5 text-xs text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-[var(--dark-hover)] transition-colors"
+              className="w-full flex items-center justify-between px-5 py-2.5 text-xs text-stone-400 dark:text-stone-500 hover:bg-stone-50 dark:hover:bg-[var(--dark-hover)] transition-colors"
             >
               <span>Archived ({archivedProjects.length})</span>
               {showArchived ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
             </button>
             {showArchived && (
-              <div className="divide-y divide-slate-50 dark:divide-[var(--dark-border)] max-h-40 overflow-y-auto">
+              <div className="divide-y divide-stone-50 dark:divide-[var(--dark-border)] max-h-40 overflow-y-auto">
                 {archivedProjects.map(project => (
                   <div key={project.id} className="flex items-center gap-2 px-4 py-2 group opacity-60">
                     <span className="h-3 w-3 rounded-full flex-shrink-0" style={{ backgroundColor: project.color }} />
-                    <span className="flex-1 text-sm text-slate-500 dark:text-slate-400 truncate line-through">{project.name}</span>
+                    <span className="flex-1 text-sm text-stone-500 dark:text-stone-400 truncate line-through">{project.name}</span>
                     <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100">
                       <button
                         onClick={() => handleUnarchive(project.id)}
                         title="Unarchive"
-                        className="h-6 w-6 rounded-md flex items-center justify-center text-slate-400 hover:text-emerald-500 transition-colors"
+                        className="h-6 w-6 rounded-md flex items-center justify-center text-stone-400 hover:text-emerald-500 transition-colors"
                       >
                         <Archive className="h-3 w-3" />
                       </button>
                       <button
                         onClick={() => handleDelete(project.id)}
                         title="Delete permanently"
-                        className="h-6 w-6 rounded-md flex items-center justify-center text-slate-400 hover:text-rose-500 transition-colors"
+                        className="h-6 w-6 rounded-md flex items-center justify-center text-stone-400 hover:text-rose-500 transition-colors"
                       >
                         <Trash2 className="h-3 w-3" />
                       </button>
@@ -432,7 +432,7 @@ export default function ProjectsCard({ initialProjects, isPremium }: Props) {
 
       {/* Footer hint */}
       {!isPremium && activeProjects.length >= FREE_PROJECT_LIMIT && (
-        <div className="px-5 py-2.5 border-t border-slate-100 dark:border-[var(--dark-border)] text-xs text-slate-400 dark:text-slate-500">
+        <div className="px-5 py-2.5 border-t border-stone-100 dark:border-[var(--dark-border)] text-xs text-stone-400 dark:text-stone-500">
           Project limit reached.{' '}
           <a href="/billing" className="text-indigo-500 hover:underline">Upgrade for unlimited.</a>
         </div>

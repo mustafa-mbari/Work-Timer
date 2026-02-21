@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { CheckCircle } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -18,6 +19,7 @@ function isRateLimitError(message: string) {
 }
 
 export default function ForgotPasswordForm() {
+  const t = useTranslations('auth.forgotPassword')
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
@@ -37,11 +39,7 @@ export default function ForgotPasswordForm() {
       setSent(true)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to send reset email'
-      setError(
-        isRateLimitError(message)
-          ? 'Too many attempts. Please wait a moment and try again.'
-          : message
-      )
+      setError(isRateLimitError(message) ? t('tooManyAttempts') : message)
     } finally {
       setLoading(false)
     }
@@ -55,20 +53,18 @@ export default function ForgotPasswordForm() {
             <CheckCircle className="w-12 h-12 text-emerald-500" />
           </div>
           <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100 mb-2">
-            Check your inbox
+            {t('checkInbox')}
           </h1>
           <p className="text-stone-500 dark:text-stone-400 mb-6">
-            We&apos;ve sent a password reset link to{' '}
-            <strong className="text-stone-700 dark:text-stone-300">{email}</strong>.
-            The link expires in 1 hour.
+            {t('sentTo', { email })}
           </p>
           <p className="text-sm text-stone-400 dark:text-stone-500 mb-4">
-            Didn&apos;t receive it? Check your spam folder, or{' '}
+            {t('didNotReceive')}{' '}
             <button
               onClick={() => { setSent(false); setError(null) }}
               className="text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 font-medium"
             >
-              try again
+              {t('tryAgain')}
             </button>
             .
           </p>
@@ -76,7 +72,7 @@ export default function ForgotPasswordForm() {
             href="/login"
             className="text-sm text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 font-medium"
           >
-            Back to sign in
+            {t('backToSignIn')}
           </Link>
         </div>
       </div>
@@ -88,10 +84,10 @@ export default function ForgotPasswordForm() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100">
-            Reset your password
+            {t('title')}
           </h1>
           <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
-            Enter your email and we&apos;ll send you a reset link
+            {t('subtitle')}
           </p>
         </div>
 
@@ -99,7 +95,7 @@ export default function ForgotPasswordForm() {
           <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-3">
               <div className="space-y-1.5">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t('emailLabel')}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -107,7 +103,7 @@ export default function ForgotPasswordForm() {
                   onChange={e => setEmail(e.target.value)}
                   required
                   autoComplete="email"
-                  placeholder="you@example.com"
+                  placeholder={t('emailPlaceholder')}
                 />
               </div>
 
@@ -116,19 +112,19 @@ export default function ForgotPasswordForm() {
               )}
 
               <Button type="submit" disabled={loading} className="w-full">
-                {loading ? 'Sending…' : 'Send reset link'}
+                {loading ? t('submitting') : t('submit')}
               </Button>
             </form>
           </CardContent>
         </Card>
 
         <p className="text-center text-sm text-stone-500 dark:text-stone-400 mt-4">
-          Remember your password?{' '}
+          {t('rememberPassword')}{' '}
           <Link
             href="/login"
             className="text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 font-medium"
           >
-            Sign in
+            {t('backToSignIn')}
           </Link>
         </p>
       </div>

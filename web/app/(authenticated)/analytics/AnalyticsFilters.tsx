@@ -2,13 +2,14 @@
 
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useTransition } from 'react'
+import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 const PRESETS = [
-  { label: '7d',  days: 7 },
-  { label: '30d', days: 30 },
-  { label: '90d', days: 90 },
+  { key: 'week' as const,    days: 7 },
+  { key: 'month' as const,   days: 30 },
+  { key: 'quarter' as const, days: 90 },
 ] as const
 
 function toIsoDate(d: Date): string {
@@ -16,6 +17,7 @@ function toIsoDate(d: Date): string {
 }
 
 export default function AnalyticsFilters() {
+  const t = useTranslations('analytics.filters')
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
@@ -47,14 +49,14 @@ export default function AnalyticsFilters() {
     <div className="flex flex-wrap items-center gap-2">
       {PRESETS.map(p => (
         <Button
-          key={p.label}
+          key={p.key}
           variant="outline"
           size="sm"
           onClick={() => applyPreset(p.days)}
           disabled={isPending}
           className="h-8"
         >
-          {p.label}
+          {t(p.key)}
         </Button>
       ))}
 
@@ -84,7 +86,7 @@ export default function AnalyticsFilters() {
           disabled={isPending}
           className="h-8 text-stone-500"
         >
-          Clear
+          {t('clear')}
         </Button>
       )}
     </div>

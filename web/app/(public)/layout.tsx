@@ -1,6 +1,9 @@
+import { getTranslations } from 'next-intl/server'
 import Navbar from '@/components/Navbar'
 
-export default function PublicLayout({ children }: { children: React.ReactNode }) {
+export default async function PublicLayout({ children }: { children: React.ReactNode }) {
+  const t = await getTranslations('common.footer')
+
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-[var(--dark)]">
       <Navbar />
@@ -8,11 +11,17 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         {children}
       </main>
       <footer className="border-t border-stone-200 py-8 mt-16 dark:border-[var(--dark-border)]">
-        <div className="max-w-[1600px] mx-auto px-8 lg:px-12 xl:px-16 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-stone-500 dark:text-stone-400">
-          <span suppressHydrationWarning>&copy; {new Date().getFullYear()} Work Timer. All rights reserved.</span>
+        <div className="mx-auto w-full max-w-[1200px] px-8 flex items-center justify-between gap-4 text-sm text-stone-500 dark:text-stone-400">
+          <span suppressHydrationWarning>
+            &copy; {new Date().getFullYear()} {t('copyright')}
+          </span>
           <div className="flex gap-6">
-            <a href="/privacy" className="hover:text-stone-700 dark:hover:text-stone-300 transition-colors">Privacy</a>
-            <a href="/terms" className="hover:text-stone-700 dark:hover:text-stone-300 transition-colors">Terms</a>
+            <a href="/privacy" className="hover:text-stone-700 dark:hover:text-stone-300 transition-colors">
+              {t('privacy')}
+            </a>
+            <a href="/terms" className="hover:text-stone-700 dark:hover:text-stone-300 transition-colors">
+              {t('terms')}
+            </a>
           </div>
         </div>
       </footer>
