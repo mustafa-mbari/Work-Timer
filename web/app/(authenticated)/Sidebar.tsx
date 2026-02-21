@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, BarChart2, Clock, CreditCard, Settings2, Zap, Shield } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -24,14 +25,17 @@ export default function Sidebar({ isAdmin, isPremium }: Props) {
   return (
     <aside className="hidden md:flex flex-col w-64 shrink-0 bg-white dark:bg-[var(--dark-card)] border-r border-slate-100 dark:border-[var(--dark-border)] h-screen sticky top-0">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-6 h-16 border-b border-slate-100 dark:border-[var(--dark-border)] shrink-0">
-        <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0 shadow-md shadow-indigo-200 dark:shadow-indigo-900/40">
-          <Clock className="h-4 w-4 text-white" />
-        </div>
-        <span className="text-base text-stone-900 dark:text-stone-100 tracking-tight">
-          <span className="font-bold">Work</span>
-          <span className="font-light"> - Timer</span>
-        </span>
+      <div className="flex items-center px-5 h-16 border-b border-slate-100 dark:border-[var(--dark-border)] shrink-0">
+        <Link href="/">
+          <Image
+            src="/logos/WT_logoWithText.png"
+            alt="Work Timer"
+            width={130}
+            height={36}
+            className="h-8 w-auto"
+            priority
+          />
+        </Link>
       </div>
 
       {/* Navigation */}
