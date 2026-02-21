@@ -30,9 +30,9 @@ export default function Sidebar({ isAdmin, isPremium }: Props) {
           <Image
             src="/logos/WT_logoWithText.png"
             alt="Work Timer"
-            width={130}
-            height={36}
-            className="h-8 w-auto"
+            width={160}
+            height={46}
+            className="h-11 w-auto"
             priority
           />
         </Link>
