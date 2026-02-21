@@ -22,7 +22,7 @@ export default function EntryList({ entries, projects, onUpdate, onDelete, onCon
 
   if (entries.length === 0) {
     return (
-      <div className="text-center text-stone-400 dark:text-stone-600 text-xs py-6">
+      <div className="text-center text-stone-500 dark:text-stone-600 text-xs py-6">
         No entries yet today
       </div>
     )
@@ -36,11 +36,11 @@ export default function EntryList({ entries, projects, onUpdate, onDelete, onCon
           return (
             <div
               key={entry.id}
-              className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-white dark:bg-dark-card border border-stone-100 dark:border-dark-border hover:border-stone-200 dark:hover:border-dark-hover transition-colors"
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-white dark:bg-dark-card border border-stone-200 dark:border-dark-border hover:border-stone-300 dark:hover:border-dark-hover hover:shadow-sm transition-all"
               role="listitem"
             >
               <span
-                className="w-1 h-9 rounded-full flex-shrink-0"
+                className="w-[3px] self-stretch rounded-sm flex-shrink-0"
                 style={{ backgroundColor: project?.color ?? '#D6D3D1' }}
                 aria-hidden="true"
               />
@@ -57,7 +57,7 @@ export default function EntryList({ entries, projects, onUpdate, onDelete, onCon
                   {entry.description && <span className="ml-1.5">· {entry.description}</span>}
                 </div>
               </button>
-              <span className="text-xs font-semibold text-stone-500 dark:text-stone-400 flex-shrink-0 tabular-nums">
+              <span className="text-xs font-semibold text-stone-600 dark:text-stone-400 flex-shrink-0 tabular-nums">
                 {formatDurationShort(entry.duration)}
               </span>
               {entry.link && (

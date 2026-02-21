@@ -84,11 +84,11 @@
   --color-red-500: #EF4444;
 
   /* Dark mode surfaces */
-  --color-dark: #1E1E1E;
-  --color-dark-card: #282828;
-  --color-dark-elevated: #333333;
-  --color-dark-border: #404040;
-  --color-dark-hover: #363636;
+  --color-dark:          #1A1A1A;
+  --color-dark-card:     #242424;
+  --color-dark-elevated: #2E2E2E;
+  --color-dark-border:   #404040;
+  --color-dark-hover:    #313131;
 
   /* White & Black */
   --color-white: #FFFFFF;
@@ -205,7 +205,7 @@ html.dark body {
 }
 
 html.dark ::-webkit-scrollbar-thumb {
-  background: #303030;
+  background: #404040;
 }
 
 /* Focus visible */

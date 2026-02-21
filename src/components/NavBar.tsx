@@ -17,7 +17,7 @@ const tabs: { view: View; label: string; Icon: FC<{ className?: string }> }[] = 
 export default function NavBar({ currentView, onViewChange }: NavBarProps) {
   return (
     <nav
-      className="flex border-t border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card"
+      className="flex border-t border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card shadow-[0_-1px_8px_rgba(0,0,0,0.04)]"
       role="tablist"
       aria-label="Main navigation"
     >
@@ -30,12 +30,15 @@ export default function NavBar({ currentView, onViewChange }: NavBarProps) {
             aria-selected={isActive}
             aria-label={label}
             onClick={() => onViewChange(view)}
-            className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-1.5 text-[10px] font-medium transition-colors rounded-lg mx-0.5 ${
+            className={`flex-1 relative flex flex-col items-center justify-center gap-0.5 py-1.5 pt-2 text-[10px] font-medium transition-colors ${
               isActive
-                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10'
+                ? 'text-indigo-600 dark:text-indigo-400 font-semibold'
                 : 'text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300'
             }`}
           >
+            {isActive && (
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-indigo-500 dark:bg-indigo-400 rounded-full" aria-hidden="true" />
+            )}
             <Icon className="w-[18px] h-[18px]" />
             <span>{label}</span>
           </button>

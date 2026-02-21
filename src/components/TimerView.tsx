@@ -280,7 +280,7 @@ export default function TimerView() {
             disabled={isActive && id !== mode}
             className={`flex-1 flex flex-col items-center gap-0.5 py-1.5 rounded-lg text-[10px] font-medium transition-all ${
               mode === id
-                ? 'bg-white dark:bg-dark-elevated text-stone-900 dark:text-stone-100 shadow-sm'
+                ? 'bg-white dark:bg-dark-elevated text-stone-900 dark:text-stone-100 shadow-sm ring-1 ring-stone-200 dark:ring-dark-border'
                 : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
             } ${isActive && id !== mode ? 'opacity-40 cursor-not-allowed' : ''}`}
             aria-label={`${label} mode`}
@@ -296,7 +296,7 @@ export default function TimerView() {
         <div className="rounded-2xl border border-stone-200 dark:border-dark-border overflow-visible">
 
           {/* ── TIME BLOCK ── */}
-          <div className="px-3.5 pt-3 pb-2.5 border-b border-stone-100 dark:border-dark-border">
+          <div className="px-3.5 pt-3 pb-2.5 border-b border-stone-200 dark:border-dark-border">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-medium text-stone-500 dark:text-stone-400 uppercase tracking-wider">Time</span>
               {lastManualEntry && (
@@ -321,7 +321,7 @@ export default function TimerView() {
                 type="date"
                 value={manualDate}
                 onChange={(e) => setManualDate(e.target.value || getToday())}
-                className="flex-1 min-w-0 border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
+                className="flex-1 min-w-0 border border-stone-300 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
                 aria-label="Date"
               />
               <div className="flex gap-0.5 bg-stone-100 dark:bg-dark-elevated rounded-lg p-0.5 shrink-0">
@@ -358,7 +358,7 @@ export default function TimerView() {
                   type="time"
                   value={manualFrom}
                   onChange={(e) => setManualFrom(e.target.value)}
-                  className="flex-1 border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
+                  className="flex-1 border border-stone-300 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
                   aria-label="From time"
                 />
                 <span className="text-stone-300 dark:text-stone-600 text-xs">&rarr;</span>
@@ -367,7 +367,7 @@ export default function TimerView() {
                   type="time"
                   value={manualTo}
                   onChange={(e) => setManualTo(e.target.value)}
-                  className="flex-1 border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
+                  className="flex-1 border border-stone-300 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
                   aria-label="To time"
                 />
               </div>
@@ -419,7 +419,7 @@ export default function TimerView() {
           </div>
 
           {/* ── PROJECT BLOCK ── */}
-          <div className="px-3.5 py-2.5 border-b border-stone-100 dark:border-dark-border">
+          <div className="px-3.5 py-2.5 border-b border-stone-200 dark:border-dark-border">
             <span className="text-[11px] font-medium text-stone-500 dark:text-stone-400 uppercase tracking-wider block mb-1.5">Project</span>
             <ProjectSelector
               projects={activeProjects}
@@ -430,7 +430,7 @@ export default function TimerView() {
           </div>
 
           {/* ── DETAILS BLOCK ── */}
-          <div className="px-3.5 py-2.5 border-b border-stone-100 dark:border-dark-border">
+          <div className="px-3.5 py-2.5 border-b border-stone-200 dark:border-dark-border">
             <span className="text-[11px] font-medium text-stone-500 dark:text-stone-400 uppercase tracking-wider block mb-1.5">Details</span>
             {/* Tab strip */}
             <div className="flex gap-0.5 bg-stone-100 dark:bg-dark-elevated rounded-lg p-0.5 mb-2">
@@ -456,7 +456,7 @@ export default function TimerView() {
                 placeholder="What did you work on?"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full resize-none border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
+                className="w-full resize-none border border-stone-300 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
                 aria-label="Task description"
               />
             )}
@@ -464,7 +464,7 @@ export default function TimerView() {
               <select
                 value={selectedTagId}
                 onChange={(e) => setSelectedTagId(e.target.value)}
-                className="w-full border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
+                className="w-full border border-stone-300 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
                 aria-label="Select tag"
               >
                 <option value="">No Tag</option>
@@ -486,14 +486,14 @@ export default function TimerView() {
           </div>
 
           {/* ── STICKY FOOTER ── */}
-          <div className="sticky bottom-0 flex items-center justify-between px-3.5 py-2.5 bg-stone-50 dark:bg-dark rounded-b-2xl border-t border-stone-100 dark:border-dark-border">
+          <div className="sticky bottom-0 flex items-center justify-between px-3.5 py-2.5 bg-stone-50 dark:bg-dark rounded-b-2xl border-t border-stone-200 dark:border-dark-border">
             <span className="text-xs font-medium text-stone-500 dark:text-stone-400">
               {manualDuration > 0 ? `Total: ${formatDurationShort(manualDuration)}` : 'Total: —'}
             </span>
             <button
               onClick={handleManualSave}
               disabled={manualDuration === 0}
-              className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-1.5 rounded-lg font-medium text-xs transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shadow-indigo-500/20"
+              className="bg-indigo-500 hover:bg-indigo-600 active:scale-[0.98] text-white px-4 py-1.5 rounded-lg font-medium text-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shadow-indigo-500/30"
               aria-label="Save manual entry"
             >
               Save entry
@@ -606,7 +606,7 @@ export default function TimerView() {
             {!isActive ? (
               <button
                 onClick={handleStart}
-                className="flex-1 flex items-center justify-center gap-2 bg-purple-500 hover:bg-purple-600 text-white py-2.5 rounded-xl font-medium text-sm transition-colors shadow-sm shadow-purple-500/20"
+                className="flex-1 flex items-center justify-center gap-2 bg-purple-500 hover:bg-purple-600 active:scale-[0.98] text-white py-2.5 rounded-xl font-medium text-sm transition-all shadow-sm shadow-purple-500/30"
                 aria-label="Start Pomodoro"
                 title="Start timer (Alt+Shift+Up)"
               >
@@ -617,7 +617,7 @@ export default function TimerView() {
               <>
                 <button
                   onClick={skipPhase}
-                  className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-emerald-600 transition-colors shadow-sm shadow-emerald-500/20"
+                  className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-emerald-600 active:scale-[0.98] transition-all shadow-sm shadow-emerald-500/30"
                   aria-label="Take break now"
                 >
                   <SkipIcon className="w-4 h-4" />
@@ -625,7 +625,7 @@ export default function TimerView() {
                 </button>
                 <button
                   onClick={handleStop}
-                  className="flex-1 flex items-center justify-center gap-2 bg-rose-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-rose-600 transition-colors shadow-sm shadow-rose-500/20"
+                  className="flex-1 flex items-center justify-center gap-2 bg-rose-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-rose-600 active:scale-[0.98] transition-all shadow-sm shadow-rose-500/30"
                   aria-label="Stop Pomodoro"
                   title="Stop timer (Alt+Shift+Up)"
                 >
@@ -637,7 +637,7 @@ export default function TimerView() {
               <>
                 <button
                   onClick={skipPhase}
-                  className="flex-1 flex items-center justify-center gap-2 bg-indigo-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-indigo-600 transition-colors shadow-sm shadow-indigo-500/20"
+                  className="flex-1 flex items-center justify-center gap-2 bg-indigo-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-indigo-600 active:scale-[0.98] transition-all shadow-sm shadow-indigo-500/30"
                   aria-label="Resume focus"
                 >
                   <PlayIcon className="w-4 h-4" />
@@ -645,7 +645,7 @@ export default function TimerView() {
                 </button>
                 <button
                   onClick={handleStop}
-                  className="flex-1 flex items-center justify-center gap-2 bg-rose-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-rose-600 transition-colors shadow-sm shadow-rose-500/20"
+                  className="flex-1 flex items-center justify-center gap-2 bg-rose-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-rose-600 active:scale-[0.98] transition-all shadow-sm shadow-rose-500/30"
                   aria-label="Stop Pomodoro"
                   title="Stop timer (Alt+Shift+Up)"
                 >
@@ -657,12 +657,14 @@ export default function TimerView() {
           </div>
         </div>
       ) : (
-        <div className="text-center py-4">
+        <div className="text-center py-5 rounded-xl bg-stone-50 dark:bg-dark-card border border-stone-100 dark:border-dark-border">
           <RollingTimer elapsed={elapsed} />
           {isRunning && (
             <div className="flex items-center justify-center gap-1.5 mt-3">
-              <span className="w-1.5 h-1.5 bg-rose-500 dark:bg-rose-400 rounded-full animate-pulse-soft" aria-hidden="true" />
-              <span className="text-[11px] font-medium text-rose-500 dark:text-rose-400">Recording..</span>
+              <span className="inline-flex items-center gap-1.5 bg-rose-50 dark:bg-rose-900/10 rounded-lg px-2 py-0.5">
+                <span className="w-1.5 h-1.5 bg-rose-500 dark:bg-rose-400 rounded-full animate-pulse-soft" aria-hidden="true" />
+                <span className="text-[11px] font-medium text-rose-500 dark:text-rose-400">Recording..</span>
+              </span>
             </div>
           )}
           {isPaused && (
@@ -712,7 +714,7 @@ export default function TimerView() {
           value={isActive ? state.description : description}
           onChange={(e) => setDescription(e.target.value)}
           disabled={isActive}
-          className="border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-600 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400 disabled:opacity-50"
+          className="border border-stone-300 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-600 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400 disabled:opacity-50"
           aria-label="Task description"
         />
       )}
@@ -727,7 +729,7 @@ export default function TimerView() {
               value={isActive ? state.description : description}
               onChange={(e) => setDescription(e.target.value)}
               disabled={isActive}
-              className="border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-600 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400 disabled:opacity-50"
+              className="border border-stone-300 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-600 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400 disabled:opacity-50"
               aria-label="Task description"
             />
           )}
@@ -736,7 +738,7 @@ export default function TimerView() {
               value={selectedTagId}
               onChange={(e) => setSelectedTagId(e.target.value)}
               disabled={isActive}
-              className="w-full border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400 disabled:opacity-50"
+              className="w-full border border-stone-300 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400 disabled:opacity-50"
               aria-label="Select tag"
             >
               <option value="">No Tag</option>
@@ -754,7 +756,7 @@ export default function TimerView() {
               value={link}
               onChange={(e) => setLink(e.target.value)}
               disabled={isActive}
-              className="border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-600 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400 disabled:opacity-50"
+              className="border border-stone-300 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-600 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400 disabled:opacity-50"
               aria-label="Link URL"
             />
           )}
@@ -767,7 +769,7 @@ export default function TimerView() {
           {!isActive ? (
             <button
               onClick={handleStart}
-              className="flex-1 flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white py-2.5 rounded-xl font-medium text-sm transition-colors shadow-sm shadow-indigo-500/20"
+              className="flex-1 flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-600 active:scale-[0.98] text-white py-2.5 rounded-xl font-medium text-sm transition-all shadow-sm shadow-indigo-500/30"
               aria-label="Start timer"
               title="Start timer (Alt+Shift+Up)"
             >
@@ -779,7 +781,7 @@ export default function TimerView() {
               {isRunning ? (
                 <button
                   onClick={pause}
-                  className="flex-1 flex items-center justify-center gap-2 bg-amber-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-amber-600 transition-colors shadow-sm shadow-amber-500/20"
+                  className="flex-1 flex items-center justify-center gap-2 bg-amber-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-amber-600 active:scale-[0.98] transition-all shadow-sm shadow-amber-500/30"
                   aria-label="Pause timer"
                   title="Pause timer (Alt+Shift+Down)"
                 >
@@ -789,7 +791,7 @@ export default function TimerView() {
               ) : (
                 <button
                   onClick={resume}
-                  className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-emerald-600 transition-colors shadow-sm shadow-emerald-500/20"
+                  className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-emerald-600 active:scale-[0.98] transition-all shadow-sm shadow-emerald-500/30"
                   aria-label="Resume timer"
                   title="Resume timer (Alt+Shift+Down)"
                 >
@@ -799,7 +801,7 @@ export default function TimerView() {
               )}
               <button
                 onClick={handleStop}
-                className="flex-1 flex items-center justify-center gap-2 bg-rose-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-rose-600 transition-colors shadow-sm shadow-rose-500/20"
+                className="flex-1 flex items-center justify-center gap-2 bg-rose-500 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-rose-600 active:scale-[0.98] transition-all shadow-sm shadow-rose-500/30"
                 aria-label="Stop timer"
                 title="Stop timer (Alt+Shift+Up)"
               >
@@ -821,7 +823,7 @@ export default function TimerView() {
       )}
 
       {/* Today's Summary */}
-      <div className="flex items-center justify-between pt-3 border-t border-stone-100 dark:border-dark-border">
+      <div className="flex items-center justify-between pt-3 border-t border-stone-200 dark:border-dark-border">
         <span className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider">Today</span>
         <span className="text-sm font-semibold text-stone-700 dark:text-stone-200">
           {formatDurationShort(totalDuration + (isActive ? elapsed : 0))}
