@@ -67,13 +67,6 @@ export default async function AnalyticsPage({
   const t = await getTranslations('analytics')
   const user = await requireAuth()
 
-  const HEADER = (
-    <div>
-      <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100">{t('title')}</h1>
-      <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">{t('description')}</p>
-    </div>
-  )
-
   const premium = await isPremiumUser(user.id)
 
   // Free users see a blurred preview with an upgrade prompt
@@ -84,9 +77,6 @@ export default async function AnalyticsPage({
     const bestDay = p.day_of_week_data.reduce((b, d) => d.hours > b.hours ? d : b)
     return (
       <div className="space-y-6 animate-fade-in">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          {HEADER}
-        </div>
         {/* Blurred preview + overlay */}
         <div className="relative">
           <div className="blur-[2px] pointer-events-none select-none opacity-60 space-y-6">
@@ -160,8 +150,7 @@ export default async function AnalyticsPage({
   if (fetchError || !data) {
     return (
       <div className="space-y-6 animate-fade-in">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          {HEADER}
+        <div className="flex justify-end">
           <Suspense fallback={<div className="h-8" />}>
             <AnalyticsFilters />
           </Suspense>
@@ -183,9 +172,6 @@ export default async function AnalyticsPage({
   if (data.total_entries === 0 && !isFiltered) {
     return (
       <div className="space-y-6 animate-fade-in">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          {HEADER}
-        </div>
         <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
           <BarChart2 className="h-12 w-12 text-stone-300 dark:text-stone-600" />
           <div>
@@ -227,8 +213,7 @@ export default async function AnalyticsPage({
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        {HEADER}
+      <div className="flex justify-end">
         <Suspense fallback={<div className="h-8" />}>
           <AnalyticsFilters />
         </Suspense>

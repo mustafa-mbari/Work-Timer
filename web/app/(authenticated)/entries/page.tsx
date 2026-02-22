@@ -60,11 +60,6 @@ export default async function EntriesPage({ searchParams }: Props) {
   if (!premium) {
     return (
       <div className="animate-fade-in">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-stone-900 dark:text-stone-100">{t('title')}</h1>
-          <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">{t('freePlan.description')}</p>
-        </div>
-
         <div className="relative">
           {/* Blurred fake table */}
           <div className="blur-[2px] pointer-events-none select-none opacity-60 w-full">
@@ -162,13 +157,6 @@ export default async function EntriesPage({ searchParams }: Props) {
 
   return (
     <div className="animate-fade-in">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-stone-900 dark:text-stone-100">{t('title')}</h1>
-        <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-          {entriesPage.total === 1 ? t('entryCount', { count: entriesPage.total }) : t('entriesCount', { count: entriesPage.total })}
-        </p>
-      </div>
-
       <Suspense fallback={<div className="h-64" />}>
         <EntriesView
           entriesPage={entriesPage}

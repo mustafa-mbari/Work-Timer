@@ -66,11 +66,6 @@ export default function SettingsLayout({ user, profile, subscription, settings, 
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100">{t('title')}</h1>
-        <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">{t('description')}</p>
-      </div>
-
       {/* Tab navigation */}
       <div className="flex items-center gap-1 bg-white dark:bg-[var(--dark-card)] border border-stone-200 dark:border-[var(--dark-border)] rounded-2xl shadow-sm px-2 py-1.5 overflow-x-auto">
         {TABS.map(tab => {

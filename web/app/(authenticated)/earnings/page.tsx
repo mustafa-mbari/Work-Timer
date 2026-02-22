@@ -39,13 +39,6 @@ export default async function EarningsPage({
 }) {
   const user = await requireAuth()
 
-  const HEADER = (
-    <div>
-      <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100">Earnings</h1>
-      <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">Track your project earnings and revenue</p>
-    </div>
-  )
-
   const premium = await isPremiumUser(user.id)
 
   // Free users see a blurred preview with an upgrade prompt
@@ -56,9 +49,6 @@ export default async function EarningsPage({
       : 0
     return (
       <div className="space-y-6 animate-fade-in">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          {HEADER}
-        </div>
         <div className="relative">
           <div className="blur-[2px] pointer-events-none select-none opacity-60 space-y-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -118,8 +108,7 @@ export default async function EarningsPage({
   if (fetchError || !data) {
     return (
       <div className="space-y-6 animate-fade-in">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          {HEADER}
+        <div className="flex justify-end">
           <Suspense fallback={<div className="h-8" />}>
             <EarningsFilters />
           </Suspense>
@@ -143,8 +132,7 @@ export default async function EarningsPage({
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        {HEADER}
+      <div className="flex justify-end">
         <Suspense fallback={<div className="h-8" />}>
           <EarningsFilters />
         </Suspense>

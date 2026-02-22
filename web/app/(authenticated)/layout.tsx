@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { getSubscriptionFlags } from '@/lib/services/billing'
 import LastPageTracker from '@/components/LastPageTracker'
+import TabTitleTimer from './TabTitleTimer'
 import AppSidebar from './Sidebar'
 import AppHeader from './AppHeader'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
@@ -60,6 +61,7 @@ export default async function AuthenticatedLayout({
           <div className="flex-1 overflow-y-auto">
             <div className="mx-auto w-full max-w-[1280px] px-8 py-8">
               <LastPageTracker />
+              <TabTitleTimer />
               {children}
             </div>
           </div>
