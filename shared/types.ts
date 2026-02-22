@@ -92,6 +92,7 @@ export interface DbUserSettings {
   }
   default_hourly_rate: number | null
   currency: string
+  min_billable_minutes: number
   floating_timer_auto: boolean
   reminder: {
     enabled: boolean
@@ -626,6 +627,7 @@ export type Database = {
         grand_total: number
         total_hours: number
         total_projects: number
+        daily_earnings: Array<{ date: string; total: number }> | null
       }}
       get_group_analytics: { Args: { p_group_id: string; p_user_id: string; p_date_from?: string; p_date_to?: string }; Returns: {
         total_hours: number

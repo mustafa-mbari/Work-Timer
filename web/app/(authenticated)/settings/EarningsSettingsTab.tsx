@@ -32,6 +32,9 @@ export default function EarningsSettingsTab({ settings }: Props) {
     settings?.default_hourly_rate?.toString() ?? ''
   )
   const [currency, setCurrency] = useState(settings?.currency ?? 'USD')
+  const [minBillable, setMinBillable] = useState(
+    (settings?.min_billable_minutes ?? 1).toString()
+  )
   const [loading, setLoading] = useState(false)
 
   async function handleSave(e: React.FormEvent) {
@@ -41,6 +44,7 @@ export default function EarningsSettingsTab({ settings }: Props) {
       const body = {
         default_hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
         currency,
+        min_billable_minutes: parseInt(minBillable) || 1,
       }
       const res = await fetch('/api/settings', {
         method: 'PUT',
@@ -99,6 +103,33 @@ export default function EarningsSettingsTab({ settings }: Props) {
                 ))}
               </select>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Minimum Billable Duration</CardTitle>
+          <CardDescription>
+            Time entries shorter than this will be excluded from earnings calculations.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-1.5 max-w-xs">
+            <Label htmlFor="minBillable">Minimum duration (minutes)</Label>
+            <Input
+              id="minBillable"
+              type="number"
+              value={minBillable}
+              onChange={e => setMinBillable(e.target.value)}
+              min={1}
+              max={480}
+              step={1}
+              placeholder="1"
+            />
+            <p className="text-xs text-stone-400 dark:text-stone-500">
+              From 1 minute to 8 hours (480 minutes). Default is 1 minute.
+            </p>
           </div>
         </CardContent>
       </Card>

@@ -76,6 +76,7 @@ export const updateSettingsSchema = z.object({
   pomodoro_config: pomodoroConfigSchema.optional(),
   default_hourly_rate: z.number().min(0).max(10000).nullable().optional(),
   currency: z.string().min(3).max(3).optional(),
+  min_billable_minutes: z.number().int().min(1).max(480).optional(),
   floating_timer_auto: z.boolean().optional(),
   reminder: reminderConfigSchema.nullable().optional(),
 })

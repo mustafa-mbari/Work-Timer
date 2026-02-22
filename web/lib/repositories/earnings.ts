@@ -14,6 +14,7 @@ export type EarningsReport = {
   grand_total: number
   total_hours: number
   total_projects: number
+  daily_earnings: Array<{ date: string; total: number }> | null
 }
 
 export async function getEarningsReport(

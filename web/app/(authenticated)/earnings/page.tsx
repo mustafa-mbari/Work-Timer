@@ -6,6 +6,7 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = { title: 'Earnings' }
 
 import EarningsView from './EarningsView'
+import EarningsChart from './EarningsChart'
 import EarningsFilters from './EarningsFilters'
 import EarningsProjectsManager from './EarningsProjectsManager'
 import { requireAuth } from '@/lib/services/auth'
@@ -28,6 +29,7 @@ const PREVIEW_DATA = {
   grand_total: 9650.5,
   total_hours: 121.5,
   total_projects: 4,
+  daily_earnings: null,
 }
 
 export default async function EarningsPage({
@@ -187,6 +189,8 @@ export default async function EarningsPage({
           </CardContent>
         </Card>
       </div>
+
+      <EarningsChart data={data.daily_earnings ?? []} currencySymbol={currencySymbol} />
 
       <EarningsView data={data} />
 
