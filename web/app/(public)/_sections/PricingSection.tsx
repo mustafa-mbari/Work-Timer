@@ -44,10 +44,9 @@ export async function PricingSection({ isLoggedIn }: Props) {
         </Card>
 
         {/* Premium plans */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <PricingCard plan="monthly" isLoggedIn={isLoggedIn} />
           <PricingCard plan="yearly" isLoggedIn={isLoggedIn} />
-          <PricingCard plan="lifetime" isLoggedIn={isLoggedIn} />
         </div>
 
         {/* Trust badges */}

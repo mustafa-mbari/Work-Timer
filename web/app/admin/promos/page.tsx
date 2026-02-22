@@ -36,6 +36,8 @@ export default function AdminPromosPage() {
     premium_monthly: t('planMonthly'),
     premium_yearly: t('planYearly'),
     premium_lifetime: t('planLifetime'),
+    allin_monthly: 'All-In Monthly',
+    allin_yearly: 'All-In Yearly',
   }
 
   async function fetchPromos() {
@@ -162,7 +164,8 @@ export default function AdminPromosPage() {
                 <SelectContent>
                   <SelectItem value="premium_monthly">{t('planMonthly')}</SelectItem>
                   <SelectItem value="premium_yearly">{t('planYearly')}</SelectItem>
-                  <SelectItem value="premium_lifetime">{t('planLifetime')}</SelectItem>
+                  <SelectItem value="allin_monthly">All-In Monthly</SelectItem>
+                  <SelectItem value="allin_yearly">All-In Yearly</SelectItem>
                 </SelectContent>
               </Select>
             </div>

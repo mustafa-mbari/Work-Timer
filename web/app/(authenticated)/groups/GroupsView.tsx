@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
-import { Users, Plus, Copy, Trash2, UserPlus, RefreshCw, ChevronRight, Mail, Clock } from 'lucide-react'
+import { Users, Plus, Copy, Trash2, UserPlus, RefreshCw, ChevronRight, Mail, Clock, BarChart3, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -16,13 +16,22 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { GroupWithMeta } from '@/lib/repositories/groups'
 import type { InvitationWithGroup } from '@/lib/repositories/groupInvitations'
+import GroupAdminView from './GroupAdminView'
+import SharingSettingsPanel from './SharingSettingsPanel'
+
+interface ProjectItem {
+  id: string
+  name: string
+  color: string
+}
 
 interface Props {
   initialGroups: GroupWithMeta[]
   initialInvitations: InvitationWithGroup[]
+  projects: ProjectItem[]
 }
 
-export default function GroupsView({ initialGroups, initialInvitations }: Props) {
+export default function GroupsView({ initialGroups, initialInvitations, projects }: Props) {
   const [groups, setGroups] = useState(initialGroups)
   const [invitations, setInvitations] = useState(initialInvitations)
   const [activeTab, setActiveTab] = useState<'groups' | 'invitations'>('groups')
@@ -69,7 +78,6 @@ export default function GroupsView({ initialGroups, initialInvitations }: Props)
       toast.success(`Joined "${data.group_name}"`)
       setJoinCode('')
       setShowJoin(false)
-      // Refresh groups list
       const groupsRes = await fetch('/api/groups')
       if (groupsRes.ok) setGroups(await groupsRes.json())
     } else {
@@ -114,8 +122,6 @@ export default function GroupsView({ initialGroups, initialInvitations }: Props)
     toast.success('Join code copied')
   }
 
-  const detail = selectedGroup ? groups.find(g => g.id === selectedGroup) : null
-
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Tab bar + actions */}
@@ -149,7 +155,6 @@ export default function GroupsView({ initialGroups, initialInvitations }: Props)
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Join by code */}
           <Dialog open={showJoin} onOpenChange={setShowJoin}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="rounded-xl gap-1.5">
@@ -180,7 +185,6 @@ export default function GroupsView({ initialGroups, initialInvitations }: Props)
             </DialogContent>
           </Dialog>
 
-          {/* Create group */}
           <Dialog open={showCreate} onOpenChange={setShowCreate}>
             <DialogTrigger asChild>
               <Button size="sm" className="rounded-xl gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white">
@@ -227,18 +231,20 @@ export default function GroupsView({ initialGroups, initialInvitations }: Props)
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
               {groups.map(group => (
                 <div
                   key={group.id}
-                  className={`rounded-2xl bg-white dark:bg-[var(--dark-card)] border shadow-sm transition-colors cursor-pointer ${
+                  className={`rounded-2xl bg-white dark:bg-[var(--dark-card)] border shadow-sm transition-colors ${
                     selectedGroup === group.id
                       ? 'border-indigo-400 dark:border-indigo-500'
                       : 'border-stone-100 dark:border-[var(--dark-border)] hover:border-stone-200 dark:hover:border-stone-600'
                   }`}
-                  onClick={() => setSelectedGroup(selectedGroup === group.id ? null : group.id)}
                 >
-                  <div className="p-5">
+                  <div
+                    className="p-5 cursor-pointer"
+                    onClick={() => setSelectedGroup(selectedGroup === group.id ? null : group.id)}
+                  >
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         <h3 className="font-semibold text-stone-800 dark:text-stone-100">{group.name}</h3>
@@ -254,7 +260,6 @@ export default function GroupsView({ initialGroups, initialInvitations }: Props)
                       <ChevronRight className={`h-4 w-4 text-stone-300 transition-transform ${selectedGroup === group.id ? 'rotate-90' : ''}`} />
                     </div>
 
-                    {/* Join code */}
                     {group.role === 'admin' && group.join_code && (
                       <div className="flex items-center gap-2 mt-3 pt-3 border-t border-stone-50 dark:border-[var(--dark-border)]">
                         <span className="text-xs text-stone-400">Join code:</span>
@@ -271,9 +276,10 @@ export default function GroupsView({ initialGroups, initialInvitations }: Props)
                     )}
                   </div>
 
-                  {/* Expanded detail */}
                   {selectedGroup === group.id && (
-                    <GroupDetailInline group={group} onDelete={handleDeleteGroup} />
+                    group.role === 'admin'
+                      ? <AdminGroupDetail group={group} onDelete={handleDeleteGroup} projects={projects} />
+                      : <MemberGroupDetail group={group} projects={projects} />
                   )}
                 </div>
               ))}
@@ -334,15 +340,142 @@ export default function GroupsView({ initialGroups, initialInvitations }: Props)
   )
 }
 
-// Inline detail panel when a group card is expanded
-function GroupDetailInline({ group, onDelete }: { group: GroupWithMeta; onDelete: (id: string) => void }) {
+// Admin expanded view: 2 tabs (Admin | Members)
+function AdminGroupDetail({
+  group,
+  onDelete,
+  projects,
+}: {
+  group: GroupWithMeta
+  onDelete: (id: string) => void
+  projects: ProjectItem[]
+}) {
+  const [detailTab, setDetailTab] = useState<'admin' | 'members'>('admin')
+
+  return (
+    <div className="border-t border-stone-100 dark:border-[var(--dark-border)] px-5 pb-5 pt-4 space-y-4" onClick={e => e.stopPropagation()}>
+      {/* Sub-tabs */}
+      <div className="flex items-center gap-1 border-b border-stone-100 dark:border-[var(--dark-border)] -mx-5 px-5">
+        <button
+          onClick={() => setDetailTab('admin')}
+          className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+            detailTab === 'admin'
+              ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+              : 'border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
+          }`}
+        >
+          <span className="flex items-center gap-1.5">
+            <BarChart3 className="h-3.5 w-3.5" />
+            Admin
+          </span>
+        </button>
+        <button
+          onClick={() => setDetailTab('members')}
+          className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+            detailTab === 'members'
+              ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+              : 'border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
+          }`}
+        >
+          <span className="flex items-center gap-1.5">
+            <Users className="h-3.5 w-3.5" />
+            Members
+          </span>
+        </button>
+      </div>
+
+      {detailTab === 'admin' && (
+        <GroupAdminView groupId={group.id} />
+      )}
+
+      {detailTab === 'members' && (
+        <MembersPanel group={group} onDelete={onDelete} />
+      )}
+    </div>
+  )
+}
+
+// Member expanded view: sharing settings + read-only member list
+function MemberGroupDetail({
+  group,
+  projects,
+}: {
+  group: GroupWithMeta
+  projects: ProjectItem[]
+}) {
+  return (
+    <div className="border-t border-stone-100 dark:border-[var(--dark-border)] px-5 pb-5 pt-4 space-y-5" onClick={e => e.stopPropagation()}>
+      {/* Sharing settings */}
+      <div>
+        <p className="text-xs font-medium text-stone-400 dark:text-stone-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+          <Settings className="h-3 w-3" />
+          Sharing Settings
+        </p>
+        <SharingSettingsPanel groupId={group.id} projects={projects} />
+      </div>
+
+      {/* Read-only member list */}
+      <ReadOnlyMemberList groupId={group.id} />
+    </div>
+  )
+}
+
+// Read-only member list used in member view
+function ReadOnlyMemberList({ groupId }: { groupId: string }) {
+  const [members, setMembers] = useState<Array<{ user_id: string; role: string; email: string; display_name: string | null }>>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch(`/api/groups/${groupId}`)
+      .then(r => r.json())
+      .then(data => {
+        setMembers(data.members ?? [])
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [groupId])
+
+  return (
+    <div>
+      <p className="text-xs font-medium text-stone-400 dark:text-stone-500 uppercase tracking-wider mb-2">Members</p>
+      {loading ? (
+        <p className="text-sm text-stone-400">Loading...</p>
+      ) : (
+        <div className="space-y-1.5">
+          {members.map(m => (
+            <div key={m.user_id} className="flex items-center justify-between py-1.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="h-7 w-7 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-xs font-semibold text-indigo-600 dark:text-indigo-400 flex-shrink-0">
+                  {(m.display_name || m.email)?.[0]?.toUpperCase() ?? '?'}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm text-stone-700 dark:text-stone-200 truncate">
+                    {m.display_name || m.email}
+                  </p>
+                  {m.display_name && (
+                    <p className="text-xs text-stone-400 truncate">{m.email}</p>
+                  )}
+                </div>
+              </div>
+              <Badge variant={m.role === 'admin' ? 'default' : 'secondary'} className="text-xs">
+                {m.role}
+              </Badge>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Members panel with full admin controls (invite, role change, remove, delete group)
+function MembersPanel({ group, onDelete }: { group: GroupWithMeta; onDelete: (id: string) => void }) {
   const [members, setMembers] = useState<Array<{ user_id: string; role: string; email: string; display_name: string | null }>>([])
   const [inviteEmail, setInviteEmail] = useState('')
   const [loading, setLoading] = useState(true)
   const [inviting, setInviting] = useState(false)
 
-  // Fetch members on mount
-  useState(() => {
+  useEffect(() => {
     fetch(`/api/groups/${group.id}`)
       .then(r => r.json())
       .then(data => {
@@ -350,7 +483,7 @@ function GroupDetailInline({ group, onDelete }: { group: GroupWithMeta; onDelete
         setLoading(false)
       })
       .catch(() => setLoading(false))
-  })
+  }, [group.id])
 
   async function handleInvite() {
     if (!inviteEmail.trim()) return
@@ -396,14 +529,8 @@ function GroupDetailInline({ group, onDelete }: { group: GroupWithMeta; onDelete
     }
   }
 
-  async function handleRegenerateCode() {
-    // This would need a dedicated API endpoint. For now, omit.
-    toast.info('Feature coming soon')
-  }
-
   return (
-    <div className="border-t border-stone-100 dark:border-[var(--dark-border)] px-5 pb-5 pt-4 space-y-4" onClick={e => e.stopPropagation()}>
-      {/* Members */}
+    <div className="space-y-4">
       <div>
         <p className="text-xs font-medium text-stone-400 dark:text-stone-500 uppercase tracking-wider mb-2">Members</p>
         {loading ? (
@@ -429,7 +556,7 @@ function GroupDetailInline({ group, onDelete }: { group: GroupWithMeta; onDelete
                   <Badge variant={m.role === 'admin' ? 'default' : 'secondary'} className="text-xs">
                     {m.role}
                   </Badge>
-                  {group.role === 'admin' && m.user_id !== group.owner_id && (
+                  {m.user_id !== group.owner_id && (
                     <>
                       <button
                         onClick={() => handleRoleChange(m.user_id, m.role === 'admin' ? 'member' : 'admin')}
@@ -454,36 +581,28 @@ function GroupDetailInline({ group, onDelete }: { group: GroupWithMeta; onDelete
         )}
       </div>
 
-      {/* Invite (admin only) */}
-      {group.role === 'admin' && (
-        <div className="flex items-center gap-2">
-          <Input
-            value={inviteEmail}
-            onChange={e => setInviteEmail(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleInvite() }}
-            placeholder="Invite by email"
-            className="text-sm h-8"
-          />
-          <Button size="sm" variant="outline" className="h-8 rounded-lg gap-1" onClick={handleInvite} disabled={inviting || !inviteEmail.trim()}>
-            <UserPlus className="h-3.5 w-3.5" />
-            Invite
-          </Button>
-        </div>
-      )}
+      {/* Invite */}
+      <div className="flex items-center gap-2">
+        <Input
+          value={inviteEmail}
+          onChange={e => setInviteEmail(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') handleInvite() }}
+          placeholder="Invite by email"
+          className="text-sm h-8"
+        />
+        <Button size="sm" variant="outline" className="h-8 rounded-lg gap-1" onClick={handleInvite} disabled={inviting || !inviteEmail.trim()}>
+          <UserPlus className="h-3.5 w-3.5" />
+          Invite
+        </Button>
+      </div>
 
       {/* Admin actions */}
-      {group.role === 'admin' && (
-        <div className="flex items-center gap-2 pt-2 border-t border-stone-50 dark:border-[var(--dark-border)]">
-          <Button size="sm" variant="ghost" className="text-xs text-stone-400 gap-1" onClick={handleRegenerateCode}>
-            <RefreshCw className="h-3 w-3" />
-            New Join Code
-          </Button>
-          <Button size="sm" variant="ghost" className="text-xs text-rose-400 hover:text-rose-600 gap-1" onClick={() => onDelete(group.id)}>
-            <Trash2 className="h-3 w-3" />
-            Delete Group
-          </Button>
-        </div>
-      )}
+      <div className="flex items-center gap-2 pt-2 border-t border-stone-50 dark:border-[var(--dark-border)]">
+        <Button size="sm" variant="ghost" className="text-xs text-rose-400 hover:text-rose-600 gap-1" onClick={() => onDelete(group.id)}>
+          <Trash2 className="h-3 w-3" />
+          Delete Group
+        </Button>
+      </div>
     </div>
   )
 }

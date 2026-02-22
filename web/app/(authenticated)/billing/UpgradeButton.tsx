@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { Loader2, TrendingUp } from 'lucide-react'
 
 interface Props {
-  plan: 'yearly' | 'lifetime'
+  plan: 'yearly'
   label: string
 }
 
@@ -20,12 +20,8 @@ export default function UpgradeButton({ plan, label }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan }),
       })
-      const data = await res.json() as { success?: boolean; url?: string; error?: string }
-      if (data.url) {
-        // Lifetime upgrade — redirect to Stripe checkout
-        window.location.href = data.url
-      } else if (data.success) {
-        // Yearly upgrade — done in-place
+      const data = await res.json() as { success?: boolean; error?: string }
+      if (data.success) {
         toast.success('Plan upgraded successfully!')
         setTimeout(() => window.location.reload(), 1500)
       } else {

@@ -6,7 +6,7 @@ import { getSubscriptionPlanStatus, getStripeSubscriptionInfo } from '@/lib/repo
 import { parseBody } from '@/lib/validation'
 
 const upgradeSchema = z.object({
-  plan: z.enum(['yearly', 'lifetime']),
+  plan: z.enum(['yearly']),
 })
 
 export async function POST(request: NextRequest) {
@@ -24,9 +24,6 @@ export async function POST(request: NextRequest) {
   if (!existing || existing.plan === 'free') {
     return NextResponse.json({ error: 'No active subscription to upgrade' }, { status: 400 })
   }
-  if (existing.plan === 'premium_lifetime') {
-    return NextResponse.json({ error: 'Already on lifetime plan' }, { status: 400 })
-  }
   if (existing.plan === 'premium_yearly' && plan === 'yearly') {
     return NextResponse.json({ error: 'Already on yearly plan' }, { status: 400 })
   }
@@ -34,10 +31,8 @@ export async function POST(request: NextRequest) {
   const subInfo = await getStripeSubscriptionInfo(user.id)
   const stripeSubId = subInfo?.stripe_subscription_id
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL!
-
   try {
-    if (plan === 'yearly' && stripeSubId) {
+    if (stripeSubId) {
       // Monthly → Yearly: update Stripe subscription in-place (prorated)
       const stripeSub = await getStripe().subscriptions.retrieve(stripeSubId)
       const itemId = stripeSub.items.data[0]?.id
@@ -50,24 +45,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({ success: true, message: 'Upgraded to Yearly' })
     } else {
-      // Any → Lifetime: new one-time checkout; existing sub cancelled via webhook after payment
-      const session = await getStripe().checkout.sessions.create({
-        mode: 'payment',
-        line_items: [{ price: priceId, quantity: 1 }],
-        client_reference_id: user.id,
-        customer_email: user.email,
-        // Reuse existing Stripe customer so payment methods are pre-filled
-        ...(subInfo?.stripe_customer_id ? { customer: subInfo.stripe_customer_id } : { customer_email: user.email }),
-        success_url: `${siteUrl}/billing?success=true`,
-        cancel_url: `${siteUrl}/billing`,
-        metadata: {
-          userId: user.id,
-          plan: 'lifetime',
-          cancel_subscription_id: stripeSubId ?? '',
-        },
-      })
-
-      return NextResponse.json({ url: session.url })
+      return NextResponse.json({ error: 'No Stripe subscription found' }, { status: 400 })
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)

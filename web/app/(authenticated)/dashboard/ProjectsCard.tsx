@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { toast } from 'sonner'
-import { FolderOpen, Star, Pencil, Trash2, GripVertical, Plus, ChevronDown, ChevronUp, Archive, Check, X } from 'lucide-react'
+import { FolderOpen, Star, Pencil, Trash2, GripVertical, Plus, ChevronDown, ChevronUp, Archive, Check, X, DollarSign } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { ProjectFull } from '@/lib/repositories/projects'
 
@@ -191,6 +191,7 @@ export default function ProjectsCard({ initialProjects, isPremium, defaultHourly
       color: newColor,
       archived: false,
       is_default: false,
+      earnings_enabled: true,
       sort_order: activeProjects.length,
       target_hours: null,
       hourly_rate: null,
@@ -214,6 +215,20 @@ export default function ProjectsCard({ initialProjects, isPremium, defaultHourly
       setShowAddForm(true)
       setNewName(newProject.name)
       setNewColor(newProject.color)
+    }
+  }
+
+  async function handleToggleEarnings(id: string, current: boolean) {
+    const prev = projects
+    setProjects(projects.map(p => p.id === id ? { ...p, earnings_enabled: !current } : p))
+    const res = await fetch(`/api/projects/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ earnings_enabled: !current }),
+    })
+    if (!res.ok) {
+      setProjects(prev)
+      toast.error('Failed to update earnings setting')
     }
   }
 
@@ -308,7 +323,7 @@ export default function ProjectsCard({ initialProjects, isPremium, defaultHourly
               } ${dragOverId === project.id ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'hover:bg-stone-50 dark:hover:bg-[var(--dark-hover)]'}`}
             >
               {/* Drag handle */}
-              <GripVertical className="h-4 w-4 text-stone-300 dark:text-stone-600 cursor-grab flex-shrink-0 opacity-0 group-hover:opacity-100" />
+              <GripVertical className="h-4 w-4 text-stone-300 dark:text-stone-600 cursor-grab flex-shrink-0" />
 
               {/* Color dot */}
               <span
@@ -379,29 +394,40 @@ export default function ProjectsCard({ initialProjects, isPremium, defaultHourly
                     className={`h-6 w-6 rounded-md flex items-center justify-center transition-colors ${
                       project.is_default
                         ? 'text-amber-400'
-                        : 'text-stone-200 dark:text-stone-700 hover:text-amber-400 opacity-0 group-hover:opacity-100'
+                        : 'text-stone-300 dark:text-stone-600 hover:text-amber-400'
                     }`}
                   >
                     <Star className={`h-3.5 w-3.5 ${project.is_default ? 'fill-amber-400' : ''}`} />
                   </button>
                   <button
+                    onClick={() => handleToggleEarnings(project.id, project.earnings_enabled as boolean)}
+                    title={(project.earnings_enabled as boolean) ? 'Exclude from earnings' : 'Include in earnings'}
+                    className={`h-6 w-6 rounded-md flex items-center justify-center transition-colors ${
+                      (project.earnings_enabled as boolean)
+                        ? 'text-emerald-500'
+                        : 'text-stone-300 dark:text-stone-600 hover:text-emerald-400'
+                    }`}
+                  >
+                    <DollarSign className="h-3.5 w-3.5" />
+                  </button>
+                  <button
                     onClick={() => startEdit(project)}
                     title="Edit"
-                    className="h-6 w-6 rounded-md flex items-center justify-center text-stone-300 dark:text-stone-600 hover:text-stone-600 dark:hover:text-stone-300 opacity-0 group-hover:opacity-100 transition-colors"
+                    className="h-6 w-6 rounded-md flex items-center justify-center text-stone-300 dark:text-stone-600 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
                   >
                     <Pencil className="h-3 w-3" />
                   </button>
                   <button
                     onClick={() => handleArchive(project.id)}
                     title="Archive"
-                    className="h-6 w-6 rounded-md flex items-center justify-center text-stone-300 dark:text-stone-600 hover:text-amber-500 opacity-0 group-hover:opacity-100 transition-colors"
+                    className="h-6 w-6 rounded-md flex items-center justify-center text-stone-300 dark:text-stone-600 hover:text-amber-500 transition-colors"
                   >
                     <Archive className="h-3 w-3" />
                   </button>
                   <button
                     onClick={() => handleDelete(project.id)}
                     title="Delete"
-                    className="h-6 w-6 rounded-md flex items-center justify-center text-stone-300 dark:text-stone-600 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-colors"
+                    className="h-6 w-6 rounded-md flex items-center justify-center text-stone-300 dark:text-stone-600 hover:text-rose-500 transition-colors"
                   >
                     <Trash2 className="h-3 w-3" />
                   </button>
@@ -427,7 +453,7 @@ export default function ProjectsCard({ initialProjects, isPremium, defaultHourly
                   <div key={project.id} className="flex items-center gap-2 px-4 py-2 group opacity-60">
                     <span className="h-3 w-3 rounded-full flex-shrink-0" style={{ backgroundColor: project.color }} />
                     <span className="flex-1 text-sm text-stone-500 dark:text-stone-400 truncate line-through">{project.name}</span>
-                    <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100">
+                    <div className="flex items-center gap-0.5 flex-shrink-0">
                       <button
                         onClick={() => handleUnarchive(project.id)}
                         title="Unarchive"

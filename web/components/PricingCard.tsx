@@ -10,7 +10,7 @@ import { Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface PricingCardProps {
-  plan: 'monthly' | 'yearly' | 'lifetime'
+  plan: 'monthly' | 'yearly'
   isLoggedIn: boolean
 }
 
@@ -28,13 +28,6 @@ const PLAN_INFO = {
     period: '/year',
     description: 'Save 58% vs monthly',
     badge: 'Best value',
-  },
-  lifetime: {
-    name: 'Lifetime',
-    price: PRICING.lifetime,
-    period: ' one-time',
-    description: 'Pay once, own forever',
-    badge: undefined as string | undefined,
   },
 }
 

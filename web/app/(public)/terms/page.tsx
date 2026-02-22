@@ -14,8 +14,8 @@ export default function TermsPage() {
         </p>
         <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-100 mt-8">Premium Plan</h2>
         <p>
-          Premium subscriptions are billed through Stripe. Monthly and yearly subscriptions auto-renew
-          unless canceled. Lifetime plans are a one-time payment with no recurring charges.
+          Premium and All-In subscriptions are billed through Stripe. Monthly and yearly subscriptions auto-renew
+          unless canceled.
         </p>
         <h2 className="text-lg font-semibold text-stone-900 dark:text-stone-100 mt-8">Cancellation</h2>
         <p>

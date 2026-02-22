@@ -7,9 +7,11 @@ export const metadata: Metadata = { title: 'Earnings' }
 
 import EarningsView from './EarningsView'
 import EarningsFilters from './EarningsFilters'
+import EarningsProjectsManager from './EarningsProjectsManager'
 import { requireAuth } from '@/lib/services/auth'
 import { isPremiumUser } from '@/lib/services/billing'
 import { getEarningsReport } from '@/lib/services/earnings'
+import { getUserProjects } from '@/lib/repositories/projects'
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 
@@ -100,6 +102,8 @@ export default async function EarningsPage({
   const dateFrom = rawFrom && ISO_DATE.test(rawFrom) ? rawFrom : undefined
   const dateTo = rawTo && ISO_DATE.test(rawTo) ? rawTo : undefined
 
+  const allProjects = await getUserProjects(user.id)
+
   let data: Awaited<ReturnType<typeof getEarningsReport>> | null = null
   let fetchError: string | null = null
 
@@ -185,6 +189,17 @@ export default async function EarningsPage({
       </div>
 
       <EarningsView data={data} />
+
+      <EarningsProjectsManager
+        projects={allProjects.map(p => ({
+          id: p.id,
+          name: p.name,
+          color: p.color,
+          hourly_rate: p.hourly_rate,
+          earnings_enabled: p.earnings_enabled as boolean,
+        }))}
+        currency={currencySymbol}
+      />
     </div>
   )
 }

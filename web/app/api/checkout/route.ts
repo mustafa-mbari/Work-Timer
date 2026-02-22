@@ -28,13 +28,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'You already have an active subscription' }, { status: 400 })
   }
 
-  const isLifetime = plan === 'lifetime'
-  const isSubscription = !isLifetime // monthly, yearly, allin_monthly, allin_yearly are all subscriptions
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL!
 
   try {
     const session = await getStripe().checkout.sessions.create({
-      mode: isSubscription ? 'subscription' : 'payment',
+      mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
       client_reference_id: user.id,
       customer_email: user.email,

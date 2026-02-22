@@ -34,6 +34,8 @@ export default function AdminDomainsPage() {
     premium_monthly: t('planPremiumMonthly'),
     premium_yearly: t('planPremiumYearly'),
     premium_lifetime: t('planPremiumLifetime'),
+    allin_monthly: 'All-In Monthly',
+    allin_yearly: 'All-In Yearly',
   }
 
   async function fetchDomains() {
@@ -137,7 +139,8 @@ export default function AdminDomainsPage() {
                 <SelectContent>
                   <SelectItem value="premium_monthly">{t('planMonthly')}</SelectItem>
                   <SelectItem value="premium_yearly">{t('planYearly')}</SelectItem>
-                  <SelectItem value="premium_lifetime">{t('planLifetime')}</SelectItem>
+                  <SelectItem value="allin_monthly">All-In Monthly</SelectItem>
+                  <SelectItem value="allin_yearly">All-In Yearly</SelectItem>
                 </SelectContent>
               </Select>
             </div>

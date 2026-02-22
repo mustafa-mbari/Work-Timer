@@ -35,6 +35,7 @@ export interface DbProject {
   color: string               // Hex color
   target_hours: number | null
   hourly_rate: number | null
+  earnings_enabled: boolean
   archived: boolean
   is_default: boolean
   sort_order: number | null
@@ -241,6 +242,7 @@ interface DbProjectInsert {
   color: string
   target_hours?: number | null
   hourly_rate?: number | null
+  earnings_enabled?: boolean
   archived?: boolean
   is_default?: boolean
   sort_order?: number | null
@@ -255,6 +257,7 @@ interface DbProjectUpdate {
   color?: string
   target_hours?: number | null
   hourly_rate?: number | null
+  earnings_enabled?: boolean
   archived?: boolean
   is_default?: boolean
   sort_order?: number | null
@@ -447,7 +450,33 @@ interface DbWhitelistedDomainUpdate {
   created_by?: string | null
 }
 
+export interface DbGroupSharingSettings {
+  group_id: string
+  user_id: string
+  sharing_enabled: boolean
+  shared_project_ids: string[] | null
+  created_at: string
+  updated_at: string
+}
+
 // --- Group types ---
+interface DbGroupSharingSettingsInsert {
+  group_id: string
+  user_id: string
+  sharing_enabled?: boolean
+  shared_project_ids?: string[] | null
+  created_at?: string
+  updated_at?: string
+}
+interface DbGroupSharingSettingsUpdate {
+  group_id?: string
+  user_id?: string
+  sharing_enabled?: boolean
+  shared_project_ids?: string[] | null
+  created_at?: string
+  updated_at?: string
+}
+
 interface DbGroupInsert {
   name: string
   owner_id: string
@@ -515,6 +544,7 @@ export type Database = {
       groups: { Row: DbGroup; Insert: DbGroupInsert; Update: DbGroupUpdate; Relationships: [] }
       group_members: { Row: DbGroupMember; Insert: DbGroupMemberInsert; Update: DbGroupMemberUpdate; Relationships: [] }
       group_invitations: { Row: DbGroupInvitation; Insert: DbGroupInvitationInsert; Update: DbGroupInvitationUpdate; Relationships: [] }
+      group_sharing_settings: { Row: DbGroupSharingSettings; Insert: DbGroupSharingSettingsInsert; Update: DbGroupSharingSettingsUpdate; Relationships: [] }
     }
     Views: Record<string, never>
     Functions: {
@@ -629,6 +659,34 @@ export type Database = {
       }>}
       admin_update_group: { Args: { p_group_id: string; p_max_members: number }; Returns: {
         success: boolean
+        error?: string
+      }}
+      get_group_members_summary: { Args: { p_group_id: string; p_admin_id: string }; Returns: {
+        members: Array<{
+          user_id: string
+          display_name: string
+          email: string
+          role: string
+          sharing_enabled: boolean
+          current_week_hours: number
+          last_week_hours: number
+          current_month_hours: number
+          last_month_hours: number
+        }>
+        error?: string
+      }}
+      get_group_member_entries: { Args: { p_group_id: string; p_admin_id: string; p_member_id: string; p_date_from?: string; p_date_to?: string }; Returns: {
+        entries: Array<{
+          id: string
+          date: string
+          start_time: number
+          end_time: number
+          duration: number
+          description: string | null
+          project_id: string | null
+          project_name: string
+          project_color: string
+        }>
         error?: string
       }}
     }

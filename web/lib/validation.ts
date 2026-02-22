@@ -1,10 +1,10 @@
 import { z } from 'zod'
 
-const VALID_PLANS = ['premium_monthly', 'premium_yearly', 'premium_lifetime', 'allin_monthly', 'allin_yearly'] as const
+const VALID_PLANS = ['premium_monthly', 'premium_yearly', 'allin_monthly', 'allin_yearly'] as const
 
 // --- Checkout ---
 export const checkoutSchema = z.object({
-  plan: z.enum(['monthly', 'yearly', 'lifetime', 'allin_monthly', 'allin_yearly']),
+  plan: z.enum(['monthly', 'yearly', 'allin_monthly', 'allin_yearly']),
 })
 
 // --- Promo codes ---
@@ -125,6 +125,7 @@ export const updateProjectSchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   target_hours: z.number().min(0).max(10000).nullable().optional(),
   hourly_rate: z.number().min(0).max(10000).nullable().optional(),
+  earnings_enabled: z.boolean().optional(),
   archived: z.boolean().optional(),
 })
 
@@ -178,6 +179,12 @@ export const invitationActionSchema = z.object({
 export const earningsFilterSchema = z.object({
   dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+})
+
+// --- Group Sharing ---
+export const updateSharingSettingsSchema = z.object({
+  sharing_enabled: z.boolean(),
+  shared_project_ids: z.array(z.string()).nullable().optional().transform(v => v ?? null),
 })
 
 // --- Admin Groups ---

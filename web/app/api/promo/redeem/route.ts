@@ -50,14 +50,14 @@ export async function POST(request: NextRequest) {
     })
 
     const planKey = result.plan === 'premium_yearly' ? 'yearly'
-      : result.plan === 'premium_lifetime' ? 'lifetime'
+      : result.plan === 'allin_monthly' ? 'allin_monthly'
+      : result.plan === 'allin_yearly' ? 'allin_yearly'
       : 'monthly'
     const priceId = STRIPE_PRICES[planKey as keyof typeof STRIPE_PRICES]
-    const isLifetime = result.plan === 'premium_lifetime'
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL!
 
     const session = await getStripe().checkout.sessions.create({
-      mode: isLifetime ? 'payment' : 'subscription',
+      mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
       discounts: [{ coupon: coupon.id }],
       client_reference_id: user.id,

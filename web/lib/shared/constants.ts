@@ -24,7 +24,6 @@ export const PLANS = {
   free: 'free',
   premiumMonthly: 'premium_monthly',
   premiumYearly: 'premium_yearly',
-  premiumLifetime: 'premium_lifetime',
   allinMonthly: 'allin_monthly',
   allinYearly: 'allin_yearly',
 } as const
@@ -45,7 +44,6 @@ export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[keyof typeof SUB
 export const PRICING = {
   monthly: 1.99,
   yearly: 9.99,
-  lifetime: 29.99,
   allinMonthly: 29.99,
   allinYearly: 299,
 } as const

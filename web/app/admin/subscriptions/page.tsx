@@ -31,6 +31,8 @@ export default function AdminSubscriptionsPage() {
     premium_monthly: t('planMonthly'),
     premium_yearly: t('planYearly'),
     premium_lifetime: t('planLifetime'),
+    allin_monthly: 'All-In Monthly',
+    allin_yearly: 'All-In Yearly',
   }
 
   const SOURCE_LABELS: Record<string, string> = {
@@ -124,7 +126,8 @@ export default function AdminSubscriptionsPage() {
                 <SelectContent>
                   <SelectItem value="premium_monthly">{t('selectMonthly')}</SelectItem>
                   <SelectItem value="premium_yearly">{t('selectYearly')}</SelectItem>
-                  <SelectItem value="premium_lifetime">{t('selectLifetime')}</SelectItem>
+                  <SelectItem value="allin_monthly">All-In Monthly</SelectItem>
+                  <SelectItem value="allin_yearly">All-In Yearly</SelectItem>
                 </SelectContent>
               </Select>
             </div>
