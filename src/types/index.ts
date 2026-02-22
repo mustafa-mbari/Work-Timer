@@ -96,6 +96,8 @@ export interface PomodoroState {
   phaseDuration: number // Total duration of current phase in ms
   sessionsCompleted: number
   totalWorkTime: number // ms
+  remainingWork: number // ms remaining from a manually-skipped work phase; 0 = fresh session
+  accumWork: number // ms accumulated across resume(s) within one logical work session
 }
 
 // Auth

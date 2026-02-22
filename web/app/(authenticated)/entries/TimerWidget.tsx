@@ -74,6 +74,8 @@ interface TimerSession {
   pomSessions: number
   pomTotalWork: number
   pomWorkStart: number | null
+  pomRemainingWork: number
+  pomAccumWork: number
 }
 
 function loadSession(): TimerSession | null {
@@ -431,6 +433,10 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTarge
   const [pomTick, setPomTick] = useState(0)
   const pomTickRef = useRef<ReturnType<typeof setInterval>>(null)
   const pomWorkStartRef = useRef<number | null>(saved?.pomWorkStart ?? null)
+  // Remaining work time (ms) when user manually skips to break early; 0 = next session is fresh
+  const [pomRemainingWork, setPomRemainingWork] = useState(saved?.pomRemainingWork ?? 0)
+  // Accumulated work time (ms) across resume(s) within one logical session; saved as entry when session completes
+  const [pomAccumWork, setPomAccumWork] = useState(saved?.pomAccumWork ?? 0)
 
   const [saving, setSaving] = useState(false)
   const [discardAlert, setDiscardAlert] = useState<string | null>(null)
@@ -453,11 +459,12 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTarge
         swStatus, swStartTime, swElapsed, swRealStart: swRealStartRef.current,
         pomActive, pomPhase, pomPhaseStart, pomPhaseDuration, pomSessions, pomTotalWork,
         pomWorkStart: pomWorkStartRef.current,
+        pomRemainingWork, pomAccumWork,
       })
     } else {
       clearSession()
     }
-  }, [mode, projectId, description, selectedTagId, link, swStatus, swStartTime, swElapsed, pomActive, pomPhase, pomPhaseStart, pomPhaseDuration, pomSessions, pomTotalWork])
+  }, [mode, projectId, description, selectedTagId, link, swStatus, swStartTime, swElapsed, pomActive, pomPhase, pomPhaseStart, pomPhaseDuration, pomSessions, pomTotalWork, pomRemainingWork, pomAccumWork])
 
   // ── Computed values (NO useMemo — must recalculate on every tick render) ──
   const swCurrentElapsed = (swStatus === 'running' && swStartTime)
@@ -653,6 +660,8 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTarge
     setPomActive(true)
     setPomSessions(0)
     setPomTotalWork(0)
+    setPomRemainingWork(0)
+    setPomAccumWork(0)
     pomWorkStartRef.current = Date.now()
   }
 
@@ -660,26 +669,48 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTarge
     const now = Date.now()
     if (pomPhase === 'work') {
       const workDur = pomPhaseStart ? now - pomPhaseStart : 0
-      const thresholdMs = entrySaveTime * 1000
-      if (workDur >= thresholdMs) {
-        const start = pomWorkStartRef.current ?? (now - workDur)
-        createEntry({ duration: workDur, type: 'pomodoro', startTime: start, endTime: now })
-      }
-      const newSessions = pomSessions + 1
-      setPomSessions(newSessions)
+      const remaining = Math.max(0, pomPhaseDuration - workDur)
+      const totalAccum = pomAccumWork + workDur
+
       setPomTotalWork(prev => prev + workDur)
-      const isLongBreak = newSessions % pom.sessionsBeforeLongBreak === 0
-      const breakPhase: PomPhase = isLongBreak ? 'longBreak' : 'shortBreak'
-      const breakDur = (isLongBreak ? pom.longBreakMinutes : pom.shortBreakMinutes) * 60 * 1000
-      setPomPhase(breakPhase)
-      setPomPhaseDuration(breakDur)
-      setPomPhaseStart(now)
+
+      if (remaining <= 1000) {
+        // Natural completion — save entry with total accumulated work time
+        const thresholdMs = entrySaveTime * 1000
+        if (totalAccum >= thresholdMs) {
+          const start = pomWorkStartRef.current ?? (now - totalAccum)
+          createEntry({ duration: totalAccum, type: 'pomodoro', startTime: start, endTime: now })
+        }
+        const newSessions = pomSessions + 1
+        setPomSessions(newSessions)
+        setPomAccumWork(0)
+        setPomRemainingWork(0)
+        const isLongBreak = newSessions % pom.sessionsBeforeLongBreak === 0
+        const breakPhase: PomPhase = isLongBreak ? 'longBreak' : 'shortBreak'
+        const breakDur = (isLongBreak ? pom.longBreakMinutes : pom.shortBreakMinutes) * 60 * 1000
+        setPomPhase(breakPhase)
+        setPomPhaseDuration(breakDur)
+        setPomPhaseStart(now)
+      } else {
+        // Manual skip — don't save entry yet, accumulate work time for later
+        setPomAccumWork(totalAccum)
+        setPomRemainingWork(remaining)
+        const breakDur = pom.shortBreakMinutes * 60 * 1000
+        setPomPhase('shortBreak')
+        setPomPhaseDuration(breakDur)
+        setPomPhaseStart(now)
+      }
     } else {
-      const workDur = pom.workMinutes * 60 * 1000
+      // Break ended — resume remaining work or start fresh session
+      const workDur = pomRemainingWork > 0 ? pomRemainingWork : pom.workMinutes * 60 * 1000
       setPomPhase('work')
       setPomPhaseDuration(workDur)
       setPomPhaseStart(now)
-      pomWorkStartRef.current = now
+      if (pomRemainingWork <= 0) {
+        // Fresh session — reset work start ref
+        pomWorkStartRef.current = now
+      }
+      setPomRemainingWork(0)
     }
   }
 
@@ -687,11 +718,21 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTarge
     const now = Date.now()
     if (pomPhase === 'work' && pomPhaseStart) {
       const worked = now - pomPhaseStart
+      const totalAccum = pomAccumWork + worked
       const thresholdMs = entrySaveTime * 1000
-      if (worked >= thresholdMs) {
-        const start = pomWorkStartRef.current ?? (now - worked)
-        await createEntry({ duration: worked, type: 'pomodoro', startTime: start, endTime: now })
-      } else if (worked >= 1000) {
+      if (totalAccum >= thresholdMs) {
+        const start = pomWorkStartRef.current ?? (now - totalAccum)
+        await createEntry({ duration: totalAccum, type: 'pomodoro', startTime: start, endTime: now })
+      } else if (totalAccum >= 1000) {
+        showDiscardAlert(formatThreshold(entrySaveTime))
+      }
+    } else if (pomAccumWork > 0) {
+      // Stopped during break but had accumulated work from earlier segments
+      const thresholdMs = entrySaveTime * 1000
+      if (pomAccumWork >= thresholdMs) {
+        const start = pomWorkStartRef.current ?? (now - pomAccumWork)
+        await createEntry({ duration: pomAccumWork, type: 'pomodoro', startTime: start, endTime: now })
+      } else if (pomAccumWork >= 1000) {
         showDiscardAlert(formatThreshold(entrySaveTime))
       }
     }
@@ -700,6 +741,8 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTarge
     setPomPhase('work')
     setPomSessions(0)
     setPomTotalWork(0)
+    setPomRemainingWork(0)
+    setPomAccumWork(0)
     pomWorkStartRef.current = null
     setDescription('')
     setSelectedTagId('')

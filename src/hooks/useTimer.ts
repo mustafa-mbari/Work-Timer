@@ -25,6 +25,8 @@ const DEFAULT_POMODORO: PomodoroState = {
   phaseDuration: POMODORO_WORK_MS,
   sessionsCompleted: 0,
   totalWorkTime: 0,
+  remainingWork: 0,
+  accumWork: 0,
 }
 
 function sendMessage(message: TimerMessage): Promise<TimerResponse> {

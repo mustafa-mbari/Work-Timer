@@ -49,6 +49,8 @@ const DEFAULT_POMODORO_STATE: PomodoroState = {
   phaseDuration: POMODORO_WORK_MS,
   sessionsCompleted: 0,
   totalWorkTime: 0,
+  remainingWork: 0,
+  accumWork: 0,
 }
 
 // --- Storage helpers ---
@@ -432,6 +434,8 @@ async function startPomodoro(projectId: string | null, description: string): Pro
     phaseDuration,
     sessionsCompleted: 0,
     totalWorkTime: 0,
+    remainingWork: 0,
+    accumWork: 0,
   }
   await setPomodoroState(pomState)
 
@@ -458,11 +462,64 @@ async function stopPomodoro(): Promise<TimerResponse> {
   const pomState = await getPomodoroState()
   if (!pomState.active) return { success: false, error: 'Pomodoro is not active' }
 
+  const timerState = await getTimerState()
+  const now = Date.now()
+  let entry: TimeEntry | undefined
+  let discarded = false
+
+  if (pomState.phase === 'work') {
+    // Stopped during work — save accumulated + current segment
+    const currentSegment = getElapsed(timerState)
+    const totalWork = (pomState.accumWork ?? 0) + currentSegment
+    if (totalWork >= entrySaveTimeMs) {
+      entry = {
+        id: generateId(),
+        date: getToday(),
+        startTime: now - totalWork,
+        endTime: now,
+        duration: totalWork,
+        projectId: timerState.projectId,
+        taskId: null,
+        description: timerState.description,
+        type: 'pomodoro',
+        tags: [],
+      }
+      await saveTimeEntry(entry)
+    } else if (totalWork >= 1000) {
+      discarded = true
+    }
+  } else if ((pomState.accumWork ?? 0) > 0) {
+    // Stopped during break but had accumulated work from earlier segments
+    const totalWork = pomState.accumWork ?? 0
+    if (totalWork >= entrySaveTimeMs) {
+      entry = {
+        id: generateId(),
+        date: getToday(),
+        startTime: now - totalWork,
+        endTime: now,
+        duration: totalWork,
+        projectId: timerState.projectId,
+        taskId: null,
+        description: timerState.description,
+        type: 'pomodoro',
+        tags: [],
+      }
+      await saveTimeEntry(entry)
+    } else if (totalWork >= 1000) {
+      discarded = true
+    }
+  }
+
+  // Reset all state
   await setPomodoroState(DEFAULT_POMODORO_STATE)
   await chrome.alarms.clear(POMODORO_ALARM)
+  await setTimerState(DEFAULT_TIMER_STATE)
+  await setIdleInfo(DEFAULT_IDLE_INFO)
+  await chrome.alarms.clear(TIMER_ALARM)
+  await updateBadge(DEFAULT_TIMER_STATE)
+  void broadcastTimerSync(DEFAULT_TIMER_STATE)
 
-  // Stop the regular timer too
-  return stopTimer()
+  return { success: true, state: DEFAULT_TIMER_STATE, pomodoroState: DEFAULT_POMODORO_STATE, entry, discarded }
 }
 
 async function skipPomodoroPhase(): Promise<TimerResponse> {
@@ -481,65 +538,93 @@ async function advancePomodoroPhase(pomState: PomodoroState): Promise<void> {
   const now = Date.now()
 
   if (pomState.phase === 'work') {
-    // Work phase ended — save entry and start break
+    // Work phase ended (naturally or manually skipped to break)
     const elapsed = getElapsed(timerState)
-    if (elapsed >= entrySaveTimeMs) {
-      const entry: TimeEntry = {
-        id: generateId(),
-        date: getToday(),
-        startTime: now - elapsed,
-        endTime: now,
-        duration: elapsed,
-        projectId: timerState.projectId,
-        taskId: null,
-        description: timerState.description,
-        type: 'pomodoro',
-        tags: [],
+    const remaining = Math.max(0, pomState.phaseDuration - elapsed)
+    const totalAccum = (pomState.accumWork ?? 0) + elapsed
+
+    if (remaining <= 1000) {
+      // Natural completion — save entry with total accumulated work
+      if (totalAccum >= entrySaveTimeMs) {
+        const entry: TimeEntry = {
+          id: generateId(),
+          date: getToday(),
+          startTime: now - totalAccum,
+          endTime: now,
+          duration: totalAccum,
+          projectId: timerState.projectId,
+          taskId: null,
+          description: timerState.description,
+          type: 'pomodoro',
+          tags: [],
+        }
+        await saveTimeEntry(entry)
       }
-      await saveTimeEntry(entry)
+
+      const newSessions = pomState.sessionsCompleted + 1
+      const isLongBreak = newSessions % settings.pomodoro.sessionsBeforeLongBreak === 0
+      const nextPhase: PomodoroPhase = isLongBreak ? 'longBreak' : 'shortBreak'
+      const breakMinutes = isLongBreak ? settings.pomodoro.longBreakMinutes : settings.pomodoro.shortBreakMinutes
+      const breakDuration = breakMinutes * 60 * 1000
+
+      await setPomodoroState({
+        active: true,
+        phase: nextPhase,
+        phaseStartedAt: now,
+        phaseDuration: breakDuration,
+        sessionsCompleted: newSessions,
+        totalWorkTime: pomState.totalWorkTime + elapsed,
+        remainingWork: 0,
+        accumWork: 0,
+      })
+
+      if (settings.pomodoro.soundEnabled) {
+        chrome.notifications.create('pomodoro-break', {
+          type: 'basic',
+          iconUrl: 'icons/icon-128.png',
+          title: `Pomodoro #${newSessions} Complete!`,
+          message: `Time for a ${breakMinutes}-minute ${isLongBreak ? 'long ' : ''}break.`,
+          priority: 2,
+        })
+      }
+    } else {
+      // Manual skip — don't save entry yet, accumulate work for later
+      const breakDuration = settings.pomodoro.shortBreakMinutes * 60 * 1000
+
+      await setPomodoroState({
+        active: true,
+        phase: 'shortBreak',
+        phaseStartedAt: now,
+        phaseDuration: breakDuration,
+        sessionsCompleted: pomState.sessionsCompleted,
+        totalWorkTime: pomState.totalWorkTime + elapsed,
+        remainingWork: remaining,
+        accumWork: totalAccum,
+      })
     }
-
-    const newSessions = pomState.sessionsCompleted + 1
-    const isLongBreak = newSessions % settings.pomodoro.sessionsBeforeLongBreak === 0
-    const nextPhase: PomodoroPhase = isLongBreak ? 'longBreak' : 'shortBreak'
-    const breakMinutes = isLongBreak ? settings.pomodoro.longBreakMinutes : settings.pomodoro.shortBreakMinutes
-    const breakDuration = breakMinutes * 60 * 1000
-
-    await setPomodoroState({
-      active: true,
-      phase: nextPhase,
-      phaseStartedAt: now,
-      phaseDuration: breakDuration,
-      sessionsCompleted: newSessions,
-      totalWorkTime: pomState.totalWorkTime + elapsed,
-    })
 
     // Pause timer during break
     await setTimerState({ ...timerState, status: 'paused', elapsed: 0, startTime: null, pausedAt: now })
     await chrome.alarms.clear(TIMER_ALARM)
-    // Create alarm for when break ends
+    const breakDuration = remaining <= 1000
+      ? (pomState.sessionsCompleted + 1) % settings.pomodoro.sessionsBeforeLongBreak === 0
+        ? settings.pomodoro.longBreakMinutes * 60 * 1000
+        : settings.pomodoro.shortBreakMinutes * 60 * 1000
+      : settings.pomodoro.shortBreakMinutes * 60 * 1000
     await chrome.alarms.create(POMODORO_ALARM, { when: now + breakDuration })
     await chrome.action.setBadgeText({ text: 'BRK' })
     await chrome.action.setBadgeBackgroundColor({ color: '#10b981' })
-
-    if (settings.pomodoro.soundEnabled) {
-      chrome.notifications.create('pomodoro-break', {
-        type: 'basic',
-        iconUrl: 'icons/icon-128.png',
-        title: `Pomodoro #${newSessions} Complete!`,
-        message: `Time for a ${breakMinutes}-minute ${isLongBreak ? 'long ' : ''}break.`,
-        priority: 2,
-      })
-    }
   } else {
-    // Break ended — start new work session
-    const workDuration = settings.pomodoro.workMinutes * 60 * 1000
+    // Break ended — resume remaining work or start fresh session
+    const hasRemaining = (pomState.remainingWork ?? 0) > 0
+    const workDuration = hasRemaining ? pomState.remainingWork : settings.pomodoro.workMinutes * 60 * 1000
 
     await setPomodoroState({
       ...pomState,
       phase: 'work',
       phaseStartedAt: now,
       phaseDuration: workDuration,
+      remainingWork: 0,
     })
 
     const updated: TimerState = {
@@ -551,7 +636,6 @@ async function advancePomodoroPhase(pomState: PomodoroState): Promise<void> {
     }
     await setTimerState(updated)
     await chrome.alarms.create(TIMER_ALARM, { periodInMinutes: 0.5 })
-    // Create alarm for when work phase ends
     await chrome.alarms.create(POMODORO_ALARM, { when: now + workDuration })
     await updateBadge(updated)
 
@@ -560,7 +644,7 @@ async function advancePomodoroPhase(pomState: PomodoroState): Promise<void> {
         type: 'basic',
         iconUrl: 'icons/icon-128.png',
         title: 'Break Over!',
-        message: 'Time to focus. Starting new work session.',
+        message: hasRemaining ? 'Resuming work session.' : 'Time to focus. Starting new work session.',
         priority: 2,
       })
     }
