@@ -627,7 +627,7 @@ export type Database = {
         grand_total: number
         total_hours: number
         total_projects: number
-        daily_earnings: Array<{ date: string; total: number }> | null
+        daily_earnings: Array<{ date: string; project_id: string; project_name: string; project_color: string; total: number }> | null
       }}
       get_group_analytics: { Args: { p_group_id: string; p_user_id: string; p_date_from?: string; p_date_to?: string }; Returns: {
         total_hours: number

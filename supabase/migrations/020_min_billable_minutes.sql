@@ -110,12 +110,18 @@ BEGIN
     ),
     'daily_earnings', (
       SELECT COALESCE(json_agg(json_build_object(
-        'date', sub.day,
-        'total', sub.day_total
-      ) ORDER BY sub.day), '[]'::json)
+        'date',         sub.day,
+        'project_id',   sub.project_id,
+        'project_name', sub.project_name,
+        'project_color', sub.project_color,
+        'total',        sub.day_total
+      ) ORDER BY sub.day, sub.project_name), '[]'::json)
       FROM (
         SELECT
           te.date::date AS day,
+          p.id    AS project_id,
+          p.name  AS project_name,
+          p.color AS project_color,
           round(sum(
             (te.duration / 3600000.0) * COALESCE(p.hourly_rate, v_default_rate)
           ), 2) AS day_total
@@ -126,7 +132,7 @@ BEGIN
           AND te.duration >= v_min_duration
           AND (v_from_date IS NULL OR te.date::date >= v_from_date)
           AND (v_to_date   IS NULL OR te.date::date <= v_to_date)
-        GROUP BY te.date::date
+        GROUP BY te.date::date, p.id, p.name, p.color
       ) sub
     )
   ) INTO result;
