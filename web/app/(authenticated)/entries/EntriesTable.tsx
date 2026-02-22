@@ -1,9 +1,9 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useTransition, useState, useEffect } from 'react'
+import { useTransition, useState } from 'react'
 import { toast } from 'sonner'
-import { Pencil, Trash2, ChevronLeft, ChevronRight, ExternalLink, SlidersHorizontal } from 'lucide-react'
+import { Pencil, Trash2, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
@@ -15,14 +15,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import type { TimeEntryPage, TimeEntry } from '@/lib/repositories/timeEntries'
 import type { ProjectSummary } from '@/lib/repositories/projects'
 import type { TimeEntryFilters } from '@/lib/repositories/timeEntries'
@@ -34,13 +26,14 @@ interface Props {
   projects: ProjectSummary[]
   tags: TagSummary[]
   filters: TimeEntryFilters
+  visibleCols: Record<ColumnId, boolean>
 }
 
-const STORAGE_KEY = 'entries-table-columns'
+export const COLUMNS_STORAGE_KEY = 'entries-table-columns'
 
-type ColumnId = 'date' | 'time' | 'duration' | 'project' | 'description' | 'tags' | 'link' | 'type'
+export type ColumnId = 'date' | 'time' | 'duration' | 'project' | 'description' | 'tags' | 'link' | 'type'
 
-const ALL_COLUMNS: { id: ColumnId; label: string }[] = [
+export const ALL_COLUMNS: { id: ColumnId; label: string }[] = [
   { id: 'date', label: 'Date' },
   { id: 'time', label: 'Time' },
   { id: 'duration', label: 'Duration' },
@@ -51,7 +44,7 @@ const ALL_COLUMNS: { id: ColumnId; label: string }[] = [
   { id: 'type', label: 'Type' },
 ]
 
-const DEFAULT_VISIBLE: Record<ColumnId, boolean> = {
+export const DEFAULT_VISIBLE: Record<ColumnId, boolean> = {
   date: true,
   time: true,
   duration: true,
@@ -62,10 +55,10 @@ const DEFAULT_VISIBLE: Record<ColumnId, boolean> = {
   type: true,
 }
 
-function loadColumnPrefs(): Record<ColumnId, boolean> {
+export function loadColumnPrefs(): Record<ColumnId, boolean> {
   if (typeof window === 'undefined') return DEFAULT_VISIBLE
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = localStorage.getItem(COLUMNS_STORAGE_KEY)
     if (!raw) return DEFAULT_VISIBLE
     return { ...DEFAULT_VISIBLE, ...JSON.parse(raw) }
   } catch {
@@ -119,7 +112,7 @@ const TYPE_BADGE: Record<TimeEntry['type'], { label: string; class: string }> = 
   },
 }
 
-export default function EntriesTable({ entriesPage, projects, tags, filters }: Props) {
+export default function EntriesTable({ entriesPage, projects, tags, filters, visibleCols }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [, startTransition] = useTransition()
@@ -129,19 +122,6 @@ export default function EntriesTable({ entriesPage, projects, tags, filters }: P
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [deleteIds, setDeleteIds] = useState<string[] | null>(null)
   const [isBusy, setIsBusy] = useState(false)
-  const [visibleCols, setVisibleCols] = useState<Record<ColumnId, boolean>>(DEFAULT_VISIBLE)
-
-  useEffect(() => {
-    setVisibleCols(loadColumnPrefs())
-  }, [])
-
-  function toggleColumn(id: ColumnId) {
-    setVisibleCols(prev => {
-      const next = { ...prev, [id]: !prev[id] }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-      return next
-    })
-  }
 
   const projectMap = new Map(projects.map(p => [p.id, p]))
   const tagMap = new Map(tags.map(t => [t.id, t.name]))
@@ -231,9 +211,9 @@ export default function EntriesTable({ entriesPage, projects, tags, filters }: P
 
       {entries.length > 0 && (
         <>
-          {/* Toolbar: bulk actions + column settings */}
-          <div className="mb-3 flex items-center gap-3">
-            {selected.size > 0 ? (
+          {/* Toolbar: bulk actions */}
+          {selected.size > 0 && (
+            <div className="mb-3 flex items-center gap-3">
               <div className="flex-1 flex items-center gap-3 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 px-4 py-2.5">
                 <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
                   {selected.size} selected
@@ -257,32 +237,8 @@ export default function EntriesTable({ entriesPage, projects, tags, filters }: P
                   Delete {selected.size}
                 </Button>
               </div>
-            ) : (
-              <div className="flex-1" />
-            )}
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1.5 h-9 shrink-0">
-                  <SlidersHorizontal className="h-3.5 w-3.5" />
-                  Columns
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuLabel>Show / hide columns</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {ALL_COLUMNS.map(c => (
-                  <DropdownMenuCheckboxItem
-                    key={c.id}
-                    checked={visibleCols[c.id]}
-                    onCheckedChange={() => toggleColumn(c.id)}
-                  >
-                    {c.label}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+            </div>
+          )}
 
           {/* Table */}
           <div className="rounded-xl border border-stone-200 dark:border-[var(--dark-border)] overflow-x-auto">
@@ -513,6 +469,7 @@ export default function EntriesTable({ entriesPage, projects, tags, filters }: P
         onOpenChange={open => { if (!open) setEditEntry(null) }}
         entry={editEntry ?? undefined}
         projects={projects}
+        tags={tags}
         onSaved={handleSaved}
       />
 
@@ -521,6 +478,7 @@ export default function EntriesTable({ entriesPage, projects, tags, filters }: P
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
         projects={projects}
+        tags={tags}
         onSaved={handleSaved}
       />
 

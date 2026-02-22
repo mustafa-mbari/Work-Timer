@@ -12,6 +12,7 @@ import { isPremiumUser } from '@/lib/services/billing'
 import { getUserTimeEntries } from '@/lib/repositories/timeEntries'
 import { getUserProjects } from '@/lib/repositories/projects'
 import { getUserTags } from '@/lib/repositories/tags'
+import { getUserSettings } from '@/lib/repositories/userSettings'
 import EntriesView from './EntriesView'
 
 const PREVIEW_ENTRIES = [
@@ -142,11 +143,19 @@ export default async function EntriesPage({ searchParams }: Props) {
     pageSize: 25,
   }
 
-  const [entriesPage, projects, tags] = await Promise.all([
+  const [entriesPage, projects, tags, settings] = await Promise.all([
     getUserTimeEntries(user.id, filters),
     getUserProjects(user.id),
     getUserTags(user.id),
+    getUserSettings(user.id),
   ])
+
+  const pomodoroConfig = settings?.pomodoro_config ?? {
+    workMinutes: 25,
+    shortBreakMinutes: 5,
+    longBreakMinutes: 15,
+    sessionsBeforeLongBreak: 4,
+  }
 
   return (
     <div className="animate-fade-in">
@@ -163,6 +172,7 @@ export default async function EntriesPage({ searchParams }: Props) {
           projects={projects}
           tags={tags}
           filters={filters}
+          pomodoroConfig={pomodoroConfig}
         />
       </Suspense>
     </div>

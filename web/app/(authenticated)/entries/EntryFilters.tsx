@@ -2,9 +2,17 @@
 
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useTransition, useState } from 'react'
-import { Plus, Search, X } from 'lucide-react'
+import { Plus, Search, X, SlidersHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import type { ProjectSummary } from '@/lib/repositories/projects'
 import type { TimeEntryFilters } from '@/lib/repositories/timeEntries'
 
@@ -12,9 +20,12 @@ interface Props {
   projects: ProjectSummary[]
   filters: TimeEntryFilters
   onAddEntry?: () => void
+  allColumns?: { id: string; label: string }[]
+  visibleCols?: Record<string, boolean>
+  onToggleColumn?: (id: string) => void
 }
 
-export default function EntryFilters({ projects, filters, onAddEntry }: Props) {
+export default function EntryFilters({ projects, filters, onAddEntry, allColumns, visibleCols, onToggleColumn }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [, startTransition] = useTransition()
@@ -116,15 +127,40 @@ export default function EntryFilters({ projects, filters, onAddEntry }: Props) {
         </Button>
       )}
 
-      {/* Add entry button */}
-      <Button
-        size="sm"
-        className="h-9 ml-auto gap-1.5"
-        onClick={onAddEntry}
-      >
-        <Plus className="h-4 w-4" />
-        Add Entry
-      </Button>
+      {/* Columns + Add entry buttons */}
+      <div className="flex items-center gap-2 ml-auto">
+        {allColumns && visibleCols && onToggleColumn && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5 h-9 shrink-0">
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                Columns
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuLabel>Show / hide columns</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {allColumns.map(c => (
+                <DropdownMenuCheckboxItem
+                  key={c.id}
+                  checked={visibleCols[c.id] ?? true}
+                  onCheckedChange={() => onToggleColumn(c.id)}
+                >
+                  {c.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+        <Button
+          size="sm"
+          className="h-9 gap-1.5"
+          onClick={onAddEntry}
+        >
+          <Plus className="h-4 w-4" />
+          Add Entry
+        </Button>
+      </div>
 
       {/* Active filter indicator */}
       {hasFilters && (
