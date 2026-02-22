@@ -273,6 +273,7 @@ export const DEFAULT_SETTINGS: Settings = {
     hour: 14,      // 2:00 PM
     minute: 0,
   },
+  entrySaveTime: 10,
 }
 
 export async function getSettings(): Promise<Settings> {

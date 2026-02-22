@@ -11,7 +11,7 @@ import ConfirmDialog from './ConfirmDialog'
 import UpgradePrompt from './UpgradePrompt'
 import { useAuth } from '@/hooks/useAuth'
 import { usePremium } from '@/hooks/usePremium'
-import { WEBSITE_URL, PRICING } from '@shared/constants'
+import { WEBSITE_URL, PRICING, ENTRY_SAVE_TIME } from '@shared/constants'
 
 type SettingsTab = 'general' | 'timer' | 'data' | 'account'
 
@@ -391,6 +391,24 @@ export default function SettingsView() {
               />
               <p className="text-[10px] text-stone-400 dark:text-stone-500 mt-1.5 px-1">
                 Prompt to discard idle time after this many minutes of inactivity.
+              </p>
+            </div>
+
+            {/* Minimum Entry Duration */}
+            <div>
+              <label className={labelClass}>Minimum Entry Duration</label>
+              <select
+                value={settings.entrySaveTime}
+                onChange={(e) => handleSettingChange('entrySaveTime', Number(e.target.value))}
+                className={inputClass}
+                aria-label="Minimum entry duration"
+              >
+                {ENTRY_SAVE_TIME.options.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              <p className="text-[10px] text-stone-400 dark:text-stone-500 mt-1.5 px-1">
+                Entries shorter than this are automatically discarded.
               </p>
             </div>
 

@@ -113,6 +113,7 @@ export function localSettingsToDb(settings: Settings, userId: string): Partial<D
     pomodoro_config: settings.pomodoro,
     floating_timer_auto: settings.floatingTimerAutoShow,
     reminder: settings.reminder,
+    entry_save_time: settings.entrySaveTime,
     updated_at: new Date().toISOString(),
   }
 }
@@ -131,5 +132,6 @@ export function dbSettingsToLocal(db: DbUserSettings): Settings {
     pomodoro: db.pomodoro_config,
     floatingTimerAutoShow: db.floating_timer_auto,
     reminder: db.reminder,
+    entrySaveTime: db.entry_save_time ?? 10,
   }
 }

@@ -79,6 +79,7 @@ export const updateSettingsSchema = z.object({
   min_billable_minutes: z.number().int().min(1).max(480).optional(),
   floating_timer_auto: z.boolean().optional(),
   reminder: reminderConfigSchema.nullable().optional(),
+  entry_save_time: z.number().int().min(5).max(240).optional(),
 })
 
 // --- User profile ---

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback, memo, Fragment, type ReactNode } from 'react'
 import { toast } from 'sonner'
-import { Timer, Pencil, Play, Pause, Square, SkipForward } from 'lucide-react'
+import { Timer, Pencil, Play, Pause, Square, SkipForward, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select'
 import type { ProjectSummary } from '@/lib/repositories/projects'
 import type { TagSummary } from '@/lib/repositories/tags'
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -34,6 +35,7 @@ interface Props {
   pomodoroConfig: PomodoroConfig
   dailyTargetHours: number
   todayTotalMs: number
+  entrySaveTime: number
   onEntrySaved: () => void
 }
 
@@ -42,6 +44,13 @@ const DEFAULT_POM: PomodoroConfig = {
   shortBreakMinutes: 5,
   longBreakMinutes: 15,
   sessionsBeforeLongBreak: 4,
+}
+
+function formatThreshold(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return s > 0 ? `${m}m ${s}s` : `${m}m`
 }
 
 // ─── Session Storage ─────────────────────────────────────────────────────────
@@ -379,7 +388,7 @@ function DailyGoalGauge({ percentage, todayHours, targetHours }: { percentage: n
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTargetHours, todayTotalMs, onEntrySaved }: Props) {
+export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTargetHours, todayTotalMs, entrySaveTime, onEntrySaved }: Props) {
   const pom = { ...DEFAULT_POM, ...pomodoroConfig }
 
   // ── Restore from session storage (runs once on mount) ──
@@ -424,6 +433,8 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTarge
   const pomWorkStartRef = useRef<number | null>(saved?.pomWorkStart ?? null)
 
   const [saving, setSaving] = useState(false)
+  const [discardAlert, setDiscardAlert] = useState<string | null>(null)
+  const discardTimerRef = useRef<ReturnType<typeof setTimeout>>(null)
 
   // Auto-select default project (only if no saved/selected project)
   useEffect(() => {
@@ -573,15 +584,24 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTarge
     setSwStatus('running')
   }
 
+  function showDiscardAlert(durationLabel: string) {
+    if (discardTimerRef.current) clearTimeout(discardTimerRef.current)
+    setDiscardAlert(`Entry discarded: duration was less than ${durationLabel}. You can change this in Settings → Time Tracking.`)
+    discardTimerRef.current = setTimeout(() => setDiscardAlert(null), 6000)
+  }
+
   async function swStop() {
     const now = Date.now()
     let total = swElapsed
     if (swStartTime) total += now - swStartTime
 
-    if (total < 1000) {
+    const thresholdMs = entrySaveTime * 1000
+    if (total < thresholdMs) {
       setSwStatus('idle')
       setSwStartTime(null)
       setSwElapsed(0)
+      swRealStartRef.current = null
+      if (total >= 1000) showDiscardAlert(formatThreshold(entrySaveTime))
       return
     }
 
@@ -600,6 +620,11 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTarge
   // ── Manual save ──
   async function manualSave() {
     if (manualDuration <= 0) return
+    const thresholdMs = entrySaveTime * 1000
+    if (manualDuration < thresholdMs) {
+      showDiscardAlert(formatThreshold(entrySaveTime))
+      return
+    }
     let startMs: number, endMs: number
     if (manualInputType === 'timeRange' && manualFrom && manualTo) {
       startMs = new Date(`${manualDate}T${manualFrom}:00`).getTime()
@@ -634,9 +659,12 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTarge
   function advancePomPhase() {
     const now = Date.now()
     if (pomPhase === 'work') {
-      const workDur = pomPhaseDuration
-      const start = pomWorkStartRef.current ?? (now - workDur)
-      createEntry({ duration: workDur, type: 'pomodoro', startTime: start, endTime: now })
+      const workDur = pomPhaseStart ? now - pomPhaseStart : 0
+      const thresholdMs = entrySaveTime * 1000
+      if (workDur >= thresholdMs) {
+        const start = pomWorkStartRef.current ?? (now - workDur)
+        createEntry({ duration: workDur, type: 'pomodoro', startTime: start, endTime: now })
+      }
       const newSessions = pomSessions + 1
       setPomSessions(newSessions)
       setPomTotalWork(prev => prev + workDur)
@@ -659,9 +687,12 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTarge
     const now = Date.now()
     if (pomPhase === 'work' && pomPhaseStart) {
       const worked = now - pomPhaseStart
-      if (worked > 1000) {
+      const thresholdMs = entrySaveTime * 1000
+      if (worked >= thresholdMs) {
         const start = pomWorkStartRef.current ?? (now - worked)
         await createEntry({ duration: worked, type: 'pomodoro', startTime: start, endTime: now })
+      } else if (worked >= 1000) {
+        showDiscardAlert(formatThreshold(entrySaveTime))
       }
     }
     setPomActive(false)
@@ -765,6 +796,14 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTarge
   })()
 
   return (
+    <>
+    {discardAlert && (
+      <Alert className="mb-4 border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950">
+        <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+        <AlertTitle>Entry discarded</AlertTitle>
+        <AlertDescription>{discardAlert}</AlertDescription>
+      </Alert>
+    )}
     <div className="rounded-xl border border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)] overflow-hidden mb-5">
       {/* Mode tabs */}
       <div className="flex border-b border-stone-100 dark:border-[var(--dark-border)]">
@@ -1004,5 +1043,6 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTarge
         </div>
       </div>
     </div>
+    </>
   )
 }

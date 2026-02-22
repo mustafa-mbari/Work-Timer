@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import type { UserSettingsFull, ReminderConfig } from '@/lib/repositories/userSettings'
+import { ENTRY_SAVE_TIME } from '@/lib/shared/constants'
 
 interface Props {
   settings: UserSettingsFull | null
@@ -34,6 +35,7 @@ const DEFAULTS = {
     hour: 14,
     minute: 0,
   } as ReminderConfig,
+  entry_save_time: 10,
 }
 
 const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -50,6 +52,7 @@ export default function TimeTrackingTab({ settings }: Props) {
   const [weeklyTarget, setWeeklyTarget] = useState(s.weekly_target?.toString() ?? '')
   const [idleTimeout, setIdleTimeout] = useState(s.idle_timeout ?? DEFAULTS.idle_timeout)
   const [floatingAuto, setFloatingAuto] = useState(s.floating_timer_auto ?? DEFAULTS.floating_timer_auto)
+  const [entrySaveTime, setEntrySaveTime] = useState((s as Record<string, unknown>).entry_save_time as number ?? DEFAULTS.entry_save_time)
 
   const pc = s.pomodoro_config ?? DEFAULTS.pomodoro_config
   const [workMins, setWorkMins] = useState(pc.workMinutes)
@@ -90,6 +93,7 @@ export default function TimeTrackingTab({ settings }: Props) {
           hour: remHour,
           minute: remMinute,
         },
+        entry_save_time: entrySaveTime,
       }
       const res = await fetch('/api/settings', {
         method: 'PUT',
@@ -220,6 +224,30 @@ export default function TimeTrackingTab({ settings }: Props) {
             </div>
             <Switch checked={floatingAuto} onCheckedChange={setFloatingAuto} />
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Minimum entry duration */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Minimum entry duration</CardTitle>
+          <CardDescription>Entries shorter than this are automatically discarded</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-1.5">
+          <Label htmlFor="entrySaveTime">Minimum duration</Label>
+          <select
+            id="entrySaveTime"
+            value={entrySaveTime}
+            onChange={e => setEntrySaveTime(Number(e.target.value))}
+            className={selectCls}
+          >
+            {ENTRY_SAVE_TIME.options.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          <p className="text-xs text-stone-400 dark:text-stone-500">
+            Timer and pomodoro entries shorter than this will be discarded with a notification.
+          </p>
         </CardContent>
       </Card>
 

@@ -58,6 +58,7 @@ export interface Settings {
   pomodoro: PomodoroSettings
   floatingTimerAutoShow: boolean // Auto-show floating widget when timer starts
   reminder: ReminderSettings
+  entrySaveTime: number // Minimum entry duration in seconds (5-240, default 10)
 }
 
 export interface TimerState {
@@ -190,6 +191,7 @@ export interface TimerResponse {
   state?: TimerState
   entry?: TimeEntry
   error?: string
+  discarded?: boolean // Entry was discarded because it was shorter than minimum duration
   idleInfo?: IdleInfo
   pomodoroState?: PomodoroState
   session?: AuthSession

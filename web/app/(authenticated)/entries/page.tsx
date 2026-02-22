@@ -154,6 +154,7 @@ export default async function EntriesPage({ searchParams }: Props) {
   }
 
   const dailyTargetHours = settings?.daily_target ?? 8
+  const entrySaveTime = (settings as Record<string, unknown> | null)?.entry_save_time as number | undefined ?? 10
 
   return (
     <div className="animate-fade-in">
@@ -166,6 +167,7 @@ export default async function EntriesPage({ searchParams }: Props) {
           pomodoroConfig={pomodoroConfig}
           dailyTargetHours={dailyTargetHours}
           todayTotalMs={todayTotalMs}
+          entrySaveTime={entrySaveTime}
         />
       </Suspense>
     </div>

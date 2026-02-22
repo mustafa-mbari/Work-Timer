@@ -100,6 +100,7 @@ export interface DbUserSettings {
     hour: number
     minute: number
   }
+  entry_save_time: number
   updated_at: string
 }
 
@@ -338,6 +339,7 @@ interface DbUserSettingsInsert {
   currency?: string
   floating_timer_auto?: boolean
   reminder?: DbUserSettings['reminder']
+  entry_save_time?: number
   updated_at?: string
 }
 interface DbUserSettingsUpdate {
@@ -355,6 +357,7 @@ interface DbUserSettingsUpdate {
   currency?: string
   floating_timer_auto?: boolean
   reminder?: DbUserSettings['reminder']
+  entry_save_time?: number
   updated_at?: string
 }
 

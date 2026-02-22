@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, type ReactNode, type FC } from 'react'
+import { useState, useEffect, useRef, useMemo, type ReactNode, type FC } from 'react'
 import type { TimerMode } from '@/types'
 import { useTimer } from '@/hooks/useTimer'
 import { useProjects } from '@/hooks/useProjects'
@@ -8,6 +8,7 @@ import { formatDurationShort, getToday } from '@/utils/date'
 import { generateId } from '@/utils/id'
 import { useSettings } from '@/hooks/useSettings'
 import { msToHours } from '@/utils/date'
+import { ENTRY_SAVE_TIME } from '@shared/constants'
 import ProjectSelector from './ProjectSelector'
 import EntryList from './EntryList'
 import GoalProgress from './GoalProgress'
@@ -56,6 +57,18 @@ export default function TimerView() {
     description: string
   } | null>(null)
 
+  // Discard alert — shown when an entry is too short
+  const [discardAlert, setDiscardAlert] = useState<string | null>(null)
+  const discardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function showDiscardAlert(msg: string) {
+    if (discardTimerRef.current) clearTimeout(discardTimerRef.current)
+    setDiscardAlert(msg)
+    discardTimerRef.current = setTimeout(() => setDiscardAlert(null), 5000)
+  }
+
+  const entrySaveTimeSecs = settings?.entrySaveTime ?? ENTRY_SAVE_TIME.default
+
   // Computed duration in ms from current manual inputs (drives Total display + Save disabled state)
   const manualDuration = useMemo(() => {
     if (manualInputType === 'timeRange' && manualFrom && manualTo) {
@@ -102,6 +115,10 @@ export default function TimerView() {
   const handleStop = async () => {
     if (pomodoroState.active) {
       const response = await stopPomodoro()
+      if (response.discarded) {
+        showDiscardAlert(`Entry discarded — duration was less than ${entrySaveTimeSecs}s. Change in Settings → Timer.`)
+        return
+      }
       if (response.success && response.entry) {
         // Update entry with tags and link
         const tagsArray = selectedTagId ? [selectedTagId] : []
@@ -117,6 +134,10 @@ export default function TimerView() {
       }
     } else {
       const response = await stop()
+      if (response.discarded) {
+        showDiscardAlert(`Entry discarded — duration was less than ${entrySaveTimeSecs}s. Change in Settings → Timer.`)
+        return
+      }
       if (response.success && response.entry) {
         // Update entry with tags and link
         const tagsArray = selectedTagId ? [selectedTagId] : []
@@ -166,6 +187,13 @@ export default function TimerView() {
       duration = (hours * 60 + minutes) * 60 * 1000
       endTime = Date.now()
       startTime = endTime - duration
+    }
+
+    // Duration gate: discard if shorter than minimum
+    const thresholdMs = entrySaveTimeSecs * 1000
+    if (duration < thresholdMs) {
+      showDiscardAlert(`Entry discarded — duration was less than ${entrySaveTimeSecs}s. Change in Settings → Timer.`)
+      return
     }
 
     const tagsArray = selectedTagId ? [selectedTagId] : []
@@ -246,6 +274,25 @@ export default function TimerView() {
 
   return (
     <div className="flex flex-col px-5 py-4 gap-4">
+      {/* Entry Discarded Alert */}
+      {discardAlert && (
+        <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/40 rounded-xl p-3 flex items-start gap-2.5" role="alert">
+          <svg className="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+          </svg>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-amber-800 dark:text-amber-300">{discardAlert}</p>
+          </div>
+          <button
+            onClick={() => setDiscardAlert(null)}
+            className="text-amber-400 dark:text-amber-600 hover:text-amber-600 dark:hover:text-amber-400 transition-colors shrink-0"
+            aria-label="Dismiss alert"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+      )}
+
       {/* Idle Detection Banner */}
       {idleInfo.pending && (
         <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/40 rounded-xl p-3.5" role="alert">

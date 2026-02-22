@@ -1,4 +1,4 @@
-import type { TimerMessage, TimerResponse, TimerState, TimeEntry, IdleInfo, PomodoroState, PomodoroPhase } from '../types'
+import type { TimerMessage, TimerResponse, TimerState, TimeEntry, IdleInfo, PomodoroState, PomodoroPhase, Settings } from '../types'
 import { generateId } from '../utils/id'
 import { getToday } from '../utils/date'
 import { POMODORO_WORK_MS, IDLE_THRESHOLD_MS } from '../constants/timers'
@@ -22,6 +22,9 @@ const STORAGE_KEYS = {
   settings: 'settings',
   entries: (date: string) => `entries_${date}`,
 }
+
+// Cached minimum entry duration in ms — updated reactively via chrome.storage.onChanged
+let entrySaveTimeMs = 10_000
 
 const DEFAULT_TIMER_STATE: TimerState = {
   status: 'idle',
@@ -268,6 +271,17 @@ async function stopTimer(): Promise<TimerResponse> {
 
   const elapsed = getElapsed(state)
   const now = Date.now()
+
+  // Duration gate: discard entry if too short (skip for continuing entries — they already exist)
+  if (!state.continuingEntryId && elapsed < entrySaveTimeMs) {
+    await setTimerState(DEFAULT_TIMER_STATE)
+    await setIdleInfo(DEFAULT_IDLE_INFO)
+    await chrome.alarms.clear(TIMER_ALARM)
+    await updateBadge(DEFAULT_TIMER_STATE)
+    void broadcastTimerSync(DEFAULT_TIMER_STATE)
+    return { success: true, state: DEFAULT_TIMER_STATE, discarded: true }
+  }
+
   let entry: TimeEntry
 
   // Check if continuing an existing entry
@@ -469,7 +483,7 @@ async function advancePomodoroPhase(pomState: PomodoroState): Promise<void> {
   if (pomState.phase === 'work') {
     // Work phase ended — save entry and start break
     const elapsed = getElapsed(timerState)
-    if (elapsed > 0) {
+    if (elapsed >= entrySaveTimeMs) {
       const entry: TimeEntry = {
         id: generateId(),
         date: getToday(),
@@ -820,6 +834,11 @@ chrome.runtime.onStartup.addListener(async () => {
 
     const settings = await getSettings()
     chrome.idle.setDetectionInterval(settings.idleTimeout * 60)
+    entrySaveTimeMs = (settings.entrySaveTime ?? 10) * 1000
+  } else {
+    // Even if timer isn't running, initialize entrySaveTimeMs
+    const settings = await getSettings()
+    entrySaveTimeMs = (settings.entrySaveTime ?? 10) * 1000
   }
 
   const pomState = await getPomodoroState()
@@ -873,10 +892,14 @@ self.addEventListener('online', () => {
   })
 })
 
-// Reschedule reminder when settings change
+// React to settings changes (reminder, entrySaveTime)
 chrome.storage.onChanged.addListener((changes) => {
   if (changes['settings']) {
     void scheduleReminder()
+    const newSettings = changes['settings'].newValue as Partial<Settings> | undefined
+    if (newSettings?.entrySaveTime != null) {
+      entrySaveTimeMs = Math.max(5, Math.min(240, newSettings.entrySaveTime)) * 1000
+    }
   }
 })
 
@@ -998,14 +1021,25 @@ chrome.commands.onCommand.addListener(async (command) => {
       })
     } else {
       // Stop timer (running or paused)
-      await stopTimer()
-      chrome.notifications.create('timer-stopped', {
-        type: 'basic',
-        iconUrl: 'icons/icon-128.png',
-        title: 'Timer Stopped',
-        message: 'Timer stopped and entry saved',
-        priority: 1,
-      })
+      const result = await stopTimer()
+      if (result.discarded) {
+        const secs = Math.round(entrySaveTimeMs / 1000)
+        chrome.notifications.create('entry-discarded', {
+          type: 'basic',
+          iconUrl: 'icons/icon-128.png',
+          title: 'Entry Discarded',
+          message: `Timer ran for less than ${secs}s. Change minimum duration in Settings → Timer.`,
+          priority: 1,
+        })
+      } else if (result.entry) {
+        chrome.notifications.create('timer-stopped', {
+          type: 'basic',
+          iconUrl: 'icons/icon-128.png',
+          title: 'Timer Stopped',
+          message: 'Timer stopped and entry saved',
+          priority: 1,
+        })
+      }
     }
   } else if (command === 'toggle-pause') {
     // Alt+Shift+P: Pause/Resume timer

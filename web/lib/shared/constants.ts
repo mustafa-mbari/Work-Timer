@@ -55,4 +55,20 @@ export const ALLIN_LIMITS = {
   defaultMaxGroupMembers: 10,
 } as const
 
+export const ENTRY_SAVE_TIME = {
+  min: 5,
+  max: 240,
+  default: 10,
+  options: [
+    { value: 5, label: '5 seconds' },
+    { value: 10, label: '10 seconds' },
+    { value: 15, label: '15 seconds' },
+    { value: 30, label: '30 seconds' },
+    { value: 60, label: '1 minute' },
+    { value: 120, label: '2 minutes' },
+    { value: 180, label: '3 minutes' },
+    { value: 240, label: '4 minutes' },
+  ],
+} as const
+
 export const WEBSITE_URL = 'https://w-timer.com'

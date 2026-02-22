@@ -46,6 +46,22 @@ export const PRICING = {
   lifetime: 29.99,
 } as const
 
+export const ENTRY_SAVE_TIME = {
+  min: 5,
+  max: 240,
+  default: 10,
+  options: [
+    { value: 5, label: '5 seconds' },
+    { value: 10, label: '10 seconds' },
+    { value: 15, label: '15 seconds' },
+    { value: 30, label: '30 seconds' },
+    { value: 60, label: '1 minute' },
+    { value: 120, label: '2 minutes' },
+    { value: 180, label: '3 minutes' },
+    { value: 240, label: '4 minutes' },
+  ],
+} as const
+
 export const WEBSITE_URL =
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Vite env access
   (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_WEBSITE_URL) ||
