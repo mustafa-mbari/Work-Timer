@@ -32,6 +32,8 @@ interface Props {
   projects: ProjectSummary[]
   tags: TagSummary[]
   pomodoroConfig: PomodoroConfig
+  dailyTargetHours: number
+  todayTotalMs: number
   onEntrySaved: () => void
 }
 
@@ -309,9 +311,75 @@ function InputsPanel({
   )
 }
 
+// ─── Daily Goal Gauge ────────────────────────────────────────────────────────
+
+const GAUGE_SEGMENTS = 10
+const GAUGE_COLORS = ['#B12B1D', '#B1671E', '#B19719', '#7BB11B', '#16B13D']
+
+function interpolateGaugeColor(t: number): string {
+  const pos = Math.max(0, Math.min(1, t)) * (GAUGE_COLORS.length - 1)
+  const lo = Math.floor(pos)
+  const hi = Math.min(lo + 1, GAUGE_COLORS.length - 1)
+  const f = pos - lo
+  const c1 = parseInt(GAUGE_COLORS[lo].slice(1), 16)
+  const c2 = parseInt(GAUGE_COLORS[hi].slice(1), 16)
+  const r = Math.round(((c1 >> 16) & 0xff) + (((c2 >> 16) & 0xff) - ((c1 >> 16) & 0xff)) * f)
+  const g = Math.round(((c1 >> 8) & 0xff) + (((c2 >> 8) & 0xff) - ((c1 >> 8) & 0xff)) * f)
+  const b = Math.round((c1 & 0xff) + ((c2 & 0xff) - (c1 & 0xff)) * f)
+  return `rgb(${r},${g},${b})`
+}
+
+function DailyGoalGauge({ percentage, todayHours, targetHours }: { percentage: number; todayHours: string; targetHours: number }) {
+  const filled = Math.round(Math.min(100, Math.max(0, percentage)) / 100 * GAUGE_SEGMENTS)
+  const cx = 100, cy = 100, radius = 72
+  const segW = 18, segH = 34, segRx = 6
+
+  return (
+    <div className="flex flex-col items-center justify-center h-full w-full">
+      <div className="relative w-full flex justify-center">
+        <svg viewBox="0 0 200 120" className="w-full max-w-[240px] text-stone-900 dark:text-stone-100">
+          {Array.from({ length: GAUGE_SEGMENTS }).map((_, i) => {
+            const angleDeg = 180 - i * (180 / (GAUGE_SEGMENTS - 1))
+            const angleRad = angleDeg * Math.PI / 180
+            const x = cx + radius * Math.cos(angleRad)
+            const y = cy - radius * Math.sin(angleRad)
+            const rotation = 90 - angleDeg
+
+            return (
+              <rect
+                key={i}
+                x={x - segW / 2}
+                y={y - segH / 2}
+                width={segW}
+                height={segH}
+                rx={segRx}
+                style={i < filled ? { fill: interpolateGaugeColor(i / (GAUGE_SEGMENTS - 1)) } : undefined}
+                className={i >= filled ? 'fill-stone-200 dark:fill-stone-700' : ''}
+                transform={`rotate(${rotation}, ${x}, ${y})`}
+              />
+            )
+          })}
+          <text x="100" y="96" textAnchor="middle" dominantBaseline="middle"
+            fill="currentColor" style={{ fontSize: 30, fontWeight: 700 }}>
+            {Math.round(percentage)}%
+          </text>
+        </svg>
+      </div>
+      <div className="text-center mt-1">
+        <div className="text-[10px] font-medium text-stone-500 dark:text-stone-400 uppercase tracking-wider">
+          Daily Goal
+        </div>
+        <div className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">
+          {todayHours} / {targetHours}h
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function TimerWidget({ projects, tags, pomodoroConfig, onEntrySaved }: Props) {
+export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTargetHours, todayTotalMs, onEntrySaved }: Props) {
   const pom = { ...DEFAULT_POM, ...pomodoroConfig }
 
   // ── Restore from session storage (runs once on mount) ──
@@ -675,6 +743,27 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, onEntrySav
     onLinkChange: setLink,
   }
 
+  // ── Daily goal calculation (real-time including active timer) ──
+  let activeDurationMs = 0
+  if (mode === 'stopwatch' && swStatus !== 'idle') {
+    activeDurationMs = swCurrentElapsed
+  } else if (mode === 'pomodoro' && pomActive && pomPhase === 'work' && pomPhaseStart) {
+    activeDurationMs = Date.now() - pomPhaseStart
+  }
+  const totalTodayMs = todayTotalMs + activeDurationMs
+  const goalPct = dailyTargetHours > 0
+    ? Math.min(100, (totalTodayMs / (dailyTargetHours * 3600000)) * 100)
+    : 0
+
+  const todayHoursLabel = (() => {
+    const totalMin = Math.round(totalTodayMs / 60000)
+    const h = Math.floor(totalMin / 60)
+    const m = totalMin % 60
+    if (h === 0) return `${m}m`
+    if (m === 0) return `${h}h`
+    return `${h}h ${m}m`
+  })()
+
   return (
     <div className="rounded-xl border border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)] overflow-hidden mb-5">
       {/* Mode tabs */}
@@ -707,7 +796,9 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, onEntrySav
       </div>
 
       {/* Content */}
-      <div className="p-4">
+      <div className="flex flex-col xl:flex-row">
+        {/* Timer area – 75% */}
+        <div className="flex-[3] p-4 min-w-0">
 
         {/* ═══ STOPWATCH ═══ */}
         {mode === 'stopwatch' && (
@@ -757,7 +848,7 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, onEntrySav
             </div>
 
             {/* Right: inputs */}
-            <div className="flex-1">
+            <div className="flex-1 lg:border-l lg:pl-4 border-stone-100 dark:border-[var(--dark-border)]">
               <InputsPanel {...inputsProps} />
             </div>
           </div>
@@ -825,7 +916,7 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, onEntrySav
             </div>
 
             {/* Right: inputs */}
-            <div className="flex-1">
+            <div className="flex-1 lg:border-l lg:pl-4 border-stone-100 dark:border-[var(--dark-border)]">
               <InputsPanel {...inputsProps} />
             </div>
           </div>
@@ -900,11 +991,17 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, onEntrySav
             </div>
 
             {/* Right: inputs */}
-            <div className="flex-1">
+            <div className="flex-1 lg:border-l lg:pl-4 border-stone-100 dark:border-[var(--dark-border)]">
               <InputsPanel {...inputsProps} />
             </div>
           </div>
         )}
+        </div>
+
+        {/* Daily Goal gauge – 25% */}
+        <div className="flex-1 border-t xl:border-t-0 xl:border-l border-stone-100 dark:border-[var(--dark-border)] p-4 flex items-center justify-center">
+          <DailyGoalGauge percentage={goalPct} todayHours={todayHoursLabel} targetHours={dailyTargetHours} />
+        </div>
       </div>
     </div>
   )

@@ -57,6 +57,19 @@ export async function getUserTimeEntries(
   }
 }
 
+export async function getTodayTotalDuration(userId: string): Promise<number> {
+  const supabase = await createClient()
+  const today = new Date().toISOString().slice(0, 10)
+  const { data } = await supabase
+    .from('time_entries')
+    .select('duration')
+    .eq('user_id', userId)
+    .eq('date', today)
+    .is('deleted_at', null)
+    .returns<{ duration: number }[]>()
+  return (data ?? []).reduce((sum, e) => sum + e.duration, 0)
+}
+
 export async function getUserTimeEntryById(userId: string, entryId: string) {
   const supabase = await createClient()
   return supabase

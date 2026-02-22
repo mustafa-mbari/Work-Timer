@@ -29,9 +29,11 @@ interface Props {
   tags: TagSummary[]
   filters: TimeEntryFilters
   pomodoroConfig: PomodoroConfig
+  dailyTargetHours: number
+  todayTotalMs: number
 }
 
-export default function EntriesView({ entriesPage, projects, tags, filters, pomodoroConfig }: Props) {
+export default function EntriesView({ entriesPage, projects, tags, filters, pomodoroConfig, dailyTargetHours, todayTotalMs }: Props) {
   const router = useRouter()
   const [showAddDialog, setShowAddDialog] = useState(false)
 
@@ -53,6 +55,8 @@ export default function EntriesView({ entriesPage, projects, tags, filters, pomo
         projects={projects}
         tags={tags}
         pomodoroConfig={pomodoroConfig}
+        dailyTargetHours={dailyTargetHours}
+        todayTotalMs={todayTotalMs}
         onEntrySaved={() => router.refresh()}
       />
 

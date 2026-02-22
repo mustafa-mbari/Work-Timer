@@ -9,7 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 import { requireAuth } from '@/lib/services/auth'
 import { isPremiumUser } from '@/lib/services/billing'
-import { getUserTimeEntries } from '@/lib/repositories/timeEntries'
+import { getUserTimeEntries, getTodayTotalDuration } from '@/lib/repositories/timeEntries'
 import { getUserProjects } from '@/lib/repositories/projects'
 import { getUserTags } from '@/lib/repositories/tags'
 import { getUserSettings } from '@/lib/repositories/userSettings'
@@ -143,11 +143,12 @@ export default async function EntriesPage({ searchParams }: Props) {
     pageSize: 25,
   }
 
-  const [entriesPage, projects, tags, settings] = await Promise.all([
+  const [entriesPage, projects, tags, settings, todayTotalMs] = await Promise.all([
     getUserTimeEntries(user.id, filters),
     getUserProjects(user.id),
     getUserTags(user.id),
     getUserSettings(user.id),
+    getTodayTotalDuration(user.id),
   ])
 
   const pomodoroConfig = settings?.pomodoro_config ?? {
@@ -156,6 +157,8 @@ export default async function EntriesPage({ searchParams }: Props) {
     longBreakMinutes: 15,
     sessionsBeforeLongBreak: 4,
   }
+
+  const dailyTargetHours = settings?.daily_target ?? 8
 
   return (
     <div className="animate-fade-in">
@@ -173,6 +176,8 @@ export default async function EntriesPage({ searchParams }: Props) {
           tags={tags}
           filters={filters}
           pomodoroConfig={pomodoroConfig}
+          dailyTargetHours={dailyTargetHours}
+          todayTotalMs={todayTotalMs}
         />
       </Suspense>
     </div>
