@@ -5,8 +5,9 @@ import { createClient } from '@/lib/supabase/server'
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('landing.hero')
   return {
-    title: 'Work Timer — Free Chrome Time Tracker',
-    description: t('subtitle'),
+    title: 'Smart focus timer for work, study, and projects',
+    description:
+      'Work Timer is a clean, online focus timer for work, study, and side projects. Start Pomodoro sessions, track your time, and improve your daily productivity in the browser.',
   }
 }
 import { HeroSection } from './_sections/HeroSection'

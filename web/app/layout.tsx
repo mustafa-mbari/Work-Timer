@@ -10,8 +10,12 @@ import type { Theme } from '@/lib/theme'
 // eslint-disable-next-line react-refresh/only-export-components
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://w-timer.com'),
-  title: 'Work Timer — Time Tracking for Focused Work',
-  description: 'Track your work time with a privacy-first Chrome extension. Free, offline, and blazing fast.',
+  title: {
+    template: '%s | Work Timer',
+    default: 'Work Timer | Smart online timer for work and study',
+  },
+  description:
+    'Use Work Timer to stay focused. A simple and effective online timer that helps you track work, study, and project sessions with the Pomodoro technique.',
   icons: {
     icon: '/favicon.png',
   },

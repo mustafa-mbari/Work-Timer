@@ -5,7 +5,11 @@ import LoginForm from './LoginForm'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('auth.login')
-  return { title: t('title') }
+  return {
+    title: t('title'),
+    description:
+      'Log in to Work Timer to start tracking your focused work and study sessions. Use stopwatch or manual input, and keep your productivity history safely in one place.',
+  }
 }
 
 export default function LoginPage() {

@@ -9,7 +9,11 @@ import type { Metadata } from 'next'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('analytics')
-  return { title: t('title') }
+  return {
+    title: t('title'),
+    description:
+      'Visualize your focus time with Work Timer analytics. See daily, weekly, and monthly hours for work, study, and projects to understand and improve your productivity patterns.',
+  }
 }
 import AnalyticsCharts from './AnalyticsCharts'
 import AnalyticsFilters from './AnalyticsFilters'
