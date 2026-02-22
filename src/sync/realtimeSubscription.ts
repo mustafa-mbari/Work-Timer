@@ -11,7 +11,7 @@ import {
 } from '@/storage'
 import type { DbTimeEntry, DbProject, DbTag, DbUserSettings } from '@shared/types'
 
-let channels: RealtimeChannel[] = []
+let channel: RealtimeChannel | null = null
 
 type ChangePayload<T> = {
   eventType: 'INSERT' | 'UPDATE' | 'DELETE'
@@ -142,51 +142,24 @@ async function handleSettingsChange(payload: ChangePayload<DbUserSettings>): Pro
 export function setupRealtime(userId: string): void {
   teardownRealtime()
 
-  // Subscribe to time_entries changes for this user
-  const entriesChannel = supabase
-    .channel(`time_entries:${userId}`)
+  // Single multiplexed channel for all tables — uses 1 connection instead of 4
+  channel = supabase
+    .channel(`sync:${userId}`)
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'time_entries', filter: `user_id=eq.${userId}` },
       (payload) => { void handleTimeEntryChange(payload as unknown as ChangePayload<DbTimeEntry>) }
     )
-    .subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        console.log('[work-timer] Realtime: subscribed to time_entries')
-      }
-    })
-
-  // Subscribe to projects changes for this user
-  const projectsChannel = supabase
-    .channel(`projects:${userId}`)
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'projects', filter: `user_id=eq.${userId}` },
       (payload) => { void handleProjectChange(payload as unknown as ChangePayload<DbProject>) }
     )
-    .subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        console.log('[work-timer] Realtime: subscribed to projects')
-      }
-    })
-
-  // Subscribe to tags changes for this user
-  const tagsChannel = supabase
-    .channel(`tags:${userId}`)
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'tags', filter: `user_id=eq.${userId}` },
       (payload) => { void handleTagChange(payload as unknown as ChangePayload<DbTag>) }
     )
-    .subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        console.log('[work-timer] Realtime: subscribed to tags')
-      }
-    })
-
-  // Subscribe to user_settings changes for this user
-  const settingsChannel = supabase
-    .channel(`user_settings:${userId}`)
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'user_settings', filter: `user_id=eq.${userId}` },
@@ -194,16 +167,14 @@ export function setupRealtime(userId: string): void {
     )
     .subscribe((status) => {
       if (status === 'SUBSCRIBED') {
-        console.log('[work-timer] Realtime: subscribed to user_settings')
+        console.log('[work-timer] Realtime: subscribed to all tables (single channel)')
       }
     })
-
-  channels = [entriesChannel, projectsChannel, tagsChannel, settingsChannel]
 }
 
 export function teardownRealtime(): void {
-  for (const channel of channels) {
+  if (channel) {
     supabase.removeChannel(channel).catch(() => {})
+    channel = null
   }
-  channels = []
 }

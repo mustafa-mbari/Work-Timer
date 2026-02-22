@@ -185,6 +185,7 @@ npm run lint
 - **Repository pattern**: All database queries centralized in `web/lib/repositories/` with typed Supabase calls.
 - **Server-side aggregation**: Admin stats and user analytics computed via PostgreSQL RPC functions (not client-side JS).
 - **Sync conflict resolution**: Queue-based -- local changes win over remote when pending in sync queue.
+- **Optimized sync**: Conditional pull via `has_changes_since()` RPC, single multiplexed Realtime channel (1 connection per user), 15-minute periodic sync with debounced entry saves (~150-300 queries/user/day, ~97 KB egress/day).
 - **Webhook idempotency**: Stripe events deduplicated via `stripe_events` table.
 - **Input validation**: All API routes validated with Zod schemas.
 

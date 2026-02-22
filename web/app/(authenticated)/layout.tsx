@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
-import { isPremiumUser, isAllInUser } from '@/lib/services/billing'
+import { getSubscriptionFlags } from '@/lib/services/billing'
 import LastPageTracker from '@/components/LastPageTracker'
 import AppSidebar from './Sidebar'
 import AppHeader from './AppHeader'
@@ -28,13 +28,12 @@ export default async function AuthenticatedLayout({
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [{ data }, premium, allIn] = await Promise.all([
+  const [{ data }, { isPremium: premium, isAllIn: allIn }] = await Promise.all([
     (supabase.from('profiles') as any)
       .select('display_name, role')
       .eq('id', user.id)
       .single(),
-    isPremiumUser(user.id),
-    isAllInUser(user.id),
+    getSubscriptionFlags(user.id),
   ])
 
   const userInfo = {

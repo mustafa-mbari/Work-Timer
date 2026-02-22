@@ -151,6 +151,10 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 - `React.lazy()` for WeekView, StatsView, SettingsView with `<Suspense>`
 - Dynamic `import('xlsx')` inside export function (not top-level)
 - Vite `manualChunks`: recharts (366KB), xlsx (429KB), supabase (170KB) -- loaded on demand
+- Single multiplexed Realtime channel (1 connection per user, not 4)
+- Conditional pull via `has_changes_since()` RPC -- skips full pull when nothing changed
+- Selective column pulls (explicit `.select()` instead of `select('*')`)
+- Debounced `syncAll()` on entry saves (10s timer batches rapid saves)
 
 **Website:**
 - Middleware skips auth for public routes (`/`, `/login`, `/register`, `/terms`, `/privacy`, `/api/webhooks`, `/auth`)
@@ -158,15 +162,17 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 - Admin pages use `revalidate = 60` (1-minute cache)
 - Server-side SQL aggregation via RPC functions (replaces client-side JS)
 - Error boundaries for `(authenticated)/` and `admin/` route groups
+- `getSubscriptionFlags()` deduplicates premium + allIn checks in layout (1 query instead of 2)
 
 ### Sync Engine (`src/sync/`)
 
 - **Queue-based**: Every local write adds to `syncQueue` in `chrome.storage.local`
 - **Push**: Background processes queue in batches (500/batch), only pushes queued items (not all data)
-- **Pull**: Fetch records with `updated_at > last_sync`, skips records with pending local changes (queue-based conflict resolution)
-- **Realtime**: Supabase Realtime channels for instant cross-device updates
-- **Periodic**: `chrome.alarms` every 5 minutes
+- **Pull**: Conditional -- calls `has_changes_since()` RPC first; if nothing changed, skips the full 4-table pull. Fetches records with `updated_at > last_sync`, skips records with pending local changes (queue-based conflict resolution)
+- **Realtime**: Single multiplexed Supabase Realtime channel with 4 table listeners (1 connection per user)
+- **Periodic**: `chrome.alarms` every 15 minutes + debounced sync on entry saves (10s timer)
 - **Initial upload**: Batch upload with per-batch retry (1 retry, 1s backoff)
+- **Data transfer**: ~97 KB egress/user/day, ~150-300 queries/user/day
 
 ### Security
 

@@ -102,6 +102,19 @@ async function scheduleReminder(): Promise<void> {
   await chrome.alarms.create(REMINDER_ALARM, { when })
 }
 
+// --- Debounced sync after entry saves ---
+
+let syncDebounceTimer: ReturnType<typeof setTimeout> | null = null
+
+function debouncedSync(): void {
+  if (syncDebounceTimer) clearTimeout(syncDebounceTimer)
+  syncDebounceTimer = setTimeout(() => {
+    syncDebounceTimer = null
+    void syncAll()
+    void pushUserStats()
+  }, 10_000) // 10s debounce — batches rapid entry saves into one sync
+}
+
 // --- Time Entry Helpers ---
 
 function getElapsed(state: TimerState): number {
@@ -118,8 +131,7 @@ async function getTimeEntry(entryId: string, date: string): Promise<TimeEntry | 
 
 async function saveTimeEntry(entry: TimeEntry): Promise<void> {
   await saveEntry(entry)
-  void syncAll()
-  void pushUserStats()
+  debouncedSync()
 }
 
 async function updateTimeEntry(entryId: string, date: string, updates: Partial<TimeEntry>): Promise<void> {
@@ -127,8 +139,7 @@ async function updateTimeEntry(entryId: string, date: string, updates: Partial<T
   if (entry) {
     const updated = { ...entry, ...updates }
     await updateEntry(updated)
-    void syncAll()
-    void pushUserStats()
+    debouncedSync()
   }
 }
 
@@ -652,7 +663,7 @@ chrome.runtime.onMessage.addListener(
             }
 
             await chrome.alarms.create(SUBSCRIPTION_ALARM, { periodInMinutes: 60 })
-            await chrome.alarms.create(SYNC_ALARM, { periodInMinutes: 5 })
+            await chrome.alarms.create(SYNC_ALARM, { periodInMinutes: 15 })
             await chrome.alarms.create(STATS_SYNC_ALARM, { periodInMinutes: 60 })
             return { success: true }
           }
@@ -832,7 +843,7 @@ chrome.runtime.onStartup.addListener(async () => {
   await chrome.alarms.create(SUBSCRIPTION_ALARM, { periodInMinutes: 60 })
 
   // Schedule periodic sync every 5 minutes
-  await chrome.alarms.create(SYNC_ALARM, { periodInMinutes: 5 })
+  await chrome.alarms.create(SYNC_ALARM, { periodInMinutes: 15 })
 
   // Schedule weekly reminder
   void scheduleReminder()
@@ -1050,7 +1061,7 @@ chrome.runtime.onMessageExternal.addListener(
           await refreshSubscription().catch(() => null)
           // Schedule alarms
           await chrome.alarms.create(SUBSCRIPTION_ALARM, { periodInMinutes: 60 })
-          await chrome.alarms.create(SYNC_ALARM, { periodInMinutes: 5 })
+          await chrome.alarms.create(SYNC_ALARM, { periodInMinutes: 15 })
           await chrome.alarms.create(STATS_SYNC_ALARM, { periodInMinutes: 60 })
 
           // First-time login with existing offline data — upload it

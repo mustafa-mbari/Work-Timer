@@ -216,10 +216,23 @@ export async function pullDelta(): Promise<void> {
   const since = lastSync ?? new Date(0).toISOString()
   const now = new Date().toISOString()
 
-  // Pull time entries
+  // Quick check: skip full pull if nothing changed since last sync
+  if (lastSync) {
+    const { data: hasChanges } = await (supabase.rpc as Function)(
+      'has_changes_since',
+      { p_user_id: session.userId, p_since: since }
+    )
+    if (hasChanges === false) {
+      // Update cursor timestamp even when skipping — keeps it fresh
+      await setLastSync(now)
+      return
+    }
+  }
+
+  // Pull time entries (only columns needed by dbEntryToLocal + deleted_at for soft-delete check)
   const { data: remoteEntries } = await supabase
     .from('time_entries')
-    .select('*')
+    .select('id, date, start_time, end_time, duration, project_id, task_id, description, type, tags, link, deleted_at')
     .eq('user_id', session.userId)
     .gt('updated_at', since)
     .range(0, 49999)
@@ -256,10 +269,10 @@ export async function pullDelta(): Promise<void> {
       }
     }
 
-    // Pull projects
+    // Pull projects (only columns needed by dbProjectToLocal + deleted_at)
     const { data: remoteProjects } = await supabase
       .from('projects')
-      .select('*')
+      .select('id, name, color, target_hours, archived, created_at, is_default, sort_order, deleted_at')
       .eq('user_id', session.userId)
       .gt('updated_at', since)
       .range(0, 49999)
@@ -288,10 +301,10 @@ export async function pullDelta(): Promise<void> {
       }
     }
 
-    // Pull tags
+    // Pull tags (only columns needed by dbTagToLocal + deleted_at)
     const { data: remoteTags } = await supabase
       .from('tags')
-      .select('*')
+      .select('id, name, is_default, sort_order, deleted_at')
       .eq('user_id', session.userId)
       .gt('updated_at', since)
       .range(0, 49999)
