@@ -595,6 +595,7 @@ export type Database = {
         type_data: Array<{ name: string; hours: number; count: number }> | null
         day_of_week_data: Array<{ name: string; hours: number }> | null
         daily_data: Array<{ date: string; hours: number }> | null
+        daily_project_data: Array<{ date: string; project_id: string; project_name: string; project_color: string; hours: number }> | null
         peak_hours_data: Array<{ hour: string; count: number }> | null
         project_stats: Array<{
           name: string

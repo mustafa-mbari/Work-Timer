@@ -2,14 +2,13 @@
 
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, AreaChart, Area,
+  PieChart, Pie, Cell,
 } from 'recharts'
 import { BarChart2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card'
 
 interface AnalyticsChartsProps {
   weeklyData: { week: string; hours: number }[]
-  dailyData: { date: string; hours: number }[]
   projectStats: { name: string; color: string; hours: number; entries: number }[]
   typeData: { name: string; hours: number; count: number; fill: string }[]
   dayOfWeekData: { name: string; hours: number }[]
@@ -35,64 +34,16 @@ function ChartEmpty({ message }: { message: string }) {
 
 export default function AnalyticsCharts({
   weeklyData,
-  dailyData,
   projectStats,
   typeData,
   dayOfWeekData,
   peakHoursData,
   isFiltered,
 }: AnalyticsChartsProps) {
-  const dailyTitle  = isFiltered ? 'Daily Activity' : 'Daily Activity (Last 30 Days)'
   const weeklyTitle = isFiltered ? 'Weekly Hours' : 'Weekly Hours (Last 12 Weeks)'
 
   return (
     <>
-      {/* Daily Trend */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{dailyTitle}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {dailyData.some(d => d.hours > 0) ? (
-            <ResponsiveContainer width="100%" height={250}>
-              <AreaChart data={dailyData}>
-                <defs>
-                  <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-stone-200 dark:stroke-stone-700" />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 11 }}
-                  className="fill-stone-500"
-                  interval={4}
-                />
-                <YAxis
-                  tick={{ fontSize: 12 }}
-                  className="fill-stone-500"
-                  tickFormatter={(v) => `${v}h`}
-                />
-                <Tooltip
-                  formatter={(value) => [`${value}h`, 'Hours']}
-                  contentStyle={tooltipStyle}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="hours"
-                  stroke="#6366f1"
-                  strokeWidth={2}
-                  fill="url(#areaGradient)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          ) : (
-            <ChartEmpty message="No activity in the selected period" />
-          )}
-        </CardContent>
-      </Card>
-
       {/* Weekly Trend */}
       <Card>
         <CardHeader>

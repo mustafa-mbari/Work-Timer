@@ -13,6 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 import AnalyticsCharts from './AnalyticsCharts'
 import AnalyticsFilters from './AnalyticsFilters'
+import TimeChart from './TimeChart'
 import { requireAuth } from '@/lib/services/auth'
 import { isPremiumUser } from '@/lib/services/billing'
 import { getUserAnalytics } from '@/lib/services/analytics'
@@ -106,7 +107,6 @@ export default async function AnalyticsPage({
             </div>
             <AnalyticsCharts
               weeklyData={p.weekly_data}
-              dailyData={p.daily_data}
               projectStats={p.project_stats}
               typeData={p.type_data}
               dayOfWeekData={p.day_of_week_data}
@@ -344,10 +344,12 @@ export default async function AnalyticsPage({
             </Card>
           )}
 
+          {/* Time by project chart */}
+          <TimeChart data={data.daily_project_data ?? []} />
+
           {/* Charts (client component for Recharts) */}
           <AnalyticsCharts
             weeklyData={data.weekly_data ?? []}
-            dailyData={data.daily_data ?? []}
             projectStats={projectStats}
             typeData={typeData}
             dayOfWeekData={dayOfWeekData}

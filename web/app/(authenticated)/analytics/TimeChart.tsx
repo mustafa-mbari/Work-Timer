@@ -13,17 +13,17 @@ import {
   CartesianGrid,
 } from 'recharts'
 
-interface DailyEarningRaw {
+interface DailyProjectRow {
   date: string
-  total: number
+  hours: number
   project_id?: string
   project_name?: string
   project_color?: string
 }
 
 interface Props {
-  data: DailyEarningRaw[]
-  currencySymbol: string
+  data: DailyProjectRow[]
+  title?: string
 }
 
 const FALLBACK_COLOR = '#6366f1'
@@ -37,14 +37,12 @@ const RANGES = [
   { label: 'All', days: 0 },
 ] as const
 
-export default function EarningsChart({ data, currencySymbol }: Props) {
+export default function TimeChart({ data, title = 'Time by Project' }: Props) {
   const [range, setRange] = useState<number>(0)
-  // Selected project IDs (or TOTAL_KEY). null = all projects selected initially.
   const [selected, setSelected] = useState<Set<string> | null>(null)
 
   const hasProjectData = data.length > 0 && !!data[0].project_id
 
-  // Extract unique projects
   const projects = useMemo(() => {
     if (!hasProjectData) {
       return [{ id: '_total', name: 'Total', color: FALLBACK_COLOR }]
@@ -63,7 +61,6 @@ export default function EarningsChart({ data, currencySymbol }: Props) {
     }))
   }, [data, hasProjectData])
 
-  // Effective selection: if null, all projects are selected
   const activeIds = useMemo(() => {
     if (selected === null) return new Set(projects.map(p => p.id))
     return selected
@@ -85,7 +82,6 @@ export default function EarningsChart({ data, currencySymbol }: Props) {
     setSelected(null)
   }, [])
 
-  // Pivot data
   const chartData = useMemo(() => {
     if (!data.length) return []
 
@@ -111,10 +107,9 @@ export default function EarningsChart({ data, currencySymbol }: Props) {
       }
       const row = byDate.get(d.date)!
       const key = hasProjectData ? d.project_name! : 'Total'
-      row[key] = (row[key] ?? 0) + d.total
-      // Accumulate total line
+      row[key] = (row[key] ?? 0) + d.hours
       if (showTotal && hasProjectData) {
-        row['Total'] = (row['Total'] ?? 0) + d.total
+        row['Total'] = (row['Total'] ?? 0) + d.hours
       }
     }
 
@@ -127,7 +122,6 @@ export default function EarningsChart({ data, currencySymbol }: Props) {
       }))
   }, [data, range, hasProjectData, showTotal])
 
-  // Visible series: filtered projects + optional total
   const visibleSeries = useMemo(() => {
     const series: Array<{ id: string; name: string; color: string }> = []
     if (hasProjectData) {
@@ -143,7 +137,7 @@ export default function EarningsChart({ data, currencySymbol }: Props) {
     return series
   }, [projects, activeIds, showTotal, hasProjectData])
 
-  const periodTotal = useMemo(() => {
+  const periodTotalHours = useMemo(() => {
     let sum = 0
     for (const row of chartData) {
       for (const p of projects) {
@@ -159,15 +153,14 @@ export default function EarningsChart({ data, currencySymbol }: Props) {
   return (
     <Card className="overflow-hidden">
       <CardContent className="p-0">
-        {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-2">
           <div>
             <p className="text-xs font-medium text-stone-500 dark:text-stone-400 uppercase tracking-wider">
-              Earnings Over Time
+              {title}
             </p>
             {chartData.length > 0 && (
               <p className="text-2xl font-bold text-stone-900 dark:text-stone-100 mt-0.5">
-                {currencySymbol}{periodTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {periodTotalHours.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}h
               </p>
             )}
           </div>
@@ -188,7 +181,6 @@ export default function EarningsChart({ data, currencySymbol }: Props) {
           </div>
         </div>
 
-        {/* Project filter chips */}
         {hasProjectData && projects.length > 1 && (
           <div className="flex flex-wrap items-center gap-1.5 px-5 pb-3">
             <button
@@ -245,7 +237,7 @@ export default function EarningsChart({ data, currencySymbol }: Props) {
             <p className="text-sm text-stone-400 dark:text-stone-500 text-center max-w-xs">
               {noneSelected
                 ? 'Select at least one project to display the chart.'
-                : 'No earnings data for this period. Select a date range using the filters above.'}
+                : 'No activity data for this period. Select a date range using the filters above.'}
             </p>
           </div>
         ) : (
@@ -254,7 +246,7 @@ export default function EarningsChart({ data, currencySymbol }: Props) {
               <AreaChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
                 <defs>
                   {visibleSeries.map(p => (
-                    <linearGradient key={p.id} id={`grad-${p.id}`} x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient key={p.id} id={`tgrad-${p.id}`} x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor={p.color} stopOpacity={0.25} />
                       <stop offset="100%" stopColor={p.color} stopOpacity={0.02} />
                     </linearGradient>
@@ -278,8 +270,8 @@ export default function EarningsChart({ data, currencySymbol }: Props) {
                   tick={{ fontSize: 11, fill: 'var(--color-stone-400, #a8a29e)' }}
                   tickLine={false}
                   axisLine={false}
-                  tickFormatter={v => `${currencySymbol}${v}`}
-                  width={60}
+                  tickFormatter={v => `${v}h`}
+                  width={48}
                 />
                 <Tooltip
                   content={({ active, payload, label }) => {
@@ -314,7 +306,7 @@ export default function EarningsChart({ data, currencySymbol }: Props) {
                                 </span>
                               </div>
                               <span className="text-xs font-semibold text-stone-800 dark:text-stone-100 tabular-nums">
-                                {currencySymbol}{(item.value as number).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                {(item.value as number).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}h
                               </span>
                             </div>
                           ))}
@@ -323,7 +315,7 @@ export default function EarningsChart({ data, currencySymbol }: Props) {
                           <div className="mt-2 pt-2 border-t border-stone-100 dark:border-[var(--dark-border)] flex items-center justify-between">
                             <span className="text-xs font-medium text-stone-500 dark:text-stone-400">Total</span>
                             <span className="text-sm font-bold text-stone-900 dark:text-stone-100 tabular-nums">
-                              {currencySymbol}{dayTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              {dayTotal.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}h
                             </span>
                           </div>
                         )}
@@ -343,7 +335,7 @@ export default function EarningsChart({ data, currencySymbol }: Props) {
                     dataKey={p.name}
                     stroke={p.color}
                     strokeWidth={p.id === TOTAL_KEY ? 2.5 : 2}
-                    fill={`url(#grad-${p.id})`}
+                    fill={`url(#tgrad-${p.id})`}
                     dot={false}
                     activeDot={{
                       r: 4,
