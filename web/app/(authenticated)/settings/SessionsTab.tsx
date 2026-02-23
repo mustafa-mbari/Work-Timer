@@ -1,11 +1,10 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { Monitor, Trash2, PlugZap, Check, Loader2 } from 'lucide-react'
+import { Monitor, Trash2, PlugZap, Check, Loader2, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/shared/types'
 
 type Cursor = Pick<
@@ -29,26 +28,32 @@ export default function SessionsTab({ initialCursors }: Props) {
   const [disconnecting, setDisconnecting] = useState<string | null>(null)
   const [bridgeStatus, setBridgeStatus] = useState<'idle' | 'connecting' | 'success' | 'failed'>('idle')
 
+  const [bridgeError, setBridgeError] = useState<string | null>(null)
+
   const handleReconnect = useCallback(async () => {
     setBridgeStatus('connecting')
+    setBridgeError(null)
 
     try {
-      const supabase = createClient()
-      const { data: { session } } = await supabase.auth.getSession()
-
-      if (!session) {
-        toast.error('No active session. Please log in again.')
+      // Fetch session from server-side API (avoids browser→Supabase call blocked by corporate proxies)
+      const res = await fetch('/api/auth/session')
+      if (!res.ok) {
+        const msg = 'No active session. Please log in again.'
+        setBridgeError(msg)
         setBridgeStatus('failed')
         return
       }
+
+      const { accessToken, refreshToken } = await res.json()
 
       let resolved = false
       const timeout = setTimeout(() => {
         if (!resolved) {
           resolved = true
           window.removeEventListener('message', handler)
+          const msg = 'Extension not detected. Make sure it is installed, enabled, and you have reloaded it with the latest version.'
+          setBridgeError(msg)
           setBridgeStatus('failed')
-          toast.error('Extension not detected. Make sure it is installed and enabled.')
         }
       }, 5000)
 
@@ -60,10 +65,12 @@ export default function SessionsTab({ initialCursors }: Props) {
           window.removeEventListener('message', handler)
           if (event.data.success) {
             setBridgeStatus('success')
+            setBridgeError(null)
             toast.success('Extension connected successfully!')
           } else {
+            const msg = 'Extension rejected the connection: ' + (event.data.error || 'Unknown error')
+            setBridgeError(msg)
             setBridgeStatus('failed')
-            toast.error('Failed to connect: ' + (event.data.error || 'Unknown error'))
           }
         }
       }
@@ -71,12 +78,13 @@ export default function SessionsTab({ initialCursors }: Props) {
       window.addEventListener('message', handler)
       window.postMessage({
         type: 'WORK_TIMER_AUTH',
-        accessToken: session.access_token,
-        refreshToken: session.refresh_token,
+        accessToken,
+        refreshToken,
       }, '*')
-    } catch {
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to get session'
+      setBridgeError(msg)
       setBridgeStatus('failed')
-      toast.error('Failed to get session')
     }
   }, [])
 
@@ -195,6 +203,12 @@ export default function SessionsTab({ initialCursors }: Props) {
               </>
             )}
           </Button>
+          {bridgeError && (
+            <div className="mt-3 flex items-start gap-2 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 p-3">
+              <AlertCircle className="w-4 h-4 text-rose-500 mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-rose-700 dark:text-rose-300">{bridgeError}</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
