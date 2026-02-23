@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
-import { Monitor, Trash2 } from 'lucide-react'
+import { useState, useCallback } from 'react'
+import { Monitor, Trash2, PlugZap, Check, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/shared/types'
 
 type Cursor = Pick<
@@ -26,6 +27,58 @@ function formatDate(iso: string) {
 export default function SessionsTab({ initialCursors }: Props) {
   const [devices, setDevices] = useState<Cursor[]>(initialCursors)
   const [disconnecting, setDisconnecting] = useState<string | null>(null)
+  const [bridgeStatus, setBridgeStatus] = useState<'idle' | 'connecting' | 'success' | 'failed'>('idle')
+
+  const handleReconnect = useCallback(async () => {
+    setBridgeStatus('connecting')
+
+    try {
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!session) {
+        toast.error('No active session. Please log in again.')
+        setBridgeStatus('failed')
+        return
+      }
+
+      let resolved = false
+      const timeout = setTimeout(() => {
+        if (!resolved) {
+          resolved = true
+          window.removeEventListener('message', handler)
+          setBridgeStatus('failed')
+          toast.error('Extension not detected. Make sure it is installed and enabled.')
+        }
+      }, 5000)
+
+      function handler(event: MessageEvent) {
+        if (event.source !== window) return
+        if (event.data?.type === 'WORK_TIMER_AUTH_RESPONSE') {
+          resolved = true
+          clearTimeout(timeout)
+          window.removeEventListener('message', handler)
+          if (event.data.success) {
+            setBridgeStatus('success')
+            toast.success('Extension connected successfully!')
+          } else {
+            setBridgeStatus('failed')
+            toast.error('Failed to connect: ' + (event.data.error || 'Unknown error'))
+          }
+        }
+      }
+
+      window.addEventListener('message', handler)
+      window.postMessage({
+        type: 'WORK_TIMER_AUTH',
+        accessToken: session.access_token,
+        refreshToken: session.refresh_token,
+      }, '*')
+    } catch {
+      setBridgeStatus('failed')
+      toast.error('Failed to get session')
+    }
+  }, [])
 
   async function handleDisconnect(deviceId: string) {
     setDisconnecting(deviceId)
@@ -102,6 +155,46 @@ export default function SessionsTab({ initialCursors }: Props) {
               ))}
             </ul>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <PlugZap className="w-5 h-5" />
+            Reconnect Extension
+          </CardTitle>
+          <CardDescription>
+            Send your current session to the Work Timer extension on this browser.
+            The extension must be installed and enabled.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            onClick={handleReconnect}
+            disabled={bridgeStatus === 'connecting'}
+            variant={bridgeStatus === 'success' ? 'outline' : 'default'}
+            className={bridgeStatus === 'success' ? 'border-emerald-300 text-emerald-700 dark:border-emerald-700 dark:text-emerald-400' : ''}
+          >
+            {bridgeStatus === 'connecting' && (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Connecting…
+              </>
+            )}
+            {bridgeStatus === 'success' && (
+              <>
+                <Check className="w-4 h-4 mr-2" />
+                Connected
+              </>
+            )}
+            {(bridgeStatus === 'idle' || bridgeStatus === 'failed') && (
+              <>
+                <PlugZap className="w-4 h-4 mr-2" />
+                Connect Extension
+              </>
+            )}
+          </Button>
         </CardContent>
       </Card>
 
