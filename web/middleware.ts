@@ -73,6 +73,8 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // Exclude static assets, images, and /supabase-proxy (handled by Next.js rewrite,
+    // no auth needed — Supabase authenticates its own API calls).
+    '/((?!_next/static|_next/image|favicon.ico|supabase-proxy|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
