@@ -186,6 +186,8 @@ export interface TimerMessage {
     description?: string
     continuingEntryId?: string | null
   }
+  accessToken?: string
+  refreshToken?: string
 }
 
 export interface TimerResponse {

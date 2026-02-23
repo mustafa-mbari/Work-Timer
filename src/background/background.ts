@@ -765,6 +765,36 @@ chrome.runtime.onMessage.addListener(
             await chrome.alarms.create(STATS_SYNC_ALARM, { periodInMinutes: 60 })
             return { success: true }
           }
+          case 'AUTH_LOGIN': {
+            if (!message.accessToken || !message.refreshToken) {
+              return { success: false, error: 'Missing tokens' }
+            }
+            const session = await applyExternalSession(message.accessToken, message.refreshToken)
+            if (!session) {
+              return { success: false, error: 'Failed to apply session' }
+            }
+            const localUserId = await getLocalUserId()
+            const hasData = await hasAnyLocalData()
+            if (localUserId && localUserId !== session.userId && hasData) {
+              await chrome.storage.local.set({ accountSwitchPending: true })
+              return { success: true }
+            }
+            await setLocalUserId(session.userId)
+            // Respond immediately, then do heavy work in background
+            void (async () => {
+              await refreshSubscription().catch(() => null)
+              await chrome.alarms.create(SUBSCRIPTION_ALARM, { periodInMinutes: 60 })
+              await chrome.alarms.create(SYNC_ALARM, { periodInMinutes: 15 })
+              await chrome.alarms.create(STATS_SYNC_ALARM, { periodInMinutes: 60 })
+              if (!localUserId && hasData) {
+                await uploadAllLocalData().catch(() => null)
+              }
+              void syncAll().catch(() => null)
+              void pushUserStats().catch(() => null)
+              setupRealtime(session.userId)
+            })()
+            return { success: true }
+          }
           default:
             return { success: false, error: 'Unknown action' }
         }
