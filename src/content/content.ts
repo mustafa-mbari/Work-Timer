@@ -554,6 +554,29 @@ chrome.runtime.onMessage.addListener((msg: ContentMessage) => {
   }
 })
 
+// ---- Auth Bridge: relay auth tokens from website to background ----
+
+window.addEventListener('message', (event) => {
+  if (event.source !== window) return
+
+  if (event.data?.type === 'WORK_TIMER_AUTH') {
+    chrome.runtime.sendMessage(
+      {
+        action: 'AUTH_LOGIN',
+        accessToken: event.data.accessToken,
+        refreshToken: event.data.refreshToken,
+      },
+      (response: { success?: boolean; error?: string }) => {
+        window.postMessage({
+          type: 'WORK_TIMER_AUTH_RESPONSE',
+          success: response?.success ?? false,
+          error: chrome.runtime.lastError?.message || response?.error,
+        }, '*')
+      }
+    )
+  }
+})
+
 // ---- Init: fetch current state on inject ----
 
 async function init(): Promise<void> {

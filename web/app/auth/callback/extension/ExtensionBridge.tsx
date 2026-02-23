@@ -11,49 +11,35 @@ export default function ExtensionBridge({ accessToken, refreshToken }: Extension
   const [status, setStatus] = useState<'connecting' | 'success' | 'timeout'>('connecting')
 
   useEffect(() => {
-    const extensionId = process.env.NEXT_PUBLIC_EXTENSION_ID
-
-    if (!extensionId) {
-      console.error('[Extension Bridge] NEXT_PUBLIC_EXTENSION_ID not configured')
-      setStatus('timeout') // eslint-disable-line react-hooks/set-state-in-effect
-      return
-    }
-
-    if (typeof chrome === 'undefined' || !chrome.runtime) {
-      console.error('[Extension Bridge] chrome.runtime not available')
-      setStatus('timeout')
-      return
-    }
-
     const timer = setTimeout(() => {
       setStatus('timeout')
     }, 5000)
 
-    try {
-      chrome.runtime.sendMessage(
-        extensionId,
-        {
-          action: 'AUTH_LOGIN',
-          accessToken,
-          refreshToken,
-        },
-        (response: { success?: boolean; error?: string }) => {
-          clearTimeout(timer)
-          if (chrome.runtime.lastError) {
-            console.error('[Extension Bridge] Message error:', chrome.runtime.lastError)
-            setStatus('timeout')
-          } else if (response?.success) {
-            setStatus('success')
-          } else {
-            console.error('[Extension Bridge] Auth failed:', response?.error)
-            setStatus('timeout')
-          }
+    const handleMessage = (event: MessageEvent) => {
+      if (event.source !== window) return
+      if (event.data?.type === 'WORK_TIMER_AUTH_RESPONSE') {
+        clearTimeout(timer)
+        if (event.data.success) {
+          setStatus('success')
+        } else {
+          console.error('[Extension Bridge] Auth failed:', event.data.error)
+          setStatus('timeout')
         }
-      )
-    } catch (err) {
-      console.error('[Extension Bridge] Failed to send message:', err)
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+
+    // Send auth tokens via postMessage — the content script relays to background
+    window.postMessage({
+      type: 'WORK_TIMER_AUTH',
+      accessToken,
+      refreshToken,
+    }, '*')
+
+    return () => {
       clearTimeout(timer)
-      setStatus('timeout')
+      window.removeEventListener('message', handleMessage)
     }
   }, [accessToken, refreshToken])
 
