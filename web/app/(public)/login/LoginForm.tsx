@@ -4,7 +4,6 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -33,24 +32,25 @@ export default function LoginForm() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const supabase = createClient()
-
   async function handlePasswordLogin(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      const res = await fetch('/api/auth/sign-in', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      const data = await res.json()
 
-      if (error) {
-        if (
-          error.message.toLowerCase().includes('email not confirmed') ||
-          error.message.toLowerCase().includes('email_not_confirmed')
-        ) {
+      if (!res.ok) {
+        const msg: string = data.error ?? 'Login failed'
+        if (msg.toLowerCase().includes('email not confirmed') || msg.toLowerCase().includes('email_not_confirmed')) {
           router.push(`/verify-email?email=${encodeURIComponent(email)}`)
           return
         }
-        throw error
+        throw new Error(msg)
       }
 
       if (isExtension) {
@@ -79,12 +79,13 @@ export default function LoginForm() {
     setLoading(true)
 
     try {
-      const redirectUrl = `${window.location.origin}/auth/callback${isExtension ? '?ext=true' : ''}`
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: redirectUrl },
+      const res = await fetch('/api/auth/magic-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, ext: isExtension }),
       })
-      if (error) throw error
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Failed to send magic link')
       toast.success(t('magicLinkSent'))
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to send magic link'
@@ -94,12 +95,8 @@ export default function LoginForm() {
     }
   }
 
-  async function handleGoogleOAuth() {
-    const redirectUrl = `${window.location.origin}/auth/callback${isExtension ? '?ext=true' : ''}`
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: redirectUrl },
-    })
+  function handleGoogleOAuth() {
+    window.location.href = `/api/auth/google${isExtension ? '?ext=true' : ''}`
   }
 
   return (

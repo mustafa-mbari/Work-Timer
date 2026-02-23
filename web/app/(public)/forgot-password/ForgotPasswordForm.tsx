@@ -4,7 +4,6 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { CheckCircle } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -25,17 +24,19 @@ export default function ForgotPasswordForm() {
   const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const supabase = createClient()
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setLoading(true)
 
     try {
-      const redirectTo = `${window.location.origin}/auth/callback?next=/reset-password`
-      const { error: authError } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
-      if (authError) throw authError
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Failed to send reset email')
       setSent(true)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to send reset email'

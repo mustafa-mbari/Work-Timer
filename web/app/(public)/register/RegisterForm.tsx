@@ -4,7 +4,6 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -31,20 +30,18 @@ export default function RegisterForm() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const supabase = createClient()
-
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
 
     try {
-      const redirectUrl = `${window.location.origin}/auth/callback${isExtension ? '?ext=true' : ''}`
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { emailRedirectTo: redirectUrl },
+      const res = await fetch('/api/auth/sign-up', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, ext: isExtension }),
       })
-      if (error) throw error
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Registration failed')
 
       router.push(`/verify-email?email=${encodeURIComponent(email)}`)
     } catch (err) {
@@ -55,12 +52,8 @@ export default function RegisterForm() {
     }
   }
 
-  async function handleGoogleOAuth() {
-    const redirectUrl = `${window.location.origin}/auth/callback${isExtension ? '?ext=true' : ''}`
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: redirectUrl },
-    })
+  function handleGoogleOAuth() {
+    window.location.href = `/api/auth/google${isExtension ? '?ext=true' : ''}`
   }
 
   return (
