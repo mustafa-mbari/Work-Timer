@@ -13,24 +13,59 @@ export default function ExtensionBridge({ accessToken, refreshToken }: Extension
   useEffect(() => {
     let done = false
 
-    const timer = setTimeout(() => {
-      if (!done) {
-        done = true
-        setStatus('timeout')
-      }
-    }, 8000)
+    const succeed = () => {
+      if (done) return
+      done = true
+      clearTimeout(timer)
+      clearInterval(retryInterval)
+      window.removeEventListener('message', handleMessage)
+      setStatus('success')
+    }
 
+    const fail = (reason?: string) => {
+      if (done) return
+      done = true
+      clearTimeout(timer)
+      clearInterval(retryInterval)
+      window.removeEventListener('message', handleMessage)
+      if (reason) console.error('[Extension Bridge]', reason)
+      setStatus('timeout')
+    }
+
+    // Timeout after 8 seconds
+    const timer = setTimeout(() => fail('Timed out'), 8000)
+
+    // --- Approach 1: Direct chrome.runtime.sendMessage (works when extension ID matches) ---
+    const extensionId = process.env.NEXT_PUBLIC_EXTENSION_ID
+    if (extensionId && typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+      try {
+        chrome.runtime.sendMessage(
+          extensionId,
+          { action: 'AUTH_LOGIN', accessToken, refreshToken },
+          (response: { success?: boolean; error?: string }) => {
+            if (chrome.runtime.lastError) {
+              // Extension ID didn't match or extension not installed — fall through to Approach 2
+              console.warn('[Extension Bridge] Direct sendMessage failed:', chrome.runtime.lastError.message)
+              return
+            }
+            if (response?.success) {
+              succeed()
+            }
+          }
+        )
+      } catch {
+        // chrome.runtime.sendMessage not available — continue with Approach 2
+      }
+    }
+
+    // --- Approach 2: postMessage via content script (works with any extension installation) ---
     const handleMessage = (event: MessageEvent) => {
       if (event.source !== window) return
       if (event.data?.type === 'WORK_TIMER_AUTH_RESPONSE') {
-        done = true
-        clearTimeout(timer)
-        clearInterval(retryInterval)
         if (event.data.success) {
-          setStatus('success')
+          succeed()
         } else {
-          console.error('[Extension Bridge] Auth failed:', event.data.error)
-          setStatus('timeout')
+          fail('Auth failed: ' + event.data.error)
         }
       }
     }
@@ -46,7 +81,7 @@ export default function ExtensionBridge({ accessToken, refreshToken }: Extension
       }, '*')
     }
 
-    // Send immediately, then retry every 500ms — content script may load after React
+    // Retry every 500ms — content script may load after React
     sendAuth()
     const retryInterval = setInterval(sendAuth, 500)
 
