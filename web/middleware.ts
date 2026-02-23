@@ -46,7 +46,13 @@ export async function middleware(request: NextRequest) {
   )
 
   // Refresh session — required for @supabase/ssr
-  const { data: { user } } = await supabase.auth.getUser()
+  let user = null
+  try {
+    const { data } = await supabase.auth.getUser()
+    user = data.user
+  } catch {
+    // Network error (e.g., Supabase blocked by corporate proxy) — treat as unauthenticated
+  }
 
   // Protect authenticated routes
   const protectedPaths = ['/dashboard', '/billing', '/analytics']
