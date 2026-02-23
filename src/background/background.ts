@@ -1173,27 +1173,23 @@ chrome.runtime.onMessageExternal.addListener(
             return
           }
 
-          // Same account, first login, or no local data — proceed normally
+          // Same account, first login, or no local data — respond immediately, then do heavy work
           await setLocalUserId(session.userId)
-          // Fetch and cache subscription immediately after login
+          sendResponse({ success: true })
+
+          // Heavy async work runs in background after response
           await refreshSubscription().catch(() => null)
-          // Schedule alarms
           await chrome.alarms.create(SUBSCRIPTION_ALARM, { periodInMinutes: 60 })
           await chrome.alarms.create(SYNC_ALARM, { periodInMinutes: 15 })
           await chrome.alarms.create(STATS_SYNC_ALARM, { periodInMinutes: 60 })
 
-          // First-time login with existing offline data — upload it
           if (!localUserId && hasData) {
             await uploadAllLocalData().catch(() => null)
           }
 
-          // Initial sync
           void syncAll().catch(() => null)
-          // Push aggregate stats on login
           void pushUserStats().catch(() => null)
-          // Start Realtime subscriptions
           setupRealtime(session.userId)
-          sendResponse({ success: true })
         } else {
           sendResponse({ success: false, error: 'Failed to apply session' })
         }
