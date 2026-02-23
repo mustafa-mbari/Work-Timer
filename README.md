@@ -110,7 +110,7 @@ Work-Timer/
     utils/              # Helpers (date/time, export, logger, etc.)
     constants/          # Colors, timers, styles
     types/              # TypeScript interfaces
-  web/                  # Companion Website (Next.js 15)
+  web/                  # Companion Website (Next.js 16)
     app/                # App Router pages + API routes
     components/         # UI components (shadcn/ui)
     lib/
@@ -143,7 +143,7 @@ Work-Timer/
 ### Companion Website
 | Technology | Purpose |
 |-----------|---------|
-| Next.js 15 + React 19 | Server-side rendering + API routes |
+| Next.js 16 + React 19 | Server-side rendering + API routes |
 | shadcn/ui | UI component library |
 | TailwindCSS v4 | Matching design system |
 | Supabase (SSR + service role) | Auth + database |
@@ -188,6 +188,7 @@ npm run lint
 - **Optimized sync**: Conditional pull via `has_changes_since()` RPC, single multiplexed Realtime channel (1 connection per user), 15-minute periodic sync with debounced entry saves (~150-300 queries/user/day, ~97 KB egress/day).
 - **Webhook idempotency**: Stripe events deduplicated via `stripe_events` table.
 - **Input validation**: All API routes validated with Zod schemas.
+- **Corporate proxy safe**: Static assets served from trusted CDN domain via `assetPrefix`; all auth flows use server-side API routes (no browser-to-Supabase calls); extension bridge uses content script relay (no extension ID dependency).
 
 ---
 
