@@ -38,52 +38,52 @@ export default function SessionsTab({ initialCursors }: Props) {
       // Fetch session from server-side API (avoids browser→Supabase call blocked by corporate proxies)
       const res = await fetch('/api/auth/session')
       if (!res.ok) {
-        const msg = 'No active session. Please log in again.'
-        setBridgeError(msg)
+        setBridgeError('No active session. Please log in again.')
         setBridgeStatus('failed')
         return
       }
 
       const { accessToken, refreshToken } = await res.json()
+      let done = false
 
-      let resolved = false
-      const timeout = setTimeout(() => {
-        if (!resolved) {
-          resolved = true
-          window.removeEventListener('message', handler)
-          const msg = 'Extension not detected. Make sure it is installed, enabled, and you have reloaded it with the latest version.'
-          setBridgeError(msg)
+      const cleanup = () => {
+        done = true
+        clearTimeout(timer)
+        clearInterval(retryInterval)
+        window.removeEventListener('message', handler)
+      }
+
+      const handler = (event: MessageEvent) => {
+        if (event.source !== window || event.data?.type !== 'WORK_TIMER_AUTH_RESPONSE') return
+        cleanup()
+        if (event.data.success) {
+          setBridgeStatus('success')
+          setBridgeError(null)
+          toast.success('Extension connected successfully!')
+        } else {
+          setBridgeError('Extension rejected the connection: ' + (event.data.error || 'Unknown error'))
           setBridgeStatus('failed')
-        }
-      }, 5000)
-
-      function handler(event: MessageEvent) {
-        if (event.source !== window) return
-        if (event.data?.type === 'WORK_TIMER_AUTH_RESPONSE') {
-          resolved = true
-          clearTimeout(timeout)
-          window.removeEventListener('message', handler)
-          if (event.data.success) {
-            setBridgeStatus('success')
-            setBridgeError(null)
-            toast.success('Extension connected successfully!')
-          } else {
-            const msg = 'Extension rejected the connection: ' + (event.data.error || 'Unknown error')
-            setBridgeError(msg)
-            setBridgeStatus('failed')
-          }
         }
       }
 
+      const timer = setTimeout(() => {
+        if (!done) {
+          cleanup()
+          setBridgeError('Extension not detected. Make sure it is installed, enabled, and you have reloaded it with the latest version.')
+          setBridgeStatus('failed')
+        }
+      }, 8000)
+
       window.addEventListener('message', handler)
-      window.postMessage({
-        type: 'WORK_TIMER_AUTH',
-        accessToken,
-        refreshToken,
-      }, '*')
+
+      // Retry every 500ms — content script may load after React hydration
+      const sendAuth = () => {
+        if (!done) window.postMessage({ type: 'WORK_TIMER_AUTH', accessToken, refreshToken }, '*')
+      }
+      sendAuth()
+      const retryInterval = setInterval(sendAuth, 500)
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to get session'
-      setBridgeError(msg)
+      setBridgeError(err instanceof Error ? err.message : 'Failed to get session')
       setBridgeStatus('failed')
     }
   }, [])

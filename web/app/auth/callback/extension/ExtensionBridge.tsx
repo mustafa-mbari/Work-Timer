@@ -11,14 +11,21 @@ export default function ExtensionBridge({ accessToken, refreshToken }: Extension
   const [status, setStatus] = useState<'connecting' | 'success' | 'timeout'>('connecting')
 
   useEffect(() => {
+    let done = false
+
     const timer = setTimeout(() => {
-      setStatus('timeout')
-    }, 5000)
+      if (!done) {
+        done = true
+        setStatus('timeout')
+      }
+    }, 8000)
 
     const handleMessage = (event: MessageEvent) => {
       if (event.source !== window) return
       if (event.data?.type === 'WORK_TIMER_AUTH_RESPONSE') {
+        done = true
         clearTimeout(timer)
+        clearInterval(retryInterval)
         if (event.data.success) {
           setStatus('success')
         } else {
@@ -30,15 +37,23 @@ export default function ExtensionBridge({ accessToken, refreshToken }: Extension
 
     window.addEventListener('message', handleMessage)
 
-    // Send auth tokens via postMessage — the content script relays to background
-    window.postMessage({
-      type: 'WORK_TIMER_AUTH',
-      accessToken,
-      refreshToken,
-    }, '*')
+    const sendAuth = () => {
+      if (done) return
+      window.postMessage({
+        type: 'WORK_TIMER_AUTH',
+        accessToken,
+        refreshToken,
+      }, '*')
+    }
+
+    // Send immediately, then retry every 500ms — content script may load after React
+    sendAuth()
+    const retryInterval = setInterval(sendAuth, 500)
 
     return () => {
+      done = true
       clearTimeout(timer)
+      clearInterval(retryInterval)
       window.removeEventListener('message', handleMessage)
     }
   }, [accessToken, refreshToken])
