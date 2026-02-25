@@ -33,8 +33,8 @@ export function useTags() {
       return 0
     })
 
-  const create = useCallback(async (name: string) => {
-    const tag: Tag = { id: generateId(), name }
+  const create = useCallback(async (name: string, color?: string) => {
+    const tag: Tag = { id: generateId(), name, color: color ?? '#6366F1' }
     const current = await getTags()
     await saveTags([...current, tag])
     await fetch()

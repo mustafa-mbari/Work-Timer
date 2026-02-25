@@ -6,14 +6,16 @@ export async function getEarningsReport(
   userId: string,
   dateFrom?: string,
   dateTo?: string,
+  groupBy: 'tag' | 'project' = 'tag',
 ): Promise<EarningsReport> {
-  return getEarningsReportRepo(userId, dateFrom, dateTo)
+  return getEarningsReportRepo(userId, dateFrom, dateTo, groupBy)
 }
 
 export function formatEarningsCsv(data: EarningsReport): string {
+  const label = data.group_by === 'tag' ? 'Tag' : 'Project'
   const rows: string[] = []
-  rows.push('Project,Hours,Rate,Total,Currency')
-  for (const p of data.projects) {
+  rows.push(`${label},Hours,Rate,Total,Currency`)
+  for (const p of data.items) {
     const name = p.name.includes(',') ? `"${p.name}"` : p.name
     rows.push(`${name},${p.hours},${p.rate},${p.total},${data.currency}`)
   }

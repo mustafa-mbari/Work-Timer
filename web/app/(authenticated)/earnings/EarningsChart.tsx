@@ -16,9 +16,9 @@ import {
 interface DailyEarningRaw {
   date: string
   total: number
-  project_id?: string
-  project_name?: string
-  project_color?: string
+  item_id?: string
+  item_name?: string
+  item_color?: string
 }
 
 interface Props {
@@ -42,7 +42,7 @@ export default function EarningsChart({ data, currencySymbol }: Props) {
   // Selected project IDs (or TOTAL_KEY). null = all projects selected initially.
   const [selected, setSelected] = useState<Set<string> | null>(null)
 
-  const hasProjectData = data.length > 0 && !!data[0].project_id
+  const hasProjectData = data.length > 0 && !!data[0].item_id
 
   // Extract unique projects
   const projects = useMemo(() => {
@@ -51,9 +51,9 @@ export default function EarningsChart({ data, currencySymbol }: Props) {
     }
     const seen = new Map<string, { name: string; color: string }>()
     for (const d of data) {
-      const pid = d.project_id!
+      const pid = d.item_id!
       if (!seen.has(pid)) {
-        seen.set(pid, { name: d.project_name!, color: d.project_color || FALLBACK_COLOR })
+        seen.set(pid, { name: d.item_name!, color: d.item_color || FALLBACK_COLOR })
       }
     }
     return Array.from(seen.entries()).map(([id, info]) => ({
@@ -98,7 +98,7 @@ export default function EarningsChart({ data, currencySymbol }: Props) {
     }
 
     const allNames = hasProjectData
-      ? [...new Set(filtered.map(d => d.project_name!))]
+      ? [...new Set(filtered.map(d => d.item_name!))]
       : ['Total']
 
     const byDate = new Map<string, Record<string, number>>()
@@ -110,7 +110,7 @@ export default function EarningsChart({ data, currencySymbol }: Props) {
         byDate.set(d.date, row)
       }
       const row = byDate.get(d.date)!
-      const key = hasProjectData ? d.project_name! : 'Total'
+      const key = hasProjectData ? d.item_name! : 'Total'
       row[key] = (row[key] ?? 0) + d.total
       // Accumulate total line
       if (showTotal && hasProjectData) {

@@ -94,12 +94,26 @@ export default function TimerView() {
     }
   }, [pomodoroState.active])
 
+  // Auto-select linked tag when project changes
+  const handleProjectChange = (projectId: string | null) => {
+    setSelectedProjectId(projectId)
+    if (projectId) {
+      const project = activeProjects.find(p => p.id === projectId)
+      if (project?.defaultTagId) {
+        setSelectedTagId(project.defaultTagId)
+      }
+    }
+  }
+
   // Auto-select default project when not running and no project chosen yet
   useEffect(() => {
     if (!isActive && selectedProjectId === null && activeProjects.length > 0) {
       const defaultProject = activeProjects.find(p => p.isDefault)
       if (defaultProject) {
         setSelectedProjectId(defaultProject.id) // eslint-disable-line react-hooks/set-state-in-effect
+        if (defaultProject.defaultTagId) {
+          setSelectedTagId(defaultProject.defaultTagId) // eslint-disable-line react-hooks/set-state-in-effect
+        }
       }
     }
   }, [activeProjects, isActive, selectedProjectId])
@@ -471,7 +485,7 @@ export default function TimerView() {
             <ProjectSelector
               projects={activeProjects}
               selectedId={selectedProjectId}
-              onChange={setSelectedProjectId}
+              onChange={handleProjectChange}
               disabled={false}
             />
           </div>
@@ -727,7 +741,7 @@ export default function TimerView() {
         <ProjectSelector
           projects={activeProjects}
           selectedId={selectedProjectId}
-          onChange={setSelectedProjectId}
+          onChange={handleProjectChange}
           disabled={isActive}
         />
       )}

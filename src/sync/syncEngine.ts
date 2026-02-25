@@ -272,7 +272,7 @@ export async function pullDelta(): Promise<void> {
     // Pull projects (only columns needed by dbProjectToLocal + deleted_at)
     const { data: remoteProjects } = await supabase
       .from('projects')
-      .select('id, name, color, target_hours, archived, created_at, is_default, sort_order, deleted_at')
+      .select('id, name, color, target_hours, archived, created_at, is_default, default_tag_id, sort_order, deleted_at')
       .eq('user_id', session.userId)
       .gt('updated_at', since)
       .range(0, 49999)
@@ -304,7 +304,7 @@ export async function pullDelta(): Promise<void> {
     // Pull tags (only columns needed by dbTagToLocal + deleted_at)
     const { data: remoteTags } = await supabase
       .from('tags')
-      .select('id, name, is_default, sort_order, deleted_at')
+      .select('id, name, color, is_default, sort_order, deleted_at')
       .eq('user_id', session.userId)
       .gt('updated_at', since)
       .range(0, 49999)

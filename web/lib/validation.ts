@@ -128,6 +128,7 @@ export const updateProjectSchema = z.object({
   target_hours: z.number().min(0).max(10000).nullable().optional(),
   hourly_rate: z.number().min(0).max(10000).nullable().optional(),
   earnings_enabled: z.boolean().optional(),
+  default_tag_id: z.string().max(50).nullable().optional(),
   archived: z.boolean().optional(),
 })
 
@@ -142,7 +143,10 @@ export const createTagSchema = z.object({
 })
 
 export const updateTagSchema = z.object({
-  name: z.string().min(1).max(50),
+  name: z.string().min(1).max(50).optional(),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  hourly_rate: z.number().min(0).max(10000).nullable().optional(),
+  earnings_enabled: z.boolean().optional(),
 })
 
 // --- Analytics filters ---

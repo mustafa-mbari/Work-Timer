@@ -3,7 +3,8 @@ import { createServiceClient } from '@/lib/supabase/server'
 export type EarningsReport = {
   currency: string
   default_rate: number
-  projects: Array<{
+  group_by: 'tag' | 'project'
+  items: Array<{
     id: string
     name: string
     color: string
@@ -13,17 +14,18 @@ export type EarningsReport = {
   }>
   grand_total: number
   total_hours: number
-  total_projects: number
-  daily_earnings: Array<{ date: string; project_id: string; project_name: string; project_color: string; total: number }> | null
+  total_items: number
+  daily_earnings: Array<{ date: string; item_id: string; item_name: string; item_color: string; total: number }> | null
 }
 
 export async function getEarningsReport(
   userId: string,
   dateFrom?: string,
   dateTo?: string,
+  groupBy: 'tag' | 'project' = 'tag',
 ): Promise<EarningsReport> {
   const supabase = await createServiceClient()
-  const args: Record<string, string> = { p_user_id: userId }
+  const args: Record<string, string> = { p_user_id: userId, p_group_by: groupBy }
   if (dateFrom) args.p_date_from = dateFrom
   if (dateTo) args.p_date_to = dateTo
 

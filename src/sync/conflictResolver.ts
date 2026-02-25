@@ -57,6 +57,7 @@ export function dbProjectToLocal(db: DbProject): Project {
     createdAt: db.created_at,
     isDefault: db.is_default ?? false,
     order: db.sort_order ?? undefined,
+    defaultTagId: db.default_tag_id ?? undefined,
   }
 }
 
@@ -70,6 +71,7 @@ export function localProjectToDb(project: Project, userId: string): Partial<DbPr
     target_hours: project.targetHours ?? null,
     archived: project.archived,
     is_default: project.isDefault ?? false,
+    default_tag_id: project.defaultTagId ?? null,
     sort_order: project.order ?? null,
     created_at: project.createdAt,
     updated_at: new Date().toISOString(),
@@ -81,6 +83,7 @@ export function dbTagToLocal(db: DbTag): Tag {
   return {
     id: db.id,
     name: db.name,
+    color: db.color ?? '#6366F1',
     isDefault: db.is_default ?? false,
     order: db.sort_order ?? undefined,
   }
@@ -92,6 +95,7 @@ export function localTagToDb(tag: Tag, userId: string): Partial<DbTag> {
     id: tag.id,
     user_id: userId,
     name: tag.name,
+    color: tag.color ?? '#6366F1',
     is_default: tag.isDefault ?? false,
     sort_order: tag.order ?? null,
     updated_at: new Date().toISOString(),

@@ -12,7 +12,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   const parsed = parseBody(updateTagSchema, body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error }, { status: 400 })
 
-  const { error } = await updateTag(user.id, id, parsed.data.name)
+  const { error } = await updateTag(user.id, id, parsed.data)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   return NextResponse.json({ success: true })

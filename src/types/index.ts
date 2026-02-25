@@ -29,11 +29,13 @@ export interface Project {
   createdAt: number
   isDefault?: boolean
   order?: number
+  defaultTagId?: string | null
 }
 
 export interface Tag {
   id: string
   name: string
+  color: string // Hex color
   isDefault?: boolean
   order?: number
   archived?: boolean

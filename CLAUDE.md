@@ -131,8 +131,8 @@ The `ExtensionBridge.tsx` component retries postMessage every 500ms for 8s to ha
 
 Core types in `src/types/`:
 - **TimeEntry** -- id, date, startTime, endTime, duration (ms), projectId, taskId, description, type, tags, link
-- **Project** -- id, name, color (hex), targetHours, archived, createdAt
-- **Tag** -- id, name
+- **Project** -- id, name, color (hex), targetHours, archived, createdAt, defaultTagId
+- **Tag** -- id, name, color (hex)
 - **Settings** -- workingDays, weekStartDay, idleTimeout, theme, language, notifications, dailyTarget, weeklyTarget, pomodoroConfig
 
 ### Database
@@ -145,6 +145,9 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 
 **Repositories** (typed Supabase queries, no `as any` on selects):
 - `profiles.ts`, `subscriptions.ts`, `promoCodes.ts`, `domains.ts`, `syncCursors.ts` -- CRUD operations
+- `projects.ts` -- CRUD + reorder + default tag linking (`default_tag_id`)
+- `tags.ts` -- CRUD + reorder + color + hourly rate + earnings toggle
+- `earnings.ts` -- `get_earnings_report` RPC with `groupBy` parameter ('tag' | 'project')
 - `admin.ts` -- RPC calls (`get_platform_stats`, `get_active_users`, `get_user_growth`, etc.) + auth admin
 - `analytics.ts` -- `get_user_analytics` RPC
 
@@ -152,6 +155,7 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 - `auth.ts` -- `requireAuth()`, `getUser()` (React `cache()` wrapped), `requireAdminApi()`, `requireAuthApi()`
 - `analytics.ts` -- `getAdminStats()` (aggregates 11 RPC calls)
 - `billing.ts` -- checkout/portal helpers
+- `earnings.ts` -- `getEarningsReport()` with groupBy passthrough, `formatEarningsCsv()`
 
 ### Performance Optimizations
 
@@ -183,6 +187,26 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 - **Periodic**: `chrome.alarms` every 15 minutes + debounced sync on entry saves (10s timer)
 - **Initial upload**: Batch upload with per-batch retry (1 retry, 1s backoff)
 - **Data transfer**: ~97 KB egress/user/day, ~150-300 queries/user/day
+
+### Earnings System
+
+Earnings are **tag-based** (not project-based). Each tag can have:
+- `color` -- Hex color for display (default `#6366F1`)
+- `hourly_rate` -- Per-tag rate (null = use default from user_settings)
+- `earnings_enabled` -- Whether included in earnings calculations
+
+**Project-tag linking**: Each project can have one `default_tag_id`. When the user selects a project in the timer, the linked tag auto-selects. Managed via:
+- Extension: SettingsView project dots menu "Link Default Tag"
+- Website: ProjectsCard link icon (chain) with tag selector dropdown
+
+**Earnings reports** (`get_earnings_report` RPC):
+- Accepts `p_group_by` parameter: `'tag'` (default) or `'project'`
+- Tag mode: Joins `time_entries.tags[]` array with `tags` table via `ANY(te.tags)` and `CROSS JOIN LATERAL unnest(te.tags)`
+- Project mode: Joins via `time_entries.project_id` (backward compatible)
+- Returns unified shape: `items[]`, `grand_total`, `total_hours`, `total_items`, `daily_earnings[]` with generic keys (`item_id`, `item_name`, `item_color`)
+- Website earnings page has a "By Tag" / "By Project" toggle (`GroupByToggle` component, `?groupBy=project` search param)
+
+**Migration**: `supabase/migrations/024_earnings_to_tags.sql` -- adds tag columns, project `default_tag_id`, replaces RPC
 
 ### Security
 

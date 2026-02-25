@@ -69,7 +69,7 @@ export default function EarningsSettingsTab({ settings }: Props) {
         <CardHeader>
           <CardTitle>Default Hourly Rate</CardTitle>
           <CardDescription>
-            Set your default rate for earnings calculations. Individual projects can override this.
+            Set your default rate for earnings calculations. Individual tags can override this.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -87,7 +87,7 @@ export default function EarningsSettingsTab({ settings }: Props) {
                 placeholder="e.g. 75.00"
               />
               <p className="text-xs text-stone-400 dark:text-stone-500">
-                Used for projects without a specific rate
+                Used for tags without a specific rate
               </p>
             </div>
             <div className="space-y-1.5">

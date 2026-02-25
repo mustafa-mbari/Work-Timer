@@ -2,9 +2,14 @@
 
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { Tag, Star, Pencil, Trash2, GripVertical, Plus, Check, X } from 'lucide-react'
+import { Tag, Star, Pencil, Trash2, GripVertical, Plus, Check, X, DollarSign } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { TagFull } from '@/lib/repositories/tags'
+
+const TAG_COLORS = [
+  '#6366F1', '#F43F5E', '#10B981', '#F59E0B', '#A855F7',
+  '#EC4899', '#06B6D4', '#F97316', '#3B82F6', '#14B8A6',
+]
 
 function generateId(): string {
   return Math.random().toString(36).slice(2, 11) + Date.now().toString(36)
@@ -12,14 +17,19 @@ function generateId(): string {
 
 interface Props {
   initialTags: TagFull[]
+  defaultHourlyRate?: number | null
+  currency?: string
 }
 
-export default function TagsCard({ initialTags }: Props) {
+export default function TagsCard({ initialTags, defaultHourlyRate, currency = 'USD' }: Props) {
   const [tags, setTags] = useState<TagFull[]>(initialTags)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
+  const [editColor, setEditColor] = useState('')
+  const [editRate, setEditRate] = useState('')
   const [showAddForm, setShowAddForm] = useState(false)
   const [newName, setNewName] = useState('')
+  const [newColor, setNewColor] = useState(TAG_COLORS[0]!)
   const [saving, setSaving] = useState(false)
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [dragOverId, setDragOverId] = useState<string | null>(null)
@@ -89,19 +99,22 @@ export default function TagsCard({ initialTags }: Props) {
   function startEdit(tag: TagFull) {
     setEditingId(tag.id)
     setEditName(tag.name)
+    setEditColor(tag.color)
+    setEditRate(tag.hourly_rate != null ? String(tag.hourly_rate) : '')
   }
 
   async function saveEdit(id: string) {
     if (!editName.trim()) return
     setSaving(true)
+    const parsedRate = editRate.trim() === '' ? null : parseFloat(editRate)
     const prev = tags
-    setTags(tags.map(t => t.id === id ? { ...t, name: editName.trim() } : t))
+    setTags(tags.map(t => t.id === id ? { ...t, name: editName.trim(), color: editColor, hourly_rate: parsedRate } : t))
     setEditingId(null)
 
     const res = await fetch(`/api/tags/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: editName.trim() }),
+      body: JSON.stringify({ name: editName.trim(), color: editColor, hourly_rate: parsedRate }),
     })
     setSaving(false)
     if (!res.ok) {
@@ -133,18 +146,22 @@ export default function TagsCard({ initialTags }: Props) {
     const newTag: TagFull = {
       id,
       name: newName.trim(),
+      color: newColor,
       is_default: false,
       sort_order: tags.length,
+      hourly_rate: null,
+      earnings_enabled: false,
     }
     const prev = tags
     setTags([...tags, newTag])
     setNewName('')
+    setNewColor(TAG_COLORS[0]!)
     setShowAddForm(false)
 
     const res = await fetch('/api/tags', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, name: newTag.name }),
+      body: JSON.stringify({ id, name: newTag.name, color: newTag.color }),
     })
     setSaving(false)
     if (!res.ok) {
@@ -153,6 +170,23 @@ export default function TagsCard({ initialTags }: Props) {
       toast.error(data.error ?? 'Failed to create tag')
       setShowAddForm(true)
       setNewName(newTag.name)
+      setNewColor(newTag.color)
+    }
+  }
+
+  // --- Toggle Earnings ---
+
+  async function handleToggleEarnings(id: string, current: boolean) {
+    const prev = tags
+    setTags(tags.map(t => t.id === id ? { ...t, earnings_enabled: !current } : t))
+    const res = await fetch(`/api/tags/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ earnings_enabled: !current }),
+    })
+    if (!res.ok) {
+      setTags(prev)
+      toast.error('Failed to update earnings setting')
     }
   }
 
@@ -175,7 +209,7 @@ export default function TagsCard({ initialTags }: Props) {
           size="sm"
           variant="ghost"
           className="h-8 w-8 p-0 rounded-lg"
-          onClick={() => { setShowAddForm(!showAddForm); setNewName('') }}
+          onClick={() => { setShowAddForm(!showAddForm); setNewName(''); setNewColor(TAG_COLORS[0]!) }}
           title="Add tag"
         >
           <Plus className="h-4 w-4" />
@@ -186,7 +220,7 @@ export default function TagsCard({ initialTags }: Props) {
         {/* Add form */}
         {showAddForm && (
           <div className="px-5 py-3 border-b border-stone-100 dark:border-[var(--dark-border)] bg-stone-50 dark:bg-[var(--dark-elevated)]">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mb-2">
               <input
                 type="text"
                 value={newName}
@@ -209,6 +243,18 @@ export default function TagsCard({ initialTags }: Props) {
               >
                 <X className="h-4 w-4" />
               </button>
+            </div>
+            {/* Color picker */}
+            <div className="flex items-center gap-1.5">
+              {TAG_COLORS.map(c => (
+                <button
+                  key={c}
+                  onClick={() => setNewColor(c)}
+                  className={`h-5 w-5 rounded-full transition-transform ${newColor === c ? 'ring-2 ring-offset-1 ring-stone-400 scale-110' : 'hover:scale-110'}`}
+                  style={{ backgroundColor: c }}
+                  title={c}
+                />
+              ))}
             </div>
           </div>
         )}
@@ -233,33 +279,63 @@ export default function TagsCard({ initialTags }: Props) {
               } ${dragOverId === tag.id ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'hover:bg-stone-50 dark:hover:bg-[var(--dark-hover)]'}`}
             >
               {/* Drag handle */}
-              <GripVertical className="h-4 w-4 text-stone-300 dark:text-stone-600 cursor-grab flex-shrink-0 opacity-0 group-hover:opacity-100" />
+              <GripVertical className="h-4 w-4 text-stone-300 dark:text-stone-600 cursor-grab flex-shrink-0" />
 
-              {/* Tag indicator */}
-              <Tag className="h-3 w-3 text-stone-300 dark:text-stone-600 flex-shrink-0" />
+              {/* Color dot */}
+              <span
+                className="h-3 w-3 rounded-full flex-shrink-0"
+                style={{ backgroundColor: tag.color ?? '#6366F1' }}
+              />
 
               {/* Name / Edit inline */}
               {editingId === tag.id ? (
-                <div className="flex-1 flex items-center gap-1.5 min-w-0">
-                  <input
-                    type="text"
-                    value={editName}
-                    onChange={e => setEditName(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') saveEdit(tag.id); if (e.key === 'Escape') setEditingId(null) }}
-                    autoFocus
-                    className="flex-1 text-sm bg-white dark:bg-[var(--dark-card)] border border-emerald-400 rounded-md px-2 py-0.5 text-stone-800 dark:text-stone-100 focus:outline-none min-w-0"
-                  />
-                  <button onClick={() => saveEdit(tag.id)} disabled={saving} className="text-emerald-500 hover:text-emerald-700 flex-shrink-0">
-                    <Check className="h-3.5 w-3.5" />
-                  </button>
-                  <button onClick={() => setEditingId(null)} className="text-stone-400 hover:text-stone-600 flex-shrink-0">
-                    <X className="h-3.5 w-3.5" />
-                  </button>
+                <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={e => setEditName(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') saveEdit(tag.id); if (e.key === 'Escape') setEditingId(null) }}
+                      autoFocus
+                      className="flex-1 text-sm bg-white dark:bg-[var(--dark-card)] border border-emerald-400 rounded-md px-2 py-0.5 text-stone-800 dark:text-stone-100 focus:outline-none min-w-0"
+                    />
+                    <input
+                      type="number"
+                      value={editRate}
+                      onChange={e => setEditRate(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') saveEdit(tag.id); if (e.key === 'Escape') setEditingId(null) }}
+                      placeholder={defaultHourlyRate ? `Default (${defaultHourlyRate})` : 'Rate/hr'}
+                      min="0"
+                      step="0.01"
+                      className="w-24 text-sm bg-white dark:bg-[var(--dark-card)] border border-stone-300 dark:border-[var(--dark-border)] rounded-md px-2 py-0.5 text-stone-800 dark:text-stone-100 placeholder-stone-400 focus:outline-none focus:border-emerald-400 flex-shrink-0"
+                    />
+                    <button onClick={() => saveEdit(tag.id)} disabled={saving} className="text-emerald-500 hover:text-emerald-700 flex-shrink-0">
+                      <Check className="h-3.5 w-3.5" />
+                    </button>
+                    <button onClick={() => setEditingId(null)} className="text-stone-400 hover:text-stone-600 flex-shrink-0">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    {TAG_COLORS.map(c => (
+                      <button
+                        key={c}
+                        onClick={() => setEditColor(c)}
+                        className={`h-4 w-4 rounded-full transition-transform ${editColor === c ? 'ring-2 ring-offset-1 ring-stone-400 scale-110' : 'hover:scale-110'}`}
+                        style={{ backgroundColor: c }}
+                      />
+                    ))}
+                  </div>
                 </div>
               ) : (
-                <span className="flex-1 text-sm text-stone-700 dark:text-stone-200 truncate">
-                  {tag.name}
-                </span>
+                <>
+                  <span className="flex-1 text-sm text-stone-700 dark:text-stone-200 truncate">
+                    {tag.name}
+                  </span>
+                  {tag.hourly_rate != null && (
+                    <span className="text-xs text-emerald-600 dark:text-emerald-400 flex-shrink-0">{currency} {tag.hourly_rate}/hr</span>
+                  )}
+                </>
               )}
 
               {/* Actions */}
@@ -271,22 +347,33 @@ export default function TagsCard({ initialTags }: Props) {
                     className={`h-6 w-6 rounded-md flex items-center justify-center transition-colors ${
                       tag.is_default
                         ? 'text-amber-400'
-                        : 'text-stone-200 dark:text-stone-700 hover:text-amber-400 opacity-0 group-hover:opacity-100'
+                        : 'text-stone-300 dark:text-stone-600 hover:text-amber-400'
                     }`}
                   >
                     <Star className={`h-3.5 w-3.5 ${tag.is_default ? 'fill-amber-400' : ''}`} />
                   </button>
                   <button
+                    onClick={() => handleToggleEarnings(tag.id, tag.earnings_enabled as boolean)}
+                    title={(tag.earnings_enabled as boolean) ? 'Exclude from earnings' : 'Include in earnings'}
+                    className={`h-6 w-6 rounded-md flex items-center justify-center transition-colors ${
+                      (tag.earnings_enabled as boolean)
+                        ? 'text-emerald-500'
+                        : 'text-stone-300 dark:text-stone-600 hover:text-emerald-400'
+                    }`}
+                  >
+                    <DollarSign className="h-3.5 w-3.5" />
+                  </button>
+                  <button
                     onClick={() => startEdit(tag)}
                     title="Edit"
-                    className="h-6 w-6 rounded-md flex items-center justify-center text-stone-300 dark:text-stone-600 hover:text-stone-600 dark:hover:text-stone-300 opacity-0 group-hover:opacity-100 transition-colors"
+                    className="h-6 w-6 rounded-md flex items-center justify-center text-stone-300 dark:text-stone-600 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
                   >
                     <Pencil className="h-3 w-3" />
                   </button>
                   <button
                     onClick={() => handleDelete(tag.id)}
                     title="Delete"
-                    className="h-6 w-6 rounded-md flex items-center justify-center text-stone-300 dark:text-stone-600 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-colors"
+                    className="h-6 w-6 rounded-md flex items-center justify-center text-stone-300 dark:text-stone-600 hover:text-rose-500 transition-colors"
                   >
                     <Trash2 className="h-3 w-3" />
                   </button>

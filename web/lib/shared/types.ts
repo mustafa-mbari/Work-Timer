@@ -39,6 +39,7 @@ export interface DbProject {
   archived: boolean
   is_default: boolean
   sort_order: number | null
+  default_tag_id: string | null  // Linked default tag for auto-selection
   created_at: number          // Unix ms timestamp — matches local Project.createdAt
   updated_at: string          // TIMESTAMPTZ for sync cursor comparison
   deleted_at: string | null   // Soft delete
@@ -48,6 +49,9 @@ export interface DbTag {
   id: string
   user_id: string
   name: string
+  color: string               // Hex color, default '#6366F1'
+  hourly_rate: number | null   // Per-tag rate, null = use default
+  earnings_enabled: boolean    // Whether included in earnings
   is_default: boolean
   sort_order: number | null
   created_at: string
@@ -248,6 +252,7 @@ interface DbProjectInsert {
   archived?: boolean
   is_default?: boolean
   sort_order?: number | null
+  default_tag_id?: string | null
   created_at?: number
   updated_at?: string
   deleted_at?: string | null
@@ -263,6 +268,7 @@ interface DbProjectUpdate {
   archived?: boolean
   is_default?: boolean
   sort_order?: number | null
+  default_tag_id?: string | null
   created_at?: number
   updated_at?: string
   deleted_at?: string | null
@@ -272,6 +278,9 @@ interface DbTagInsert {
   id: string
   user_id: string
   name: string
+  color?: string
+  hourly_rate?: number | null
+  earnings_enabled?: boolean
   is_default?: boolean
   sort_order?: number | null
   created_at?: string
@@ -282,6 +291,9 @@ interface DbTagUpdate {
   id?: string
   user_id?: string
   name?: string
+  color?: string
+  hourly_rate?: number | null
+  earnings_enabled?: boolean
   is_default?: boolean
   sort_order?: number | null
   created_at?: string
@@ -617,10 +629,11 @@ export type Database = {
         promo_id: string | null
         promo_code: string | null
       }}
-      get_earnings_report: { Args: { p_user_id: string; p_date_from?: string; p_date_to?: string }; Returns: {
+      get_earnings_report: { Args: { p_user_id: string; p_date_from?: string; p_date_to?: string; p_group_by?: string }; Returns: {
         currency: string
         default_rate: number
-        projects: Array<{
+        group_by: 'tag' | 'project'
+        items: Array<{
           id: string
           name: string
           color: string
@@ -630,8 +643,8 @@ export type Database = {
         }>
         grand_total: number
         total_hours: number
-        total_projects: number
-        daily_earnings: Array<{ date: string; project_id: string; project_name: string; project_color: string; total: number }> | null
+        total_items: number
+        daily_earnings: Array<{ date: string; item_id: string; item_name: string; item_color: string; total: number }> | null
       }}
       get_group_analytics: { Args: { p_group_id: string; p_user_id: string; p_date_from?: string; p_date_to?: string }; Returns: {
         total_hours: number

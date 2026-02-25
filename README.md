@@ -33,8 +33,10 @@ Track your work time with stopwatch, manual entry, and Pomodoro modes. Start wit
 - **Keyboard Shortcuts** -- Alt+Shift+S (start/stop), Alt+Shift+P (pause), Alt+Shift+T (open popup)
 
 ### Advanced Features
-- **Projects** -- Color-coded with inline creation, editing, and color-dot dropdown
-- **Work Types (Tags)** -- Categorize entries with custom tags via tabbed input
+- **Projects** -- Color-coded with inline creation, editing, and default tag linking
+- **Tags** -- Color-coded with earnings tracking, hourly rates, and inline management
+- **Tag-Based Earnings** -- Set hourly rates per tag, toggle earnings inclusion, view reports grouped by tag or project
+- **Default Tag per Project** -- Link a tag to a project; selecting the project auto-selects its linked tag
 - **Entry Links** -- Attach URLs to time entries (opens in new tab)
 - **Idle Detection** -- Prompt to keep or discard idle time
 - **Export** -- CSV and Excel export with auto-sized columns
@@ -50,7 +52,8 @@ Track your work time with stopwatch, manual entry, and Pomodoro modes. Start wit
 - **Multi-Device** -- Seamless cross-browser sync
 
 ### Companion Website
-- **Dashboard** -- Account overview, plan info, connected devices
+- **Dashboard** -- Account overview, project/tag management with inline editing, default tag linking
+- **Earnings** -- Tag-based earnings reports with daily charts, groupBy toggle (tag/project), CSV export
 - **Analytics** -- Weekly trends, project breakdowns, peak hours, streaks
 - **Billing** -- Subscription management, promo codes, Stripe checkout
 - **Admin Panel** -- User management, platform stats, domain whitelisting, promo codes

@@ -32,7 +32,10 @@ export default function SettingsView() {
   const [editingProject, setEditingProject] = useState<{ id: string; name: string; color: string } | null>(null)
 
   const [newTagName, setNewTagName] = useState('')
+  const [newTagColor, setNewTagColor] = useState(PROJECT_COLORS[0])
   const [editingTag, setEditingTag] = useState<{ id: string; name: string } | null>(null)
+  const [colorPickerTagId, setColorPickerTagId] = useState<string | null>(null)
+  const [linkTagProjectId, setLinkTagProjectId] = useState<string | null>(null)
 
   const [confirmArchive, setConfirmArchive] = useState<{ id: string; name: string } | null>(null)
   const [confirmDeleteProject, setConfirmDeleteProject] = useState<{ id: string; name: string } | null>(null)
@@ -190,13 +193,15 @@ export default function SettingsView() {
 
   const handleCreateTag = async () => {
     if (!newTagName.trim()) return
-    await createTag(newTagName.trim())
+    await createTag(newTagName.trim(), newTagColor)
     setNewTagName('')
+    setNewTagColor(PROJECT_COLORS[0])
   }
 
   const handleSaveTag = async () => {
     if (!editingTag || !editingTag.name.trim()) return
-    await updateTag({ id: editingTag.id, name: editingTag.name.trim() })
+    const existing = tags.find(t => t.id === editingTag.id)
+    await updateTag({ id: editingTag.id, name: editingTag.name.trim(), color: existing?.color ?? '#6366F1' })
     setEditingTag(null)
   }
 
@@ -612,6 +617,15 @@ export default function SettingsView() {
                         </span>
                         <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: project.color }} aria-hidden="true" />
                         <span className="text-sm text-stone-700 dark:text-stone-200 flex-1 min-w-0 truncate">{project.name}</span>
+                        {project.defaultTagId && (() => {
+                          const linkedTag = activeTags.find(t => t.id === project.defaultTagId)
+                          return linkedTag ? (
+                            <span className="text-[10px] font-medium text-stone-400 dark:text-stone-500 bg-stone-100 dark:bg-dark-elevated px-1.5 py-0.5 rounded-md flex-shrink-0 flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: linkedTag.color ?? '#6366F1' }} />
+                              {linkedTag.name}
+                            </span>
+                          ) : null
+                        })()}
                         {project.isDefault && (
                           <span className="text-amber-400 dark:text-amber-300 flex-shrink-0" aria-label="Default project">
                             <StarIcon className="w-3 h-3" filled />
@@ -651,6 +665,12 @@ export default function SettingsView() {
                                 Change Color
                               </button>
                               <button
+                                onClick={() => { setLinkTagProjectId(linkTagProjectId === project.id ? null : project.id); setOpenMenuId(null) }}
+                                className="w-full text-left px-3 py-2 text-xs text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-dark-hover transition-colors"
+                              >
+                                {project.defaultTagId ? 'Change Linked Tag' : 'Link Default Tag'}
+                              </button>
+                              <button
                                 onClick={() => { setConfirmArchive({ id: project.id, name: project.name }); setOpenMenuId(null) }}
                                 className="w-full text-left px-3 py-2 text-xs text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-dark-hover transition-colors"
                               >
@@ -678,6 +698,23 @@ export default function SettingsView() {
                               aria-label={`Select color ${color}`}
                             />
                           ))}
+                        </div>
+                      )}
+                      {linkTagProjectId === project.id && (
+                        <div className="px-3 pb-2.5">
+                          <select
+                            value={project.defaultTagId ?? ''}
+                            onChange={(e) => {
+                              void update({ ...project, defaultTagId: e.target.value || null })
+                              setLinkTagProjectId(null)
+                            }}
+                            className={inputClass}
+                          >
+                            <option value="">No linked tag</option>
+                            {activeTags.map(tag => (
+                              <option key={tag.id} value={tag.id}>{tag.name}</option>
+                            ))}
+                          </select>
                         </div>
                       )}
                     </div>
@@ -790,67 +827,89 @@ export default function SettingsView() {
                       onDragEnd={() => { setDraggingTagId(null); setDragOverTagId(null) }}
                       onDragOver={(e) => { e.preventDefault(); setDragOverTagId(tag.id) }}
                       onDrop={() => handleTagDrop(tag.id)}
-                      className={`flex items-center gap-2 p-2.5 rounded-xl border bg-white dark:bg-dark-card transition-colors ${
+                      className={`flex flex-col rounded-xl border bg-white dark:bg-dark-card transition-colors ${
                         dragOverTagId === tag.id
                           ? 'border-indigo-400 dark:border-indigo-500'
                           : 'border-stone-100 dark:border-dark-border'
                       } ${draggingTagId === tag.id ? 'opacity-50' : ''}`}
                     >
-                      <span
-                        className="text-stone-300 dark:text-stone-600 cursor-grab active:cursor-grabbing flex-shrink-0"
-                        aria-hidden="true"
-                      >
-                        <DragHandleIcon className="w-3.5 h-3.5" />
-                      </span>
-                      <span className="text-sm text-stone-700 dark:text-stone-200 flex-1 min-w-0 truncate">{tag.name}</span>
-                      {tag.isDefault && (
-                        <span className="text-amber-400 dark:text-amber-300 flex-shrink-0" aria-label="Default tag">
-                          <StarIcon className="w-3 h-3" filled />
-                        </span>
-                      )}
-                      <button
-                        onClick={() => setEditingTag({ id: tag.id, name: tag.name })}
-                        className="text-stone-400 dark:text-stone-500 hover:text-indigo-500 dark:hover:text-indigo-400 p-1 rounded transition-colors flex-shrink-0"
-                        aria-label={`Edit ${tag.name}`}
-                      >
-                        <PencilIcon className="w-3.5 h-3.5" />
-                      </button>
-                      <div className="relative flex-shrink-0">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setOpenTagMenuId(openTagMenuId === tag.id ? null : tag.id) }}
-                          className="text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 p-1 rounded transition-colors"
-                          aria-label={`More options for ${tag.name}`}
+                      <div className="flex items-center gap-2 p-2.5">
+                        <span
+                          className="text-stone-300 dark:text-stone-600 cursor-grab active:cursor-grabbing flex-shrink-0"
+                          aria-hidden="true"
                         >
-                          <DotsIcon className="w-3.5 h-3.5" />
-                        </button>
-                        {openTagMenuId === tag.id && (
-                          <div
-                            className="absolute right-0 top-full mt-1 z-50 bg-white dark:bg-dark-elevated rounded-xl shadow-lg border border-stone-200 dark:border-dark-border py-1 min-w-[148px]"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <button
-                              onClick={() => { void setDefaultTag(tag.id); setOpenTagMenuId(null) }}
-                              className="w-full text-left px-3 py-2 text-xs text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-dark-hover transition-colors flex items-center gap-2"
-                            >
-                              <StarIcon className="w-3 h-3" filled={!!tag.isDefault} />
-                              {tag.isDefault ? 'Remove Default' : 'Set as Default'}
-                            </button>
-                            <button
-                              onClick={() => { setConfirmArchiveTag({ id: tag.id, name: tag.name }); setOpenTagMenuId(null) }}
-                              className="w-full text-left px-3 py-2 text-xs text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-dark-hover transition-colors"
-                            >
-                              Archive
-                            </button>
-                            <div className="border-t border-stone-100 dark:border-dark-border my-1" />
-                            <button
-                              onClick={() => { setConfirmDeleteTag({ id: tag.id, name: tag.name }); setOpenTagMenuId(null) }}
-                              className="w-full text-left px-3 py-2 text-xs text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
-                            >
-                              Delete
-                            </button>
-                          </div>
+                          <DragHandleIcon className="w-3.5 h-3.5" />
+                        </span>
+                        <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: tag.color ?? '#6366F1' }} aria-hidden="true" />
+                        <span className="text-sm text-stone-700 dark:text-stone-200 flex-1 min-w-0 truncate">{tag.name}</span>
+                        {tag.isDefault && (
+                          <span className="text-amber-400 dark:text-amber-300 flex-shrink-0" aria-label="Default tag">
+                            <StarIcon className="w-3 h-3" filled />
+                          </span>
                         )}
+                        <button
+                          onClick={() => setEditingTag({ id: tag.id, name: tag.name })}
+                          className="text-stone-400 dark:text-stone-500 hover:text-indigo-500 dark:hover:text-indigo-400 p-1 rounded transition-colors flex-shrink-0"
+                          aria-label={`Edit ${tag.name}`}
+                        >
+                          <PencilIcon className="w-3.5 h-3.5" />
+                        </button>
+                        <div className="relative flex-shrink-0">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setOpenTagMenuId(openTagMenuId === tag.id ? null : tag.id) }}
+                            className="text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 p-1 rounded transition-colors"
+                            aria-label={`More options for ${tag.name}`}
+                          >
+                            <DotsIcon className="w-3.5 h-3.5" />
+                          </button>
+                          {openTagMenuId === tag.id && (
+                            <div
+                              className="absolute right-0 top-full mt-1 z-50 bg-white dark:bg-dark-elevated rounded-xl shadow-lg border border-stone-200 dark:border-dark-border py-1 min-w-[148px]"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                onClick={() => { void setDefaultTag(tag.id); setOpenTagMenuId(null) }}
+                                className="w-full text-left px-3 py-2 text-xs text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-dark-hover transition-colors flex items-center gap-2"
+                              >
+                                <StarIcon className="w-3 h-3" filled={!!tag.isDefault} />
+                                {tag.isDefault ? 'Remove Default' : 'Set as Default'}
+                              </button>
+                              <button
+                                onClick={() => { setColorPickerTagId(colorPickerTagId === tag.id ? null : tag.id); setOpenTagMenuId(null) }}
+                                className="w-full text-left px-3 py-2 text-xs text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-dark-hover transition-colors"
+                              >
+                                Change Color
+                              </button>
+                              <button
+                                onClick={() => { setConfirmArchiveTag({ id: tag.id, name: tag.name }); setOpenTagMenuId(null) }}
+                                className="w-full text-left px-3 py-2 text-xs text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-dark-hover transition-colors"
+                              >
+                                Archive
+                              </button>
+                              <div className="border-t border-stone-100 dark:border-dark-border my-1" />
+                              <button
+                                onClick={() => { setConfirmDeleteTag({ id: tag.id, name: tag.name }); setOpenTagMenuId(null) }}
+                                className="w-full text-left px-3 py-2 text-xs text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
+                      {colorPickerTagId === tag.id && (
+                        <div className="flex gap-1.5 flex-wrap px-3 pb-2.5">
+                          {PROJECT_COLORS.map((color) => (
+                            <button
+                              key={color}
+                              onClick={() => { void updateTag({ ...tag, color }); setColorPickerTagId(null) }}
+                              className={`w-5 h-5 rounded-full border-2 transition-all ${tag.color === color ? 'border-stone-800 dark:border-stone-200 scale-110' : 'border-transparent'}`}
+                              style={{ backgroundColor: color }}
+                              aria-label={`Select color ${color}`}
+                            />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )
                 ))}
@@ -861,6 +920,7 @@ export default function SettingsView() {
 
                 {showArchivedTags && archivedTags.map((tag) => (
                   <div key={tag.id} className="flex items-center gap-2.5 p-2.5 rounded-xl border border-stone-100 dark:border-dark-border bg-stone-50 dark:bg-dark-card opacity-60">
+                    <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: tag.color ?? '#6366F1' }} aria-hidden="true" />
                     <span className="text-sm text-stone-400 dark:text-stone-500 flex-1 line-through">{tag.name}</span>
                     <button
                       onClick={() => void updateTag({ ...tag, archived: false })}
@@ -873,6 +933,17 @@ export default function SettingsView() {
                 ))}
               </div>
 
+              <div className="flex gap-1.5 flex-wrap mb-2">
+                {PROJECT_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => setNewTagColor(color)}
+                    className={`w-5 h-5 rounded-full border-2 transition-all ${newTagColor === color ? 'border-stone-800 dark:border-stone-200 scale-110' : 'border-transparent'}`}
+                    style={{ backgroundColor: color }}
+                    aria-label={`Select color ${color}`}
+                  />
+                ))}
+              </div>
               <div className="flex gap-2 items-end">
                 <div className="flex-1">
                   <input

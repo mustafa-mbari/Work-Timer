@@ -16,19 +16,22 @@ import type { EarningsReport } from '@/lib/services/earnings'
 
 interface Props {
   data: EarningsReport
+  groupBy?: 'tag' | 'project'
 }
 
-export default function EarningsView({ data }: Props) {
+export default function EarningsView({ data, groupBy = 'tag' }: Props) {
   const [exporting, setExporting] = useState(false)
 
   const currencySymbol = { USD: '$', EUR: '\u20AC', GBP: '\u00A3', JPY: '\u00A5', CAD: 'C$', AUD: 'A$', CHF: 'CHF', INR: '\u20B9', BRL: 'R$', SEK: 'kr' }[data.currency] ?? data.currency
+
+  const label = groupBy === 'tag' ? 'Tag' : 'Project'
 
   function handleExportCsv() {
     setExporting(true)
     try {
       const rows: string[] = []
-      rows.push('Project,Hours,Rate,Total,Currency')
-      for (const p of data.projects) {
+      rows.push(`${label},Hours,Rate,Total,Currency`)
+      for (const p of data.items) {
         const name = p.name.includes(',') ? `"${p.name}"` : p.name
         rows.push(`${name},${p.hours},${p.rate},${p.total},${data.currency}`)
       }
@@ -50,12 +53,12 @@ export default function EarningsView({ data }: Props) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Earnings by Project</CardTitle>
+        <CardTitle>Earnings by {label}</CardTitle>
         <Button
           variant="outline"
           size="sm"
           onClick={handleExportCsv}
-          disabled={exporting || data.projects.length === 0}
+          disabled={exporting || data.items.length === 0}
           className="gap-2"
         >
           <Download className="h-4 w-4" />
@@ -63,7 +66,7 @@ export default function EarningsView({ data }: Props) {
         </Button>
       </CardHeader>
       <CardContent>
-        {data.projects.length === 0 ? (
+        {data.items.length === 0 ? (
           <p className="text-sm text-stone-400 dark:text-stone-500 text-center py-8">
             No earnings data. Set an hourly rate in Settings &gt; Earnings and log some time.
           </p>
@@ -71,14 +74,14 @@ export default function EarningsView({ data }: Props) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Project</TableHead>
+                <TableHead>{label}</TableHead>
                 <TableHead className="text-right">Hours</TableHead>
                 <TableHead className="text-right">Rate</TableHead>
                 <TableHead className="text-right">Total</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.projects.map(p => (
+              {data.items.map(p => (
                 <TableRow key={p.id}>
                   <TableCell>
                     <div className="flex items-center gap-2">

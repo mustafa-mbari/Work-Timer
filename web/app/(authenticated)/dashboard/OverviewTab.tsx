@@ -10,7 +10,9 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import ProjectsCard from './ProjectsCard'
 import TagsCard from './TagsCard'
+import WeeklyProjectChart from './WeeklyProjectChart'
 import type { Database } from '@/lib/shared/types'
+import type { TimeEntry } from '@/lib/repositories/timeEntries'
 import type { ProjectFull } from '@/lib/repositories/projects'
 import type { TagFull } from '@/lib/repositories/tags'
 
@@ -26,6 +28,9 @@ interface Props {
   tags: TagFull[]
   defaultHourlyRate: number | null
   currency: string
+  weekEntries: TimeEntry[]
+  weekStartDay: 0 | 1
+  workingDays: number
 }
 
 const PLAN_LABEL: Record<string, string> = {
@@ -40,7 +45,7 @@ function formatHours(h: number): string {
   return h % 1 === 0 ? String(h) : h.toFixed(1)
 }
 
-export default function OverviewTab({ subscription, stats, isPremium, userEmail, projects, tags, defaultHourlyRate, currency }: Props) {
+export default function OverviewTab({ subscription, stats, isPremium, userEmail, projects, tags, defaultHourlyRate, currency, weekEntries, weekStartDay, workingDays }: Props) {
   const t = useTranslations('dashboard.overview')
   const plan = subscription?.plan ?? 'free'
 
@@ -126,10 +131,16 @@ export default function OverviewTab({ subscription, stats, isPremium, userEmail,
         </div>
       )}
 
-      {/* ── Projects & Tags cards ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <ProjectsCard initialProjects={projects} isPremium={isPremium} defaultHourlyRate={defaultHourlyRate} currency={currency} />
-        <TagsCard initialTags={tags} />
+      {/* ── Projects, Tags & Weekly chart ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <ProjectsCard initialProjects={projects} isPremium={isPremium} tags={tags} />
+        <TagsCard initialTags={tags} defaultHourlyRate={defaultHourlyRate} currency={currency} />
+        <WeeklyProjectChart
+          entries={weekEntries}
+          projects={projects}
+          weekStartDay={weekStartDay}
+          workingDays={workingDays}
+        />
       </div>
 
       {/* ── Bottom two-column row ── */}

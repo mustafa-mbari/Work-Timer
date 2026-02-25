@@ -5,13 +5,13 @@ type Tag = Database['public']['Tables']['tags']['Row']
 
 export type TagSummary = Pick<Tag, 'id' | 'name'>
 
-export type TagFull = Pick<Tag, 'id' | 'name' | 'is_default' | 'sort_order'>
+export type TagFull = Pick<Tag, 'id' | 'name' | 'color' | 'is_default' | 'sort_order' | 'hourly_rate' | 'earnings_enabled'>
 
 export async function getUserTags(userId: string): Promise<TagFull[]> {
   const supabase = await createClient()
   const { data } = await supabase
     .from('tags')
-    .select('id, name, is_default, sort_order')
+    .select('id, name, color, is_default, sort_order, hourly_rate, earnings_enabled')
     .eq('user_id', userId)
     .is('deleted_at', null)
     .order('sort_order', { ascending: true, nullsFirst: false })
@@ -22,13 +22,14 @@ export async function getUserTags(userId: string): Promise<TagFull[]> {
 
 export async function createTag(
   userId: string,
-  data: { id: string; name: string },
+  data: { id: string; name: string; color?: string },
 ): Promise<{ error: { message: string } | null }> {
   const supabase = await createClient()
   const { error } = await (supabase.from('tags') as any).insert({
     id: data.id,
     user_id: userId,
     name: data.name,
+    color: data.color ?? '#6366F1',
     is_default: false,
     sort_order: null,
     updated_at: new Date().toISOString(),
@@ -39,11 +40,11 @@ export async function createTag(
 export async function updateTag(
   userId: string,
   id: string,
-  name: string,
+  data: { name?: string; color?: string; hourly_rate?: number | null; earnings_enabled?: boolean },
 ): Promise<{ error: { message: string } | null }> {
   const supabase = await createClient()
   const { error } = await (supabase.from('tags') as any)
-    .update({ name, updated_at: new Date().toISOString() })
+    .update({ ...data, updated_at: new Date().toISOString() })
     .eq('id', id)
     .eq('user_id', userId)
   return { error }

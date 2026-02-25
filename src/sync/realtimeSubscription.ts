@@ -108,6 +108,7 @@ async function handleTagChange(payload: ChangePayload<DbTag>): Promise<void> {
       const existing = localTags.find(t => t.id === localTag.id)
       if (existing) {
         existing.name = localTag.name
+        existing.color = localTag.color
         await saveTags(localTags)
       } else {
         await saveTags([...localTags, localTag])

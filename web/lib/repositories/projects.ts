@@ -7,14 +7,14 @@ export type ProjectSummary = Pick<Project, 'id' | 'name' | 'color' | 'archived'>
 
 export type ProjectFull = Pick<
   Project,
-  'id' | 'name' | 'color' | 'archived' | 'is_default' | 'sort_order' | 'target_hours' | 'hourly_rate' | 'earnings_enabled' | 'created_at'
+  'id' | 'name' | 'color' | 'archived' | 'is_default' | 'sort_order' | 'target_hours' | 'hourly_rate' | 'earnings_enabled' | 'default_tag_id' | 'created_at'
 >
 
 export async function getUserProjects(userId: string): Promise<ProjectFull[]> {
   const supabase = await createClient()
   const { data } = await supabase
     .from('projects')
-    .select('id, name, color, archived, is_default, sort_order, target_hours, hourly_rate, earnings_enabled, created_at')
+    .select('id, name, color, archived, is_default, sort_order, target_hours, hourly_rate, earnings_enabled, default_tag_id, created_at')
     .eq('user_id', userId)
     .is('deleted_at', null)
     .order('sort_order', { ascending: true, nullsFirst: false })
@@ -57,7 +57,7 @@ export async function createProject(
 export async function updateProject(
   userId: string,
   id: string,
-  data: { name?: string; color?: string; target_hours?: number | null; hourly_rate?: number | null; earnings_enabled?: boolean; archived?: boolean },
+  data: { name?: string; color?: string; target_hours?: number | null; hourly_rate?: number | null; earnings_enabled?: boolean; default_tag_id?: string | null; archived?: boolean },
 ): Promise<{ error: { message: string } | null }> {
   const supabase = await createClient()
   const { error } = await (supabase.from('projects') as any)
