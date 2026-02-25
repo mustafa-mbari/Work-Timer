@@ -199,6 +199,11 @@ Earnings are **tag-based** (not project-based). Each tag can have:
 - Extension: SettingsView project dots menu "Link Default Tag"
 - Website: ProjectsCard link icon (chain) with tag selector dropdown
 
+**Auto-select implementation** (3 locations):
+- Extension `TimerView.tsx`: `handleProjectChange()` checks `project.defaultTagId`
+- Website `TimerWidget.tsx`: `onProjectChange` callback + default project `useEffect` both check `project.default_tag_id`
+- Website `EntryFormDialog.tsx`: project select `onChange` checks `project.default_tag_id`
+
 **Earnings reports** (`get_earnings_report` RPC):
 - Accepts `p_group_by` parameter: `'tag'` (default) or `'project'`
 - Tag mode: Joins `time_entries.tags[]` array with `tags` table via `ANY(te.tags)` and `CROSS JOIN LATERAL unnest(te.tags)`

@@ -3,7 +3,7 @@ import type { Database } from '@/lib/shared/types'
 
 type Project = Database['public']['Tables']['projects']['Row']
 
-export type ProjectSummary = Pick<Project, 'id' | 'name' | 'color' | 'archived'>
+export type ProjectSummary = Pick<Project, 'id' | 'name' | 'color' | 'archived' | 'default_tag_id'>
 
 export type ProjectFull = Pick<
   Project,

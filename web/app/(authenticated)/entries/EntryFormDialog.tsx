@@ -35,7 +35,11 @@ function toUnixMs(date: string, time: string): number {
 }
 
 function todayStr(): string {
-  return new Date().toISOString().slice(0, 10)
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 function msToParts(ms: number): { h: number; m: number } {
@@ -126,20 +130,35 @@ export default function EntryFormDialog({ open, onOpenChange, entry, projects, t
     setSaving(true)
     try {
       let startMs: number, endMs: number, duration: number
+      // Anchor all timestamps to the selected date using local midnight
+      const dayStart = toUnixMs(date, '00:00')
+
       if (inputType === 'timeRange') {
         startMs = toUnixMs(date, startTime)
         endMs = toUnixMs(date, endTime)
         duration = endMs - startMs
       } else {
         duration = (hours * 3600 + minutes * 60) * 1000
-        endMs = toUnixMs(date, startTime || '09:00')
+        const dayEnd = toUnixMs(date, '23:59')
+        const now = Date.now()
+        // Today → end at current time; past/future → end at 23:59
+        endMs = (now >= dayStart && now <= dayEnd + 60000) ? now : dayEnd
         startMs = endMs - duration
+        // Clamp: never go before midnight of the selected date
+        if (startMs < dayStart) {
+          startMs = dayStart
+          duration = endMs - startMs
+        }
       }
+
+      // Always derive date from startMs so date and timestamps never mismatch
+      const startDate = new Date(startMs)
+      const entryDate = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`
 
       const tagsArray = selectedTagId ? [selectedTagId] : []
       const body = {
         id: entry?.id ?? crypto.randomUUID(),
-        date,
+        date: entryDate,
         start_time: startMs,
         end_time: endMs,
         duration,
@@ -357,7 +376,14 @@ export default function EntryFormDialog({ open, onOpenChange, entry, projects, t
             <span className={sectionLabel}>Project</span>
             <select
               value={projectId}
-              onChange={e => setProjectId(e.target.value)}
+              onChange={e => {
+                const newProjectId = e.target.value
+                setProjectId(newProjectId)
+                const project = projects.find(p => p.id === newProjectId)
+                if (project?.default_tag_id) {
+                  setSelectedTagId(project.default_tag_id)
+                }
+              }}
               className={inputClass}
               aria-label="Select project"
             >

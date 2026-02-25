@@ -312,6 +312,13 @@
         "entries": "Manage Entries",
         "settings": "Settings",
         "upgrade": "Upgrade to Premium"
+      },
+      "weeklyChart": {
+        "title": "This Week",
+        "total": "total",
+        "totalLabel": "Total",
+        "empty": "No activity this week yet. Start tracking to see your chart.",
+        "noProject": "No project"
       }
     },
     "devices": {

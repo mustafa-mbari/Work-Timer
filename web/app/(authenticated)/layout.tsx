@@ -59,7 +59,7 @@ export default async function AuthenticatedLayout({
         <SidebarInset className="bg-stone-50 dark:bg-[var(--dark)]">
           <AppHeader userInfo={userInfo} />
           <div className="flex-1 overflow-y-auto">
-            <div className="mx-auto w-full max-w-[1280px] px-8 py-8">
+            <div className="mx-auto w-full max-w-[85%] px-8 py-8">
               <LastPageTracker />
               <TabTitleTimer />
               {children}

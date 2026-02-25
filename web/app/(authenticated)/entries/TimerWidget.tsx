@@ -448,6 +448,9 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTarge
     const defaultProject = projects.find(p => 'is_default' in p && (p as any).is_default && !p.archived)
     if (defaultProject) {
       setProjectId(defaultProject.id)
+      if (defaultProject.default_tag_id) {
+        setSelectedTagId(defaultProject.default_tag_id)
+      }
     }
   }, [projects]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -811,7 +814,13 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTarge
   // Shared inputs props
   const inputsProps: InputsPanelProps = {
     projects, tags, projectId, selectedTagId, description, link,
-    onProjectChange: setProjectId,
+    onProjectChange: (v: string) => {
+      setProjectId(v)
+      const project = projects.find(p => p.id === v)
+      if (project?.default_tag_id) {
+        setSelectedTagId(project.default_tag_id)
+      }
+    },
     onTagChange: setSelectedTagId,
     onDescriptionChange: setDescription,
     onLinkChange: setLink,

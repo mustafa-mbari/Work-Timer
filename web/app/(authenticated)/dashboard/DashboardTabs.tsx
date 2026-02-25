@@ -19,6 +19,7 @@ interface Props {
   subscription: Pick<Subscription, 'plan' | 'status' | 'current_period_end' | 'cancel_at_period_end'> | null
   cursors: Pick<SyncCursor, 'device_id' | 'last_sync'>[]
   recentEntries: TimeEntry[]
+  weekEntries: TimeEntry[]
   projects: ProjectFull[]
   tags: TagFull[]
   stats: UserStats | null
@@ -26,6 +27,8 @@ interface Props {
   userEmail: string
   defaultHourlyRate: number | null
   currency: string
+  weekStartDay: 0 | 1
+  workingDays: number
 }
 
 type TabId = 'overview' | 'devices' | 'recent'
@@ -34,6 +37,7 @@ export default function DashboardTabs({
   subscription,
   cursors,
   recentEntries,
+  weekEntries,
   projects,
   tags,
   stats,
@@ -41,6 +45,8 @@ export default function DashboardTabs({
   userEmail,
   defaultHourlyRate,
   currency,
+  weekStartDay,
+  workingDays,
 }: Props) {
   const t = useTranslations('dashboard.tabs')
   const router = useRouter()
@@ -99,6 +105,9 @@ export default function DashboardTabs({
           tags={tags}
           defaultHourlyRate={defaultHourlyRate}
           currency={currency}
+          weekEntries={weekEntries}
+          weekStartDay={weekStartDay}
+          workingDays={workingDays}
         />
       )}
       {activeTab === 'devices' && (

@@ -312,6 +312,13 @@
         "entries": "Einträge verwalten",
         "settings": "Einstellungen",
         "upgrade": "Auf Premium upgraden"
+      },
+      "weeklyChart": {
+        "title": "Diese Woche",
+        "total": "gesamt",
+        "totalLabel": "Gesamt",
+        "empty": "Noch keine Aktivität diese Woche. Starte das Tracking, um dein Diagramm zu sehen.",
+        "noProject": "Kein Projekt"
       }
     },
     "devices": {
