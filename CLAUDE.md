@@ -88,7 +88,8 @@ src/
 ```
 web/
   app/
-    (authenticated)/    # Route group (dashboard, billing, analytics)
+    (authenticated)/    # Route group (dashboard, billing, analytics, entries)
+                        #   dashboard/ includes WeeklyProjectChart (stacked bar, Recharts)
     admin/              # Admin panel (overview, users, stats, domains, promos, subscriptions)
     api/                # API routes (checkout, billing, webhooks, admin CRUD, promo)
     auth/               # OAuth callback + extension bridge (postMessage relay)
@@ -177,6 +178,18 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 - Server-side SQL aggregation via RPC functions (replaces client-side JS)
 - Error boundaries for `(authenticated)/` and `admin/` route groups
 - `getSubscriptionFlags()` deduplicates premium + allIn checks in layout (1 query instead of 2)
+- Dashboard `page.tsx` fetches week entries with 1 extra day before week start (handles entries crossing midnight into the week)
+
+### Dashboard Weekly Chart (`WeeklyProjectChart.tsx`)
+- Stacked bar chart (Recharts) showing per-project hours for each day of the current week
+- Respects `weekStartDay` (0=Sunday, 1=Monday) and `workingDays` bitmask from user settings
+- Splits entries that cross midnight into per-day slices using `start_time`/`end_time` timestamps
+- Uses project colors; "No project" entries shown in stone-400
+
+### Manual Entry Forms (2 locations)
+- **`TimerWidget.tsx`**: Inline form on entries page with Stopwatch/Manual/Pomodoro tabs. Duration mode has typeable `<input type="number">` for hours/minutes with +/- stepper buttons
+- **`EntryFormDialog.tsx`**: Modal dialog for editing/adding entries. Same typeable duration inputs
+- Both derive `entry.date` from `startMs` using local date (not UTC) and anchor duration-mode timestamps to the selected date
 
 ### Sync Engine (`src/sync/`)
 
@@ -280,6 +293,13 @@ Earnings are **tag-based** (not project-based). Each tag can have:
 - `SessionsTab.tsx` has a "Reconnect Extension" button using `fetch('/api/auth/session')` + `postMessage`
 - Background `AUTH_LOGIN` handler sends `sendResponse` immediately, then does heavy work (sync, upload, etc.) asynchronously
 - Content script `AUTH_LOGIN` messages go through `onMessage` (internal), not `onMessageExternal` (external)
+
+### Date Handling (UTC vs Local)
+- NEVER use `toISOString().slice(0, 10)` to get a local date -- it returns UTC and shifts dates in UTC+ timezones after midnight
+- Always use `new Date()` with `getFullYear()`/`getMonth()`/`getDate()` for local date strings
+- `new Date('YYYY-MM-DDTHH:mm:ss')` without `Z` suffix parses as LOCAL time in browsers
+- Entries that cross midnight must be split across days using `start_time`/`end_time` timestamps (see `WeeklyProjectChart.tsx`)
+- Both `TimerWidget.tsx` and `EntryFormDialog.tsx` have manual entry forms with duration mode -- changes must be applied to BOTH
 
 ### Pre-existing Lint Issues
 - ESLint errors in hooks (useTimer, useEntries, useProjects, useSettings) are pre-existing

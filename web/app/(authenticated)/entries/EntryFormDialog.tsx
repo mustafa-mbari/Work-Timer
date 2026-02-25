@@ -311,9 +311,15 @@ export default function EntryFormDialog({ open, onOpenChange, entry, projects, t
                     >
                       -
                     </button>
-                    <span className="text-3xl font-semibold w-10 text-center tabular-nums text-stone-900 dark:text-stone-100">
-                      {hours}
-                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={23}
+                      value={hours}
+                      onChange={e => setHours(Math.max(0, Math.min(23, parseInt(e.target.value) || 0)))}
+                      className="text-3xl font-semibold w-12 text-center tabular-nums text-stone-900 dark:text-stone-100 bg-transparent border-none outline-none focus:ring-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      aria-label="Hours"
+                    />
                     <button
                       type="button"
                       onClick={() => setHours(h => Math.min(23, h + 1))}
@@ -339,9 +345,15 @@ export default function EntryFormDialog({ open, onOpenChange, entry, projects, t
                     >
                       -
                     </button>
-                    <span className="text-3xl font-semibold w-10 text-center tabular-nums text-stone-900 dark:text-stone-100">
-                      {String(minutes).padStart(2, '0')}
-                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={59}
+                      value={minutes}
+                      onChange={e => setMinutes(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
+                      className="text-3xl font-semibold w-12 text-center tabular-nums text-stone-900 dark:text-stone-100 bg-transparent border-none outline-none focus:ring-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      aria-label="Minutes"
+                    />
                     <button
                       type="button"
                       onClick={() => setMinutes(m => Math.min(55, m + 5))}

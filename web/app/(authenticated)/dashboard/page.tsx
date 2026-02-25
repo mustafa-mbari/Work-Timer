@@ -47,8 +47,14 @@ export default async function DashboardPage() {
   const workingDays = settings?.working_days ?? 0b0111110 // Mon-Fri default
   const { dateFrom, dateTo } = getWeekRange(weekStartDay)
 
+  // Fetch 1 day before week start to catch entries that cross midnight into the week
+  const fetchFrom = new Date(dateFrom + 'T00:00:00')
+  fetchFrom.setDate(fetchFrom.getDate() - 1)
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
   const weekEntriesPage = await getUserTimeEntries(user.id, {
-    dateFrom,
+    dateFrom: fmt(fetchFrom),
     dateTo,
     pageSize: 500,
   })

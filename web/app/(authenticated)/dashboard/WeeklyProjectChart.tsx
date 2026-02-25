@@ -80,12 +80,9 @@ export default function WeeklyProjectChart({ entries, projects, weekStartDay, wo
   // Week dates based on settings
   const weekDates = useMemo(() => getWeekDates(weekStartDay, workingDays), [weekStartDay, workingDays])
 
-  // Build chart data: one row per day, each project name as a key with hours
+  // Build chart data: one row per day, split entries that cross midnight
   const { chartData, usedProjects } = useMemo(() => {
     const dateKeys = new Set(weekDates.map(toDateKey))
-
-    // Filter entries to this week only
-    const weekEntries = entries.filter(e => dateKeys.has(e.date))
 
     // Collect all projects that actually appear in entries
     const usedSet = new Map<string, { name: string; color: string }>()
@@ -96,16 +93,20 @@ export default function WeeklyProjectChart({ entries, projects, weekStartDay, wo
       byDate.set(toDateKey(d), {})
     }
 
-    for (const entry of weekEntries) {
-      const hours = entry.duration / 3600000
-      if (hours <= 0) continue
+    // Helper: add ms to a day bucket
+    function addMs(dateKey: string, projectKey: string, info: { name: string; color: string }, ms: number) {
+      const row = byDate.get(dateKey)
+      if (!row || ms <= 0) return
+      row[projectKey] = (row[projectKey] ?? 0) + ms / 3600000
+      if (!usedSet.has(projectKey)) usedSet.set(projectKey, info)
+    }
 
-      const row = byDate.get(entry.date)
-      if (!row) continue
+    for (const entry of entries) {
+      if (entry.duration <= 0) continue
 
+      // Resolve project
       let key: string
       let info: { name: string; color: string }
-
       if (entry.project_id && projectMap.has(entry.project_id)) {
         const p = projectMap.get(entry.project_id)!
         key = p.name
@@ -115,8 +116,24 @@ export default function WeeklyProjectChart({ entries, projects, weekStartDay, wo
         info = { name: key, color: FALLBACK_COLOR }
       }
 
-      row[key] = (row[key] ?? 0) + hours
-      if (!usedSet.has(key)) usedSet.set(key, info)
+      // Split entry across days using start_time / end_time
+      let cursor = entry.start_time
+      const end = entry.end_time > entry.start_time ? entry.end_time : entry.start_time + entry.duration
+
+      while (cursor < end) {
+        const cursorDate = new Date(cursor)
+        const dayKey = toDateKey(cursorDate)
+        // Next midnight local
+        const nextMidnight = new Date(cursorDate.getFullYear(), cursorDate.getMonth(), cursorDate.getDate() + 1).getTime()
+        const sliceEnd = Math.min(end, nextMidnight)
+        const sliceMs = sliceEnd - cursor
+
+        if (dateKeys.has(dayKey)) {
+          addMs(dayKey, key, info, sliceMs)
+        }
+
+        cursor = sliceEnd
+      }
     }
 
     const data = weekDates.map(d => ({

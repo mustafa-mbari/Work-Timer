@@ -102,7 +102,8 @@ function formatMmSs(ms: number): string {
 }
 
 function todayStr(): string {
-  return new Date().toISOString().slice(0, 10)
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 function formatDurationShort(ms: number): string {
@@ -539,7 +540,7 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTarge
     try {
       const body = {
         id: crypto.randomUUID(),
-        date: new Date(params.startTime).toISOString().slice(0, 10),
+        date: (() => { const d = new Date(params.startTime); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` })(),
         start_time: params.startTime,
         end_time: params.endTime,
         duration: params.duration,
@@ -640,8 +641,16 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTarge
       startMs = new Date(`${manualDate}T${manualFrom}:00`).getTime()
       endMs = new Date(`${manualDate}T${manualTo}:00`).getTime()
     } else {
-      endMs = Date.now()
+      // Anchor to selected date: use end of day or now if today
+      const dayStart = new Date(`${manualDate}T00:00:00`).getTime()
+      const dayEnd = new Date(`${manualDate}T23:59:59`).getTime()
+      const now = Date.now()
+      endMs = (now >= dayStart && now <= dayEnd + 60000) ? now : dayEnd
       startMs = endMs - manualDuration
+      // Clamp to day start so we don't cross into previous day
+      if (startMs < dayStart) {
+        startMs = dayStart
+      }
     }
     await createEntry({ duration: manualDuration, type: 'manual', startTime: startMs, endTime: endMs })
     setManualDate(todayStr())
@@ -977,7 +986,15 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTarge
                       <div className="flex flex-col items-center gap-1">
                         <div className="flex items-center gap-2.5">
                           <button type="button" onClick={() => setManualHours(h => Math.max(0, h - 1))} className={stepperBtn} aria-label="Decrease hours">-</button>
-                          <span className="text-2xl font-semibold w-8 text-center tabular-nums text-stone-900 dark:text-stone-100">{manualHours}</span>
+                          <input
+                            type="number"
+                            min={0}
+                            max={23}
+                            value={manualHours}
+                            onChange={e => { const v = parseInt(e.target.value, 10); setManualHours(isNaN(v) ? 0 : Math.max(0, Math.min(23, v))) }}
+                            className="text-2xl font-semibold w-10 text-center tabular-nums text-stone-900 dark:text-stone-100 bg-transparent border-none outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            aria-label="Hours"
+                          />
                           <button type="button" onClick={() => setManualHours(h => Math.min(23, h + 1))} className={stepperBtn} aria-label="Increase hours">+</button>
                         </div>
                         <span className="text-[10px] text-stone-400 dark:text-stone-500">hours</span>
@@ -986,7 +1003,15 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTarge
                       <div className="flex flex-col items-center gap-1">
                         <div className="flex items-center gap-2.5">
                           <button type="button" onClick={() => setManualMinutes(m => Math.max(0, m - 5))} className={stepperBtn} aria-label="Decrease minutes">-</button>
-                          <span className="text-2xl font-semibold w-8 text-center tabular-nums text-stone-900 dark:text-stone-100">{String(manualMinutes).padStart(2, '0')}</span>
+                          <input
+                            type="number"
+                            min={0}
+                            max={59}
+                            value={String(manualMinutes).padStart(2, '0')}
+                            onChange={e => { const v = parseInt(e.target.value, 10); setManualMinutes(isNaN(v) ? 0 : Math.max(0, Math.min(59, v))) }}
+                            className="text-2xl font-semibold w-10 text-center tabular-nums text-stone-900 dark:text-stone-100 bg-transparent border-none outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            aria-label="Minutes"
+                          />
                           <button type="button" onClick={() => setManualMinutes(m => Math.min(55, m + 5))} className={stepperBtn} aria-label="Increase minutes">+</button>
                         </div>
                         <span className="text-[10px] text-stone-400 dark:text-stone-500">min</span>

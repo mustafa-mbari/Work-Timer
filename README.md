@@ -16,7 +16,7 @@ Track your work time with stopwatch, manual entry, and Pomodoro modes. Start wit
 
 ### Core Timer Modes
 - **Stopwatch** -- Start, pause, resume, and stop with one click
-- **Manual Entry** -- Log time retroactively with time ranges or duration, any date
+- **Manual Entry** -- Log time retroactively with time ranges or typeable duration inputs, any date
 - **Pomodoro** -- 25/5/15 intervals with auto-break transitions and notifications
 
 ### Tracking & Analytics
@@ -52,7 +52,7 @@ Track your work time with stopwatch, manual entry, and Pomodoro modes. Start wit
 - **Multi-Device** -- Seamless cross-browser sync
 
 ### Companion Website
-- **Dashboard** -- Account overview, project/tag management with inline editing, default tag linking
+- **Dashboard** -- Account overview, weekly stacked bar chart (per-project hours), project/tag management with inline editing, default tag linking
 - **Earnings** -- Tag-based earnings reports with daily charts, groupBy toggle (tag/project), CSV export
 - **Analytics** -- Weekly trends, project breakdowns, peak hours, streaks
 - **Billing** -- Subscription management, promo codes, Stripe checkout
