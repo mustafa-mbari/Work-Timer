@@ -115,7 +115,7 @@ export default function ShareHistoryTab({ groupId, projects, tags }: Props) {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const res = await fetch(`/api/groups/${groupId}/shares`)
+    const res = await fetch(`/api/groups/${groupId}/shares?mine=true`)
     if (res.ok) setShares(await res.json())
     setLoading(false)
   }, [groupId])

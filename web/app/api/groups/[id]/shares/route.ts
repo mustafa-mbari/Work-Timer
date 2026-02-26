@@ -6,7 +6,7 @@ import { createShareSchema, parseBody } from '@/lib/validation'
 
 type Params = { params: Promise<{ id: string }> }
 
-export async function GET(_request: NextRequest, { params }: Params) {
+export async function GET(request: NextRequest, { params }: Params) {
   const user = await requireAuthApi()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -14,13 +14,16 @@ export async function GET(_request: NextRequest, { params }: Params) {
   const group = await getGroupById(id, user.id)
   if (!group) return NextResponse.json({ error: 'Group not found' }, { status: 404 })
 
-  if (group.userRole === 'admin') {
-    const shares = await getGroupShares(id)
-    return NextResponse.json(shares)
-  } else {
+  // ?mine=true → always return only the caller's own shares (used by "My Shares" tab)
+  const mine = request.nextUrl.searchParams.get('mine') === 'true'
+  if (mine || group.userRole !== 'admin') {
     const shares = await getMemberShares(id, user.id)
     return NextResponse.json(shares)
   }
+
+  // Admin default: return all shares in group
+  const shares = await getGroupShares(id)
+  return NextResponse.json(shares)
 }
 
 export async function POST(request: NextRequest, { params }: Params) {
