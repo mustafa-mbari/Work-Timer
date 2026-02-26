@@ -1,4 +1,4 @@
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import type { Database } from '@/lib/shared/types'
 
 type Group = Database['public']['Tables']['groups']['Row']
@@ -122,7 +122,7 @@ export async function createGroup(name: string, ownerId: string) {
 }
 
 export async function updateGroup(groupId: string, ownerId: string, data: { name?: string }) {
-  const supabase = await createClient()
+  const supabase = await createServiceClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('groups') as any)
     .update(data)
@@ -132,7 +132,7 @@ export async function updateGroup(groupId: string, ownerId: string, data: { name
 }
 
 export async function deleteGroup(groupId: string, ownerId: string) {
-  const supabase = await createClient()
+  const supabase = await createServiceClient()
   const { error } = await supabase
     .from('groups')
     .delete()
@@ -150,7 +150,7 @@ export async function addGroupMember(groupId: string, userId: string, role: stri
 }
 
 export async function removeGroupMember(groupId: string, userId: string) {
-  const supabase = await createClient()
+  const supabase = await createServiceClient()
   const { error } = await supabase
     .from('group_members')
     .delete()
@@ -160,7 +160,7 @@ export async function removeGroupMember(groupId: string, userId: string) {
 }
 
 export async function updateMemberRole(groupId: string, userId: string, role: string) {
-  const supabase = await createClient()
+  const supabase = await createServiceClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('group_members') as any)
     .update({ role })
@@ -170,7 +170,7 @@ export async function updateMemberRole(groupId: string, userId: string, role: st
 }
 
 export async function getGroupByJoinCode(code: string) {
-  const supabase = await createClient()
+  const supabase = await createServiceClient()
   const { data } = await supabase
     .from('groups')
     .select('*')

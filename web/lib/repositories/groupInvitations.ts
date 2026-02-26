@@ -11,7 +11,7 @@ export async function createInvitation(groupId: string, email: string, invitedBy
   const { data, error } = await (supabase.from('group_invitations') as any)
     .insert({
       group_id: groupId,
-      email,
+      email: email.toLowerCase(),
       invited_by: invitedBy,
       status: 'pending',
     })
@@ -21,7 +21,7 @@ export async function createInvitation(groupId: string, email: string, invitedBy
 }
 
 export async function getGroupInvitations(groupId: string) {
-  const supabase = await createClient()
+  const supabase = await createServiceClient()
   const { data } = await supabase
     .from('group_invitations')
     .select('*')
@@ -32,17 +32,18 @@ export async function getGroupInvitations(groupId: string) {
 }
 
 export async function getUserPendingInvitations(email: string): Promise<InvitationWithGroup[]> {
-  const supabase = await createClient()
+  const supabase = await createServiceClient()
   const { data: invitations } = await supabase
     .from('group_invitations')
     .select('*')
-    .eq('email', email)
+    .eq('email', email.toLowerCase())
     .eq('status', 'pending')
     .returns<GroupInvitation[]>()
 
   if (!invitations?.length) return []
 
-  // Fetch group names
+  // Fetch group names (use service client — invited user is not yet a member so
+  // groups_select RLS would block this query with the regular client)
   const groupIds = [...new Set(invitations.map(i => i.group_id))]
   const { data: groups } = await supabase
     .from('groups')
@@ -66,7 +67,7 @@ export async function acceptInvitation(invitationId: string, userId: string, use
     .from('group_invitations')
     .select('*')
     .eq('id', invitationId)
-    .eq('email', userEmail)
+    .eq('email', userEmail.toLowerCase())
     .eq('status', 'pending')
     .single<GroupInvitation>()
 
@@ -92,7 +93,7 @@ export async function declineInvitation(invitationId: string, userEmail: string)
   const { error } = await (supabase.from('group_invitations') as any)
     .update({ status: 'declined' })
     .eq('id', invitationId)
-    .eq('email', userEmail)
+    .eq('email', userEmail.toLowerCase())
     .eq('status', 'pending')
   return { error }
 }

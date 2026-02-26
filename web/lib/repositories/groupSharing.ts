@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import type { Database, DbGroupSharingSettings } from '@/lib/shared/types'
 
 export type SharingSettings = Pick<DbGroupSharingSettings, 'sharing_enabled' | 'shared_project_ids'>
@@ -7,7 +7,7 @@ export async function getSharingSettings(
   groupId: string,
   userId: string,
 ): Promise<SharingSettings> {
-  const supabase = await createClient()
+  const supabase = await createServiceClient()
   const { data } = await supabase
     .from('group_sharing_settings')
     .select('sharing_enabled, shared_project_ids')
@@ -22,7 +22,7 @@ export async function upsertSharingSettings(
   userId: string,
   settings: { sharing_enabled: boolean; shared_project_ids: string[] | null },
 ): Promise<{ error: { message: string } | null }> {
-  const supabase = await createClient()
+  const supabase = await createServiceClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('group_sharing_settings') as any)
     .upsert({
@@ -41,7 +41,7 @@ export async function getGroupMembersSummary(
   groupId: string,
   adminId: string,
 ): Promise<MemberSummary> {
-  const supabase = await createClient()
+  const supabase = await createServiceClient()
   const { data, error } = await (supabase.rpc as Function)('get_group_members_summary', {
     p_group_id: groupId,
     p_admin_id: adminId,
@@ -59,7 +59,7 @@ export async function getGroupMemberEntries(
   dateFrom?: string,
   dateTo?: string,
 ): Promise<MemberEntries> {
-  const supabase = await createClient()
+  const supabase = await createServiceClient()
   const { data, error } = await (supabase.rpc as Function)('get_group_member_entries', {
     p_group_id: groupId,
     p_admin_id: adminId,
