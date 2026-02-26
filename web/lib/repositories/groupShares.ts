@@ -68,13 +68,14 @@ export async function getSharePreview(
   }
 
   const { data: entries } = await query
+    .returns<Array<{ duration: number | null; tags: string[] | null; project_id: string | null }>>()
 
   if (!entries?.length) return { entry_count: 0, total_hours: 0 }
 
   // Tag filter (client-side because tags is an array column)
   const filtered = params.tag_ids === null
     ? entries
-    : entries.filter(e => e.tags?.some((t: string) => params.tag_ids!.includes(t)))
+    : entries.filter(e => e.tags?.some(t => params.tag_ids!.includes(t)))
 
   const total_ms = filtered.reduce((sum, e) => sum + (e.duration ?? 0), 0)
   return {
@@ -106,13 +107,14 @@ export async function createGroupShare(
     query = query.in('project_id', params.project_ids)
   }
 
-  const { data: rawEntries } = await query
+  type RawEntry = { id: string; date: string; duration: number | null; description: string | null; project_id: string | null; tags: string[] | null }
+  const { data: rawEntries } = await query.returns<RawEntry[]>()
   if (!rawEntries) return { data: null, error: { message: 'Failed to fetch entries' } }
 
   // Tag filter (client-side)
   const filtered = params.tag_ids === null
     ? rawEntries
-    : rawEntries.filter(e => e.tags?.some((t: string) => params.tag_ids!.includes(t)))
+    : rawEntries.filter(e => e.tags?.some(t => params.tag_ids!.includes(t)))
 
   // 2. Resolve project names/colors
   const projectIds = [...new Set(filtered.map(e => e.project_id).filter(Boolean) as string[])]
