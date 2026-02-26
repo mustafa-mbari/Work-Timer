@@ -15,17 +15,20 @@ Track your work time with stopwatch, manual entry, and Pomodoro modes. Start wit
 ## Features
 
 ### Core Timer Modes
+
 - **Stopwatch** -- Start, pause, resume, and stop with one click
 - **Manual Entry** -- Log time retroactively with time ranges or typeable duration inputs, any date
 - **Pomodoro** -- 25/5/15 intervals with auto-break transitions and notifications
 
 ### Tracking & Analytics
+
 - **Daily View** -- Today's entries with project breakdown and total hours
 - **Weekly View** -- 7-day grid with daily totals, entry pills, and add entry per day
 - **Statistics** -- Weekly bar chart, project pie chart, monthly heatmap (GitHub-style)
 - **Goals & Targets** -- Daily/weekly hour goals with color-coded progress bars
 
 ### Modern UI
+
 - **6 Themes** -- Light Soft, Light Paper, Light Sepia, Dark Charcoal, Dark Mocha, Dark Midnight, plus System auto-detect
 - **Inter Variable Font** -- Professional typography with indigo accent palette
 - **Custom SVG Icons** -- 19 handcrafted line icons
@@ -33,6 +36,7 @@ Track your work time with stopwatch, manual entry, and Pomodoro modes. Start wit
 - **Keyboard Shortcuts** -- Alt+Shift+S (start/stop), Alt+Shift+P (pause), Alt+Shift+T (open popup)
 
 ### Advanced Features
+
 - **Projects** -- Color-coded with inline creation, editing, and default tag linking
 - **Tags** -- Color-coded with earnings tracking, hourly rates, and inline management
 - **Tag-Based Earnings** -- Set hourly rates per tag, toggle earnings inclusion, view reports grouped by tag or project
@@ -43,6 +47,7 @@ Track your work time with stopwatch, manual entry, and Pomodoro modes. Start wit
 - **Browser Integration** -- Floating timer widget, timer in tab title, right-click context menu
 
 ### Premium Features (Optional)
+
 - **Cloud Sync** -- Automatic sync across devices via Supabase with conflict resolution
 - **Unlimited History** -- All time entries (free: 30 days)
 - **Unlimited Projects** -- No limit (free: 5 projects)
@@ -52,6 +57,7 @@ Track your work time with stopwatch, manual entry, and Pomodoro modes. Start wit
 - **Multi-Device** -- Seamless cross-browser sync
 
 ### Companion Website
+
 - **Dashboard** -- Account overview, weekly stacked bar chart (CSS, per-project colors, hours per day), project/tag management with inline editing, default tag linking
 - **Earnings** -- Tag-based earnings reports with daily charts, groupBy toggle (tag/project), CSV export
 - **Analytics** -- Weekly trends, project breakdowns, peak hours, streaks
@@ -64,6 +70,7 @@ Track your work time with stopwatch, manual entry, and Pomodoro modes. Start wit
 ## Quick Start
 
 ### Prerequisites
+
 - Node.js 18+ and npm
 - Google Chrome browser
 
@@ -82,7 +89,7 @@ npm run build
 2. Enable **Developer mode** (top-right toggle)
 3. Click **Load unpacked** and select the `dist/` folder
 
-### Development
+### Local Development
 
 ```bash
 # Extension (with HMR)
@@ -96,7 +103,7 @@ cd web && npm install && npm run dev
 
 ## Project Structure
 
-```
+```text
 Work-Timer/
   shared/               # Shared types & constants (extension + website)
     types.ts            # Database types, Database type map
@@ -133,8 +140,9 @@ Work-Timer/
 ## Tech Stack
 
 ### Chrome Extension
+
 | Technology | Purpose |
-|-----------|---------|
+| ---------- | ------- |
 | React 18 + TypeScript | Component UI with type safety |
 | TailwindCSS v4 | Utility-first styling |
 | Vite | Build tool with HMR |
@@ -144,9 +152,10 @@ Work-Timer/
 | chrome.storage.local | Offline-first persistence |
 | nanoid / date-fns | IDs and dates |
 
-### Companion Website
+### Website Tech Stack
+
 | Technology | Purpose |
-|-----------|---------|
+| ---------- | ------- |
 | Next.js 16 + React 19 | Server-side rendering + API routes |
 | shadcn/ui | UI component library |
 | TailwindCSS v4 | Matching design system |
@@ -157,7 +166,7 @@ Work-Timer/
 
 ---
 
-## Development
+## Developer Guide
 
 ### Scripts
 
