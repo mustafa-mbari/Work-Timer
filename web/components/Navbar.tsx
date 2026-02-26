@@ -7,6 +7,7 @@ import { UserMenu } from '@/components/UserMenu'
 import { MobileMenu } from '@/components/MobileMenu'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import { ExtensionStatusButton } from '@/components/ExtensionStatusButton'
 import { Button } from '@/components/ui/button'
 
 export default async function Navbar() {
@@ -72,6 +73,7 @@ export default async function Navbar() {
               </NavLink>
               <div className="w-px h-5 bg-stone-200 mx-2 dark:bg-[var(--dark-border)]" />
               <LanguageSwitcher />
+              <ExtensionStatusButton />
               <ThemeToggle />
               <div className="ml-1">
                 <UserMenu

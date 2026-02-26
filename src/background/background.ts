@@ -1,9 +1,11 @@
 import type { TimerMessage, TimerResponse, TimerState, TimeEntry, IdleInfo, PomodoroState, PomodoroPhase, Settings } from '../types'
+import { WEBSITE_URL } from '@shared/constants'
 import { generateId } from '../utils/id'
 import { getToday } from '../utils/date'
 import { POMODORO_WORK_MS, IDLE_THRESHOLD_MS } from '../constants/timers'
 import { getSettings, getTimerState, setTimerState, saveEntry, updateEntry, getEntries, getLocalUserId, setLocalUserId, hasAnyLocalData, clearAllLocalData } from '../storage'
 import { applyExternalSession, signOut as authSignOut, refreshSubscription, getSession } from '../auth/authState'
+import { isCurrentUserPremium } from '../premium/featureGate'
 import { syncAll, getSyncState, uploadAllLocalData, diagnoseSyncState } from '../sync/syncEngine'
 import { setupRealtime, teardownRealtime } from '../sync/realtimeSubscription'
 import { pushUserStats } from '../sync/statsSync'
@@ -25,6 +27,16 @@ const STORAGE_KEYS = {
 
 // Cached minimum entry duration in ms — updated reactively via chrome.storage.onChanged
 let entrySaveTimeMs = 10_000
+
+// Dedupe guard — prevents opening the dashboard tab twice if both onMessage and onMessageExternal fire
+let lastDashboardOpenMs = 0
+function maybeOpenDashboard() {
+  const now = Date.now()
+  if (now - lastDashboardOpenMs > 5000) {
+    lastDashboardOpenMs = now
+    void chrome.tabs.create({ url: `${WEBSITE_URL}/dashboard` })
+  }
+}
 
 const DEFAULT_TIMER_STATE: TimerState = {
   status: 'idle',
@@ -710,6 +722,12 @@ chrome.runtime.onMessage.addListener(
             void syncAll()
             return { success: true }
           }
+          case 'POPUP_OPENED': {
+            // Trigger delta sync on popup open for premium users only
+            const premium = await isCurrentUserPremium()
+            if (premium) void syncAll()
+            return { success: true }
+          }
           case 'SYNC_STATUS': {
             const syncState = await getSyncState()
             return { success: true, syncState }
@@ -792,6 +810,7 @@ chrome.runtime.onMessage.addListener(
               void syncAll().catch(() => null)
               void pushUserStats().catch(() => null)
               setupRealtime(session.userId)
+              maybeOpenDashboard()
             })()
             return { success: true }
           }
@@ -1220,6 +1239,7 @@ chrome.runtime.onMessageExternal.addListener(
           void syncAll().catch(() => null)
           void pushUserStats().catch(() => null)
           setupRealtime(session.userId)
+          maybeOpenDashboard()
         } else {
           sendResponse({ success: false, error: 'Failed to apply session' })
         }

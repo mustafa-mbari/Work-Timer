@@ -2,57 +2,63 @@
 
 import { useTransition } from 'react'
 import { useLocale } from 'next-intl'
+import { Globe, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import type { Locale } from '@/i18n/config'
 
-const LOCALES: { value: Locale; label: string }[] = [
-  { value: 'en', label: 'EN' },
-  { value: 'de', label: 'DE' },
+const LOCALES: { value: Locale; label: string; name: string }[] = [
+  { value: 'en', label: 'EN', name: 'English' },
+  { value: 'de', label: 'DE', name: 'Deutsch' },
 ]
 
-interface Props {
-  compact?: boolean
-}
-
-export function LanguageSwitcher({ compact = false }: Props) {
+export function LanguageSwitcher() {
   const locale = useLocale() as Locale
   const [isPending, startTransition] = useTransition()
 
   const handleSwitch = (next: Locale) => {
     if (next === locale) return
     startTransition(() => {
-      // Set cookie and reload to apply new locale (cookie-based strategy)
       document.cookie = `locale=${next}; path=/; max-age=31536000`
       window.location.reload()
     })
   }
 
   return (
-    <div
-      className={cn(
-        'flex items-center gap-0.5 rounded-lg p-1',
-        !compact && 'bg-stone-100 dark:bg-[var(--dark-elevated)]',
-      )}
-      role="group"
-      aria-label="Language switcher"
-    >
-      {LOCALES.map(({ value, label }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
         <button
-          key={value}
-          onClick={() => handleSwitch(value)}
           disabled={isPending}
-          aria-pressed={locale === value}
+          aria-label="Language switcher"
           className={cn(
-            'rounded-md px-2 py-1 text-xs font-semibold transition-colors',
-            locale === value
-              ? 'bg-white text-stone-900 shadow-sm dark:bg-[var(--dark-card)] dark:text-stone-100'
-              : 'text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300',
+            'flex items-center gap-1 p-1.5 rounded-md transition-colors',
+            'text-stone-400 hover:text-stone-600 hover:bg-stone-100',
+            'dark:text-stone-500 dark:hover:text-stone-300 dark:hover:bg-[var(--dark-hover)]',
             isPending && 'opacity-50 cursor-wait',
           )}
         >
-          {label}
+          <Globe className="h-4 w-4" />
+          <span className="text-xs font-semibold">{locale.toUpperCase()}</span>
         </button>
-      ))}
-    </div>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-[120px]">
+        {LOCALES.map(({ value, label, name }) => (
+          <DropdownMenuItem
+            key={value}
+            onClick={() => handleSwitch(value)}
+            className="flex items-center gap-2 cursor-pointer"
+          >
+            <Check className={cn('h-3.5 w-3.5 flex-shrink-0', locale !== value && 'opacity-0')} />
+            <span className="font-semibold text-xs mr-1">{label}</span>
+            <span className="text-stone-500 dark:text-stone-400">{name}</span>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

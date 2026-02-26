@@ -1,9 +1,9 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useTransition, useState } from 'react'
+import { useTransition, useState, useEffect } from 'react'
 import { toast } from 'sonner'
-import { Pencil, Trash2, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
+import { Pencil, Trash2, ChevronLeft, ChevronRight, ExternalLink, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
@@ -30,6 +30,7 @@ interface Props {
 }
 
 export const COLUMNS_STORAGE_KEY = 'entries-table-columns'
+const GROUPBY_STORAGE_KEY = 'entries-table-groupby'
 
 export type ColumnId = 'date' | 'time' | 'duration' | 'project' | 'description' | 'tags' | 'link' | 'type'
 
@@ -63,6 +64,17 @@ export function loadColumnPrefs(): Record<ColumnId, boolean> {
     return { ...DEFAULT_VISIBLE, ...JSON.parse(raw) }
   } catch {
     return DEFAULT_VISIBLE
+  }
+}
+
+function loadGroupByPrefs(): { col: ColumnId | null; dir: 'asc' | 'desc' } {
+  if (typeof window === 'undefined') return { col: null, dir: 'asc' }
+  try {
+    const raw = localStorage.getItem(GROUPBY_STORAGE_KEY)
+    if (!raw) return { col: null, dir: 'asc' }
+    return JSON.parse(raw)
+  } catch {
+    return { col: null, dir: 'asc' }
   }
 }
 
@@ -112,6 +124,77 @@ const TYPE_BADGE: Record<TimeEntry['type'], { label: string; class: string }> = 
   },
 }
 
+function getGroupKey(
+  entry: TimeEntry,
+  col: ColumnId,
+  projectMap: Map<string, ProjectSummary>,
+  tagMap: Map<string, string>,
+): string {
+  switch (col) {
+    case 'date':
+      return formatDate(entry.date)
+    case 'project': {
+      const p = entry.project_id ? projectMap.get(entry.project_id) : null
+      return p?.name ?? 'No Project'
+    }
+    case 'type':
+      return TYPE_BADGE[entry.type].label
+    case 'tags': {
+      const firstId = entry.tags?.[0]
+      return firstId ? (tagMap.get(firstId) ?? firstId) : 'No Tags'
+    }
+    case 'duration': {
+      const h = Math.floor(entry.duration / 3_600_000)
+      return `${h}–${h + 1} h`
+    }
+    case 'time': {
+      const hour = String(new Date(entry.start_time).getHours()).padStart(2, '0')
+      return `${hour}:00`
+    }
+    case 'description':
+      return entry.description?.slice(0, 20) || 'No description'
+    case 'link':
+      return entry.link ? formatLinkHost(entry.link) : 'No link'
+    default:
+      return '—'
+  }
+}
+
+interface EntryGroup {
+  label: string
+  entries: TimeEntry[]
+}
+
+function buildGroups(
+  entries: TimeEntry[],
+  col: ColumnId,
+  dir: 'asc' | 'desc',
+  projectMap: Map<string, ProjectSummary>,
+  tagMap: Map<string, string>,
+): EntryGroup[] {
+  // Collect unique group labels preserving entry-natural order, then sort
+  const keyOf = (e: TimeEntry) => getGroupKey(e, col, projectMap, tagMap)
+
+  const sorted = [...entries].sort((a, b) => {
+    const ka = keyOf(a)
+    const kb = keyOf(b)
+    const cmp = ka.localeCompare(kb, undefined, { numeric: true, sensitivity: 'base' })
+    return dir === 'asc' ? cmp : -cmp
+  })
+
+  const groups: EntryGroup[] = []
+  for (const entry of sorted) {
+    const label = keyOf(entry)
+    const last = groups[groups.length - 1]
+    if (last && last.label === label) {
+      last.entries.push(entry)
+    } else {
+      groups.push({ label, entries: [entry] })
+    }
+  }
+  return groups
+}
+
 export default function EntriesTable({ entriesPage, projects, tags, filters, visibleCols }: Props) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -123,9 +206,47 @@ export default function EntriesTable({ entriesPage, projects, tags, filters, vis
   const [deleteIds, setDeleteIds] = useState<string[] | null>(null)
   const [isBusy, setIsBusy] = useState(false)
 
+  // Grouping state
+  const [groupCol, setGroupCol] = useState<ColumnId | null>(null)
+  const [groupDir, setGroupDir] = useState<'asc' | 'desc'>('asc')
+
+  useEffect(() => {
+    const prefs = loadGroupByPrefs()
+    setGroupCol(prefs.col)
+    setGroupDir(prefs.dir)
+  }, [])
+
+  function cycleGroup(col: ColumnId) {
+    let nextCol: ColumnId | null
+    let nextDir: 'asc' | 'desc'
+
+    if (groupCol !== col) {
+      nextCol = col
+      nextDir = 'asc'
+    } else if (groupDir === 'asc') {
+      nextCol = col
+      nextDir = 'desc'
+    } else {
+      nextCol = null
+      nextDir = 'asc'
+    }
+
+    setGroupCol(nextCol)
+    setGroupDir(nextDir)
+    localStorage.setItem(GROUPBY_STORAGE_KEY, JSON.stringify({ col: nextCol, dir: nextDir }))
+  }
+
   const projectMap = new Map(projects.map(p => [p.id, p]))
   const tagMap = new Map(tags.map(t => [t.id, t.name]))
   const { data: entries, page, totalPages } = entriesPage
+
+  // Build groups or flat list
+  const groups: EntryGroup[] | null = groupCol
+    ? buildGroups(entries, groupCol, groupDir, projectMap, tagMap)
+    : null
+
+  // Flat list of entries for checkbox logic
+  const allEntries = groups ? groups.flatMap(g => g.entries) : entries
 
   function navigate(params: Record<string, string | undefined>) {
     const sp = new URLSearchParams(searchParams.toString())
@@ -148,10 +269,10 @@ export default function EntriesTable({ entriesPage, projects, tags, filters, vis
   }
 
   function toggleAll() {
-    if (selected.size === entries.length) {
+    if (selected.size === allEntries.length) {
       setSelected(new Set())
     } else {
-      setSelected(new Set(entries.map(e => e.id)))
+      setSelected(new Set(allEntries.map(e => e.id)))
     }
   }
 
@@ -184,6 +305,179 @@ export default function EntriesTable({ entriesPage, projects, tags, filters, vis
   }
 
   const col = visibleCols
+
+  // Column header with sort/group indicator
+  function ColHeader({ id, label, className }: { id: ColumnId; label: string; className?: string }) {
+    const isActive = groupCol === id
+    return (
+      <th
+        className={`px-4 py-3 cursor-pointer select-none group ${className ?? ''}`}
+        onClick={() => cycleGroup(id)}
+        title={isActive ? `Grouped by ${label} (${groupDir})` : `Group by ${label}`}
+      >
+        <span className="inline-flex items-center gap-1">
+          {label}
+          <span className={`transition-colors ${isActive ? 'text-indigo-500 dark:text-indigo-400' : 'text-stone-300 dark:text-stone-600 group-hover:text-stone-400'}`}>
+            {isActive && groupDir === 'asc' ? (
+              <ChevronUp className="h-3 w-3" />
+            ) : isActive && groupDir === 'desc' ? (
+              <ChevronDown className="h-3 w-3" />
+            ) : (
+              <ChevronsUpDown className="h-3 w-3" />
+            )}
+          </span>
+        </span>
+      </th>
+    )
+  }
+
+  function renderRow(entry: TimeEntry, i: number) {
+    const project = entry.project_id ? projectMap.get(entry.project_id) : null
+    const badge = TYPE_BADGE[entry.type]
+    const isSelected = selected.has(entry.id)
+
+    return (
+      <tr
+        key={entry.id}
+        className={`transition-colors ${
+          isSelected
+            ? 'bg-indigo-50/60 dark:bg-indigo-900/10'
+            : i % 2 === 0
+            ? 'bg-white dark:bg-[var(--dark)]'
+            : 'bg-stone-50/50 dark:bg-[var(--dark-card)]/40'
+        } hover:bg-stone-50 dark:hover:bg-[var(--dark-hover)]`}
+      >
+        <td className="px-4 py-3">
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={() => toggleSelect(entry.id)}
+            className="rounded border-stone-300 dark:border-stone-600"
+            aria-label={`Select entry ${entry.id}`}
+          />
+        </td>
+        {col.date && (
+          <td className="px-4 py-3 text-stone-700 dark:text-stone-300 whitespace-nowrap">
+            {formatDate(entry.date)}
+          </td>
+        )}
+        {col.time && (
+          <td className="px-4 py-3 text-stone-600 dark:text-stone-400 whitespace-nowrap tabular-nums">
+            {formatTime(entry.start_time)} – {formatTime(entry.end_time)}
+          </td>
+        )}
+        {col.duration && (
+          <td className="px-4 py-3 text-stone-700 dark:text-stone-300 whitespace-nowrap tabular-nums font-medium">
+            {formatDuration(entry.duration)}
+          </td>
+        )}
+        {col.project && (
+          <td className="px-4 py-3">
+            {project ? (
+              <div className="flex items-center gap-1.5">
+                <span
+                  className="h-2.5 w-2.5 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: project.color }}
+                />
+                <span className="text-stone-700 dark:text-stone-300 truncate max-w-[120px]">
+                  {project.name}
+                </span>
+              </div>
+            ) : (
+              <span className="text-stone-400 dark:text-stone-600">—</span>
+            )}
+          </td>
+        )}
+        {col.description && (
+          <td className="px-4 py-3 max-w-xs">
+            <span
+              className="text-stone-700 dark:text-stone-300 truncate block max-w-[200px]"
+              title={entry.description}
+            >
+              {entry.description || (
+                <span className="text-stone-400 dark:text-stone-600 italic">No description</span>
+              )}
+            </span>
+          </td>
+        )}
+        {col.tags && (
+          <td className="px-4 py-3">
+            {entry.tags && entry.tags.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {entry.tags.slice(0, 3).map(tagId => {
+                  const name = tagMap.get(tagId) ?? tagId
+                  return (
+                    <span
+                      key={tagId}
+                      className="text-xs bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 rounded px-1.5 py-0.5 whitespace-nowrap"
+                    >
+                      {name}
+                    </span>
+                  )
+                })}
+                {entry.tags.length > 3 && (
+                  <span
+                    className="text-xs text-stone-400 dark:text-stone-500 self-center cursor-default"
+                    title={entry.tags.slice(3).map(id => tagMap.get(id) ?? id).join(', ')}
+                  >
+                    +{entry.tags.length - 3}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <span className="text-stone-400 dark:text-stone-600">—</span>
+            )}
+          </td>
+        )}
+        {col.link && (
+          <td className="px-4 py-3">
+            {entry.link ? (
+              <a
+                href={entry.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:underline max-w-[140px]"
+                title={entry.link}
+              >
+                <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate text-xs">{formatLinkHost(entry.link)}</span>
+              </a>
+            ) : (
+              <span className="text-stone-400 dark:text-stone-600">—</span>
+            )}
+          </td>
+        )}
+        {col.type && (
+          <td className="px-4 py-3">
+            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${badge.class}`}>
+              {badge.label}
+            </span>
+          </td>
+        )}
+        <td className="px-4 py-3">
+          <div className="flex items-center justify-end gap-1">
+            <button
+              onClick={() => setEditEntry(entry)}
+              className="p-1.5 rounded-lg text-stone-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-indigo-900/20 transition-colors"
+              aria-label="Edit entry"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => setDeleteIds([entry.id])}
+              className="p-1.5 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:text-rose-400 dark:hover:bg-rose-900/20 transition-colors"
+              aria-label="Delete entry"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </td>
+      </tr>
+    )
+  }
+
+  // Count total visible columns for group header colspan
+  const visibleColCount = ALL_COLUMNS.filter(c => col[c.id]).length + 2 // +2 for checkbox + actions
 
   return (
     <>
@@ -240,6 +534,23 @@ export default function EntriesTable({ entriesPage, projects, tags, filters, vis
             </div>
           )}
 
+          {/* Group-by indicator */}
+          {groupCol && (
+            <div className="mb-2 flex items-center gap-2 text-xs text-stone-500 dark:text-stone-400">
+              <span>Grouped by <span className="font-medium text-indigo-600 dark:text-indigo-400">{ALL_COLUMNS.find(c => c.id === groupCol)?.label}</span></span>
+              <button
+                onClick={() => {
+                  setGroupCol(null)
+                  setGroupDir('asc')
+                  localStorage.setItem(GROUPBY_STORAGE_KEY, JSON.stringify({ col: null, dir: 'asc' }))
+                }}
+                className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 underline"
+              >
+                Clear
+              </button>
+            </div>
+          )}
+
           {/* Table */}
           <div className="rounded-xl border border-stone-200 dark:border-[var(--dark-border)] overflow-x-auto">
             <table className="w-full text-sm">
@@ -248,171 +559,53 @@ export default function EntriesTable({ entriesPage, projects, tags, filters, vis
                   <th className="px-4 py-3 w-10">
                     <input
                       type="checkbox"
-                      checked={selected.size === entries.length && entries.length > 0}
+                      checked={selected.size === allEntries.length && allEntries.length > 0}
                       ref={el => {
-                        if (el) el.indeterminate = selected.size > 0 && selected.size < entries.length
+                        if (el) el.indeterminate = selected.size > 0 && selected.size < allEntries.length
                       }}
                       onChange={toggleAll}
                       className="rounded border-stone-300 dark:border-stone-600"
                       aria-label="Select all"
                     />
                   </th>
-                  {col.date && <th className="px-4 py-3">Date</th>}
-                  {col.time && <th className="px-4 py-3">Time</th>}
-                  {col.duration && <th className="px-4 py-3">Duration</th>}
-                  {col.project && <th className="px-4 py-3">Project</th>}
-                  {col.description && <th className="px-4 py-3 max-w-xs">Description</th>}
-                  {col.tags && <th className="px-4 py-3">Tags</th>}
-                  {col.link && <th className="px-4 py-3">Link</th>}
-                  {col.type && <th className="px-4 py-3">Type</th>}
+                  {col.date && <ColHeader id="date" label="Date" />}
+                  {col.time && <ColHeader id="time" label="Time" />}
+                  {col.duration && <ColHeader id="duration" label="Duration" />}
+                  {col.project && <ColHeader id="project" label="Project" />}
+                  {col.description && <ColHeader id="description" label="Description" className="max-w-xs" />}
+                  {col.tags && <ColHeader id="tags" label="Tags" />}
+                  {col.link && <ColHeader id="link" label="Link" />}
+                  {col.type && <ColHeader id="type" label="Type" />}
                   <th className="px-4 py-3 w-20 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100 dark:divide-[var(--dark-border)]">
-                {entries.map((entry, i) => {
-                  const project = entry.project_id ? projectMap.get(entry.project_id) : null
-                  const badge = TYPE_BADGE[entry.type]
-                  const isSelected = selected.has(entry.id)
-
-                  return (
-                    <tr
-                      key={entry.id}
-                      className={`transition-colors ${
-                        isSelected
-                          ? 'bg-indigo-50/60 dark:bg-indigo-900/10'
-                          : i % 2 === 0
-                          ? 'bg-white dark:bg-[var(--dark)]'
-                          : 'bg-stone-50/50 dark:bg-[var(--dark-card)]/40'
-                      } hover:bg-stone-50 dark:hover:bg-[var(--dark-hover)]`}
-                    >
-                      <td className="px-4 py-3">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => toggleSelect(entry.id)}
-                          className="rounded border-stone-300 dark:border-stone-600"
-                          aria-label={`Select entry ${entry.id}`}
-                        />
-                      </td>
-                      {col.date && (
-                        <td className="px-4 py-3 text-stone-700 dark:text-stone-300 whitespace-nowrap">
-                          {formatDate(entry.date)}
-                        </td>
-                      )}
-                      {col.time && (
-                        <td className="px-4 py-3 text-stone-600 dark:text-stone-400 whitespace-nowrap tabular-nums">
-                          {formatTime(entry.start_time)} – {formatTime(entry.end_time)}
-                        </td>
-                      )}
-                      {col.duration && (
-                        <td className="px-4 py-3 text-stone-700 dark:text-stone-300 whitespace-nowrap tabular-nums font-medium">
-                          {formatDuration(entry.duration)}
-                        </td>
-                      )}
-                      {col.project && (
-                        <td className="px-4 py-3">
-                          {project ? (
-                            <div className="flex items-center gap-1.5">
-                              <span
-                                className="h-2.5 w-2.5 rounded-full flex-shrink-0"
-                                style={{ backgroundColor: project.color }}
-                              />
-                              <span className="text-stone-700 dark:text-stone-300 truncate max-w-[120px]">
-                                {project.name}
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="text-stone-400 dark:text-stone-600">—</span>
-                          )}
-                        </td>
-                      )}
-                      {col.description && (
-                        <td className="px-4 py-3 max-w-xs">
-                          <span
-                            className="text-stone-700 dark:text-stone-300 truncate block max-w-[200px]"
-                            title={entry.description}
-                          >
-                            {entry.description || (
-                              <span className="text-stone-400 dark:text-stone-600 italic">No description</span>
+                {groups
+                  ? groups.map(group =>
+                      group.entries.map((entry, i) => {
+                        const isFirst = i === 0
+                        return (
+                          <>
+                            {isFirst && (
+                              <tr key={`group-${group.label}`} className="bg-indigo-50/60 dark:bg-indigo-900/10">
+                                <td colSpan={visibleColCount} className="px-4 py-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-indigo-700 dark:text-indigo-300 text-xs uppercase tracking-wider">
+                                      {group.label}
+                                    </span>
+                                    <span className="text-xs bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-full px-2 py-0.5 font-medium">
+                                      {group.entries.length} {group.entries.length === 1 ? 'entry' : 'entries'}
+                                    </span>
+                                  </div>
+                                </td>
+                              </tr>
                             )}
-                          </span>
-                        </td>
-                      )}
-                      {col.tags && (
-                        <td className="px-4 py-3">
-                          {entry.tags && entry.tags.length > 0 ? (
-                            <div className="flex flex-wrap gap-1">
-                              {entry.tags.slice(0, 3).map(tagId => {
-                                const name = tagMap.get(tagId) ?? tagId
-                                return (
-                                  <span
-                                    key={tagId}
-                                    className="text-xs bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 rounded px-1.5 py-0.5 whitespace-nowrap"
-                                  >
-                                    {name}
-                                  </span>
-                                )
-                              })}
-                              {entry.tags.length > 3 && (
-                                <span
-                                  className="text-xs text-stone-400 dark:text-stone-500 self-center cursor-default"
-                                  title={entry.tags.slice(3).map(id => tagMap.get(id) ?? id).join(', ')}
-                                >
-                                  +{entry.tags.length - 3}
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-stone-400 dark:text-stone-600">—</span>
-                          )}
-                        </td>
-                      )}
-                      {col.link && (
-                        <td className="px-4 py-3">
-                          {entry.link ? (
-                            <a
-                              href={entry.link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:underline max-w-[140px]"
-                              title={entry.link}
-                            >
-                              <ExternalLink className="h-3 w-3 flex-shrink-0" />
-                              <span className="truncate text-xs">{formatLinkHost(entry.link)}</span>
-                            </a>
-                          ) : (
-                            <span className="text-stone-400 dark:text-stone-600">—</span>
-                          )}
-                        </td>
-                      )}
-                      {col.type && (
-                        <td className="px-4 py-3">
-                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${badge.class}`}>
-                            {badge.label}
-                          </span>
-                        </td>
-                      )}
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => setEditEntry(entry)}
-                            className="p-1.5 rounded-lg text-stone-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-indigo-900/20 transition-colors"
-                            aria-label="Edit entry"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={() => setDeleteIds([entry.id])}
-                            className="p-1.5 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:text-rose-400 dark:hover:bg-rose-900/20 transition-colors"
-                            aria-label="Delete entry"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
+                            {renderRow(entry, i)}
+                          </>
+                        )
+                      })
+                    )
+                  : entries.map((entry, i) => renderRow(entry, i))}
               </tbody>
             </table>
           </div>

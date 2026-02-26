@@ -80,6 +80,11 @@ export default function App() {
     return () => window.removeEventListener('storage-quota-exceeded', handler)
   }, [showToast])
 
+  // On each popup open, trigger a premium-only delta sync (checks has_changes_since before pulling)
+  useEffect(() => {
+    chrome.runtime.sendMessage({ action: 'POPUP_OPENED' }).catch(() => null)
+  }, [])
+
   // Auth gate: show loading spinner or login screen when not authenticated
   if (authLoading) {
     return (
