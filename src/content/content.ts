@@ -559,6 +559,12 @@ chrome.runtime.onMessage.addListener((msg: ContentMessage) => {
 window.addEventListener('message', (event) => {
   if (event.source !== window) return
 
+  // Lightweight ping — just confirms the extension is installed and running
+  if (event.data?.type === 'WORK_TIMER_PING') {
+    window.postMessage({ type: 'WORK_TIMER_PONG' }, '*')
+    return
+  }
+
   if (event.data?.type === 'WORK_TIMER_AUTH') {
     chrome.runtime.sendMessage(
       {

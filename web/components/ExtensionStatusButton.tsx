@@ -3,19 +3,101 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Plug, PlugZap, WifiOff, Loader2 } from 'lucide-react'
 
-type Status = 'unknown' | 'connecting' | 'connected' | 'failed'
+type Status = 'probing' | 'unknown' | 'connecting' | 'connected' | 'failed'
 
-const STORAGE_KEY = 'extension_status'
+// Send a lightweight ping to check if the extension content script is running.
+// Returns a cleanup function.
+function pingExtension(onResult: (installed: boolean) => void, timeoutMs: number): () => void {
+  let done = false
+
+  const cleanup = () => {
+    done = true
+    clearTimeout(timer)
+    window.removeEventListener('message', handler)
+  }
+
+  const handler = (event: MessageEvent) => {
+    if (event.source !== window || event.data?.type !== 'WORK_TIMER_PONG') return
+    cleanup()
+    onResult(true)
+  }
+
+  const timer = setTimeout(() => {
+    if (!done) {
+      cleanup()
+      onResult(false)
+    }
+  }, timeoutMs)
+
+  window.addEventListener('message', handler)
+  window.postMessage({ type: 'WORK_TIMER_PING' }, '*')
+
+  return cleanup
+}
+
+// Attempt to relay auth to the extension content script.
+// Returns a cleanup function.
+function relayAuth(
+  accessToken: string,
+  refreshToken: string,
+  onResult: (success: boolean) => void,
+  timeoutMs: number,
+  retryInterval = 500,
+): () => void {
+  let done = false
+  let interval: ReturnType<typeof setInterval> | null = null
+
+  const cleanup = () => {
+    done = true
+    clearTimeout(timer)
+    if (interval) clearInterval(interval)
+    window.removeEventListener('message', handler)
+  }
+
+  const handler = (event: MessageEvent) => {
+    if (event.source !== window || event.data?.type !== 'WORK_TIMER_AUTH_RESPONSE') return
+    cleanup()
+    onResult(event.data.success === true)
+  }
+
+  const timer = setTimeout(() => {
+    if (!done) {
+      cleanup()
+      onResult(false)
+    }
+  }, timeoutMs)
+
+  window.addEventListener('message', handler)
+
+  const send = () => {
+    if (!done) window.postMessage({ type: 'WORK_TIMER_AUTH', accessToken, refreshToken }, '*')
+  }
+  send()
+  if (retryInterval > 0) interval = setInterval(send, retryInterval)
+
+  return cleanup
+}
 
 export function ExtensionStatusButton() {
-  const [status, setStatus] = useState<Status>('unknown')
+  // Start as 'probing' — never trust stale state; always verify on mount
+  const [status, setStatus] = useState<Status>('probing')
 
+  // Silent auto-probe on mount: ping only (no auth relay), 2s timeout
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved === 'connected') setStatus('connected')
-    else if (saved === 'failed') setStatus('failed')
+    let cancelled = false
+    const cleanup = pingExtension(
+      (installed) => {
+        if (!cancelled) setStatus(installed ? 'connected' : 'unknown')
+      },
+      2000,
+    )
+    return () => {
+      cancelled = true
+      cleanup()
+    }
   }, [])
 
+  // Manual reconnect: sends auth tokens, 8s window with 500ms retries
   const handleReconnect = useCallback(async () => {
     if (status === 'connecting') return
     setStatus('connecting')
@@ -24,50 +106,19 @@ export function ExtensionStatusButton() {
       const res = await fetch('/api/auth/session')
       if (!res.ok) {
         setStatus('failed')
-        localStorage.setItem(STORAGE_KEY, 'failed')
         return
       }
 
       const { accessToken, refreshToken } = await res.json()
-      let done = false
-
-      const cleanup = () => {
-        done = true
-        clearTimeout(timer)
-        clearInterval(retryInterval)
-        window.removeEventListener('message', handler)
-      }
-
-      const handler = (event: MessageEvent) => {
-        if (event.source !== window || event.data?.type !== 'WORK_TIMER_AUTH_RESPONSE') return
-        cleanup()
-        if (event.data.success) {
-          setStatus('connected')
-          localStorage.setItem(STORAGE_KEY, 'connected')
-        } else {
-          setStatus('failed')
-          localStorage.setItem(STORAGE_KEY, 'failed')
-        }
-      }
-
-      const timer = setTimeout(() => {
-        if (!done) {
-          cleanup()
-          setStatus('failed')
-          localStorage.setItem(STORAGE_KEY, 'failed')
-        }
-      }, 8000)
-
-      window.addEventListener('message', handler)
-
-      const sendAuth = () => {
-        if (!done) window.postMessage({ type: 'WORK_TIMER_AUTH', accessToken, refreshToken }, '*')
-      }
-      sendAuth()
-      const retryInterval = setInterval(sendAuth, 500)
+      relayAuth(
+        accessToken,
+        refreshToken,
+        (success) => setStatus(success ? 'connected' : 'failed'),
+        8000,
+        500,
+      )
     } catch {
       setStatus('failed')
-      localStorage.setItem(STORAGE_KEY, 'failed')
     }
   }, [status])
 
@@ -78,14 +129,16 @@ export function ExtensionStatusButton() {
       ? 'Connecting to extension…'
       : status === 'failed'
       ? 'Extension not detected — click to retry'
-      : 'Reconnect extension'
+      : status === 'probing'
+      ? 'Checking extension…'
+      : 'Connect extension'
 
   const iconClass = 'h-4 w-4'
 
   return (
     <button
       onClick={handleReconnect}
-      disabled={status === 'connecting'}
+      disabled={status === 'connecting' || status === 'probing'}
       title={title}
       aria-label={title}
       className={`p-1.5 rounded-md transition-colors disabled:cursor-wait ${
@@ -96,7 +149,7 @@ export function ExtensionStatusButton() {
           : 'text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-[var(--dark-hover)]'
       }`}
     >
-      {status === 'connecting' ? (
+      {status === 'connecting' || status === 'probing' ? (
         <Loader2 className={`${iconClass} animate-spin`} />
       ) : status === 'connected' ? (
         <PlugZap className={iconClass} />

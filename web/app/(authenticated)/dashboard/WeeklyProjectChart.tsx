@@ -145,7 +145,7 @@ export default function WeeklyProjectChart({ entries, projects, weekStartDay, wo
             <p className="text-sm font-semibold text-stone-800 dark:text-stone-100">{t('title')}</p>
             {hasData && (
               <p className="text-xs text-stone-400 dark:text-stone-500">
-                {totalHours.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}h {t('total')}
+                {totalHours.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}h {t('total')}
               </p>
             )}
           </div>
@@ -196,7 +196,7 @@ export default function WeeklyProjectChart({ entries, projects, weekStartDay, wo
                   )}>
                     {dayTotal > 0
                       ? dayTotal >= 1
-                        ? `${dayTotal.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}h`
+                        ? `${dayTotal.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}h`
                         : `${Math.round(dayTotal * 60)}m`
                       : ''}
                   </span>
@@ -239,7 +239,7 @@ export default function WeeklyProjectChart({ entries, projects, weekStartDay, wo
                               <span className="text-stone-600 dark:text-stone-300 truncate max-w-[80px]">{p.name}</span>
                             </div>
                             <span className="font-semibold text-stone-800 dark:text-stone-100 tabular-nums">
-                              {p.hours.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}h
+                              {p.hours.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}h
                             </span>
                           </div>
                         ))}
@@ -248,7 +248,7 @@ export default function WeeklyProjectChart({ entries, projects, weekStartDay, wo
                         <div className="mt-1.5 pt-1.5 border-t border-stone-100 dark:border-[var(--dark-border)] flex items-center justify-between">
                           <span className="text-stone-500 dark:text-stone-400">{t('totalLabel')}</span>
                           <span className="font-bold text-stone-900 dark:text-stone-100 tabular-nums">
-                            {dayTotal.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}h
+                            {dayTotal.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}h
                           </span>
                         </div>
                       )}

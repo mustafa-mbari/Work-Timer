@@ -61,7 +61,7 @@ export default function OverviewTab({ subscription, stats, isPremium, userEmail,
     },
     {
       label: t('stats.timeEntries'),
-      value: stats.total_entries.toLocaleString(),
+      value: stats.total_entries.toLocaleString('en-US'),
       sub: t('stats.timeEntriesDesc'),
       icon: Hash,
       iconBg: 'bg-emerald-100 dark:bg-emerald-900/30',
@@ -70,7 +70,7 @@ export default function OverviewTab({ subscription, stats, isPremium, userEmail,
     },
     {
       label: t('stats.activeDays'),
-      value: stats.active_days.toLocaleString(),
+      value: stats.active_days.toLocaleString('en-US'),
       sub: t('stats.activeDaysDesc'),
       icon: CalendarDays,
       iconBg: 'bg-amber-100 dark:bg-amber-900/30',
@@ -79,9 +79,9 @@ export default function OverviewTab({ subscription, stats, isPremium, userEmail,
     },
     {
       label: t('stats.projects'),
-      value: stats.total_projects.toLocaleString(),
+      value: stats.total_projects.toLocaleString('en-US'),
       sub: stats.last_active_date
-        ? t('stats.lastActive', { date: new Date(stats.last_active_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) })
+        ? t('stats.lastActive', { date: new Date(stats.last_active_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) })
         : t('stats.noActivity'),
       icon: FolderOpen,
       iconBg: 'bg-rose-100 dark:bg-rose-900/30',

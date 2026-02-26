@@ -160,7 +160,7 @@ export default function TimeChart({ data, title = 'Time by Project' }: Props) {
             </p>
             {chartData.length > 0 && (
               <p className="text-2xl font-bold text-stone-900 dark:text-stone-100 mt-0.5">
-                {periodTotalHours.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}h
+                {periodTotalHours.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}h
               </p>
             )}
           </div>
@@ -306,7 +306,7 @@ export default function TimeChart({ data, title = 'Time by Project' }: Props) {
                                 </span>
                               </div>
                               <span className="text-xs font-semibold text-stone-800 dark:text-stone-100 tabular-nums">
-                                {(item.value as number).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}h
+                                {(item.value as number).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}h
                               </span>
                             </div>
                           ))}
@@ -315,7 +315,7 @@ export default function TimeChart({ data, title = 'Time by Project' }: Props) {
                           <div className="mt-2 pt-2 border-t border-stone-100 dark:border-[var(--dark-border)] flex items-center justify-between">
                             <span className="text-xs font-medium text-stone-500 dark:text-stone-400">Total</span>
                             <span className="text-sm font-bold text-stone-900 dark:text-stone-100 tabular-nums">
-                              {dayTotal.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}h
+                              {dayTotal.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}h
                             </span>
                           </div>
                         )}

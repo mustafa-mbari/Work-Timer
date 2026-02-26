@@ -91,7 +91,7 @@ export default function EarningsView({ data, groupBy = 'tag' }: Props) {
                   </TableCell>
                   <TableCell className="text-right text-stone-600 dark:text-stone-400">{p.hours.toFixed(1)}</TableCell>
                   <TableCell className="text-right text-stone-600 dark:text-stone-400">{currencySymbol}{p.rate.toFixed(2)}/hr</TableCell>
-                  <TableCell className="text-right font-semibold text-stone-900 dark:text-stone-100">{currencySymbol}{p.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                  <TableCell className="text-right font-semibold text-stone-900 dark:text-stone-100">{currencySymbol}{p.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                 </TableRow>
               ))}
               {/* Grand total row */}
@@ -100,7 +100,7 @@ export default function EarningsView({ data, groupBy = 'tag' }: Props) {
                 <TableCell className="text-right font-bold text-stone-900 dark:text-stone-100">{data.total_hours.toFixed(1)}</TableCell>
                 <TableCell />
                 <TableCell className="text-right font-bold text-emerald-600 dark:text-emerald-400 text-lg">
-                  {currencySymbol}{data.grand_total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {currencySymbol}{data.grand_total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </TableCell>
               </TableRow>
             </TableBody>

@@ -5,7 +5,6 @@ import { getToday } from '../utils/date'
 import { POMODORO_WORK_MS, IDLE_THRESHOLD_MS } from '../constants/timers'
 import { getSettings, getTimerState, setTimerState, saveEntry, updateEntry, getEntries, getLocalUserId, setLocalUserId, hasAnyLocalData, clearAllLocalData } from '../storage'
 import { applyExternalSession, signOut as authSignOut, refreshSubscription, getSession } from '../auth/authState'
-import { isCurrentUserPremium } from '../premium/featureGate'
 import { syncAll, getSyncState, uploadAllLocalData, diagnoseSyncState } from '../sync/syncEngine'
 import { setupRealtime, teardownRealtime } from '../sync/realtimeSubscription'
 import { pushUserStats } from '../sync/statsSync'
@@ -668,7 +667,7 @@ async function advancePomodoroPhase(pomState: PomodoroState): Promise<void> {
 // ============================================================
 
 chrome.runtime.onMessage.addListener(
-  (message: TimerMessage, _sender, sendResponse: (response: TimerResponse) => void) => {
+  (message: TimerMessage, sender, sendResponse: (response: TimerResponse) => void) => {
     const handle = async (): Promise<TimerResponse> => {
       try {
         switch (message.action) {
@@ -723,9 +722,9 @@ chrome.runtime.onMessage.addListener(
             return { success: true }
           }
           case 'POPUP_OPENED': {
-            // Trigger delta sync on popup open for premium users only
-            const premium = await isCurrentUserPremium()
-            if (premium) void syncAll()
+            // Trigger delta sync on popup open — same gate as startup sync (session check only)
+            const session = await getSession()
+            if (session) void syncAll()
             return { success: true }
           }
           case 'SYNC_STATUS': {
@@ -798,6 +797,13 @@ chrome.runtime.onMessage.addListener(
               return { success: true }
             }
             await setLocalUserId(session.userId)
+            // Only open the dashboard if the user logged in from a login/auth page
+            // (not when reconnecting from an already-authenticated page like /dashboard)
+            const senderUrl = sender.tab?.url ?? ''
+            const isLoginPage = !senderUrl.includes(WEBSITE_URL) ||
+              senderUrl.includes('/login') ||
+              senderUrl.includes('/register') ||
+              senderUrl.includes('/auth/')
             // Respond immediately, then do heavy work in background
             void (async () => {
               await refreshSubscription().catch(() => null)
@@ -810,7 +816,7 @@ chrome.runtime.onMessage.addListener(
               void syncAll().catch(() => null)
               void pushUserStats().catch(() => null)
               setupRealtime(session.userId)
-              maybeOpenDashboard()
+              if (isLoginPage) maybeOpenDashboard()
             })()
             return { success: true }
           }
@@ -1206,7 +1212,7 @@ chrome.commands.onCommand.addListener(async (command) => {
 // The companion website sends the Supabase session here after login.
 // The website must be listed in manifest.json "externally_connectable.matches".
 chrome.runtime.onMessageExternal.addListener(
-  (message: { action: string; accessToken?: string; refreshToken?: string }, _sender, sendResponse) => {
+  (message: { action: string; accessToken?: string; refreshToken?: string }, sender, sendResponse) => {
     const handle = async () => {
       if (message.action === 'AUTH_LOGIN' && message.accessToken && message.refreshToken) {
         const session = await applyExternalSession(message.accessToken, message.refreshToken)
@@ -1226,6 +1232,13 @@ chrome.runtime.onMessageExternal.addListener(
           await setLocalUserId(session.userId)
           sendResponse({ success: true })
 
+          // Only open the dashboard if the user came from a login/auth page,
+          // not when reconnecting from an already-authenticated page
+          const senderUrl = sender.url ?? ''
+          const isLoginPage = senderUrl.includes('/login') ||
+            senderUrl.includes('/register') ||
+            senderUrl.includes('/auth/')
+
           // Heavy async work runs in background after response
           await refreshSubscription().catch(() => null)
           await chrome.alarms.create(SUBSCRIPTION_ALARM, { periodInMinutes: 60 })
@@ -1239,7 +1252,7 @@ chrome.runtime.onMessageExternal.addListener(
           void syncAll().catch(() => null)
           void pushUserStats().catch(() => null)
           setupRealtime(session.userId)
-          maybeOpenDashboard()
+          if (isLoginPage) maybeOpenDashboard()
         } else {
           sendResponse({ success: false, error: 'Failed to apply session' })
         }

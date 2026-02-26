@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { UserMenu } from '@/components/UserMenu'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import { ExtensionStatusButton } from '@/components/ExtensionStatusButton'
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar'
 
 const PAGE_META: { match: string; title: string; description?: string }[] = [
@@ -87,8 +88,11 @@ export default function AppHeader({ userInfo }: Props) {
         <div className="flex items-center gap-6 shrink-0">
           {/* Language selector */}
           <div className="hidden sm:block">
-            <LanguageSwitcher compact />
+            <LanguageSwitcher />
           </div>
+
+          {/* Extension reconnect */}
+          <ExtensionStatusButton />
 
           {/* Theme toggle */}
           <ThemeToggle />

@@ -118,7 +118,7 @@ Message passing via `chrome.runtime` with action types:
 - Timer: `START_TIMER`, `PAUSE_TIMER`, `RESUME_TIMER`, `STOP_TIMER`, `GET_TIMER_STATE`
 - Sync: `TIMER_SYNC` (broadcast from background to popup/tabs)
 - Pomodoro: `START_POMODORO`, `STOP_POMODORO`, `SKIP_POMODORO_PHASE`
-- Auth: `AUTH_LOGIN` (handled in both `onMessage` and `onMessageExternal`), `AUTH_LOGOUT`, `AUTH_STATE`
+- Auth: `AUTH_LOGIN` (handled in both `onMessage` and `onMessageExternal`), `AUTH_LOGOUT`, `AUTH_STATE`, `POPUP_OPENED`
 - Idle: `IDLE_KEEP`, `IDLE_DISCARD`
 
 ### Website <-> Extension Auth Bridge
@@ -128,6 +128,17 @@ Two approaches run simultaneously for maximum compatibility:
 2. **Content script relay** (`window.postMessage` → content script → `chrome.runtime.sendMessage`): No extension ID needed. Content script in `src/content/content.ts` listens for `WORK_TIMER_AUTH` messages and relays to background via internal `onMessage`. Works with any unpacked installation.
 
 The `ExtensionBridge.tsx` component retries postMessage every 500ms for 8s to handle content script loading timing.
+
+**Ping/Pong (extension detection):** A lightweight `WORK_TIMER_PING` → `WORK_TIMER_PONG` message pair lets the website detect whether the content script is running WITHOUT triggering a full `AUTH_LOGIN`. Used by `ExtensionStatusButton` and `ExtensionBanner` for silent probing on mount.
+
+**`maybeOpenDashboard()` guard:** Opens `/dashboard` in a new tab only when `AUTH_LOGIN` comes from a login/register/auth page (checks `sender.tab?.url` in `onMessage`, `sender.url` in `onMessageExternal`). Prevents opening a new tab when the user is already on the dashboard and clicks "Reconnect Extension".
+
+**`POPUP_OPENED` message:** Sent by popup `App.tsx` on mount to trigger a delta sync (`syncAll()`) for authenticated users.
+
+### Extension Header Components (Authenticated Website)
+
+- **`ExtensionStatusButton`** (`web/components/ExtensionStatusButton.tsx`): Icon button in `AppHeader.tsx` showing extension connection state. Probes with ping on mount; manual click sends `WORK_TIMER_AUTH` to reconnect. States: `probing` → `unknown`/`connected`; on click `connecting` → `connected`/`failed`.
+- **`ExtensionBanner`** (`web/components/ExtensionBanner.tsx`): Indigo banner below AppHeader shown when extension is NOT installed. Uses ping probe (no auth). Dismissible per-session via `sessionStorage`. Chrome Store URL is a `#` placeholder until published.
 
 ### Data Model
 

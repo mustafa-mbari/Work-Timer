@@ -167,7 +167,7 @@ export default function EarningsChart({ data, currencySymbol }: Props) {
             </p>
             {chartData.length > 0 && (
               <p className="text-2xl font-bold text-stone-900 dark:text-stone-100 mt-0.5">
-                {currencySymbol}{periodTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {currencySymbol}{periodTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             )}
           </div>
@@ -314,7 +314,7 @@ export default function EarningsChart({ data, currencySymbol }: Props) {
                                 </span>
                               </div>
                               <span className="text-xs font-semibold text-stone-800 dark:text-stone-100 tabular-nums">
-                                {currencySymbol}{(item.value as number).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                {currencySymbol}{(item.value as number).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </span>
                             </div>
                           ))}
@@ -323,7 +323,7 @@ export default function EarningsChart({ data, currencySymbol }: Props) {
                           <div className="mt-2 pt-2 border-t border-stone-100 dark:border-[var(--dark-border)] flex items-center justify-between">
                             <span className="text-xs font-medium text-stone-500 dark:text-stone-400">Total</span>
                             <span className="text-sm font-bold text-stone-900 dark:text-stone-100 tabular-nums">
-                              {currencySymbol}{dayTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              {currencySymbol}{dayTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                           </div>
                         )}
