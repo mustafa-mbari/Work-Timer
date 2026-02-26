@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Share2, Settings, Users } from 'lucide-react'
+import { BarChart3, Send, Clock, Users, Eye, EyeOff } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import type { GroupWithMeta } from '@/lib/repositories/groups'
-import ShareHistoryTab from './ShareHistoryTab'
-import SharingSettingsPanel from './SharingSettingsPanel'
+import type { GroupShare } from '@/lib/repositories/groupShares'
+import MemberStatsCard, { type OwnStats } from './MemberStatsCard'
+import CurrentSharePanel from './CurrentSharePanel'
 
 interface ProjectItem { id: string; name: string; color: string }
 interface TagItem { id: string; name: string; color: string }
@@ -14,9 +15,11 @@ interface Props {
   group: GroupWithMeta
   projects: ProjectItem[]
   tags: TagItem[]
+  userId: string
+  ownStats: OwnStats
 }
 
-type Tab = 'shares' | 'settings' | 'members'
+type Tab = 'overview' | 'share' | 'history' | 'members'
 
 interface MemberInfo {
   user_id: string
@@ -25,10 +28,41 @@ interface MemberInfo {
   display_name: string | null
 }
 
-export default function MemberView({ group, projects, tags }: Props) {
-  const [tab, setTab] = useState<Tab>('shares')
+function formatPeriod(share: GroupShare): string {
+  const from = new Date(share.date_from + 'T00:00:00')
+  const to = new Date(share.date_to + 'T00:00:00')
+  const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' }
+  if (share.period_type === 'day') return from.toLocaleDateString(undefined, opts)
+  return `${from.toLocaleDateString(undefined, opts)} – ${to.toLocaleDateString(undefined, opts)}`
+}
+
+function getStatusBadge(status: string) {
+  switch (status) {
+    case 'approved':
+      return <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300">Approved</span>
+    case 'denied':
+      return <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300">Denied</span>
+    case 'submitted':
+      return <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300">Submitted</span>
+    default:
+      return <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300">Open</span>
+  }
+}
+
+export default function MemberView({ group, projects, tags, userId, ownStats }: Props) {
+  const [tab, setTab] = useState<Tab>('overview')
   const [members, setMembers] = useState<MemberInfo[]>([])
   const [membersLoading, setMembersLoading] = useState(false)
+  const [sharingEnabled, setSharingEnabled] = useState<boolean | null>(null)
+  const [history, setHistory] = useState<GroupShare[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+
+  // Fetch sharing status on mount
+  useEffect(() => {
+    fetch(`/api/groups/${group.id}/sharing`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setSharingEnabled(data.sharing_enabled) })
+  }, [group.id])
 
   const loadMembers = useCallback(async () => {
     setMembersLoading(true)
@@ -43,25 +77,41 @@ export default function MemberView({ group, projects, tags }: Props) {
     }
   }, [group.id])
 
+  const loadHistory = useCallback(async () => {
+    setHistoryLoading(true)
+    try {
+      const res = await fetch(`/api/groups/${group.id}/shares?mine=true`)
+      if (res.ok) {
+        const data: GroupShare[] = await res.json()
+        // Show approved and denied shares only
+        setHistory(data.filter(s => s.status === 'approved' || s.status === 'denied'))
+      }
+    } finally {
+      setHistoryLoading(false)
+    }
+  }, [group.id])
+
   useEffect(() => {
     if (tab === 'members' && members.length === 0) loadMembers()
-  }, [tab, members.length, loadMembers])
+    if (tab === 'history' && history.length === 0) loadHistory()
+  }, [tab, members.length, history.length, loadMembers, loadHistory])
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
-    { key: 'shares', label: 'My Shares', icon: <Share2 className="h-3.5 w-3.5" /> },
-    { key: 'settings', label: 'Sharing Settings', icon: <Settings className="h-3.5 w-3.5" /> },
+    { key: 'overview', label: 'Overview', icon: <BarChart3 className="h-3.5 w-3.5" /> },
+    { key: 'share', label: 'Current Share', icon: <Send className="h-3.5 w-3.5" /> },
+    { key: 'history', label: 'History', icon: <Clock className="h-3.5 w-3.5" /> },
     { key: 'members', label: 'Members', icon: <Users className="h-3.5 w-3.5" /> },
   ]
 
   return (
     <div className="space-y-4">
       {/* Tab bar */}
-      <div className="flex border-b border-stone-200 dark:border-[var(--dark-border)]">
+      <div className="flex border-b border-stone-200 dark:border-[var(--dark-border)] overflow-x-auto">
         {tabs.map(t => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap ${
               tab === t.key
                 ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
                 : 'border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
@@ -74,12 +124,88 @@ export default function MemberView({ group, projects, tags }: Props) {
       </div>
 
       {/* Tab content */}
-      {tab === 'shares' && (
-        <ShareHistoryTab groupId={group.id} projects={projects} tags={tags} />
+      {tab === 'overview' && (
+        <div className="space-y-4">
+          <MemberStatsCard ownStats={ownStats} />
+
+          {/* Sharing status */}
+          <div className="rounded-xl bg-stone-50 dark:bg-[var(--dark-elevated)] px-4 py-3 flex items-center gap-3">
+            {sharingEnabled ? (
+              <Eye className="h-4 w-4 text-emerald-500" />
+            ) : (
+              <EyeOff className="h-4 w-4 text-stone-400" />
+            )}
+            <div>
+              <p className="text-sm font-medium text-stone-700 dark:text-stone-200">
+                {sharingEnabled === null ? 'Loading...' : sharingEnabled ? 'Sharing is on' : 'Sharing is off'}
+              </p>
+              <p className="text-xs text-stone-400">
+                {sharingEnabled
+                  ? 'Group admins can request your time data for reviews'
+                  : 'Enable sharing in your group settings to participate in share requests'
+                }
+              </p>
+            </div>
+          </div>
+        </div>
       )}
 
-      {tab === 'settings' && (
-        <SharingSettingsPanel groupId={group.id} projects={projects} />
+      {tab === 'share' && (
+        <CurrentSharePanel
+          groupId={group.id}
+          projects={projects}
+          tags={tags}
+          hasSchedule={!!group.share_frequency}
+        />
+      )}
+
+      {tab === 'history' && (
+        <div className="space-y-2">
+          {historyLoading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-16 rounded-xl bg-stone-100 dark:bg-stone-800 animate-pulse" />
+              ))}
+            </div>
+          ) : history.length === 0 ? (
+            <div className="rounded-xl border-2 border-dashed border-stone-200 dark:border-[var(--dark-border)] p-10 text-center">
+              <Clock className="h-8 w-8 text-stone-300 dark:text-stone-600 mx-auto mb-2" />
+              <p className="text-sm text-stone-500 dark:text-stone-400">No share history yet</p>
+            </div>
+          ) : (
+            history.map(share => (
+              <div
+                key={share.id}
+                className="rounded-xl bg-white dark:bg-[var(--dark-card)] border border-stone-100 dark:border-[var(--dark-border)] shadow-sm p-4"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-stone-800 dark:text-stone-100">
+                      {formatPeriod(share)}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1 text-xs text-stone-400">
+                      <span>{share.total_hours.toFixed(1)}h</span>
+                      <span className="text-stone-300 dark:text-stone-600">|</span>
+                      <span>{share.entry_count} entries</span>
+                      {share.reviewed_at && (
+                        <>
+                          <span className="text-stone-300 dark:text-stone-600">|</span>
+                          <span>Reviewed {new Date(share.reviewed_at).toLocaleDateString()}</span>
+                        </>
+                      )}
+                    </div>
+                    {share.admin_comment && (
+                      <p className="text-xs text-rose-600 dark:text-rose-400 mt-1.5">
+                        Admin: {share.admin_comment}
+                      </p>
+                    )}
+                  </div>
+                  {getStatusBadge(share.status)}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       )}
 
       {tab === 'members' && (

@@ -162,6 +162,8 @@ export const createGroupSchema = z.object({
 
 export const updateGroupSchema = z.object({
   name: z.string().min(1).max(100).optional(),
+  share_frequency: z.enum(['daily', 'weekly', 'monthly']).nullable().optional(),
+  share_deadline_day: z.number().int().min(0).max(31).nullable().optional(),
 })
 
 export const inviteMemberSchema = z.object({
@@ -204,6 +206,17 @@ export const createShareSchema = z.object({
   note:        z.string().max(280).optional(),
 })
 export const sharePreviewSchema = createShareSchema
+
+// --- Share Approval Workflow ---
+export const submitShareSchema = z.object({
+  project_ids: z.array(z.string()).nullable().default(null),
+  tag_ids:     z.array(z.string()).nullable().default(null),
+})
+
+export const reviewShareSchema = z.object({
+  action:  z.enum(['approve', 'deny']),
+  comment: z.string().max(500).optional(),
+})
 
 // --- Admin Groups ---
 export const adminUpdateGroupSchema = z.object({

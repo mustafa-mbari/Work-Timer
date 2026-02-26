@@ -121,7 +121,11 @@ export async function createGroup(name: string, ownerId: string) {
   return { data: group as Group, error: null }
 }
 
-export async function updateGroup(groupId: string, ownerId: string, data: { name?: string }) {
+export async function updateGroup(groupId: string, ownerId: string, data: {
+  name?: string
+  share_frequency?: 'daily' | 'weekly' | 'monthly' | null
+  share_deadline_day?: number | null
+}) {
   const supabase = await createServiceClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('groups') as any)

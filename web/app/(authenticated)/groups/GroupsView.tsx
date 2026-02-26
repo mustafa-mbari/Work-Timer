@@ -21,14 +21,18 @@ import MemberView from './MemberView'
 interface ProjectItem { id: string; name: string; color: string }
 interface TagItem { id: string; name: string; color: string }
 
+interface OwnStats { today_hours: number; week_hours: number; month_hours: number }
+
 interface Props {
   initialGroups: GroupWithMeta[]
   initialInvitations: InvitationWithGroup[]
   projects: ProjectItem[]
   tags: TagItem[]
+  userId: string
+  ownStats: OwnStats
 }
 
-export default function GroupsView({ initialGroups, initialInvitations, projects, tags }: Props) {
+export default function GroupsView({ initialGroups, initialInvitations, projects, tags, userId, ownStats }: Props) {
   const [groups, setGroups] = useState(initialGroups)
   const [invitations, setInvitations] = useState(initialInvitations)
   const [selectedGroupId, setSelectedGroupId] = useState<string>(groups[0]?.id ?? '')
@@ -304,6 +308,8 @@ export default function GroupsView({ initialGroups, initialInvitations, projects
           group={selectedGroup}
           projects={projects}
           tags={tags}
+          userId={userId}
+          ownStats={ownStats}
         />
       )}
     </div>

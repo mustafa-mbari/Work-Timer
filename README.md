@@ -35,6 +35,15 @@ Track your work time with stopwatch, manual entry, and Pomodoro modes. Start wit
 - **Smooth Animations** -- Backdrop blur modals, fade-in transitions
 - **Keyboard Shortcuts** -- Alt+Shift+S (start/stop), Alt+Shift+P (pause), Alt+Shift+T (open popup)
 
+### Groups & Team Management
+
+- **Create & Join Groups** -- Create groups with join codes, invite members by email
+- **Timesheet Approval Workflow** -- Admin configures recurring share schedules (daily/weekly/monthly), system auto-creates open shares for members
+- **Member Submission** -- Members review auto-filled time entries, filter by project, and submit for review
+- **Admin Review** -- Approve or deny submissions with required comment on denial; denied shares return to member for editing and resubmission
+- **Team Reports** -- Generate reports for any date range across all members, export as CSV
+- **Privacy-First** -- Members see team names only (no hours); admin sees data only after member submits
+
 ### Advanced Features
 
 - **Projects** -- Color-coded with inline creation, editing, and default tag linking
@@ -60,6 +69,7 @@ Track your work time with stopwatch, manual entry, and Pomodoro modes. Start wit
 
 - **Dashboard** -- Account overview, weekly stacked bar chart (CSS, per-project colors, hours per day), project/tag management with inline editing, default tag linking
 - **Earnings** -- Tag-based earnings reports with daily charts, groupBy toggle (tag/project), CSV export
+- **Groups** -- Team time management with timesheet approval workflow. Admins configure recurring share schedules, review and approve/deny member submissions, generate CSV reports. Members submit auto-filled timesheets, view own stats, and see team member names (no hours)
 - **Analytics** -- Weekly trends, project breakdowns, peak hours, streaks
 - **Billing** -- Subscription management, promo codes, Stripe checkout
 - **Admin Panel** -- User management, platform stats, domain whitelisting, promo codes

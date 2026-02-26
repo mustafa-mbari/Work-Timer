@@ -164,6 +164,8 @@ export interface DbGroup {
   join_code: string | null
   max_members: number
   created_at: string
+  share_frequency: 'daily' | 'weekly' | 'monthly' | null
+  share_deadline_day: number | null
 }
 
 export interface DbGroupMember {
@@ -489,6 +491,12 @@ export interface DbGroupShare {
   entries: unknown  // JSONB snapshot
   note: string | null
   created_at: string
+  status: 'open' | 'submitted' | 'approved' | 'denied'
+  admin_comment: string | null
+  submitted_at: string | null
+  reviewed_at: string | null
+  reviewed_by: string | null
+  due_date: string | null
 }
 
 // --- Group types ---
@@ -516,6 +524,8 @@ interface DbGroupInsert {
   join_code?: string | null
   max_members?: number
   created_at?: string
+  share_frequency?: 'daily' | 'weekly' | 'monthly' | null
+  share_deadline_day?: number | null
 }
 interface DbGroupUpdate {
   name?: string
@@ -524,6 +534,8 @@ interface DbGroupUpdate {
   join_code?: string | null
   max_members?: number
   created_at?: string
+  share_frequency?: 'daily' | 'weekly' | 'monthly' | null
+  share_deadline_day?: number | null
 }
 
 interface DbGroupMemberInsert {
@@ -572,6 +584,12 @@ interface DbGroupShareInsert {
   tag_ids?: string[] | null
   note?: string | null
   created_at?: string
+  status?: 'open' | 'submitted' | 'approved' | 'denied'
+  admin_comment?: string | null
+  submitted_at?: string | null
+  reviewed_at?: string | null
+  reviewed_by?: string | null
+  due_date?: string | null
 }
 interface DbGroupShareUpdate {
   group_id?: string
@@ -587,6 +605,12 @@ interface DbGroupShareUpdate {
   tag_ids?: string[] | null
   note?: string | null
   created_at?: string
+  status?: 'open' | 'submitted' | 'approved' | 'denied'
+  admin_comment?: string | null
+  submitted_at?: string | null
+  reviewed_at?: string | null
+  reviewed_by?: string | null
+  due_date?: string | null
 }
 
 // Database type map for @supabase/supabase-js typed client

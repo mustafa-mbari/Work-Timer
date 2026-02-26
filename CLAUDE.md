@@ -150,7 +150,7 @@ Core types in `src/types/`:
 
 ### Database
 
-Supabase PostgreSQL with RLS. Tables: `profiles`, `subscriptions`, `projects`, `tags`, `time_entries`, `user_settings`, `sync_cursors`, `promo_codes`, `promo_redemptions`, `whitelisted_domains`, `stripe_events`.
+Supabase PostgreSQL with RLS. Tables: `profiles`, `subscriptions`, `projects`, `tags`, `time_entries`, `user_settings`, `sync_cursors`, `promo_codes`, `promo_redemptions`, `whitelisted_domains`, `stripe_events`, `groups`, `group_members`, `group_invitations`, `group_sharing_settings`, `group_shares`.
 
 Shared types in `shared/types.ts` define typed interfaces for all tables with a `Database` type map for the Supabase client. SQL migrations in `supabase/migrations/`.
 
@@ -163,6 +163,10 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 - `earnings.ts` -- `get_earnings_report` RPC with `groupBy` parameter ('tag' | 'project')
 - `admin.ts` -- RPC calls (`get_platform_stats`, `get_active_users`, `get_user_growth`, etc.) + auth admin
 - `analytics.ts` -- `get_user_analytics` RPC
+- `groups.ts` -- CRUD + member management + join code + `GroupWithMeta` type (includes `role`, `member_count`, `share_frequency`, `share_deadline_day`)
+- `groupShares.ts` -- Timesheet approval workflow: `getSharesByStatus()`, `autoCreateOpenShare()`, `submitShare()`, `reviewShare()`, snapshot JSONB entries
+- `groupSharing.ts` -- Per-member sharing toggle + `getUserOwnStats()` (today/week/month hours)
+- `groupInvitations.ts` -- Invite by email with 7-day expiry
 
 **Services** (business logic):
 - `auth.ts` -- `requireAuth()`, `getUser()` (React `cache()` wrapped), `requireAdminApi()`, `requireAuthApi()`
@@ -239,6 +243,53 @@ Earnings are **tag-based** (not project-based). Each tag can have:
 - Website earnings page has a "By Tag" / "By Project" toggle (`GroupByToggle` component, `?groupBy=project` search param)
 
 **Migration**: `supabase/migrations/024_earnings_to_tags.sql` -- adds tag columns, project `default_tag_id`, replaces RPC
+
+### Groups & Timesheet Approval System
+
+Groups enable team time management with an admin-controlled **timesheet approval workflow**:
+
+**Workflow**: Admin configures schedule → system auto-creates open shares → members review & submit → admin approves or denies (with comment) → denied shares return to open for resubmission.
+
+**Status flow**: `Open → Submitted → Approved` or `Submitted → Denied → Open (resubmit)`
+
+**Database tables**:
+- `groups` -- name, owner, join_code, max_members, `share_frequency` (daily/weekly/monthly), `share_deadline_day`
+- `group_members` -- (group_id, user_id) with role (admin/member)
+- `group_invitations` -- email invitations with 7-day expiry
+- `group_sharing_settings` -- per-member sharing_enabled toggle + shared_project_ids filter
+- `group_shares` -- timesheet records with `status` (open/submitted/approved/denied), `entries` (JSONB snapshot), `admin_comment`, `submitted_at`, `reviewed_at`, `reviewed_by`, `due_date`
+
+**Auto-creation logic**: When member fetches `GET /api/groups/{id}/shares?status=open&mine=true` and group has `share_frequency` set, computes current period dates and auto-creates an open share if none exists. Entries are populated at **submit time** (fresh snapshot from `time_entries`), not at creation.
+
+**Schedule settings**: `share_frequency` = `daily|weekly|monthly`, `share_deadline_day` = day of week (0=Mon..6=Sun for weekly) or day of month (1-31 for monthly). Stored on `groups` table.
+
+**Component architecture**:
+```
+GroupsView (client orchestrator)
+  ├── Group selector + Create/Join + Invitations banner
+  ├── [isAdmin] → AdminDashboard
+  │     ├── Team tab → AdminTeamTable (status badges: Open/Submitted/Approved/Overdue)
+  │     ├── Reviews tab → PendingReviewsPanel → ReviewDialog (approve/deny)
+  │     ├── Reports tab → ReportDialog (date range + CSV export)
+  │     ├── Schedule tab → ScheduleSettings (frequency + deadline config)
+  │     └── Manage tab → AdminMembersPanel (invite/remove/roles)
+  └── [!isAdmin] → MemberView
+        ├── Overview tab → MemberStatsCard (today/week/month hours) + sharing status
+        ├── Current Share tab → CurrentSharePanel (auto-filled entries, project filter, submit)
+        ├── History tab → past shares with status badges (approved/denied only)
+        └── Members tab → name list with role badges (NO hours data)
+```
+
+**API routes**:
+- `GET /api/groups/{id}/shares?status=&mine=true` -- list shares with status filter + auto-creation
+- `POST /api/groups/{id}/shares/{shareId}/submit` -- member submits (auto-fills entries snapshot)
+- `POST /api/groups/{id}/shares/{shareId}/review` -- admin approves/denies (comment required on deny)
+- `GET /api/groups/{id}/shares/preview` -- preview entry count/hours before submit
+- `GET /api/groups/{id}/shared-entries` -- admin fetches member summaries via `get_group_members_summary` RPC
+
+**Privacy**: Admin can only see member data AFTER the member submits. Members can see other members' names and roles but NOT their hours or entries.
+
+**Migrations**: `013_groups.sql` (tables), `018_group_sharing.sql` (sharing settings + RPCs), `026_group_shares.sql` (snapshot table), `027_share_approval_workflow.sql` (approval columns + schedule settings)
 
 ### Security
 
