@@ -6,13 +6,20 @@ import { Plug, PlugZap, WifiOff, Loader2 } from 'lucide-react'
 type Status = 'probing' | 'unknown' | 'connecting' | 'connected' | 'failed'
 
 // Send a lightweight ping to check if the extension content script is running.
-// Returns a cleanup function.
-function pingExtension(onResult: (installed: boolean) => void, timeoutMs: number): () => void {
+// Retries every retryInterval ms until a pong is received or timeoutMs elapses.
+// Content scripts load at document_idle and may not be ready on the first ping.
+function pingExtension(
+  onResult: (installed: boolean) => void,
+  timeoutMs: number,
+  retryInterval = 300,
+): () => void {
   let done = false
+  let interval: ReturnType<typeof setInterval> | null = null
 
   const cleanup = () => {
     done = true
     clearTimeout(timer)
+    if (interval) clearInterval(interval)
     window.removeEventListener('message', handler)
   }
 
@@ -30,7 +37,10 @@ function pingExtension(onResult: (installed: boolean) => void, timeoutMs: number
   }, timeoutMs)
 
   window.addEventListener('message', handler)
-  window.postMessage({ type: 'WORK_TIMER_PING' }, '*')
+
+  const send = () => { if (!done) window.postMessage({ type: 'WORK_TIMER_PING' }, '*') }
+  send()
+  if (retryInterval > 0) interval = setInterval(send, retryInterval)
 
   return cleanup
 }

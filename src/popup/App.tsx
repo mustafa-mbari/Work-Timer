@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
-import type { View } from '@/types'
+import type { View, SyncStatus } from '@/types'
 import TimerView from '@/components/TimerView'
 
 // Lazy load non-default views to reduce initial popup load time
@@ -80,7 +80,25 @@ export default function App() {
     return () => window.removeEventListener('storage-quota-exceeded', handler)
   }, [showToast])
 
-  // On each popup open, trigger a premium-only delta sync (checks has_changes_since before pulling)
+  // Track sync status so the navbar can show a subtle syncing indicator
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle')
+
+  useEffect(() => {
+    // Read initial sync state
+    chrome.storage.local.get('syncState').then(({ syncState }) => {
+      if (syncState?.status) setSyncStatus(syncState.status as SyncStatus)
+    })
+    // Listen for live updates while popup is open
+    const listener = (changes: { [key: string]: chrome.storage.StorageChange }) => {
+      if (changes['syncState']?.newValue?.status) {
+        setSyncStatus(changes['syncState'].newValue.status as SyncStatus)
+      }
+    }
+    chrome.storage.onChanged.addListener(listener)
+    return () => chrome.storage.onChanged.removeListener(listener)
+  }, [])
+
+  // On each popup open, trigger a delta sync (session-gated in background)
   useEffect(() => {
     chrome.runtime.sendMessage({ action: 'POPUP_OPENED' }).catch(() => null)
   }, [])
@@ -108,7 +126,7 @@ export default function App() {
           {view === 'settings' && <SettingsView />}
         </Suspense>
       </main>
-      <NavBar currentView={view} onViewChange={setView} />
+      <NavBar currentView={view} onViewChange={setView} syncStatus={syncStatus} />
       <InitialSyncDialog
         isOpen={showInitialSync}
         entryCount={localEntryCount}

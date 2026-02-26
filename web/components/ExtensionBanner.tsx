@@ -7,12 +7,18 @@ import { X, Download, Chrome } from 'lucide-react'
 const CHROME_STORE_URL = '#'
 const DISMISS_KEY = 'extension_banner_dismissed'
 
-function pingExtension(onResult: (installed: boolean) => void, timeoutMs: number): () => void {
+function pingExtension(
+  onResult: (installed: boolean) => void,
+  timeoutMs: number,
+  retryInterval = 300,
+): () => void {
   let done = false
+  let interval: ReturnType<typeof setInterval> | null = null
 
   const cleanup = () => {
     done = true
     clearTimeout(timer)
+    if (interval) clearInterval(interval)
     window.removeEventListener('message', handler)
   }
 
@@ -30,7 +36,10 @@ function pingExtension(onResult: (installed: boolean) => void, timeoutMs: number
   }, timeoutMs)
 
   window.addEventListener('message', handler)
-  window.postMessage({ type: 'WORK_TIMER_PING' }, '*')
+
+  const send = () => { if (!done) window.postMessage({ type: 'WORK_TIMER_PING' }, '*') }
+  send()
+  if (retryInterval > 0) interval = setInterval(send, retryInterval)
 
   return cleanup
 }

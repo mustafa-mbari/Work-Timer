@@ -122,6 +122,11 @@
   50% { opacity: 0.5; }
 }
 
+@keyframes slide {
+  0% { transform: translateX(-150%); }
+  100% { transform: translateX(350%); }
+}
+
 /* Rolling timer digit faces */
 .rolling-face {
   background: #d8d8d8;
