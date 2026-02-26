@@ -193,6 +193,18 @@ export const updateSharingSettingsSchema = z.object({
   shared_project_ids: z.array(z.string()).nullable().optional().transform(v => v ?? null),
 })
 
+// --- Group Shares (snapshot model) ---
+const dateRegex = /^\d{4}-\d{2}-\d{2}$/
+export const createShareSchema = z.object({
+  period_type: z.enum(['day', 'week', 'month']),
+  date_from:   z.string().regex(dateRegex, 'Invalid date'),
+  date_to:     z.string().regex(dateRegex, 'Invalid date'),
+  project_ids: z.array(z.string()).nullable().default(null),
+  tag_ids:     z.array(z.string()).nullable().default(null),
+  note:        z.string().max(280).optional(),
+})
+export const sharePreviewSchema = createShareSchema
+
 // --- Admin Groups ---
 export const adminUpdateGroupSchema = z.object({
   group_id: z.string().min(1),

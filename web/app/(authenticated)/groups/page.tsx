@@ -5,6 +5,7 @@ import { isAllInUser } from '@/lib/services/groups'
 import { getUserGroups } from '@/lib/repositories/groups'
 import { getUserPendingInvitations } from '@/lib/repositories/groupInvitations'
 import { getUserProjects } from '@/lib/repositories/projects'
+import { getUserTags } from '@/lib/repositories/tags'
 import { Button } from '@/components/ui/button'
 import GroupsView from './GroupsView'
 
@@ -37,15 +38,18 @@ export default async function GroupsPage() {
     )
   }
 
-  const [groups, invitations, allProjects] = await Promise.all([
+  const [groups, invitations, allProjects, allTags] = await Promise.all([
     getUserGroups(user.id),
     getUserPendingInvitations(user.email ?? ''),
     getUserProjects(user.id),
+    getUserTags(user.id),
   ])
 
   const projects = allProjects
     .filter(p => !p.archived)
     .map(p => ({ id: p.id, name: p.name, color: p.color }))
 
-  return <GroupsView initialGroups={groups} initialInvitations={invitations} projects={projects} />
+  const tags = allTags.map(t => ({ id: t.id, name: t.name, color: t.color ?? '#6366F1' }))
+
+  return <GroupsView initialGroups={groups} initialInvitations={invitations} projects={projects} tags={tags} />
 }

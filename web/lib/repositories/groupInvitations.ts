@@ -1,4 +1,4 @@
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import type { Database } from '@/lib/shared/types'
 
 type GroupInvitation = Database['public']['Tables']['group_invitations']['Row']
