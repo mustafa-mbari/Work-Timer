@@ -475,6 +475,22 @@ export interface DbGroupSharingSettings {
   updated_at: string
 }
 
+export interface DbGroupShare {
+  id: string
+  group_id: string
+  user_id: string
+  period_type: 'day' | 'week' | 'month'
+  date_from: string
+  date_to: string
+  project_ids: string[] | null
+  tag_ids: string[] | null
+  entry_count: number
+  total_hours: number
+  entries: unknown  // JSONB snapshot
+  note: string | null
+  created_at: string
+}
+
 // --- Group types ---
 interface DbGroupSharingSettingsInsert {
   group_id: string
@@ -542,6 +558,37 @@ interface DbGroupInvitationUpdate {
   expires_at?: string
 }
 
+interface DbGroupShareInsert {
+  group_id: string
+  user_id: string
+  period_type: 'day' | 'week' | 'month'
+  date_from: string
+  date_to: string
+  entry_count: number
+  total_hours: number
+  entries: unknown
+  id?: string
+  project_ids?: string[] | null
+  tag_ids?: string[] | null
+  note?: string | null
+  created_at?: string
+}
+interface DbGroupShareUpdate {
+  group_id?: string
+  user_id?: string
+  period_type?: 'day' | 'week' | 'month'
+  date_from?: string
+  date_to?: string
+  entry_count?: number
+  total_hours?: number
+  entries?: unknown
+  id?: string
+  project_ids?: string[] | null
+  tag_ids?: string[] | null
+  note?: string | null
+  created_at?: string
+}
+
 // Database type map for @supabase/supabase-js typed client
 export type Database = {
   public: {
@@ -561,6 +608,7 @@ export type Database = {
       group_members: { Row: DbGroupMember; Insert: DbGroupMemberInsert; Update: DbGroupMemberUpdate; Relationships: [] }
       group_invitations: { Row: DbGroupInvitation; Insert: DbGroupInvitationInsert; Update: DbGroupInvitationUpdate; Relationships: [] }
       group_sharing_settings: { Row: DbGroupSharingSettings; Insert: DbGroupSharingSettingsInsert; Update: DbGroupSharingSettingsUpdate; Relationships: [] }
+      group_shares: { Row: DbGroupShare; Insert: DbGroupShareInsert; Update: DbGroupShareUpdate; Relationships: [] }
     }
     Views: Record<string, never>
     Functions: {

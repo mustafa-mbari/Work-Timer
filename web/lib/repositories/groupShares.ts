@@ -186,19 +186,22 @@ export async function getGroupShares(groupId: string): Promise<GroupShareWithMet
     .select('*')
     .eq('group_id', groupId)
     .order('created_at', { ascending: false })
+    .returns<GroupShare[]>()
 
   if (!shares?.length) return []
 
   const userIds = [...new Set(shares.map(s => s.user_id))]
+  type ProfileRow = { id: string; email: string; display_name: string | null }
   const { data: profiles } = await supabase
     .from('profiles')
     .select('id, email, display_name')
     .in('id', userIds)
+    .returns<ProfileRow[]>()
 
   const profileMap = new Map((profiles ?? []).map(p => [p.id, p]))
 
   return shares.map(s => ({
-    ...(s as GroupShare),
+    ...s,
     sharer_email: profileMap.get(s.user_id)?.email ?? '',
     sharer_name:  profileMap.get(s.user_id)?.display_name ?? null,
   }))
@@ -216,8 +219,9 @@ export async function getMemberShares(groupId: string, userId: string): Promise<
     .eq('group_id', groupId)
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
+    .returns<GroupShare[]>()
 
-  return (data ?? []) as GroupShare[]
+  return data ?? []
 }
 
 /**
