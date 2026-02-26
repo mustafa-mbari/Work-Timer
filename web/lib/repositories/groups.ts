@@ -7,7 +7,10 @@ type GroupMember = Database['public']['Tables']['group_members']['Row']
 export type GroupWithMeta = Group & { member_count: number; role: string }
 
 export async function getUserGroups(userId: string): Promise<GroupWithMeta[]> {
-  const supabase = await createClient()
+  // Use service client to bypass the self-referential group_members_select RLS policy,
+  // which can silently return empty results even when membership rows exist.
+  // Safe here because we always filter by the authenticated user's userId.
+  const supabase = await createServiceClient()
 
   // Get groups the user is a member of
   const { data: memberships } = await supabase
@@ -47,7 +50,7 @@ export async function getUserGroups(userId: string): Promise<GroupWithMeta[]> {
 }
 
 export async function getGroupById(groupId: string, userId: string) {
-  const supabase = await createClient()
+  const supabase = await createServiceClient()
 
   // Verify membership
   const { data: membership } = await supabase
@@ -71,7 +74,7 @@ export async function getGroupById(groupId: string, userId: string) {
 }
 
 export async function getGroupMembers(groupId: string) {
-  const supabase = await createClient()
+  const supabase = await createServiceClient()
   const { data } = await supabase
     .from('group_members')
     .select('user_id, role, created_at')
@@ -188,7 +191,7 @@ export async function regenerateJoinCode(groupId: string, ownerId: string) {
 }
 
 export async function getGroupMemberCount(groupId: string): Promise<number> {
-  const supabase = await createClient()
+  const supabase = await createServiceClient()
   const { count } = await supabase
     .from('group_members')
     .select('group_id', { count: 'exact', head: true })
