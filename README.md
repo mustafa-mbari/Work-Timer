@@ -52,11 +52,12 @@ Track your work time with stopwatch, manual entry, and Pomodoro modes. Start wit
 - **Multi-Device** -- Seamless cross-browser sync
 
 ### Companion Website
-- **Dashboard** -- Account overview, weekly stacked bar chart (per-project hours), project/tag management with inline editing, default tag linking
+- **Dashboard** -- Account overview, weekly stacked bar chart (CSS, per-project colors, hours per day), project/tag management with inline editing, default tag linking
 - **Earnings** -- Tag-based earnings reports with daily charts, groupBy toggle (tag/project), CSV export
 - **Analytics** -- Weekly trends, project breakdowns, peak hours, streaks
 - **Billing** -- Subscription management, promo codes, Stripe checkout
 - **Admin Panel** -- User management, platform stats, domain whitelisting, promo codes
+- **UI Test Lab** -- Admin-only page (`/ui-test`) for prototyping alternative UI designs across Entries, Timer, Quick Add, Dashboard, Project Picker, and Daily Goal tabs; each tab has multiple design variants for side-by-side comparison
 
 ---
 

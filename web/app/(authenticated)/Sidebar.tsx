@@ -14,6 +14,7 @@ import {
   Settings2,
   Zap,
   Shield,
+  FlaskConical,
   PanelLeft,
   Check,
   type LucideIcon,
@@ -283,6 +284,13 @@ export default function AppSidebar({ isAdmin, isPremium, isAllIn, userInfo }: Pr
                 label={tn('adminPanel')}
                 icon={Shield}
                 isActive={isActive('/admin')}
+                open={open}
+              />
+              <NavItem
+                href="/ui-test"
+                label="UI Test"
+                icon={FlaskConical}
+                isActive={isActive('/ui-test')}
                 open={open}
               />
             </div>

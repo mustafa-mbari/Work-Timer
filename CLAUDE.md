@@ -89,7 +89,8 @@ src/
 web/
   app/
     (authenticated)/    # Route group (dashboard, billing, analytics, entries)
-                        #   dashboard/ includes WeeklyProjectChart (stacked bar, Recharts)
+                        #   dashboard/ includes WeeklyProjectChart (CSS stacked bars, no Recharts)
+                        #   ui-test/ — admin-only UI prototype lab (sidebar nav, requireAdminPage())
     admin/              # Admin panel (overview, users, stats, domains, promos, subscriptions)
     api/                # API routes (checkout, billing, webhooks, admin CRUD, promo)
     auth/               # OAuth callback + extension bridge (postMessage relay)
@@ -181,8 +182,10 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 - Dashboard `page.tsx` fetches week entries with 1 extra day before week start (handles entries crossing midnight into the week)
 
 ### Dashboard Weekly Chart (`WeeklyProjectChart.tsx`)
-- Stacked bar chart (Recharts) showing per-project hours for each day of the current week
-- Respects `weekStartDay` (0=Sunday, 1=Monday) and `workingDays` bitmask from user settings
+- CSS stacked bars (no Recharts) showing per-project hours for each working day of the current week
+- Hours label shown above every day column; today's column highlighted in indigo
+- Hover tooltip shows per-project breakdown + day total
+- Respects `weekStartDay` (0=Sunday, 1=Monday) and `workingDays` **count** (5/6/7 — days from week start, NOT a bitmask)
 - Splits entries that cross midnight into per-day slices using `start_time`/`end_time` timestamps
 - Uses project colors; "No project" entries shown in stone-400
 
@@ -293,6 +296,20 @@ Earnings are **tag-based** (not project-based). Each tag can have:
 - `SessionsTab.tsx` has a "Reconnect Extension" button using `fetch('/api/auth/session')` + `postMessage`
 - Background `AUTH_LOGIN` handler sends `sendResponse` immediately, then does heavy work (sync, upload, etc.) asynchronously
 - Content script `AUTH_LOGIN` messages go through `onMessage` (internal), not `onMessageExternal` (external)
+
+### workingDays is a COUNT, not a bitmask
+- `working_days` in `user_settings` is a count: `5` = Mon–Fri, `6` = Mon–Sat, `7` = Mon–Sun
+- Validated as `z.number().int().min(1).max(7)` in `web/lib/validation.ts`
+- Extension default: `5` (see `src/storage/index.ts` and `src/utils/date.ts`)
+- Website default in `dashboard/page.tsx`: `settings?.working_days ?? 5`
+- `WeeklyProjectChart` uses `Array.from({ length: count })` from week start — do NOT use bitmask logic (`1 << d.getDay()`)
+
+### UI Test Lab (`web/app/(authenticated)/ui-test/`)
+- Admin-only page visible in the sidebar; protected by `requireAdminPage()` in `page.tsx`
+- `UITestLab.tsx` — single `'use client'` file with all mock data + variant components inline
+- Tabs: Entries List (4 variants), Timer Widget (9 + 3 improved variants), Quick Add (4), Dashboard (16), Project Picker (4), Daily Goal (10)
+- Timer improved variants include tag chip multi-select and typeable duration inputs
+- No API calls; all state is local `useState` only; no i18n (hardcoded English)
 
 ### Date Handling (UTC vs Local)
 - NEVER use `toISOString().slice(0, 10)` to get a local date -- it returns UTC and shifts dates in UTC+ timezones after midnight

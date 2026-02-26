@@ -44,7 +44,7 @@ export default async function DashboardPage() {
   ])
 
   const weekStartDay = settings?.week_start_day ?? 1
-  const workingDays = settings?.working_days ?? 0b0111110 // Mon-Fri default
+  const workingDays = settings?.working_days ?? 5 // Mon-Fri default (count, not bitmask)
   const { dateFrom, dateTo } = getWeekRange(weekStartDay)
 
   // Fetch 1 day before week start to catch entries that cross midnight into the week
