@@ -471,7 +471,7 @@ function MembersTab({
       const thisYYYYMM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
       const sharedThisMonth = new Set<string>(
         sharesData
-          .filter((s: { date_from: string; user_id: string }) => s.date_from.startsWith(thisYYYYMM) || s.date_to.startsWith(thisYYYYMM))
+          .filter((s: { date_from: string; date_to: string; user_id: string }) => s.date_from.startsWith(thisYYYYMM) || s.date_to.startsWith(thisYYYYMM))
           .map((s: { user_id: string }) => s.user_id)
       )
 
