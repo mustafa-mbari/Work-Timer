@@ -118,17 +118,19 @@ export async function createGroupShare(
 
   // 2. Resolve project names/colors
   const projectIds = [...new Set(filtered.map(e => e.project_id).filter(Boolean) as string[])]
-  const { data: projects } = projectIds.length
-    ? await supabase.from('projects').select('id, name, color').in('id', projectIds)
-    : { data: [] }
-  const projectMap = new Map((projects ?? []).map(p => [p.id, p]))
+  type ProjectRow = { id: string; name: string; color: string }
+  const projects: ProjectRow[] = projectIds.length
+    ? ((await supabase.from('projects').select('id, name, color').in('id', projectIds).returns<ProjectRow[]>()).data ?? [])
+    : []
+  const projectMap = new Map(projects.map(p => [p.id, p]))
 
   // 3. Resolve tag names
   const allTagIds = [...new Set(filtered.flatMap(e => e.tags ?? []))]
-  const { data: tags } = allTagIds.length
-    ? await supabase.from('tags').select('id, name').in('id', allTagIds)
-    : { data: [] }
-  const tagMap = new Map((tags ?? []).map(t => [t.id, t.name as string]))
+  type TagRow = { id: string; name: string }
+  const tags: TagRow[] = allTagIds.length
+    ? ((await supabase.from('tags').select('id, name').in('id', allTagIds).returns<TagRow[]>()).data ?? [])
+    : []
+  const tagMap = new Map(tags.map(t => [t.id, t.name]))
 
   // 4. Build snapshot entries
   const entries: SnapshotEntry[] = filtered.map(e => {
