@@ -556,7 +556,7 @@ function MembersTab({
                     {m.display_name || m.email}
                   </p>
                   {m.shared_this_month && (
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" title="Shared this month" />
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" aria-label="Shared this month" />
                   )}
                 </div>
                 {m.display_name && (

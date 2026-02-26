@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
+import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { Toaster } from '@/components/ui/sonner'
@@ -45,6 +46,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <ThemeProvider initialTheme={initialTheme}>
             {children}
             <Toaster position="bottom-right" />
+            <Analytics />
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>
