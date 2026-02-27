@@ -14,17 +14,30 @@ function buildPlanMap(): Record<string, Plan> {
   const lifetime = process.env.STRIPE_PRICE_LIFETIME
   const allinMonthly = process.env.STRIPE_PRICE_ALLIN_MONTHLY
   const allinYearly = process.env.STRIPE_PRICE_ALLIN_YEARLY
+  const team10Monthly = process.env.STRIPE_PRICE_TEAM_10_MONTHLY
+  const team10Yearly = process.env.STRIPE_PRICE_TEAM_10_YEARLY
+  const team20Monthly = process.env.STRIPE_PRICE_TEAM_20_MONTHLY
+  const team20Yearly = process.env.STRIPE_PRICE_TEAM_20_YEARLY
   if (monthly) map[monthly] = 'premium_monthly'
   if (yearly) map[yearly] = 'premium_yearly'
   if (lifetime) map[lifetime] = 'premium_lifetime'
   if (allinMonthly) map[allinMonthly] = 'allin_monthly'
   if (allinYearly) map[allinYearly] = 'allin_yearly'
+  if (team10Monthly) map[team10Monthly] = 'team_10_monthly'
+  if (team10Yearly) map[team10Yearly] = 'team_10_yearly'
+  if (team20Monthly) map[team20Monthly] = 'team_20_monthly'
+  if (team20Yearly) map[team20Yearly] = 'team_20_yearly'
   return map
 }
 
 const PLAN_MAP = buildPlanMap()
 
-const VALID_PLANS = ['premium_monthly', 'premium_yearly', 'premium_lifetime', 'allin_monthly', 'allin_yearly'] as const
+const VALID_PLANS = [
+  'premium_monthly', 'premium_yearly', 'premium_lifetime',
+  'allin_monthly', 'allin_yearly',
+  'team_10_monthly', 'team_10_yearly',
+  'team_20_monthly', 'team_20_yearly',
+] as const
 
 function resolveCheckoutPlan(metadata: Record<string, string> | null): Plan | null {
   const plan = metadata?.plan
@@ -34,6 +47,10 @@ function resolveCheckoutPlan(metadata: Record<string, string> | null): Plan | nu
   if (plan === 'monthly') return 'premium_monthly'
   if (plan === 'allin_monthly') return 'allin_monthly'
   if (plan === 'allin_yearly') return 'allin_yearly'
+  if (plan === 'team_10_monthly') return 'team_10_monthly'
+  if (plan === 'team_10_yearly') return 'team_10_yearly'
+  if (plan === 'team_20_monthly') return 'team_20_monthly'
+  if (plan === 'team_20_yearly') return 'team_20_yearly'
   if (VALID_PLANS.includes(plan as typeof VALID_PLANS[number])) return plan as Plan
   return null
 }

@@ -2,12 +2,12 @@ import { getSubscriptionPlanStatus } from '@/lib/repositories/subscriptions'
 import { getGroupMemberCount } from '@/lib/repositories/groups'
 
 /**
- * Check if a user has an active All-In subscription.
+ * Check if a user has an active Team/All-In subscription (includes group features).
  */
 export async function isAllInUser(userId: string): Promise<boolean> {
   const sub = await getSubscriptionPlanStatus(userId)
   if (!sub) return false
-  return sub.plan.startsWith('allin') && sub.status === 'active'
+  return (sub.plan.startsWith('allin') || sub.plan.startsWith('team_')) && sub.status === 'active'
 }
 
 /**

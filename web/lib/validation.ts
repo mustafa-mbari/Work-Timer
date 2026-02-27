@@ -1,10 +1,20 @@
 import { z } from 'zod'
 
-const VALID_PLANS = ['premium_monthly', 'premium_yearly', 'allin_monthly', 'allin_yearly'] as const
+const VALID_PLANS = [
+  'premium_monthly', 'premium_yearly',
+  'allin_monthly', 'allin_yearly',
+  'team_10_monthly', 'team_10_yearly',
+  'team_20_monthly', 'team_20_yearly',
+] as const
 
 // --- Checkout ---
 export const checkoutSchema = z.object({
-  plan: z.enum(['monthly', 'yearly', 'allin_monthly', 'allin_yearly']),
+  plan: z.enum([
+    'monthly', 'yearly',                    // Pro plans (map to premium_*)
+    'team_10_monthly', 'team_10_yearly',    // Team 10 plans
+    'team_20_monthly', 'team_20_yearly',    // Team 20 plans
+    'allin_monthly', 'allin_yearly',        // Legacy
+  ]),
 })
 
 // --- Promo codes ---

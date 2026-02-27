@@ -100,7 +100,7 @@ web/
     globals.css         # Tailwind imports + dark mode variables
   components/
     ui/                 # shadcn/ui components
-    Navbar.tsx, PricingCard.tsx, ThemeToggle.tsx
+    Navbar.tsx, PricingPlans.tsx, ThemeToggle.tsx
   lib/
     repositories/       # Typed Supabase query functions (7 modules)
     services/           # Business logic (auth, analytics, billing)

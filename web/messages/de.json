@@ -160,7 +160,7 @@
       "freePlan": {
         "name": "Kostenloser Plan",
         "badge": "Dauerhaft",
-        "description": "5 Projekte · 30-Tage-Verlauf · Alle Timer-Modi · Nur lokale Speicherung",
+        "description": "5 Projekte · 14-Tage-Verlauf · Alle Timer-Modi · Nur lokale Speicherung",
         "price": "0 €",
         "noCreditCard": "Keine Kreditkarte erforderlich"
       },
@@ -477,15 +477,16 @@
     },
     "freePlanFeatures": [
       "Bis zu 5 Projekte",
-      "30-Tage-Verlauf",
-      "Nur lokale Speicherung"
+      "14-Tage-Verlauf",
+      "Nur lokale Speicherung",
+      "Begrenzte Statistiken"
     ],
     "features": [
       "Unbegrenzte Projekte",
-      "Vollständiger Verlauf (kein 30-Tage-Limit)",
+      "Vollständiger Verlauf",
       "CSV- und Excel-Export",
       "Cloud-Synchronisierung über alle Geräte",
-      "Erweiterte Analysen",
+      "Unbegrenzte Statistiken & Einnahmen",
       "Prioritäts-Support"
     ],
     "portalOpening": "Wird geöffnet...",

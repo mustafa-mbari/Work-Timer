@@ -5,7 +5,10 @@ import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 
 interface CheckoutButtonProps {
-  plan: 'monthly' | 'yearly' | 'allin_monthly' | 'allin_yearly'
+  plan: 'monthly' | 'yearly'
+    | 'team_10_monthly' | 'team_10_yearly'
+    | 'team_20_monthly' | 'team_20_yearly'
+    | 'allin_monthly' | 'allin_yearly'
   label: string
   highlight?: boolean
 }

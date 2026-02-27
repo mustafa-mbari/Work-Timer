@@ -160,7 +160,7 @@
       "freePlan": {
         "name": "Free Plan",
         "badge": "Forever",
-        "description": "5 projects · 30-day history · All timer modes · Local storage only",
+        "description": "5 projects · 14-day history · All timer modes · Local storage only",
         "price": "$0",
         "noCreditCard": "No credit card required"
       },
@@ -477,15 +477,16 @@
     },
     "freePlanFeatures": [
       "Up to 5 projects",
-      "30-day history",
-      "Local storage only"
+      "14-day history",
+      "Local storage only",
+      "Limited statistics"
     ],
     "features": [
       "Unlimited projects",
-      "Full history (no 30-day limit)",
+      "Full history",
       "CSV & Excel export",
       "Cloud sync across devices",
-      "Advanced analytics",
+      "Unlimited statistics & earnings",
       "Priority support"
     ],
     "portalOpening": "Opening...",

@@ -34,8 +34,12 @@ export default function AdminDomainsPage() {
     premium_monthly: t('planPremiumMonthly'),
     premium_yearly: t('planPremiumYearly'),
     premium_lifetime: t('planPremiumLifetime'),
-    allin_monthly: 'All-In Monthly',
-    allin_yearly: 'All-In Yearly',
+    allin_monthly: 'Team Monthly (Legacy)',
+    allin_yearly: 'Team Yearly (Legacy)',
+    team_10_monthly: 'Team (10) Monthly',
+    team_10_yearly: 'Team (10) Yearly',
+    team_20_monthly: 'Team (20) Monthly',
+    team_20_yearly: 'Team (20) Yearly',
   }
 
   async function fetchDomains() {
@@ -139,8 +143,12 @@ export default function AdminDomainsPage() {
                 <SelectContent>
                   <SelectItem value="premium_monthly">{t('planMonthly')}</SelectItem>
                   <SelectItem value="premium_yearly">{t('planYearly')}</SelectItem>
-                  <SelectItem value="allin_monthly">All-In Monthly</SelectItem>
-                  <SelectItem value="allin_yearly">All-In Yearly</SelectItem>
+                  <SelectItem value="team_10_monthly">Team (10) Monthly</SelectItem>
+                  <SelectItem value="team_10_yearly">Team (10) Yearly</SelectItem>
+                  <SelectItem value="team_20_monthly">Team (20) Monthly</SelectItem>
+                  <SelectItem value="team_20_yearly">Team (20) Yearly</SelectItem>
+                  <SelectItem value="allin_monthly">Team Monthly (Legacy)</SelectItem>
+                  <SelectItem value="allin_yearly">Team Yearly (Legacy)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

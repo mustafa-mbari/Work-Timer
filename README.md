@@ -55,15 +55,17 @@ Track your work time with stopwatch, manual entry, and Pomodoro modes. Start wit
 - **Export** -- CSV and Excel export with auto-sized columns
 - **Browser Integration** -- Floating timer widget, timer in tab title, right-click context menu
 
-### Premium Features (Optional)
+### Plans & Pricing
 
-- **Cloud Sync** -- Automatic sync across devices via Supabase with conflict resolution
-- **Unlimited History** -- All time entries (free: 30 days)
-- **Unlimited Projects** -- No limit (free: 5 projects)
-- **Advanced Analytics** -- Detailed reports on companion website
-- **CSV/Excel Export** -- Export data for external analysis
-- **Work Type Editing** -- Full tag management
-- **Multi-Device** -- Seamless cross-browser sync
+| Plan | Monthly | Yearly | Highlights |
+| ---- | ------- | ------ | ---------- |
+| **Free** | $0 | — | 5 projects · 14-day history · local only · all timer modes |
+| **Pro** | $1.99 | $17.99 | Unlimited projects & tags · cloud sync · analytics & earnings · CSV export |
+| **Team (≤10)** | $29 | $260 | Everything in Pro + group workspace · timesheet approval · team reports |
+| **Team (≤20)** | $49 | $440 | Same as Team (10) with up to 20 members |
+| **Team (larger)** | Contact | — | [hello@w-timer.com](mailto:hello@w-timer.com) |
+
+See [HowToDoPlan.md](HowToDoPlan.md) for the full Stripe setup guide (creating prices, env vars, webhook verification, and legacy plan backward compatibility).
 
 ### Companion Website
 

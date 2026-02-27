@@ -19,7 +19,7 @@ export default async function BillingPage() {
 
   const currentPlan = subscription?.plan ?? 'free'
   const isPremium = currentPlan !== 'free'
-  const isAllIn = currentPlan.startsWith('allin')
+  const isAllIn = currentPlan.startsWith('allin') || currentPlan.startsWith('team_')
 
   const FREE_FEATURES = [
     { text: t('freePlanFeatures.0'), included: true },
@@ -50,8 +50,12 @@ export default async function BillingPage() {
     premium_monthly: `${t('plans.monthly.name')} Pro`,
     premium_yearly: `${t('plans.yearly.name')} Pro`,
     premium_lifetime: 'Lifetime Premium',
-    allin_monthly: 'All-In Monthly',
-    allin_yearly: 'All-In Yearly',
+    allin_monthly: 'Team Monthly (Legacy)',
+    allin_yearly: 'Team Yearly (Legacy)',
+    team_10_monthly: 'Team (10) Monthly',
+    team_10_yearly: 'Team (10) Yearly',
+    team_20_monthly: 'Team (20) Monthly',
+    team_20_yearly: 'Team (20) Yearly',
   }
 
   return (

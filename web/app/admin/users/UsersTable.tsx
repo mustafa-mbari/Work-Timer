@@ -43,6 +43,12 @@ export default function UsersTable({ users, totalCount, page, pageSize, search }
     premium_monthly: t('planMonthly'),
     premium_yearly: t('planYearly'),
     premium_lifetime: t('planLifetime'),
+    allin_monthly: 'Team (Legacy)',
+    allin_yearly: 'Team (Legacy)',
+    team_10_monthly: 'Team (10)',
+    team_10_yearly: 'Team (10)',
+    team_20_monthly: 'Team (20)',
+    team_20_yearly: 'Team (20)',
   }
 
   const PLAN_VARIANTS: Record<string, 'default' | 'secondary' | 'outline'> = {
@@ -50,6 +56,12 @@ export default function UsersTable({ users, totalCount, page, pageSize, search }
     premium_monthly: 'default',
     premium_yearly: 'default',
     premium_lifetime: 'default',
+    allin_monthly: 'default',
+    allin_yearly: 'default',
+    team_10_monthly: 'default',
+    team_10_yearly: 'default',
+    team_20_monthly: 'default',
+    team_20_yearly: 'default',
   }
 
   function navigate(params: Record<string, string>) {

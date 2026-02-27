@@ -2,7 +2,7 @@
 
 export const FREE_LIMITS = {
   maxProjects: 5,
-  historyDays: 30,
+  historyDays: 14,
   allowExport: false,
   allowCloudSync: false,
   allowAdvancedStats: false,
@@ -24,8 +24,12 @@ export const PLANS = {
   free: 'free',
   premiumMonthly: 'premium_monthly',
   premiumYearly: 'premium_yearly',
-  allinMonthly: 'allin_monthly',
-  allinYearly: 'allin_yearly',
+  allinMonthly: 'allin_monthly',       // legacy — kept for existing subscribers
+  allinYearly: 'allin_yearly',         // legacy — kept for existing subscribers
+  team10Monthly: 'team_10_monthly',
+  team10Yearly: 'team_10_yearly',
+  team20Monthly: 'team_20_monthly',
+  team20Yearly: 'team_20_yearly',
 } as const
 
 export type Plan = (typeof PLANS)[keyof typeof PLANS]
@@ -43,9 +47,13 @@ export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[keyof typeof SUB
 
 export const PRICING = {
   monthly: 1.99,
-  yearly: 9.99,
-  allinMonthly: 29.99,
-  allinYearly: 299,
+  yearly: 17.99,         // was 9.99
+  allinMonthly: 29.99,   // legacy display
+  allinYearly: 299,      // legacy display
+  team10Monthly: 29,
+  team10Yearly: 260,
+  team20Monthly: 49,
+  team20Yearly: 440,
 } as const
 
 export const ALLIN_LIMITS = {
