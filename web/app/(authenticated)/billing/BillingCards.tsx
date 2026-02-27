@@ -136,10 +136,10 @@ export default function BillingCards({ currentPlan, isPremium, isAllIn, currency
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Free plan card */}
         <div className={cn(
-          'relative rounded-2xl border-2 p-4 flex flex-col',
+          'relative rounded-2xl border-2 p-5 flex flex-col',
           currentPlan === 'free'
             ? 'border-indigo-400 dark:border-indigo-500 bg-white dark:bg-[var(--dark-card)]'
             : 'border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)] opacity-60'
@@ -151,15 +151,15 @@ export default function BillingCards({ currentPlan, isPremium, isAllIn, currency
               </span>
             </div>
           )}
-          <div className="mb-3 pt-1">
-            <p className="text-base font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-1.5">{t.freePlan.name}</p>
+          <div className="mb-4 pt-1">
+            <p className="text-base font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">{t.freePlan.name}</p>
             <div className="flex items-end gap-1">
-              <span className="text-2xl font-bold text-stone-900 dark:text-stone-100">{currency}0</span>
-              <span className="text-sm text-stone-400 dark:text-stone-500 mb-0.5">{t.freePlan.period}</span>
+              <span className="text-3xl font-bold text-stone-900 dark:text-stone-100">{currency}0</span>
+              <span className="text-sm text-stone-400 dark:text-stone-500 mb-1">{t.freePlan.period}</span>
             </div>
             <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">{t.freePlan.noCreditCard}</p>
           </div>
-          <ul className="space-y-1.5 flex-1 mb-4">
+          <ul className="space-y-2 flex-1 mb-5">
             {FEATURES.map(f => (
               <FeatureRow key={f.label} label={f.label} value={f.free} accent={false} />
             ))}
@@ -171,7 +171,7 @@ export default function BillingCards({ currentPlan, isPremium, isAllIn, currency
 
         {/* Pro plan card */}
         <div className={cn(
-          'relative rounded-2xl border p-4 flex flex-col',
+          'relative rounded-2xl border p-5 flex flex-col',
           isProActive
             ? 'border-2 border-indigo-400 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30 shadow-lg shadow-indigo-100 dark:shadow-indigo-900/20'
             : !isPremium
@@ -192,11 +192,11 @@ export default function BillingCards({ currentPlan, isPremium, isAllIn, currency
               </span>
             </div>
           ) : null}
-          <div className="mb-3">
-            <p className="text-base font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-1.5">Pro</p>
+          <div className="mb-4">
+            <p className="text-base font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">Pro</p>
             <div className="flex items-end gap-0.5">
-              <span className="text-2xl font-bold text-stone-900 dark:text-stone-100">{currency}{proPrice}</span>
-              <span className="text-sm text-stone-400 dark:text-stone-500 mb-0.5">{proPeriod}</span>
+              <span className="text-3xl font-bold text-stone-900 dark:text-stone-100">{currency}{proPrice}</span>
+              <span className="text-sm text-stone-400 dark:text-stone-500 mb-1">{proPeriod}</span>
               {cycle === 'yearly' && (
                 <span className="ml-2 mb-1 text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-full font-semibold">
                   Save {proSavingsPct}%
@@ -207,7 +207,7 @@ export default function BillingCards({ currentPlan, isPremium, isAllIn, currency
               {cycle === 'yearly' ? `Save ${proSavingsPct}% vs monthly` : 'Full access, cancel anytime'}
             </p>
           </div>
-          <ul className="space-y-1.5 flex-1 mb-4">
+          <ul className="space-y-2 flex-1 mb-5">
             {FEATURES.map(f => (
               <FeatureRow key={f.label} label={f.label} value={f.pro} accent />
             ))}
@@ -229,7 +229,7 @@ export default function BillingCards({ currentPlan, isPremium, isAllIn, currency
 
         {/* Team plan card */}
         <div className={cn(
-          'relative rounded-2xl border p-4 flex flex-col',
+          'relative rounded-2xl border p-5 flex flex-col',
           isAllinActive
             ? 'border-2 border-indigo-400 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30 shadow-lg'
             : 'border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)]'
@@ -241,12 +241,12 @@ export default function BillingCards({ currentPlan, isPremium, isAllIn, currency
               </span>
             </div>
           )}
-          <div className="mb-3">
-            <p className="text-base font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <div className="mb-4">
+            <p className="text-base font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
               <Users className="h-3.5 w-3.5" />
               Team
             </p>
-            <div className="flex gap-1.5 mb-3">
+            <div className="flex gap-1.5 mb-4">
               {(['10', '20', 'contact'] as TeamTier[]).map(tier => (
                 <button
                   key={tier}
@@ -265,14 +265,14 @@ export default function BillingCards({ currentPlan, isPremium, isAllIn, currency
 
             {teamTier === 'contact' ? (
               <div>
-                <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">Custom</p>
+                <p className="text-3xl font-bold text-stone-900 dark:text-stone-100">Custom</p>
                 <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">Tailored for larger teams</p>
               </div>
             ) : (
               <div>
                 <div className="flex items-end gap-0.5">
-                  <span className="text-2xl font-bold text-stone-900 dark:text-stone-100">{currency}{teamPrice}</span>
-                  <span className="text-sm text-stone-400 dark:text-stone-500 mb-0.5">
+                  <span className="text-3xl font-bold text-stone-900 dark:text-stone-100">{currency}{teamPrice}</span>
+                  <span className="text-sm text-stone-400 dark:text-stone-500 mb-1">
                     {cycle === 'monthly' ? '/month' : '/year'}
                   </span>
                   {cycle === 'yearly' && (
@@ -288,7 +288,7 @@ export default function BillingCards({ currentPlan, isPremium, isAllIn, currency
             )}
           </div>
 
-          <ul className="space-y-1.5 flex-1 mb-4">
+          <ul className="space-y-2 flex-1 mb-5">
             {FEATURES.map(f => (
               <FeatureRow key={f.label} label={f.label} value={f.team} accent />
             ))}
