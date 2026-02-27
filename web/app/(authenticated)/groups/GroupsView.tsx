@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { Users, Plus, UserPlus, Shield, Clock, ChevronDown } from 'lucide-react'
+import { Users, Plus, UserPlus, Shield, Clock, ChevronDown, Settings2, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -32,6 +32,8 @@ interface Props {
   ownStats: OwnStats
 }
 
+type AdminView = 'admin' | 'group'
+
 export default function GroupsView({ initialGroups, initialInvitations, projects, tags, userId, ownStats }: Props) {
   const [groups, setGroups] = useState(initialGroups)
   const [invitations, setInvitations] = useState(initialInvitations)
@@ -42,6 +44,7 @@ export default function GroupsView({ initialGroups, initialInvitations, projects
   const [joinCode, setJoinCode] = useState('')
   const [creating, setCreating] = useState(false)
   const [joining, setJoining] = useState(false)
+  const [adminView, setAdminView] = useState<AdminView>('admin')
 
   const selectedGroup = groups.find(g => g.id === selectedGroupId)
   const isAdmin = selectedGroup?.role === 'admin'
@@ -295,13 +298,52 @@ export default function GroupsView({ initialGroups, initialInvitations, projects
           </p>
         </div>
       ) : isAdmin ? (
-        <AdminDashboard
-          key={selectedGroupId}
-          group={selectedGroup}
-          projects={projects}
-          tags={tags}
-          onDeleteGroup={handleDeleteGroup}
-        />
+        <div className="space-y-4">
+          {/* Admin view switcher */}
+          <div className="flex border-b border-stone-200 dark:border-[var(--dark-border)]">
+            <button
+              onClick={() => setAdminView('admin')}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap ${
+                adminView === 'admin'
+                  ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                  : 'border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
+              }`}
+            >
+              <Settings2 className="h-3.5 w-3.5" />
+              Admin
+            </button>
+            <button
+              onClick={() => setAdminView('group')}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap ${
+                adminView === 'group'
+                  ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                  : 'border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
+              }`}
+            >
+              <Send className="h-3.5 w-3.5" />
+              My Timesheets
+            </button>
+          </div>
+
+          {adminView === 'admin' ? (
+            <AdminDashboard
+              key={selectedGroupId}
+              group={selectedGroup}
+              projects={projects}
+              tags={tags}
+              onDeleteGroup={handleDeleteGroup}
+            />
+          ) : (
+            <MemberView
+              key={`${selectedGroupId}-member`}
+              group={selectedGroup}
+              projects={projects}
+              tags={tags}
+              userId={userId}
+              ownStats={ownStats}
+            />
+          )}
+        </div>
       ) : (
         <MemberView
           key={selectedGroupId}

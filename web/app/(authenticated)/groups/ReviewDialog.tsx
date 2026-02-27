@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { X, Check, XCircle } from 'lucide-react'
 import type { GroupShareWithMeta, SnapshotEntry } from '@/lib/repositories/groupShares'
 
@@ -79,10 +80,10 @@ export default function ReviewDialog({ open, onOpenChange, share, groupId, onRev
 
   if (!open) return null
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50" onClick={() => onOpenChange(false)} />
-      <div className="relative w-full max-w-2xl max-h-[85vh] bg-white dark:bg-[var(--dark-card)] rounded-2xl shadow-xl overflow-hidden flex flex-col mx-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => onOpenChange(false)} />
+      <div className="relative w-full max-w-2xl max-h-[90vh] bg-white dark:bg-[var(--dark-card)] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 dark:border-[var(--dark-border)]">
           <div>
@@ -226,6 +227,7 @@ export default function ReviewDialog({ open, onOpenChange, share, groupId, onRev
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
