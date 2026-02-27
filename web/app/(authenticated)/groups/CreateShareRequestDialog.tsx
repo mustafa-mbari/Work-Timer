@@ -1,18 +1,21 @@
 'use client'
 
 import { useState } from 'react'
-import { createPortal } from 'react-dom'
-import { X, Plus, Calendar, CheckCircle2 } from 'lucide-react'
+import { Plus, Calendar, CheckCircle2 } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { formatDate } from './utils'
 
 interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
   groupId: string
   onCreated: () => void
-}
-
-function formatDate(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 type PeriodType = 'day' | 'week' | 'month'
@@ -127,25 +130,17 @@ export default function CreateShareRequestDialog({ open, onOpenChange, groupId, 
     setError(null)
   }
 
-  if (!open) return null
-
-  return createPortal(
-    <div className="fixed inset-0 z-[200] flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
-      <div className="relative w-full max-w-lg bg-white dark:bg-[var(--dark-card)] rounded-2xl shadow-2xl overflow-hidden flex flex-col mx-4">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 dark:border-[var(--dark-border)]">
-          <div className="flex items-center gap-2">
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose() }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
             <Plus className="h-5 w-5 text-indigo-500" />
-            <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Create Share Request</h2>
-          </div>
-          <button onClick={handleClose} className="p-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-[var(--dark-hover)] transition-colors">
-            <X className="h-4 w-4 text-stone-500" />
-          </button>
-        </div>
+            Create Share Request
+          </DialogTitle>
+        </DialogHeader>
 
-        {/* Body */}
-        <div className="p-6 space-y-5">
+        <div className="space-y-5">
           <p className="text-xs text-stone-500 dark:text-stone-400">
             Create a share request for all members with sharing enabled. Each member will see an open request to fill and submit.
           </p>
@@ -254,8 +249,7 @@ export default function CreateShareRequestDialog({ open, onOpenChange, groupId, 
           )}
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-stone-100 dark:border-[var(--dark-border)]">
+        <DialogFooter className="gap-2 sm:gap-2">
           <button
             onClick={handleClose}
             className="px-4 py-2 text-sm font-medium text-stone-600 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 transition-colors"
@@ -272,9 +266,8 @@ export default function CreateShareRequestDialog({ open, onOpenChange, groupId, 
               {creating ? 'Creating...' : 'Create for All Members'}
             </button>
           )}
-        </div>
-      </div>
-    </div>,
-    document.body,
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

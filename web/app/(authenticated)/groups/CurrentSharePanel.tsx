@@ -1,29 +1,16 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Send, AlertCircle, CheckCircle2, Clock, Loader2 } from 'lucide-react'
 import type { GroupShare, SnapshotEntry } from '@/lib/repositories/groupShares'
-
-interface ProjectItem { id: string; name: string; color: string }
-interface TagItem { id: string; name: string; color: string }
+import { formatPeriod, formatHours } from './utils'
+import type { ProjectItem, TagItem } from './utils'
 
 interface Props {
   groupId: string
   projects: ProjectItem[]
   tags: TagItem[]
   hasSchedule: boolean
-}
-
-function formatPeriod(share: GroupShare): string {
-  const from = new Date(share.date_from + 'T00:00:00')
-  const to = new Date(share.date_to + 'T00:00:00')
-  const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' }
-  if (share.period_type === 'day') return from.toLocaleDateString(undefined, opts)
-  return `${from.toLocaleDateString(undefined, opts)} – ${to.toLocaleDateString(undefined, opts)}`
-}
-
-function formatHours(h: number): string {
-  return h < 0.1 ? '0h' : h < 10 ? `${h.toFixed(1)}h` : `${Math.round(h)}h`
 }
 
 function periodLabel(type: string): string {
@@ -39,30 +26,34 @@ function ShareCard({ share, groupId, projects, onSubmitted }: {
   onSubmitted: () => void
 }) {
   const [selectedProjectIds, setSelectedProjectIds] = useState<string[] | null>(null)
-  const [selectedTagIds] = useState<string[] | null>(null)
   const [previewData, setPreviewData] = useState<{ entry_count: number; total_hours: number } | null>(null)
   const [previewing, setPreviewing] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
-  // Preview entries count for open shares
+  // Preview entries count for open shares (debounced on project filter changes)
   useEffect(() => {
     if (share.status !== 'open') return
-    setPreviewing(true)
-    fetch(`/api/groups/${groupId}/shares/preview`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        period_type: share.period_type,
-        date_from: share.date_from,
-        date_to: share.date_to,
-        project_ids: selectedProjectIds,
-        tag_ids: selectedTagIds,
-      }),
-    })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data) setPreviewData(data) })
-      .finally(() => setPreviewing(false))
-  }, [groupId, share.id, share.status, share.period_type, share.date_from, share.date_to, selectedProjectIds, selectedTagIds])
+    clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      setPreviewing(true)
+      fetch(`/api/groups/${groupId}/shares/preview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          period_type: share.period_type,
+          date_from: share.date_from,
+          date_to: share.date_to,
+          project_ids: selectedProjectIds,
+          tag_ids: null,
+        }),
+      })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { if (data) setPreviewData(data) })
+        .finally(() => setPreviewing(false))
+    }, 300)
+    return () => clearTimeout(debounceRef.current)
+  }, [groupId, share.id, share.status, share.period_type, share.date_from, share.date_to, selectedProjectIds])
 
   async function handleSubmit() {
     setSubmitting(true)
@@ -72,7 +63,7 @@ function ShareCard({ share, groupId, projects, onSubmitted }: {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           project_ids: selectedProjectIds,
-          tag_ids: selectedTagIds,
+          tag_ids: null,
         }),
       })
       if (res.ok) onSubmitted()

@@ -5,11 +5,10 @@ import { BarChart3, Send, Clock, Users, Eye, EyeOff } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import type { GroupWithMeta } from '@/lib/repositories/groups'
 import type { GroupShare } from '@/lib/repositories/groupShares'
-import MemberStatsCard, { type OwnStats } from './MemberStatsCard'
+import MemberStatsCard from './MemberStatsCard'
 import CurrentSharePanel from './CurrentSharePanel'
-
-interface ProjectItem { id: string; name: string; color: string }
-interface TagItem { id: string; name: string; color: string }
+import { formatPeriod } from './utils'
+import type { ProjectItem, TagItem, OwnStats, MemberInfo } from './utils'
 
 interface Props {
   group: GroupWithMeta
@@ -20,21 +19,6 @@ interface Props {
 }
 
 type Tab = 'overview' | 'share' | 'history' | 'members'
-
-interface MemberInfo {
-  user_id: string
-  role: string
-  email: string
-  display_name: string | null
-}
-
-function formatPeriod(share: GroupShare): string {
-  const from = new Date(share.date_from + 'T00:00:00')
-  const to = new Date(share.date_to + 'T00:00:00')
-  const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' }
-  if (share.period_type === 'day') return from.toLocaleDateString(undefined, opts)
-  return `${from.toLocaleDateString(undefined, opts)} – ${to.toLocaleDateString(undefined, opts)}`
-}
 
 function getStatusBadge(status: string) {
   switch (status) {
@@ -53,16 +37,26 @@ export default function MemberView({ group, projects, tags, userId, ownStats }: 
   const [tab, setTab] = useState<Tab>('overview')
   const [members, setMembers] = useState<MemberInfo[]>([])
   const [membersLoading, setMembersLoading] = useState(false)
+  const [membersLoaded, setMembersLoaded] = useState(false)
   const [sharingEnabled, setSharingEnabled] = useState<boolean | null>(null)
+  const [sharingError, setSharingError] = useState<string | null>(null)
   const [sharingToggling, setSharingToggling] = useState(false)
   const [history, setHistory] = useState<GroupShare[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
+  const [historyLoaded, setHistoryLoaded] = useState(false)
 
   // Fetch sharing status on mount
   useEffect(() => {
     fetch(`/api/groups/${group.id}/sharing`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data) setSharingEnabled(data.sharing_enabled) })
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
+      .then(data => {
+        setSharingEnabled(data.sharing_enabled)
+        setSharingError(null)
+      })
+      .catch(err => setSharingError(err.message))
   }, [group.id])
 
   async function toggleSharing() {
@@ -87,6 +81,7 @@ export default function MemberView({ group, projects, tags, userId, ownStats }: 
       if (res.ok) {
         const data = await res.json()
         setMembers(data.members ?? [])
+        setMembersLoaded(true)
       }
     } finally {
       setMembersLoading(false)
@@ -99,8 +94,8 @@ export default function MemberView({ group, projects, tags, userId, ownStats }: 
       const res = await fetch(`/api/groups/${group.id}/shares?mine=true`)
       if (res.ok) {
         const data: GroupShare[] = await res.json()
-        // Show approved and denied shares only
         setHistory(data.filter(s => s.status === 'approved' || s.status === 'denied'))
+        setHistoryLoaded(true)
       }
     } finally {
       setHistoryLoading(false)
@@ -108,9 +103,9 @@ export default function MemberView({ group, projects, tags, userId, ownStats }: 
   }, [group.id])
 
   useEffect(() => {
-    if (tab === 'members' && members.length === 0) loadMembers()
-    if (tab === 'history' && history.length === 0) loadHistory()
-  }, [tab, members.length, history.length, loadMembers, loadHistory])
+    if (tab === 'members' && !membersLoaded) loadMembers()
+    if (tab === 'history' && !historyLoaded) loadHistory()
+  }, [tab, membersLoaded, historyLoaded, loadMembers, loadHistory])
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: 'overview', label: 'Overview', icon: <BarChart3 className="h-3.5 w-3.5" /> },
@@ -154,12 +149,14 @@ export default function MemberView({ group, projects, tags, userId, ownStats }: 
               )}
               <div>
                 <p className="text-sm font-medium text-stone-700 dark:text-stone-200">
-                  {sharingEnabled === null ? 'Loading...' : sharingEnabled ? 'Sharing is on' : 'Sharing is off'}
+                  {sharingError ? 'Failed to load' : sharingEnabled === null ? 'Loading...' : sharingEnabled ? 'Sharing is on' : 'Sharing is off'}
                 </p>
                 <p className="text-xs text-stone-400">
-                  {sharingEnabled
-                    ? 'Admins can request your time data for reviews'
-                    : 'Enable to participate in share requests'
+                  {sharingError
+                    ? 'Could not load sharing status'
+                    : sharingEnabled
+                      ? 'Admins can request your time data for reviews'
+                      : 'Enable to participate in share requests'
                   }
                 </p>
               </div>

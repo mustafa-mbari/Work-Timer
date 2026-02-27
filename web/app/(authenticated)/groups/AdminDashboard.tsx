@@ -11,9 +11,8 @@ import ReviewDialog from './ReviewDialog'
 import MemberDetailDialog from './MemberDetailDialog'
 import ScheduleSettings from './ScheduleSettings'
 import CreateShareRequestDialog from './CreateShareRequestDialog'
-
-interface ProjectItem { id: string; name: string; color: string }
-interface TagItem { id: string; name: string; color: string }
+import { formatDate, formatPeriod, getInitials } from './utils'
+import type { ProjectItem, TagItem } from './utils'
 
 interface MemberSummary {
   user_id: string
@@ -42,23 +41,6 @@ interface Props {
 }
 
 type SubTab = 'team' | 'reviews' | 'reports' | 'schedule'
-
-function formatDate(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-function formatPeriodShort(share: GroupShareWithMeta): string {
-  const from = new Date(share.date_from + 'T00:00:00')
-  const to = new Date(share.date_to + 'T00:00:00')
-  const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' }
-  if (share.period_type === 'day') return from.toLocaleDateString(undefined, opts)
-  return `${from.toLocaleDateString(undefined, opts)} – ${to.toLocaleDateString(undefined, opts)}`
-}
-
-function getInitials(name: string | null, email: string) {
-  if (name) return name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()
-  return email.slice(0, 2).toUpperCase()
-}
 
 export default function AdminDashboard({ group, projects, tags, onDeleteGroup }: Props) {
   const [subTab, setSubTab] = useState<SubTab>('team')
@@ -97,6 +79,22 @@ export default function AdminDashboard({ group, projects, tags, onDeleteGroup }:
       }
     } finally {
       setLoading(false)
+    }
+  }, [group.id])
+
+  // Granular refresh: only re-fetch member summaries + full members (not shares)
+  const refreshMembers = useCallback(async () => {
+    const [membersRes, fullMembersRes] = await Promise.all([
+      fetch(`/api/groups/${group.id}/shared-entries`),
+      fetch(`/api/groups/${group.id}`),
+    ])
+    if (membersRes.ok) {
+      const data = await membersRes.json()
+      setMemberSummaries(data.members ?? [])
+    }
+    if (fullMembersRes.ok) {
+      const data = await fullMembersRes.json()
+      setFullMembers(data.members ?? [])
     }
   }, [group.id])
 
@@ -224,7 +222,7 @@ export default function AdminDashboard({ group, projects, tags, onDeleteGroup }:
           loading={loading}
           onReviewMember={handleReviewMember}
           onViewMember={handleViewMember}
-          onMemberUpdate={fetchData}
+          onMemberUpdate={refreshMembers}
           onDeleteGroup={onDeleteGroup}
         />
       )}
@@ -297,7 +295,7 @@ export default function AdminDashboard({ group, projects, tags, onDeleteGroup }:
                         {share.sharer_name || share.sharer_email.split('@')[0]}
                       </p>
                       <p className="text-xs text-stone-400 dark:text-stone-500">
-                        {formatPeriodShort(share)}
+                        {formatPeriod(share)}
                       </p>
                     </div>
                     {share.due_date ? (

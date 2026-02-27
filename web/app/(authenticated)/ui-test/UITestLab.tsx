@@ -12,6 +12,7 @@ import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/comp
 import {
   Play, Pause, Square, Plus, ChevronDown, ChevronRight,
   Clock, Search, X, Check, ArrowRight, FlaskConical,
+  Star, Zap, Users, Shield, ChevronUp, Sparkles, Crown,
 } from 'lucide-react'
 
 // ─── MOCK DATA ──────────────────────────────────────────────────────────────
@@ -3113,7 +3114,6 @@ function DashboardV9DonutChart() {
 
   const R = 56, cx = 70, cy = 70, gap = 2
   let cumulPct = 0
-  const circ = 2 * Math.PI * R
   const arcs = stats.map(p => {
     const pct   = p.ms / total
     const start = cumulPct
@@ -3343,7 +3343,6 @@ function DashboardV13StackedBars() {
         <div className="flex items-end gap-2">
           {days.map((day, i) => {
             const totalMs  = day.projects.reduce((s, p) => s + p.ms, 0)
-            const barH     = (totalMs / maxMs) * BAR_H
             const isToday  = i === 5
             const isWork   = day.targetMs > 0
             return (
@@ -3828,6 +3827,804 @@ function PickerV4ProjectTagCombo() {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// TAB 7 — BILLING & PLANS  (10 UI redesigns of the real BillingCards.tsx)
+// ════════════════════════════════════════════════════════════════════════════
+
+// Mirrors FEATURES in BillingCards.tsx exactly
+const BL_FEATURES = [
+  { label: 'Projects',           free: 'Up to 5' as string | boolean,    pro: 'Unlimited' as string | boolean,    team: 'Unlimited' as string | boolean },
+  { label: 'History',            free: '14 days',    pro: 'Full history', team: 'Full history' },
+  { label: 'Timer modes',        free: 'All modes',  pro: 'All modes',    team: 'All modes'    },
+  { label: 'Statistics',         free: 'Limited',    pro: 'Unlimited',    team: 'Unlimited'    },
+  { label: 'Earnings reports',   free: false,        pro: true,           team: true           },
+  { label: 'Cloud sync',         free: false,        pro: true,           team: true           },
+  { label: 'Multi-device',       free: false,        pro: true,           team: true           },
+  { label: 'CSV / Excel export', free: false,        pro: true,           team: true           },
+  { label: 'Group workspace',    free: false,        pro: false,          team: true           },
+  { label: 'Timesheet approval', free: false,        pro: false,          team: true           },
+  { label: 'Team reports',       free: false,        pro: false,          team: true           },
+  { label: 'Admin controls',     free: false,        pro: false,          team: true           },
+]
+
+// Mirrors PRICING from constants.ts
+const BL_P = { mo: 1.99, yr: 17.99, t10mo: 29, t10yr: 260, t20mo: 49, t20yr: 440 }
+const BL_SAVINGS_PRO  = Math.round((1 - BL_P.yr / (BL_P.mo * 12)) * 100)
+const BL_SAVINGS_T10  = Math.round((1 - BL_P.t10yr / (BL_P.t10mo * 12)) * 100)
+const BL_SAVINGS_T20  = Math.round((1 - BL_P.t20yr / (BL_P.t20mo * 12)) * 100)
+
+type BLCycle    = 'monthly' | 'yearly'
+type BLTeamTier = '10' | '20' | 'contact'
+type BLPlan     = string
+
+// Shared sub-components ─────────────────────────────────────────────────────
+
+function BLFeatureRow({ label, value, accent = false }: { label: string; value: string | boolean; accent?: boolean }) {
+  const included = value !== false
+  return (
+    <li className="flex items-center gap-2 text-sm min-w-0">
+      {included
+        ? <Check className={cn('h-4 w-4 shrink-0', accent ? 'text-indigo-500' : 'text-emerald-500')} />
+        : <X className="h-4 w-4 shrink-0 text-stone-300 dark:text-stone-600" />}
+      <span className={cn('truncate', included ? 'text-stone-700 dark:text-stone-300' : 'text-stone-400 dark:text-stone-600 line-through')}>
+        {label}
+        {typeof value === 'string' && <span className="ml-1 font-medium text-stone-500 dark:text-stone-400"> · {value}</span>}
+      </span>
+    </li>
+  )
+}
+
+// Simulated CTA buttons (no real checkout in the test lab)
+function BLCta({ label, highlight, disabled }: { label: string; highlight?: boolean; disabled?: boolean }) {
+  if (disabled) return (
+    <div className="py-2.5 px-4 rounded-xl text-sm font-semibold text-center text-stone-400 dark:text-stone-500 bg-stone-100 dark:bg-[var(--dark-elevated)]">
+      {label}
+    </div>
+  )
+  return (
+    <button className={cn(
+      'w-full py-2.5 px-4 rounded-xl text-sm font-semibold transition-colors',
+      highlight
+        ? 'bg-indigo-500 hover:bg-indigo-600 text-white'
+        : 'border border-stone-300 dark:border-[var(--dark-border)] text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-[var(--dark-elevated)]'
+    )}>
+      {label}
+    </button>
+  )
+}
+
+// Active plan banner — mirrors the indigo gradient banner in billing/page.tsx
+function BLBanner({ currentPlan }: { currentPlan: BLPlan }) {
+  if (currentPlan === 'free') return null
+  const names: Record<string, string> = {
+    premium_monthly: 'Monthly Pro', premium_yearly: 'Yearly Pro',
+    team_10_monthly: 'Team (10) Monthly', team_10_yearly: 'Team (10) Yearly',
+  }
+  const renewalDate = new Date(Date.now() + 28 * 864e5).toLocaleDateString()
+  return (
+    <div className="rounded-2xl bg-gradient-to-r from-indigo-500 to-indigo-600 p-5 text-white flex items-center justify-between gap-4">
+      <div>
+        <div className="flex items-center gap-2 mb-0.5">
+          <Zap className="h-3.5 w-3.5" />
+          <span className="text-xs font-semibold uppercase tracking-widest text-indigo-200">Active plan</span>
+        </div>
+        <p className="font-bold text-lg">{names[currentPlan] ?? currentPlan}</p>
+        <p className="text-sm text-indigo-200 mt-0.5">Renews {renewalDate}</p>
+      </div>
+      <button className="shrink-0 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-sm font-semibold text-white transition-colors border border-white/20">
+        Manage billing ↗
+      </button>
+    </div>
+  )
+}
+
+// Simulated promo code section
+function BLPromo() {
+  const [code, setCode] = useState('')
+  return (
+    <div className="rounded-2xl border border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)] p-6">
+      <h3 className="text-sm font-semibold text-stone-800 dark:text-stone-200 mb-1">Promo code</h3>
+      <p className="text-xs text-stone-400 dark:text-stone-500 mb-4">Have a discount code? Enter it below to unlock a special offer.</p>
+      <div className="flex gap-2">
+        <Input value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="ENTER CODE" className="font-mono uppercase" />
+        <button className="px-4 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold transition-colors shrink-0">Apply</button>
+      </div>
+    </div>
+  )
+}
+
+// Plan simulator pill — lets tester switch "current plan" inside the test lab
+function BLPlanSim({ value, onChange }: { value: BLPlan; onChange: (p: BLPlan) => void }) {
+  const opts = ['free', 'premium_monthly', 'premium_yearly', 'team_10_monthly'] as BLPlan[]
+  const labels: Record<string, string> = { free: 'Free', premium_monthly: 'Pro Mo', premium_yearly: 'Pro Yr', team_10_monthly: 'Team' }
+  return (
+    <div className="flex items-center gap-2 mb-5 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50">
+      <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 shrink-0">Simulate plan:</span>
+      <div className="flex gap-1 flex-wrap">
+        {opts.map(p => (
+          <button key={p} onClick={() => onChange(p)}
+            className={cn('px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors',
+              value === p ? 'bg-amber-500 text-white' : 'bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-400 border border-stone-200 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-700')}>
+            {labels[p]}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── V1 — Faithful Port (exact replica of current BillingCards.tsx) ────────────
+function BillingV1FaithfulPort() {
+  const [cycle, setCycle]       = useState<BLCycle>('monthly')
+  const [teamTier, setTeamTier] = useState<BLTeamTier>('10')
+  const [currentPlan, setCurrentPlan] = useState<BLPlan>('free')
+
+  const proPrice     = cycle === 'monthly' ? BL_P.mo : BL_P.yr
+  const proPeriod    = cycle === 'monthly' ? '/month' : '/year'
+  const teamPrice    = cycle === 'monthly' ? (teamTier === '10' ? BL_P.t10mo : BL_P.t20mo) : (teamTier === '10' ? BL_P.t10yr : BL_P.t20yr)
+  const teamSavings  = teamTier === '10' ? BL_SAVINGS_T10 : BL_SAVINGS_T20
+  const isPremium    = currentPlan !== 'free'
+  const isAllIn      = currentPlan.startsWith('team_')
+  const isProActive  = currentPlan === 'premium_monthly' || currentPlan === 'premium_yearly'
+  const proPlanKey   = cycle === 'monthly' ? 'premium_monthly' : 'premium_yearly'
+  const isThisProActive = currentPlan === proPlanKey
+
+  return (
+    <div className="space-y-5">
+      <BLPlanSim value={currentPlan} onChange={setCurrentPlan} />
+      <BLBanner currentPlan={currentPlan} />
+
+      <div>
+        <h2 className="text-base font-semibold text-stone-900 dark:text-stone-100 mb-1">
+          {isPremium ? 'Plan overview' : 'Choose a plan'}
+        </h2>
+        <p className="text-sm text-stone-500 dark:text-stone-400 mb-5">
+          {isPremium ? 'You have an active premium subscription.' : 'Upgrade for full history, cloud sync, and earnings reports.'}
+        </p>
+
+        <div className="space-y-5">
+          {/* toggle */}
+          <div className="flex justify-center">
+            <div className="flex items-center bg-stone-100 dark:bg-[var(--dark-elevated)] rounded-xl p-1">
+              {(['monthly','yearly'] as BLCycle[]).map(c => (
+                <button key={c} onClick={() => setCycle(c)} className={cn(
+                  'px-4 py-1.5 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5',
+                  cycle === c ? 'bg-white dark:bg-[var(--dark-card)] text-stone-900 dark:text-stone-100 shadow-sm' : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
+                )}>
+                  {c === 'monthly' ? 'Monthly' : <>Yearly <span className="text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-full font-semibold">Save {BL_SAVINGS_PRO}%</span></>}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {/* Free */}
+            <div className={cn('relative rounded-2xl border-2 p-6 flex flex-col',
+              currentPlan === 'free' ? 'border-indigo-400 dark:border-indigo-500 bg-white dark:bg-[var(--dark-card)]'
+              : 'border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)] opacity-60')}>
+              {currentPlan === 'free' && <div className="absolute -top-3 left-4"><span className="bg-indigo-500 text-white text-xs font-semibold px-3 py-1 rounded-full">Current plan</span></div>}
+              <div className="mb-5 pt-1">
+                <p className="text-sm font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">Free</p>
+                <div className="flex items-end gap-1"><span className="text-4xl font-bold text-stone-900 dark:text-stone-100">$0</span><span className="text-sm text-stone-400 mb-1">/month</span></div>
+                <p className="text-xs text-stone-400 mt-1">No credit card required</p>
+              </div>
+              <ul className="space-y-2.5 flex-1 mb-6">{BL_FEATURES.map(f => <BLFeatureRow key={f.label} label={f.label} value={f.free} />)}</ul>
+              <BLCta label={currentPlan === 'free' ? 'Current plan' : 'Free tier'} disabled />
+            </div>
+
+            {/* Pro */}
+            <div className={cn('relative rounded-2xl border p-6 flex flex-col',
+              isThisProActive ? 'border-2 border-indigo-400 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30 shadow-lg shadow-indigo-100 dark:shadow-indigo-900/20'
+              : !isPremium ? 'border-indigo-300 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 shadow-md'
+              : 'border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)]')}>
+              {isThisProActive
+                ? <div className="absolute -top-3 left-1/2 -translate-x-1/2"><span className="bg-indigo-500 text-white text-xs font-semibold px-3 py-1 rounded-full">Current plan</span></div>
+                : !isPremium ? <div className="absolute -top-3 left-1/2 -translate-x-1/2"><span className="inline-flex items-center gap-1 bg-indigo-500 text-white text-xs font-semibold px-3 py-1 rounded-full"><Star className="h-3 w-3" />Popular</span></div>
+                : null}
+              <div className="mb-5">
+                <p className="text-sm font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">Pro</p>
+                <div className="flex items-end gap-0.5">
+                  <span className="text-4xl font-bold text-stone-900 dark:text-stone-100">${proPrice}</span>
+                  <span className="text-sm text-stone-400 mb-1">{proPeriod}</span>
+                  {cycle === 'yearly' && <span className="ml-2 mb-1 text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-full font-semibold">Save {BL_SAVINGS_PRO}%</span>}
+                </div>
+                <p className="text-xs text-stone-400 mt-1">{cycle === 'yearly' ? `Save ${BL_SAVINGS_PRO}% vs monthly` : 'Full access, cancel anytime'}</p>
+              </div>
+              <ul className="space-y-2.5 flex-1 mb-6">{BL_FEATURES.map(f => <BLFeatureRow key={f.label} label={f.label} value={f.pro} accent />)}</ul>
+              {isThisProActive ? <BLCta label="Current plan" disabled />
+                : !isPremium ? <BLCta label="Get Pro" highlight />
+                : currentPlan === 'premium_monthly' && cycle === 'yearly' ? <BLCta label="Upgrade to yearly" highlight />
+                : <BLCta label="Not available" disabled />}
+            </div>
+
+            {/* Team */}
+            <div className={cn('relative rounded-2xl border p-6 flex flex-col',
+              isAllIn ? 'border-2 border-indigo-400 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30 shadow-lg'
+              : 'border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)]')}>
+              {isAllIn && <div className="absolute -top-3 left-1/2 -translate-x-1/2"><span className="bg-indigo-500 text-white text-xs font-semibold px-3 py-1 rounded-full">Current plan</span></div>}
+              <div className="mb-4">
+                <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-3 flex items-center gap-1.5"><Users className="h-3.5 w-3.5" />Team</p>
+                <div className="flex gap-1.5 mb-4">
+                  {(['10','20','contact'] as BLTeamTier[]).map(tier => (
+                    <button key={tier} onClick={() => setTeamTier(tier)} className={cn('flex-1 px-2 py-1.5 text-xs font-semibold rounded-lg transition-colors',
+                      teamTier === tier ? 'bg-indigo-500 text-white' : 'bg-stone-100 dark:bg-[var(--dark-elevated)] text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-[var(--dark-hover)]')}>
+                      {tier === 'contact' ? 'Custom' : `Up to ${tier}`}
+                    </button>
+                  ))}
+                </div>
+                {teamTier === 'contact'
+                  ? <div><p className="text-4xl font-bold text-stone-900 dark:text-stone-100">Custom</p><p className="text-xs text-stone-400 mt-1">Tailored for larger teams</p></div>
+                  : <div>
+                      <div className="flex items-end gap-0.5">
+                        <span className="text-4xl font-bold text-stone-900 dark:text-stone-100">${teamPrice}</span>
+                        <span className="text-sm text-stone-400 mb-1">{cycle === 'monthly' ? '/month' : '/year'}</span>
+                        {cycle === 'yearly' && <span className="ml-2 mb-1 text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-full font-semibold">Save {teamSavings}%</span>}
+                      </div>
+                      <p className="text-xs text-stone-400 mt-1">{cycle === 'yearly' ? `Save ${teamSavings}% with annual billing` : 'Billed monthly, cancel anytime'}</p>
+                    </div>}
+              </div>
+              <ul className="space-y-2.5 flex-1 mb-6">
+                {BL_FEATURES.map(f => <BLFeatureRow key={f.label} label={f.label} value={f.team} accent />)}
+                {teamTier !== 'contact' && <BLFeatureRow label={`Up to ${teamTier} members`} value={true} accent />}
+              </ul>
+              {isAllIn ? <BLCta label="Current plan" disabled />
+                : teamTier === 'contact' ? <a href="mailto:hello@w-timer.com" className="py-2.5 px-4 rounded-xl text-sm font-semibold text-center border border-stone-300 dark:border-[var(--dark-border)] text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-[var(--dark-elevated)] transition-colors block">Contact us</a>
+                : !isAllIn ? <BLCta label="Get Team" />
+                : <BLCta label="Not available" disabled />}
+            </div>
+          </div>
+        </div>
+      </div>
+      <BLPromo />
+    </div>
+  )
+}
+
+// ── V2 — Larger type scale (price text-6xl, plan name text-lg, feature text-base) ──
+function BillingV2LargeType() {
+  const [cycle, setCycle]       = useState<BLCycle>('monthly')
+  const [teamTier, setTeamTier] = useState<BLTeamTier>('10')
+  const [currentPlan, setCurrentPlan] = useState<BLPlan>('free')
+
+  const proPrice    = cycle === 'monthly' ? BL_P.mo : BL_P.yr
+  const proPeriod   = cycle === 'monthly' ? '/month' : '/year'
+  const teamPrice   = cycle === 'monthly' ? (teamTier === '10' ? BL_P.t10mo : BL_P.t20mo) : (teamTier === '10' ? BL_P.t10yr : BL_P.t20yr)
+  const teamSavings = teamTier === '10' ? BL_SAVINGS_T10 : BL_SAVINGS_T20
+  const isPremium   = currentPlan !== 'free'
+  const isAllIn     = currentPlan.startsWith('team_')
+  const proPlanKey  = cycle === 'monthly' ? 'premium_monthly' : 'premium_yearly'
+  const isThisProActive = currentPlan === proPlanKey
+
+  return (
+    <div className="space-y-5">
+      <BLPlanSim value={currentPlan} onChange={setCurrentPlan} />
+      <BLBanner currentPlan={currentPlan} />
+
+      <div>
+        <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100 mb-1">
+          {isPremium ? 'Plan overview' : 'Choose a plan'}
+        </h2>
+        <p className="text-base text-stone-500 dark:text-stone-400 mb-5">
+          {isPremium ? 'You have an active premium subscription.' : 'Upgrade for full history, cloud sync, and earnings reports.'}
+        </p>
+
+        <div className="space-y-5">
+          <div className="flex justify-center">
+            <div className="flex items-center bg-stone-100 dark:bg-[var(--dark-elevated)] rounded-xl p-1">
+              {(['monthly','yearly'] as BLCycle[]).map(c => (
+                <button key={c} onClick={() => setCycle(c)} className={cn(
+                  'px-5 py-2 text-base font-medium rounded-lg transition-colors flex items-center gap-1.5',
+                  cycle === c ? 'bg-white dark:bg-[var(--dark-card)] text-stone-900 dark:text-stone-100 shadow-sm' : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
+                )}>
+                  {c === 'monthly' ? 'Monthly' : <>Yearly <span className="text-sm bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full font-semibold">Save {BL_SAVINGS_PRO}%</span></>}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {/* Free */}
+            <div className={cn('relative rounded-2xl border-2 p-6 flex flex-col',
+              currentPlan === 'free' ? 'border-indigo-400 dark:border-indigo-500 bg-white dark:bg-[var(--dark-card)]'
+              : 'border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)] opacity-60')}>
+              {currentPlan === 'free' && <div className="absolute -top-3 left-4"><span className="bg-indigo-500 text-white text-sm font-semibold px-3 py-1 rounded-full">Current plan</span></div>}
+              <div className="mb-5 pt-1">
+                <p className="text-lg font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">Free</p>
+                <div className="flex items-end gap-1"><span className="text-6xl font-bold text-stone-900 dark:text-stone-100">$0</span><span className="text-base text-stone-400 mb-2">/month</span></div>
+                <p className="text-sm text-stone-400 mt-1">No credit card required</p>
+              </div>
+              <ul className="space-y-3 flex-1 mb-6">
+                {BL_FEATURES.map(f => {
+                  const included = f.free !== false
+                  return (
+                    <li key={f.label} className="flex items-center gap-2.5 text-base min-w-0">
+                      {included ? <Check className="h-5 w-5 shrink-0 text-emerald-500" /> : <X className="h-5 w-5 shrink-0 text-stone-300 dark:text-stone-600" />}
+                      <span className={cn('truncate', included ? 'text-stone-700 dark:text-stone-300' : 'text-stone-400 dark:text-stone-600 line-through')}>
+                        {f.label}{typeof f.free === 'string' && <span className="ml-1 text-stone-500"> · {f.free}</span>}
+                      </span>
+                    </li>
+                  )
+                })}
+              </ul>
+              <BLCta label={currentPlan === 'free' ? 'Current plan' : 'Free tier'} disabled />
+            </div>
+
+            {/* Pro */}
+            <div className={cn('relative rounded-2xl border p-6 flex flex-col',
+              isThisProActive ? 'border-2 border-indigo-400 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30 shadow-lg shadow-indigo-100 dark:shadow-indigo-900/20'
+              : !isPremium ? 'border-indigo-300 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 shadow-md'
+              : 'border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)]')}>
+              {isThisProActive
+                ? <div className="absolute -top-3 left-1/2 -translate-x-1/2"><span className="bg-indigo-500 text-white text-sm font-semibold px-3 py-1 rounded-full">Current plan</span></div>
+                : !isPremium ? <div className="absolute -top-3 left-1/2 -translate-x-1/2"><span className="inline-flex items-center gap-1 bg-indigo-500 text-white text-sm font-semibold px-3 py-1 rounded-full"><Star className="h-3.5 w-3.5" />Popular</span></div>
+                : null}
+              <div className="mb-5">
+                <p className="text-lg font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">Pro</p>
+                <div className="flex items-end gap-0.5">
+                  <span className="text-6xl font-bold text-stone-900 dark:text-stone-100">${proPrice}</span>
+                  <span className="text-base text-stone-400 mb-2">{proPeriod}</span>
+                  {cycle === 'yearly' && <span className="ml-2 mb-2 text-sm bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full font-semibold">Save {BL_SAVINGS_PRO}%</span>}
+                </div>
+                <p className="text-sm text-stone-400 mt-1">{cycle === 'yearly' ? `Save ${BL_SAVINGS_PRO}% vs monthly` : 'Full access, cancel anytime'}</p>
+              </div>
+              <ul className="space-y-3 flex-1 mb-6">
+                {BL_FEATURES.map(f => {
+                  const included = f.pro !== false
+                  return (
+                    <li key={f.label} className="flex items-center gap-2.5 text-base min-w-0">
+                      {included ? <Check className="h-5 w-5 shrink-0 text-indigo-500" /> : <X className="h-5 w-5 shrink-0 text-stone-300 dark:text-stone-600" />}
+                      <span className={cn('truncate', included ? 'text-stone-700 dark:text-stone-300' : 'text-stone-400 dark:text-stone-600 line-through')}>
+                        {f.label}{typeof f.pro === 'string' && <span className="ml-1 text-stone-500"> · {f.pro}</span>}
+                      </span>
+                    </li>
+                  )
+                })}
+              </ul>
+              {isThisProActive ? <BLCta label="Current plan" disabled />
+                : !isPremium ? <BLCta label="Get Pro" highlight />
+                : currentPlan === 'premium_monthly' && cycle === 'yearly' ? <BLCta label="Upgrade to yearly" highlight />
+                : <BLCta label="Not available" disabled />}
+            </div>
+
+            {/* Team */}
+            <div className={cn('relative rounded-2xl border p-6 flex flex-col',
+              isAllIn ? 'border-2 border-indigo-400 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30 shadow-lg'
+              : 'border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)]')}>
+              {isAllIn && <div className="absolute -top-3 left-1/2 -translate-x-1/2"><span className="bg-indigo-500 text-white text-sm font-semibold px-3 py-1 rounded-full">Current plan</span></div>}
+              <div className="mb-4">
+                <p className="text-lg font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-3 flex items-center gap-1.5"><Users className="h-4 w-4" />Team</p>
+                <div className="flex gap-1.5 mb-4">
+                  {(['10','20','contact'] as BLTeamTier[]).map(tier => (
+                    <button key={tier} onClick={() => setTeamTier(tier)} className={cn('flex-1 px-2 py-2 text-sm font-semibold rounded-lg transition-colors',
+                      teamTier === tier ? 'bg-indigo-500 text-white' : 'bg-stone-100 dark:bg-[var(--dark-elevated)] text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-[var(--dark-hover)]')}>
+                      {tier === 'contact' ? 'Custom' : `Up to ${tier}`}
+                    </button>
+                  ))}
+                </div>
+                {teamTier === 'contact'
+                  ? <div><p className="text-6xl font-bold text-stone-900 dark:text-stone-100">Custom</p><p className="text-sm text-stone-400 mt-1">Tailored for larger teams</p></div>
+                  : <div>
+                      <div className="flex items-end gap-0.5">
+                        <span className="text-6xl font-bold text-stone-900 dark:text-stone-100">${teamPrice}</span>
+                        <span className="text-base text-stone-400 mb-2">{cycle === 'monthly' ? '/month' : '/year'}</span>
+                        {cycle === 'yearly' && <span className="ml-2 mb-2 text-sm bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full font-semibold">Save {teamSavings}%</span>}
+                      </div>
+                      <p className="text-sm text-stone-400 mt-1">{cycle === 'yearly' ? `Save ${teamSavings}% with annual billing` : 'Billed monthly, cancel anytime'}</p>
+                    </div>}
+              </div>
+              <ul className="space-y-3 flex-1 mb-6">
+                {BL_FEATURES.map(f => {
+                  const included = f.team !== false
+                  return (
+                    <li key={f.label} className="flex items-center gap-2.5 text-base min-w-0">
+                      {included ? <Check className="h-5 w-5 shrink-0 text-indigo-500" /> : <X className="h-5 w-5 shrink-0 text-stone-300 dark:text-stone-600" />}
+                      <span className={cn('truncate', included ? 'text-stone-700 dark:text-stone-300' : 'text-stone-400 dark:text-stone-600 line-through')}>
+                        {f.label}{typeof f.team === 'string' && <span className="ml-1 text-stone-500"> · {f.team}</span>}
+                      </span>
+                    </li>
+                  )
+                })}
+                {teamTier !== 'contact' && (
+                  <li className="flex items-center gap-2.5 text-base"><Check className="h-5 w-5 shrink-0 text-indigo-500" /><span className="text-stone-700 dark:text-stone-300">Up to {teamTier} members</span></li>
+                )}
+              </ul>
+              {isAllIn ? <BLCta label="Current plan" disabled />
+                : teamTier === 'contact' ? <a href="mailto:hello@w-timer.com" className="py-2.5 px-4 rounded-xl text-sm font-semibold text-center border border-stone-300 dark:border-[var(--dark-border)] text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-[var(--dark-elevated)] transition-colors block">Contact us</a>
+                : <BLCta label="Get Team" />}
+            </div>
+          </div>
+        </div>
+      </div>
+      <BLPromo />
+    </div>
+  )
+}
+
+// ── V3 — Compact (tight padding p-4, text-xs features, text-3xl price) ────────
+function BillingV3Compact() {
+  const [cycle, setCycle]       = useState<BLCycle>('monthly')
+  const [teamTier, setTeamTier] = useState<BLTeamTier>('10')
+  const [currentPlan, setCurrentPlan] = useState<BLPlan>('free')
+
+  const proPrice    = cycle === 'monthly' ? BL_P.mo : BL_P.yr
+  const proPeriod   = cycle === 'monthly' ? '/mo' : '/yr'
+  const teamPrice   = cycle === 'monthly' ? (teamTier === '10' ? BL_P.t10mo : BL_P.t20mo) : (teamTier === '10' ? BL_P.t10yr : BL_P.t20yr)
+  const teamSavings = teamTier === '10' ? BL_SAVINGS_T10 : BL_SAVINGS_T20
+  const isPremium   = currentPlan !== 'free'
+  const isAllIn     = currentPlan.startsWith('team_')
+  const proPlanKey  = cycle === 'monthly' ? 'premium_monthly' : 'premium_yearly'
+  const isThisProActive = currentPlan === proPlanKey
+
+  return (
+    <div className="space-y-4">
+      <BLPlanSim value={currentPlan} onChange={setCurrentPlan} />
+      <BLBanner currentPlan={currentPlan} />
+
+      <div>
+        <h2 className="text-sm font-semibold text-stone-900 dark:text-stone-100 mb-0.5">
+          {isPremium ? 'Plan overview' : 'Choose a plan'}
+        </h2>
+        <p className="text-xs text-stone-500 dark:text-stone-400 mb-4">
+          {isPremium ? 'You have an active premium subscription.' : 'Upgrade for full history, cloud sync, and earnings reports.'}
+        </p>
+
+        <div className="space-y-4">
+          <div className="flex justify-center">
+            <div className="flex items-center bg-stone-100 dark:bg-[var(--dark-elevated)] rounded-lg p-0.5">
+              {(['monthly','yearly'] as BLCycle[]).map(c => (
+                <button key={c} onClick={() => setCycle(c)} className={cn(
+                  'px-3 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1',
+                  cycle === c ? 'bg-white dark:bg-[var(--dark-card)] text-stone-900 dark:text-stone-100 shadow-sm' : 'text-stone-500 dark:text-stone-400'
+                )}>
+                  {c === 'monthly' ? 'Monthly' : <>Yearly <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-1 py-0.5 rounded-full font-semibold">−{BL_SAVINGS_PRO}%</span></>}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* Free */}
+            <div className={cn('relative rounded-xl border-2 p-4 flex flex-col',
+              currentPlan === 'free' ? 'border-indigo-400 dark:border-indigo-500 bg-white dark:bg-[var(--dark-card)]'
+              : 'border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)] opacity-60')}>
+              {currentPlan === 'free' && <div className="absolute -top-2.5 left-3"><span className="bg-indigo-500 text-white text-[10px] font-semibold px-2.5 py-0.5 rounded-full">Current plan</span></div>}
+              <div className="mb-3 pt-0.5">
+                <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-1.5">Free</p>
+                <div className="flex items-end gap-0.5"><span className="text-3xl font-bold text-stone-900 dark:text-stone-100">$0</span><span className="text-xs text-stone-400 mb-0.5">/month</span></div>
+                <p className="text-[10px] text-stone-400 mt-0.5">No credit card required</p>
+              </div>
+              <ul className="space-y-1.5 flex-1 mb-4">{BL_FEATURES.map(f => <BLFeatureRow key={f.label} label={f.label} value={f.free} />)}</ul>
+              <BLCta label={currentPlan === 'free' ? 'Current plan' : 'Free tier'} disabled />
+            </div>
+
+            {/* Pro */}
+            <div className={cn('relative rounded-xl border p-4 flex flex-col',
+              isThisProActive ? 'border-2 border-indigo-400 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30 shadow-md shadow-indigo-100 dark:shadow-indigo-900/20'
+              : !isPremium ? 'border-indigo-300 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 shadow-sm'
+              : 'border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)]')}>
+              {isThisProActive
+                ? <div className="absolute -top-2.5 left-1/2 -translate-x-1/2"><span className="bg-indigo-500 text-white text-[10px] font-semibold px-2.5 py-0.5 rounded-full">Current plan</span></div>
+                : !isPremium ? <div className="absolute -top-2.5 left-1/2 -translate-x-1/2"><span className="inline-flex items-center gap-0.5 bg-indigo-500 text-white text-[10px] font-semibold px-2.5 py-0.5 rounded-full"><Star className="h-2.5 w-2.5" />Popular</span></div>
+                : null}
+              <div className="mb-3">
+                <p className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-1.5">Pro</p>
+                <div className="flex items-end gap-0.5">
+                  <span className="text-3xl font-bold text-stone-900 dark:text-stone-100">${proPrice}</span>
+                  <span className="text-xs text-stone-400 mb-0.5">{proPeriod}</span>
+                  {cycle === 'yearly' && <span className="ml-1.5 mb-0.5 text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-1 py-0.5 rounded-full font-semibold">−{BL_SAVINGS_PRO}%</span>}
+                </div>
+                <p className="text-[10px] text-stone-400 mt-0.5">{cycle === 'yearly' ? `Save ${BL_SAVINGS_PRO}% vs monthly` : 'Full access, cancel anytime'}</p>
+              </div>
+              <ul className="space-y-1.5 flex-1 mb-4">{BL_FEATURES.map(f => <BLFeatureRow key={f.label} label={f.label} value={f.pro} accent />)}</ul>
+              {isThisProActive ? <BLCta label="Current plan" disabled />
+                : !isPremium ? <BLCta label="Get Pro" highlight />
+                : currentPlan === 'premium_monthly' && cycle === 'yearly' ? <BLCta label="Upgrade to yearly" highlight />
+                : <BLCta label="Not available" disabled />}
+            </div>
+
+            {/* Team */}
+            <div className={cn('relative rounded-xl border p-4 flex flex-col',
+              isAllIn ? 'border-2 border-indigo-400 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30 shadow-md'
+              : 'border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)]')}>
+              {isAllIn && <div className="absolute -top-2.5 left-1/2 -translate-x-1/2"><span className="bg-indigo-500 text-white text-[10px] font-semibold px-2.5 py-0.5 rounded-full">Current plan</span></div>}
+              <div className="mb-3">
+                <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-2 flex items-center gap-1"><Users className="h-3 w-3" />Team</p>
+                <div className="flex gap-1 mb-3">
+                  {(['10','20','contact'] as BLTeamTier[]).map(tier => (
+                    <button key={tier} onClick={() => setTeamTier(tier)} className={cn('flex-1 px-1.5 py-1 text-[10px] font-semibold rounded-md transition-colors',
+                      teamTier === tier ? 'bg-indigo-500 text-white' : 'bg-stone-100 dark:bg-[var(--dark-elevated)] text-stone-600 dark:text-stone-400 hover:bg-stone-200')}>
+                      {tier === 'contact' ? 'Custom' : `≤${tier}`}
+                    </button>
+                  ))}
+                </div>
+                {teamTier === 'contact'
+                  ? <p className="text-3xl font-bold text-stone-900 dark:text-stone-100">Custom</p>
+                  : <div>
+                      <div className="flex items-end gap-0.5">
+                        <span className="text-3xl font-bold text-stone-900 dark:text-stone-100">${teamPrice}</span>
+                        <span className="text-xs text-stone-400 mb-0.5">{cycle === 'monthly' ? '/mo' : '/yr'}</span>
+                        {cycle === 'yearly' && <span className="ml-1.5 mb-0.5 text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-1 py-0.5 rounded-full font-semibold">−{teamSavings}%</span>}
+                      </div>
+                    </div>}
+              </div>
+              <ul className="space-y-1.5 flex-1 mb-4">
+                {BL_FEATURES.map(f => <BLFeatureRow key={f.label} label={f.label} value={f.team} accent />)}
+                {teamTier !== 'contact' && <BLFeatureRow label={`Up to ${teamTier} members`} value={true} accent />}
+              </ul>
+              {isAllIn ? <BLCta label="Current plan" disabled />
+                : teamTier === 'contact' ? <a href="mailto:hello@w-timer.com" className="py-2 px-3 rounded-lg text-xs font-semibold text-center border border-stone-300 dark:border-[var(--dark-border)] text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-[var(--dark-elevated)] transition-colors block">Contact us</a>
+                : <BLCta label="Get Team" />}
+            </div>
+          </div>
+        </div>
+      </div>
+      <BLPromo />
+    </div>
+  )
+}
+
+// ── V4 — Softer corners (rounded-3xl cards, pill toggle, larger gap) ──────────
+function BillingV4SoftRounded() {
+  const [cycle, setCycle]       = useState<BLCycle>('monthly')
+  const [teamTier, setTeamTier] = useState<BLTeamTier>('10')
+  const [currentPlan, setCurrentPlan] = useState<BLPlan>('free')
+
+  const proPrice    = cycle === 'monthly' ? BL_P.mo : BL_P.yr
+  const proPeriod   = cycle === 'monthly' ? '/month' : '/year'
+  const teamPrice   = cycle === 'monthly' ? (teamTier === '10' ? BL_P.t10mo : BL_P.t20mo) : (teamTier === '10' ? BL_P.t10yr : BL_P.t20yr)
+  const teamSavings = teamTier === '10' ? BL_SAVINGS_T10 : BL_SAVINGS_T20
+  const isPremium   = currentPlan !== 'free'
+  const isAllIn     = currentPlan.startsWith('team_')
+  const proPlanKey  = cycle === 'monthly' ? 'premium_monthly' : 'premium_yearly'
+  const isThisProActive = currentPlan === proPlanKey
+
+  return (
+    <div className="space-y-6">
+      <BLPlanSim value={currentPlan} onChange={setCurrentPlan} />
+      <BLBanner currentPlan={currentPlan} />
+
+      <div>
+        <h2 className="text-base font-semibold text-stone-900 dark:text-stone-100 mb-1">
+          {isPremium ? 'Plan overview' : 'Choose a plan'}
+        </h2>
+        <p className="text-sm text-stone-500 dark:text-stone-400 mb-6">
+          {isPremium ? 'You have an active premium subscription.' : 'Upgrade for full history, cloud sync, and earnings reports.'}
+        </p>
+
+        <div className="space-y-6">
+          <div className="flex justify-center">
+            <div className="flex items-center bg-stone-100 dark:bg-[var(--dark-elevated)] rounded-full p-1.5">
+              {(['monthly','yearly'] as BLCycle[]).map(c => (
+                <button key={c} onClick={() => setCycle(c)} className={cn(
+                  'px-6 py-2 text-sm font-medium rounded-full transition-all flex items-center gap-1.5',
+                  cycle === c ? 'bg-white dark:bg-[var(--dark-card)] text-stone-900 dark:text-stone-100 shadow-sm' : 'text-stone-500 dark:text-stone-400'
+                )}>
+                  {c === 'monthly' ? 'Monthly' : <>Yearly <span className="text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-full font-semibold">Save {BL_SAVINGS_PRO}%</span></>}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Free */}
+            <div className={cn('relative rounded-3xl border-2 p-7 flex flex-col',
+              currentPlan === 'free' ? 'border-indigo-400 dark:border-indigo-500 bg-white dark:bg-[var(--dark-card)]'
+              : 'border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)] opacity-60')}>
+              {currentPlan === 'free' && <div className="absolute -top-3.5 left-5"><span className="bg-indigo-500 text-white text-xs font-semibold px-3 py-1 rounded-full">Current plan</span></div>}
+              <div className="mb-5 pt-1">
+                <p className="text-sm font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">Free</p>
+                <div className="flex items-end gap-1"><span className="text-4xl font-bold text-stone-900 dark:text-stone-100">$0</span><span className="text-sm text-stone-400 mb-1">/month</span></div>
+                <p className="text-xs text-stone-400 mt-1">No credit card required</p>
+              </div>
+              <ul className="space-y-2.5 flex-1 mb-6">{BL_FEATURES.map(f => <BLFeatureRow key={f.label} label={f.label} value={f.free} />)}</ul>
+              <button className={cn('w-full py-3 px-4 rounded-2xl text-sm font-semibold transition-colors', 'border border-stone-300 dark:border-[var(--dark-border)] text-stone-400 dark:text-stone-500 bg-stone-100 dark:bg-[var(--dark-elevated)] cursor-default')}>
+                {currentPlan === 'free' ? 'Current plan' : 'Free tier'}
+              </button>
+            </div>
+
+            {/* Pro */}
+            <div className={cn('relative rounded-3xl border p-7 flex flex-col',
+              isThisProActive ? 'border-2 border-indigo-400 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30 shadow-xl shadow-indigo-100 dark:shadow-indigo-900/20'
+              : !isPremium ? 'border-indigo-300 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-950/20 shadow-lg'
+              : 'border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)]')}>
+              {isThisProActive
+                ? <div className="absolute -top-3.5 left-1/2 -translate-x-1/2"><span className="bg-indigo-500 text-white text-xs font-semibold px-3 py-1 rounded-full">Current plan</span></div>
+                : !isPremium ? <div className="absolute -top-3.5 left-1/2 -translate-x-1/2"><span className="inline-flex items-center gap-1 bg-indigo-500 text-white text-xs font-semibold px-3 py-1 rounded-full"><Star className="h-3 w-3" />Popular</span></div>
+                : null}
+              <div className="mb-5">
+                <p className="text-sm font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">Pro</p>
+                <div className="flex items-end gap-0.5">
+                  <span className="text-4xl font-bold text-stone-900 dark:text-stone-100">${proPrice}</span>
+                  <span className="text-sm text-stone-400 mb-1">{proPeriod}</span>
+                  {cycle === 'yearly' && <span className="ml-2 mb-1 text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-full font-semibold">Save {BL_SAVINGS_PRO}%</span>}
+                </div>
+                <p className="text-xs text-stone-400 mt-1">{cycle === 'yearly' ? `Save ${BL_SAVINGS_PRO}% vs monthly` : 'Full access, cancel anytime'}</p>
+              </div>
+              <ul className="space-y-2.5 flex-1 mb-6">{BL_FEATURES.map(f => <BLFeatureRow key={f.label} label={f.label} value={f.pro} accent />)}</ul>
+              {isThisProActive ? <button className="w-full py-3 px-4 rounded-2xl text-sm font-semibold text-center text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/30 cursor-default">Current plan</button>
+                : !isPremium ? <button className="w-full py-3 px-4 rounded-2xl text-sm font-semibold bg-indigo-500 hover:bg-indigo-600 text-white transition-colors">Get Pro</button>
+                : currentPlan === 'premium_monthly' && cycle === 'yearly' ? <button className="w-full py-3 px-4 rounded-2xl text-sm font-semibold bg-indigo-500 hover:bg-indigo-600 text-white transition-colors">Upgrade to yearly</button>
+                : <button className="w-full py-3 px-4 rounded-2xl text-sm font-semibold text-stone-400 bg-stone-100 dark:bg-[var(--dark-elevated)] cursor-default">Not available</button>}
+            </div>
+
+            {/* Team */}
+            <div className={cn('relative rounded-3xl border p-7 flex flex-col',
+              isAllIn ? 'border-2 border-indigo-400 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30 shadow-xl'
+              : 'border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)]')}>
+              {isAllIn && <div className="absolute -top-3.5 left-1/2 -translate-x-1/2"><span className="bg-indigo-500 text-white text-xs font-semibold px-3 py-1 rounded-full">Current plan</span></div>}
+              <div className="mb-4">
+                <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-3 flex items-center gap-1.5"><Users className="h-3.5 w-3.5" />Team</p>
+                <div className="flex gap-1.5 mb-4">
+                  {(['10','20','contact'] as BLTeamTier[]).map(tier => (
+                    <button key={tier} onClick={() => setTeamTier(tier)} className={cn('flex-1 px-2 py-1.5 text-xs font-semibold rounded-xl transition-colors',
+                      teamTier === tier ? 'bg-indigo-500 text-white' : 'bg-stone-100 dark:bg-[var(--dark-elevated)] text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-[var(--dark-hover)]')}>
+                      {tier === 'contact' ? 'Custom' : `Up to ${tier}`}
+                    </button>
+                  ))}
+                </div>
+                {teamTier === 'contact'
+                  ? <div><p className="text-4xl font-bold text-stone-900 dark:text-stone-100">Custom</p><p className="text-xs text-stone-400 mt-1">Tailored for larger teams</p></div>
+                  : <div>
+                      <div className="flex items-end gap-0.5">
+                        <span className="text-4xl font-bold text-stone-900 dark:text-stone-100">${teamPrice}</span>
+                        <span className="text-sm text-stone-400 mb-1">{cycle === 'monthly' ? '/month' : '/year'}</span>
+                        {cycle === 'yearly' && <span className="ml-2 mb-1 text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-full font-semibold">Save {teamSavings}%</span>}
+                      </div>
+                      <p className="text-xs text-stone-400 mt-1">{cycle === 'yearly' ? `Save ${teamSavings}% with annual billing` : 'Billed monthly, cancel anytime'}</p>
+                    </div>}
+              </div>
+              <ul className="space-y-2.5 flex-1 mb-6">
+                {BL_FEATURES.map(f => <BLFeatureRow key={f.label} label={f.label} value={f.team} accent />)}
+                {teamTier !== 'contact' && <BLFeatureRow label={`Up to ${teamTier} members`} value={true} accent />}
+              </ul>
+              {isAllIn ? <button className="w-full py-3 px-4 rounded-2xl text-sm font-semibold text-center text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/30 cursor-default">Current plan</button>
+                : teamTier === 'contact' ? <a href="mailto:hello@w-timer.com" className="py-3 px-4 rounded-2xl text-sm font-semibold text-center border border-stone-300 dark:border-[var(--dark-border)] text-stone-700 dark:text-stone-300 hover:bg-stone-50 transition-colors block">Contact us</a>
+                : <button className="w-full py-3 px-4 rounded-2xl text-sm font-semibold border border-stone-300 dark:border-[var(--dark-border)] text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-[var(--dark-elevated)] transition-colors">Get Team</button>}
+            </div>
+          </div>
+        </div>
+      </div>
+      <BLPromo />
+    </div>
+  )
+}
+
+// ── V5 — Heavier borders + divider between header and features ────────────────
+function BillingV5BoldBorders() {
+  const [cycle, setCycle]       = useState<BLCycle>('monthly')
+  const [teamTier, setTeamTier] = useState<BLTeamTier>('10')
+  const [currentPlan, setCurrentPlan] = useState<BLPlan>('free')
+
+  const proPrice    = cycle === 'monthly' ? BL_P.mo : BL_P.yr
+  const proPeriod   = cycle === 'monthly' ? '/month' : '/year'
+  const teamPrice   = cycle === 'monthly' ? (teamTier === '10' ? BL_P.t10mo : BL_P.t20mo) : (teamTier === '10' ? BL_P.t10yr : BL_P.t20yr)
+  const teamSavings = teamTier === '10' ? BL_SAVINGS_T10 : BL_SAVINGS_T20
+  const isPremium   = currentPlan !== 'free'
+  const isAllIn     = currentPlan.startsWith('team_')
+  const proPlanKey  = cycle === 'monthly' ? 'premium_monthly' : 'premium_yearly'
+  const isThisProActive = currentPlan === proPlanKey
+
+  return (
+    <div className="space-y-5">
+      <BLPlanSim value={currentPlan} onChange={setCurrentPlan} />
+      <BLBanner currentPlan={currentPlan} />
+
+      <div>
+        <h2 className="text-base font-semibold text-stone-900 dark:text-stone-100 mb-1">
+          {isPremium ? 'Plan overview' : 'Choose a plan'}
+        </h2>
+        <p className="text-sm text-stone-500 dark:text-stone-400 mb-5">
+          {isPremium ? 'You have an active premium subscription.' : 'Upgrade for full history, cloud sync, and earnings reports.'}
+        </p>
+
+        <div className="space-y-5">
+          <div className="flex justify-center">
+            <div className="flex items-center border-2 border-stone-200 dark:border-[var(--dark-border)] rounded-xl p-1">
+              {(['monthly','yearly'] as BLCycle[]).map(c => (
+                <button key={c} onClick={() => setCycle(c)} className={cn(
+                  'px-4 py-1.5 text-sm font-semibold rounded-lg transition-colors flex items-center gap-1.5',
+                  cycle === c ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900' : 'text-stone-500 dark:text-stone-400'
+                )}>
+                  {c === 'monthly' ? 'Monthly' : <>Yearly <span className="text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-full font-semibold">Save {BL_SAVINGS_PRO}%</span></>}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {/* Free */}
+            <div className={cn('relative rounded-2xl border-2 flex flex-col overflow-hidden',
+              currentPlan === 'free' ? 'border-indigo-400 dark:border-indigo-500' : 'border-stone-300 dark:border-stone-600 opacity-60')}>
+              {currentPlan === 'free' && <div className="absolute -top-3 left-4"><span className="bg-indigo-500 text-white text-xs font-semibold px-3 py-1 rounded-full">Current plan</span></div>}
+              {/* header section */}
+              <div className="p-5 pb-4">
+                <p className="text-sm font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">Free</p>
+                <div className="flex items-end gap-1"><span className="text-4xl font-bold text-stone-900 dark:text-stone-100">$0</span><span className="text-sm text-stone-400 mb-1">/month</span></div>
+                <p className="text-xs text-stone-400 mt-1">No credit card required</p>
+              </div>
+              {/* divider */}
+              <div className="border-t-2 border-stone-200 dark:border-stone-700 mx-0" />
+              {/* features section */}
+              <div className="p-5 pt-4 flex-1 flex flex-col">
+                <ul className="space-y-2.5 flex-1 mb-5">{BL_FEATURES.map(f => <BLFeatureRow key={f.label} label={f.label} value={f.free} />)}</ul>
+                <BLCta label={currentPlan === 'free' ? 'Current plan' : 'Free tier'} disabled />
+              </div>
+            </div>
+
+            {/* Pro */}
+            <div className={cn('relative rounded-2xl border-2 flex flex-col overflow-hidden',
+              isThisProActive ? 'border-indigo-500 dark:border-indigo-400'
+              : !isPremium ? 'border-indigo-400 dark:border-indigo-500'
+              : 'border-stone-300 dark:border-stone-600')}>
+              {isThisProActive
+                ? <div className="absolute -top-3 left-1/2 -translate-x-1/2"><span className="bg-indigo-500 text-white text-xs font-semibold px-3 py-1 rounded-full">Current plan</span></div>
+                : !isPremium ? <div className="absolute -top-3 left-1/2 -translate-x-1/2"><span className="inline-flex items-center gap-1 bg-indigo-500 text-white text-xs font-semibold px-3 py-1 rounded-full"><Star className="h-3 w-3" />Popular</span></div>
+                : null}
+              {/* header — tinted for pro */}
+              <div className={cn('p-5 pb-4', !isThisProActive && !isPremium ? 'bg-indigo-50 dark:bg-indigo-950/30' : isThisProActive ? 'bg-indigo-50 dark:bg-indigo-950/30' : '')}>
+                <p className="text-sm font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">Pro</p>
+                <div className="flex items-end gap-0.5">
+                  <span className="text-4xl font-bold text-stone-900 dark:text-stone-100">${proPrice}</span>
+                  <span className="text-sm text-stone-400 mb-1">{proPeriod}</span>
+                  {cycle === 'yearly' && <span className="ml-2 mb-1 text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-full font-semibold">Save {BL_SAVINGS_PRO}%</span>}
+                </div>
+                <p className="text-xs text-stone-400 mt-1">{cycle === 'yearly' ? `Save ${BL_SAVINGS_PRO}% vs monthly` : 'Full access, cancel anytime'}</p>
+              </div>
+              {/* divider */}
+              <div className="border-t-2 border-indigo-200 dark:border-indigo-800/60" />
+              <div className="p-5 pt-4 flex-1 flex flex-col">
+                <ul className="space-y-2.5 flex-1 mb-5">{BL_FEATURES.map(f => <BLFeatureRow key={f.label} label={f.label} value={f.pro} accent />)}</ul>
+                {isThisProActive ? <BLCta label="Current plan" disabled />
+                  : !isPremium ? <BLCta label="Get Pro" highlight />
+                  : currentPlan === 'premium_monthly' && cycle === 'yearly' ? <BLCta label="Upgrade to yearly" highlight />
+                  : <BLCta label="Not available" disabled />}
+              </div>
+            </div>
+
+            {/* Team */}
+            <div className={cn('relative rounded-2xl border-2 flex flex-col overflow-hidden',
+              isAllIn ? 'border-indigo-500 dark:border-indigo-400' : 'border-stone-300 dark:border-stone-600')}>
+              {isAllIn && <div className="absolute -top-3 left-1/2 -translate-x-1/2"><span className="bg-indigo-500 text-white text-xs font-semibold px-3 py-1 rounded-full">Current plan</span></div>}
+              <div className={cn('p-5 pb-4', isAllIn ? 'bg-indigo-50 dark:bg-indigo-950/30' : '')}>
+                <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-3 flex items-center gap-1.5"><Users className="h-3.5 w-3.5" />Team</p>
+                <div className="flex gap-1.5 mb-4">
+                  {(['10','20','contact'] as BLTeamTier[]).map(tier => (
+                    <button key={tier} onClick={() => setTeamTier(tier)} className={cn('flex-1 px-2 py-1.5 text-xs font-semibold rounded-lg transition-colors border',
+                      teamTier === tier ? 'bg-indigo-500 text-white border-indigo-500' : 'border-stone-300 dark:border-stone-600 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-[var(--dark-elevated)]')}>
+                      {tier === 'contact' ? 'Custom' : `Up to ${tier}`}
+                    </button>
+                  ))}
+                </div>
+                {teamTier === 'contact'
+                  ? <div><p className="text-4xl font-bold text-stone-900 dark:text-stone-100">Custom</p><p className="text-xs text-stone-400 mt-1">Tailored for larger teams</p></div>
+                  : <div>
+                      <div className="flex items-end gap-0.5">
+                        <span className="text-4xl font-bold text-stone-900 dark:text-stone-100">${teamPrice}</span>
+                        <span className="text-sm text-stone-400 mb-1">{cycle === 'monthly' ? '/month' : '/year'}</span>
+                        {cycle === 'yearly' && <span className="ml-2 mb-1 text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-full font-semibold">Save {teamSavings}%</span>}
+                      </div>
+                      <p className="text-xs text-stone-400 mt-1">{cycle === 'yearly' ? `Save ${teamSavings}% with annual billing` : 'Billed monthly, cancel anytime'}</p>
+                    </div>}
+              </div>
+              <div className="border-t-2 border-stone-200 dark:border-stone-700" />
+              <div className="p-5 pt-4 flex-1 flex flex-col">
+                <ul className="space-y-2.5 flex-1 mb-5">
+                  {BL_FEATURES.map(f => <BLFeatureRow key={f.label} label={f.label} value={f.team} accent />)}
+                  {teamTier !== 'contact' && <BLFeatureRow label={`Up to ${teamTier} members`} value={true} accent />}
+                </ul>
+                {isAllIn ? <BLCta label="Current plan" disabled />
+                  : teamTier === 'contact' ? <a href="mailto:hello@w-timer.com" className="py-2.5 px-4 rounded-xl text-sm font-semibold text-center border-2 border-stone-300 dark:border-stone-600 text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-[var(--dark-elevated)] transition-colors block">Contact us</a>
+                  : <BLCta label="Get Team" />}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <BLPromo />
+    </div>
+  )
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // MAIN PAGE
 // ════════════════════════════════════════════════════════════════════════════
 
@@ -3841,6 +4638,7 @@ export default function UITestLab() {
     picker:         1,
     dailyGoal:      1,
     dailyGoalHoriz: 1,
+    billing:        1,
   })
 
   function setVariant(tab: string, v: number) {
@@ -3868,6 +4666,7 @@ export default function UITestLab() {
           <TabsTrigger value="dashboard" className="text-xs">Dashboard</TabsTrigger>
           <TabsTrigger value="picker"    className="text-xs">Project Picker</TabsTrigger>
           <TabsTrigger value="dailygoal" className="text-xs">Daily Goal</TabsTrigger>
+          <TabsTrigger value="billing"   className="text-xs">Billing &amp; Plans</TabsTrigger>
         </TabsList>
 
         <TabsContent value="entries">
@@ -4028,6 +4827,26 @@ export default function UITestLab() {
               {activeVariants.dailyGoalHoriz === 5 && <DailyGoalH5WeekStrip />}
             </TabsContent>
           </Tabs>
+        </TabsContent>
+
+        <TabsContent value="billing">
+          <VariantPicker
+            count={5}
+            active={activeVariants.billing}
+            labels={[
+              'Current (base)',
+              'Larger type scale',
+              'Compact & tight',
+              'Soft rounded corners',
+              'Bold borders + dividers',
+            ]}
+            onSelect={v => setVariant('billing', v)}
+          />
+          {activeVariants.billing === 1 && <BillingV1FaithfulPort />}
+          {activeVariants.billing === 2 && <BillingV2LargeType />}
+          {activeVariants.billing === 3 && <BillingV3Compact />}
+          {activeVariants.billing === 4 && <BillingV4SoftRounded />}
+          {activeVariants.billing === 5 && <BillingV5BoldBorders />}
         </TabsContent>
       </Tabs>
     </div>

@@ -11,17 +11,23 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { GroupWithMeta } from '@/lib/repositories/groups'
 import type { InvitationWithGroup } from '@/lib/repositories/groupInvitations'
 import AdminDashboard from './AdminDashboard'
 import MemberView from './MemberView'
-
-interface ProjectItem { id: string; name: string; color: string }
-interface TagItem { id: string; name: string; color: string }
-
-interface OwnStats { today_hours: number; week_hours: number; month_hours: number }
+import type { ProjectItem, TagItem, OwnStats } from './utils'
 
 interface Props {
   initialGroups: GroupWithMeta[]
@@ -43,6 +49,7 @@ export default function GroupsView({ initialGroups, initialInvitations, projects
   const [newGroupName, setNewGroupName] = useState('')
   const [joinCode, setJoinCode] = useState('')
   const [creating, setCreating] = useState(false)
+  const [groupToDelete, setGroupToDelete] = useState<string | null>(null)
   const [joining, setJoining] = useState(false)
   const [adminView, setAdminView] = useState<AdminView>('admin')
 
@@ -107,10 +114,15 @@ export default function GroupsView({ initialGroups, initialInvitations, projects
       setGroups(remaining)
       setSelectedGroupId(remaining[0]?.id ?? '')
       toast.success('Group deleted')
+      setGroupToDelete(null)
     } else {
       const data = await res.json()
       toast.error(data.error ?? 'Failed to delete group')
     }
+  }
+
+  function requestDeleteGroup(groupId: string) {
+    setGroupToDelete(groupId)
   }
 
   async function handleInvitationAction(invitationId: string, action: 'accept' | 'decline') {
@@ -331,7 +343,7 @@ export default function GroupsView({ initialGroups, initialInvitations, projects
               group={selectedGroup}
               projects={projects}
               tags={tags}
-              onDeleteGroup={handleDeleteGroup}
+              onDeleteGroup={requestDeleteGroup}
             />
           ) : (
             <MemberView
@@ -354,6 +366,27 @@ export default function GroupsView({ initialGroups, initialInvitations, projects
           ownStats={ownStats}
         />
       )}
+
+      {/* Delete group confirmation */}
+      <AlertDialog open={!!groupToDelete} onOpenChange={(open) => { if (!open) setGroupToDelete(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Group</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the group and remove all members. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => groupToDelete && handleDeleteGroup(groupToDelete)}
+              className="bg-rose-600 hover:bg-rose-700 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

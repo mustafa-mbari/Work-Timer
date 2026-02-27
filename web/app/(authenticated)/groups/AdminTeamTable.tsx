@@ -9,6 +9,17 @@ import {
 import type { GroupWithMeta } from '@/lib/repositories/groups'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { getInitials } from './utils'
 
 export interface MergedMember {
   user_id: string
@@ -34,11 +45,6 @@ interface Props {
   onDeleteGroup: (id: string) => void
 }
 
-function getInitials(name: string | null, email: string) {
-  if (name) return name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()
-  return email.slice(0, 2).toUpperCase()
-}
-
 function StatusBadge({ status }: { status: MergedMember['current_share_status'] }) {
   switch (status) {
     case 'open':
@@ -62,6 +68,7 @@ export default function AdminTeamTable({
   const [togglingSharing, setTogglingSharing] = useState<string | null>(null)
   const [togglingRole, setTogglingRole] = useState<string | null>(null)
   const [removing, setRemoving] = useState<string | null>(null)
+  const [memberToRemove, setMemberToRemove] = useState<MergedMember | null>(null)
 
   async function handleToggleSharing(member: MergedMember) {
     setTogglingSharing(member.user_id)
@@ -284,7 +291,7 @@ export default function AdminTeamTable({
                         )}
                         {!member.is_owner && (
                           <button
-                            onClick={() => handleRemove(member)}
+                            onClick={() => setMemberToRemove(member)}
                             disabled={removing === member.user_id}
                             className="flex items-center justify-center h-7 w-7 rounded-lg text-stone-300 dark:text-stone-600 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-colors disabled:opacity-50"
                             title="Remove member"
@@ -355,6 +362,27 @@ export default function AdminTeamTable({
           Delete Group
         </Button>
       </div>
+
+      {/* Remove member confirmation */}
+      <AlertDialog open={!!memberToRemove} onOpenChange={(open) => { if (!open) setMemberToRemove(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Member</AlertDialogTitle>
+            <AlertDialogDescription>
+              Remove {memberToRemove?.display_name || memberToRemove?.email} from this group? They will lose access to all group features.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { if (memberToRemove) { handleRemove(memberToRemove); setMemberToRemove(null) } }}
+              className="bg-rose-600 hover:bg-rose-700 text-white"
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -37,17 +37,7 @@ interface Props {
   dateRange: { from: string; to: string }
 }
 
-function formatHours(h: number) {
-  return h < 0.1 ? '0h' : h < 10 ? `${h.toFixed(1)}h` : `${Math.round(h)}h`
-}
-
-function formatDuration(ms: number) {
-  const totalMin = Math.round(ms / 60000)
-  const h = Math.floor(totalMin / 60)
-  const m = totalMin % 60
-  if (h === 0) return `${m}m`
-  return m > 0 ? `${h}h ${m}m` : `${h}h`
-}
+import { formatHours, formatDuration } from './utils'
 
 function formatTime(ts: number) {
   const d = new Date(ts)

@@ -1,19 +1,13 @@
 'use client'
 
 import { Clock } from 'lucide-react'
+import { formatHours } from './utils'
+import type { OwnStats } from './utils'
 
-export interface OwnStats {
-  today_hours: number
-  week_hours: number
-  month_hours: number
-}
+export type { OwnStats }
 
 interface Props {
   ownStats: OwnStats
-}
-
-function formatHours(h: number): string {
-  return h < 0.1 ? '0h' : h < 10 ? `${h.toFixed(1)}h` : `${Math.round(h)}h`
 }
 
 export default function MemberStatsCard({ ownStats }: Props) {

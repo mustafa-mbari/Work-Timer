@@ -1,9 +1,16 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { createPortal } from 'react-dom'
-import { X, Check, XCircle } from 'lucide-react'
+import { Check, XCircle } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import type { GroupShareWithMeta, SnapshotEntry } from '@/lib/repositories/groupShares'
+import { formatHours, formatPeriod } from './utils'
 
 interface Props {
   open: boolean
@@ -11,18 +18,6 @@ interface Props {
   share: GroupShareWithMeta
   groupId: string
   onReviewed: () => void
-}
-
-function formatHours(h: number): string {
-  return h < 10 ? h.toFixed(1) + 'h' : Math.round(h) + 'h'
-}
-
-function formatPeriod(share: GroupShareWithMeta): string {
-  const from = new Date(share.date_from + 'T00:00:00')
-  const to = new Date(share.date_to + 'T00:00:00')
-  const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' }
-  if (share.period_type === 'day') return from.toLocaleDateString(undefined, opts)
-  return `${from.toLocaleDateString(undefined, opts)} – ${to.toLocaleDateString(undefined, opts)}`
 }
 
 export default function ReviewDialog({ open, onOpenChange, share, groupId, onReviewed }: Props) {
@@ -78,29 +73,19 @@ export default function ReviewDialog({ open, onOpenChange, share, groupId, onRev
     }
   }
 
-  if (!open) return null
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle>
+            Review: {share.sharer_name || share.sharer_email.split('@')[0]}
+          </DialogTitle>
+          <p className="text-xs text-stone-400 mt-0.5">
+            {formatPeriod(share)} &middot; Submitted {share.submitted_at ? new Date(share.submitted_at).toLocaleDateString() : ''}
+          </p>
+        </DialogHeader>
 
-  return createPortal(
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => onOpenChange(false)} />
-      <div className="relative w-full max-w-2xl max-h-[90vh] bg-white dark:bg-[var(--dark-card)] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 dark:border-[var(--dark-border)]">
-          <div>
-            <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">
-              Review: {share.sharer_name || share.sharer_email.split('@')[0]}
-            </h2>
-            <p className="text-xs text-stone-400 mt-0.5">
-              {formatPeriod(share)} &middot; Submitted {share.submitted_at ? new Date(share.submitted_at).toLocaleDateString() : ''}
-            </p>
-          </div>
-          <button onClick={() => onOpenChange(false)} className="p-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-[var(--dark-hover)] transition-colors">
-            <X className="h-4 w-4 text-stone-500" />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-5">
+        <div className="flex-1 overflow-y-auto space-y-5">
           {/* Summary */}
           <div className="flex gap-4">
             <div className="flex-1 rounded-xl bg-stone-50 dark:bg-[var(--dark-elevated)] p-3 text-center">
@@ -158,7 +143,7 @@ export default function ReviewDialog({ open, onOpenChange, share, groupId, onRev
                             {new Date(entry.date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                           </td>
                           <td className="px-3 py-2 text-stone-700 dark:text-stone-200 truncate max-w-[200px]">
-                            {entry.description || '—'}
+                            {entry.description || '\u2014'}
                           </td>
                           <td className="px-3 py-2 hidden sm:table-cell">
                             {entry.project_name ? (
@@ -167,7 +152,7 @@ export default function ReviewDialog({ open, onOpenChange, share, groupId, onRev
                                 <span className="text-stone-600 dark:text-stone-300 truncate">{entry.project_name}</span>
                               </div>
                             ) : (
-                              <span className="text-stone-400">—</span>
+                              <span className="text-stone-400">\u2014</span>
                             )}
                           </td>
                           <td className="px-3 py-2 text-right text-stone-700 dark:text-stone-200 tabular-nums whitespace-nowrap">
@@ -205,8 +190,7 @@ export default function ReviewDialog({ open, onOpenChange, share, groupId, onRev
           )}
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-stone-100 dark:border-[var(--dark-border)]">
+        <DialogFooter className="gap-2 sm:gap-2">
           <button
             onClick={() => handleAction('deny')}
             disabled={processing || (showDenyForm && !comment.trim())}
@@ -225,9 +209,8 @@ export default function ReviewDialog({ open, onOpenChange, share, groupId, onRev
               Approve
             </button>
           )}
-        </div>
-      </div>
-    </div>,
-    document.body,
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

@@ -4,29 +4,13 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { ClipboardCheck, FileText, CheckCircle2, XCircle, Clock } from 'lucide-react'
 import type { GroupShareWithMeta } from '@/lib/repositories/groupShares'
 import ReviewDialog from './ReviewDialog'
+import { formatPeriod, formatHours, formatIsoDate, getInitials } from './utils'
 
 interface Props {
   groupId: string
 }
 
 type FilterTab = 'all' | 'submitted' | 'approved' | 'denied'
-
-function formatPeriod(share: GroupShareWithMeta): string {
-  const from = new Date(share.date_from + 'T00:00:00')
-  const to = new Date(share.date_to + 'T00:00:00')
-  const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' }
-  if (share.period_type === 'day') return from.toLocaleDateString(undefined, opts)
-  return `${from.toLocaleDateString(undefined, opts)} – ${to.toLocaleDateString(undefined, opts)}`
-}
-
-function formatHours(h: number): string {
-  return h < 10 ? h.toFixed(1) + 'h' : Math.round(h) + 'h'
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return '—'
-  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-}
 
 function TypeBadge({ type }: { type: string }) {
   const map: Record<string, { label: string; cls: string }> = {
@@ -53,11 +37,6 @@ function StatusBadge({ status }: { status: string }) {
     default:
       return <span className="text-xs text-stone-400 dark:text-stone-500">—</span>
   }
-}
-
-function getInitials(name: string | null, email: string) {
-  if (name) return name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()
-  return email.slice(0, 2).toUpperCase()
 }
 
 export default function PendingReviewsPanel({ groupId }: Props) {
@@ -172,8 +151,8 @@ export default function PendingReviewsPanel({ groupId }: Props) {
               <tbody className="divide-y divide-stone-50 dark:divide-[var(--dark-border)]">
                 {filtered.map(share => {
                   const dateLabel = share.status === 'submitted'
-                    ? formatDate(share.submitted_at)
-                    : formatDate(share.reviewed_at)
+                    ? formatIsoDate(share.submitted_at)
+                    : formatIsoDate(share.reviewed_at)
                   return (
                     <tr
                       key={share.id}

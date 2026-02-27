@@ -41,7 +41,9 @@ Track your work time with stopwatch, manual entry, and Pomodoro modes. Start wit
 - **Timesheet Approval Workflow** -- Admin configures recurring share schedules (daily/weekly/monthly), system auto-creates open shares for members
 - **Member Submission** -- Members review auto-filled time entries, filter by project, and submit for review
 - **Admin Review** -- Approve or deny submissions with required comment on denial; denied shares return to member for editing and resubmission
+- **Admin & Member Views** -- Admins switch between admin dashboard and personal timesheets; members see their own stats, shares, and team list
 - **Team Reports** -- Generate reports for any date range across all members, export as CSV
+- **Safety Confirmations** -- Destructive actions (delete group, remove member) require explicit confirmation
 - **Privacy-First** -- Members see team names only (no hours); admin sees data only after member submits
 
 ### Advanced Features
@@ -214,6 +216,7 @@ npm run lint
 - **Webhook idempotency**: Stripe events deduplicated via `stripe_events` table.
 - **Input validation**: All API routes validated with Zod schemas.
 - **Corporate proxy safe**: Static assets served from trusted CDN domain via `assetPrefix`; all auth flows use server-side API routes (no browser-to-Supabase calls); extension bridge uses content script relay (no extension ID dependency).
+- **Groups performance**: Batch member count queries (no N+1), parallel data fetching, debounced preview requests, granular refresh (member-only vs full).
 
 ---
 

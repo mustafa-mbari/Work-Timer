@@ -68,19 +68,20 @@ export async function GET(request: NextRequest, { params }: Params) {
       const sharing = await getSharingSettings(id, user.id)
       if (sharing.sharing_enabled) {
         const period = getCurrentPeriodDates(group.share_frequency, group.share_deadline_day)
-        // Check if one already exists for this period
-        const existing = await getSharesByStatus(id, 'open', user.id)
-        const hasCurrentPeriod = existing.some(
+        // Single check: any non-denied share for this period already exists?
+        const [existing, submitted] = await Promise.all([
+          getSharesByStatus(id, 'open', user.id),
+          getSharesByStatus(id, 'submitted', user.id),
+        ])
+        const hasPeriod = [...existing, ...submitted].some(
           s => s.date_from === period.dateFrom && s.date_to === period.dateTo,
         )
-        // Also check submitted shares for the same period
-        if (!hasCurrentPeriod) {
-          const submitted = await getSharesByStatus(id, 'submitted', user.id)
-          const submittedForPeriod = submitted.some(
-            s => s.date_from === period.dateFrom && s.date_to === period.dateTo,
-          )
-          if (!submittedForPeriod) {
+        if (!hasPeriod) {
+          // Wrap in try/catch to handle race condition (concurrent requests)
+          try {
             await autoCreateOpenShare(id, user.id, period.periodType, period.dateFrom, period.dateTo, period.dueDate)
+          } catch {
+            // Duplicate insert — safe to ignore, share already exists
           }
         }
       }

@@ -32,14 +32,16 @@ export async function getUserGroups(userId: string): Promise<GroupWithMeta[]> {
 
   if (!groups?.length) return []
 
-  // Get member counts
+  // Get member counts in a single query (avoids N+1)
+  const { data: memberRows } = await supabase
+    .from('group_members')
+    .select('group_id')
+    .in('group_id', groupIds)
+    .returns<Pick<GroupMember, 'group_id'>[]>()
+
   const counts = new Map<string, number>()
-  for (const gid of groupIds) {
-    const { count } = await supabase
-      .from('group_members')
-      .select('group_id', { count: 'exact', head: true })
-      .eq('group_id', gid)
-    counts.set(gid, count ?? 0)
+  for (const row of memberRows ?? []) {
+    counts.set(row.group_id, (counts.get(row.group_id) ?? 0) + 1)
   }
 
   return groups.map(g => ({
@@ -121,17 +123,29 @@ export async function createGroup(name: string, ownerId: string) {
   return { data: group as Group, error: null }
 }
 
-export async function updateGroup(groupId: string, ownerId: string, data: {
+export async function updateGroup(groupId: string, userId: string, data: {
   name?: string
   share_frequency?: 'daily' | 'weekly' | 'monthly' | null
   share_deadline_day?: number | null
 }) {
   const supabase = await createServiceClient()
+
+  // Verify the user is an admin of this group (owner or admin role)
+  const { data: membership } = await supabase
+    .from('group_members')
+    .select('role')
+    .eq('group_id', groupId)
+    .eq('user_id', userId)
+    .single<Pick<GroupMember, 'role'>>()
+
+  if (!membership || membership.role !== 'admin') {
+    return { error: { message: 'Not authorized to update this group' } }
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('groups') as any)
     .update(data)
     .eq('id', groupId)
-    .eq('owner_id', ownerId)
   return { error }
 }
 

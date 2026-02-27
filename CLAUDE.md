@@ -11,6 +11,7 @@ Work-Timer is a Chrome Extension (Manifest V3) + Next.js companion website for t
 ## Tech Stack
 
 ### Chrome Extension (`src/`)
+
 - **Framework:** React 18 + TypeScript
 - **Styling:** TailwindCSS v4 (`@tailwindcss/vite` plugin, `@import "tailwindcss"` syntax)
 - **Build:** Vite (popup + background service worker + content script)
@@ -26,6 +27,7 @@ Work-Timer is a Chrome Extension (Manifest V3) + Next.js companion website for t
 - **Icons:** Custom SVG components in `src/components/Icons.tsx`
 
 ### Companion Website (`web/`)
+
 - **Framework:** Next.js 16 (App Router) + React 19 + TypeScript 5.7
 - **Styling:** TailwindCSS v4 (`@tailwindcss/postcss` plugin)
 - **UI Components:** shadcn/ui (Radix primitives)
@@ -53,6 +55,7 @@ npm run lint
 ```
 
 Load the extension in Chrome:
+
 1. `npm run build`
 2. Open `chrome://extensions`, enable Developer Mode
 3. Click "Load unpacked" -> select the `dist/` folder
@@ -115,6 +118,7 @@ web/
 ### Popup <-> Background Communication
 
 Message passing via `chrome.runtime` with action types:
+
 - Timer: `START_TIMER`, `PAUSE_TIMER`, `RESUME_TIMER`, `STOP_TIMER`, `GET_TIMER_STATE`
 - Sync: `TIMER_SYNC` (broadcast from background to popup/tabs)
 - Pomodoro: `START_POMODORO`, `STOP_POMODORO`, `SKIP_POMODORO_PHASE`
@@ -124,6 +128,7 @@ Message passing via `chrome.runtime` with action types:
 ### Website <-> Extension Auth Bridge
 
 Two approaches run simultaneously for maximum compatibility:
+
 1. **Direct** (`chrome.runtime.sendMessage(extensionId, ...)`): Uses `NEXT_PUBLIC_EXTENSION_ID` env var. Works when ID matches (published extension or same dev machine). Handled by `onMessageExternal`.
 2. **Content script relay** (`window.postMessage` → content script → `chrome.runtime.sendMessage`): No extension ID needed. Content script in `src/content/content.ts` listens for `WORK_TIMER_AUTH` messages and relays to background via internal `onMessage`. Works with any unpacked installation.
 
@@ -143,6 +148,7 @@ The `ExtensionBridge.tsx` component retries postMessage every 500ms for 8s to ha
 ### Data Model
 
 Core types in `src/types/`:
+
 - **TimeEntry** -- id, date, startTime, endTime, duration (ms), projectId, taskId, description, type, tags, link
 - **Project** -- id, name, color (hex), targetHours, archived, createdAt, defaultTagId
 - **Tag** -- id, name, color (hex)
@@ -157,6 +163,7 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 ### Repository & Service Layer (`web/lib/`)
 
 **Repositories** (typed Supabase queries, no `as any` on selects):
+
 - `profiles.ts`, `subscriptions.ts`, `promoCodes.ts`, `domains.ts`, `syncCursors.ts` -- CRUD operations
 - `projects.ts` -- CRUD + reorder + default tag linking (`default_tag_id`)
 - `tags.ts` -- CRUD + reorder + color + hourly rate + earnings toggle
@@ -169,6 +176,7 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 - `groupInvitations.ts` -- Invite by email with 7-day expiry
 
 **Services** (business logic):
+
 - `auth.ts` -- `requireAuth()`, `getUser()` (React `cache()` wrapped), `requireAdminApi()`, `requireAuthApi()`
 - `analytics.ts` -- `getAdminStats()` (aggregates 11 RPC calls)
 - `billing.ts` -- checkout/portal helpers
@@ -177,6 +185,7 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 ### Performance Optimizations
 
 **Extension:**
+
 - `useTimer` uses event-driven `TIMER_SYNC` messages (no 5s polling)
 - Premium status cached in module-level variable with `chrome.storage.onChanged` invalidation
 - `React.lazy()` for WeekView, StatsView, SettingsView with `<Suspense>`
@@ -188,6 +197,7 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 - Debounced `syncAll()` on entry saves (10s timer batches rapid saves)
 
 **Website:**
+
 - Middleware skips auth for public routes (`/`, `/login`, `/register`, `/terms`, `/privacy`, `/api/webhooks`, `/auth`)
 - `React.cache()` on `getUser()` for request-level dedup
 - Admin pages use `revalidate = 60` (1-minute cache)
@@ -197,6 +207,7 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 - Dashboard `page.tsx` fetches week entries with 1 extra day before week start (handles entries crossing midnight into the week)
 
 ### Dashboard Weekly Chart (`WeeklyProjectChart.tsx`)
+
 - CSS stacked bars (no Recharts) showing per-project hours for each working day of the current week
 - Hours label shown above every day column; today's column highlighted in indigo
 - Hover tooltip shows per-project breakdown + day total
@@ -205,6 +216,7 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 - Uses project colors; "No project" entries shown in stone-400
 
 ### Manual Entry Forms (2 locations)
+
 - **`TimerWidget.tsx`**: Inline form on entries page with Stopwatch/Manual/Pomodoro tabs. Duration mode has typeable `<input type="number">` for hours/minutes with +/- stepper buttons
 - **`EntryFormDialog.tsx`**: Modal dialog for editing/adding entries. Same typeable duration inputs
 - Both derive `entry.date` from `startMs` using local date (not UTC) and anchor duration-mode timestamps to the selected date
@@ -222,20 +234,24 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 ### Earnings System
 
 Earnings are **tag-based** (not project-based). Each tag can have:
+
 - `color` -- Hex color for display (default `#6366F1`)
 - `hourly_rate` -- Per-tag rate (null = use default from user_settings)
 - `earnings_enabled` -- Whether included in earnings calculations
 
 **Project-tag linking**: Each project can have one `default_tag_id`. When the user selects a project in the timer, the linked tag auto-selects. Managed via:
+
 - Extension: SettingsView project dots menu "Link Default Tag"
 - Website: ProjectsCard link icon (chain) with tag selector dropdown
 
 **Auto-select implementation** (3 locations):
+
 - Extension `TimerView.tsx`: `handleProjectChange()` checks `project.defaultTagId`
 - Website `TimerWidget.tsx`: `onProjectChange` callback + default project `useEffect` both check `project.default_tag_id`
 - Website `EntryFormDialog.tsx`: project select `onChange` checks `project.default_tag_id`
 
 **Earnings reports** (`get_earnings_report` RPC):
+
 - Accepts `p_group_by` parameter: `'tag'` (default) or `'project'`
 - Tag mode: Joins `time_entries.tags[]` array with `tags` table via `ANY(te.tags)` and `CROSS JOIN LATERAL unnest(te.tags)`
 - Project mode: Joins via `time_entries.project_id` (backward compatible)
@@ -253,6 +269,7 @@ Groups enable team time management with an admin-controlled **timesheet approval
 **Status flow**: `Open → Submitted → Approved` or `Submitted → Denied → Open (resubmit)`
 
 **Database tables**:
+
 - `groups` -- name, owner, join_code, max_members, `share_frequency` (daily/weekly/monthly), `share_deadline_day`
 - `group_members` -- (group_id, user_id) with role (admin/member)
 - `group_invitations` -- email invitations with 7-day expiry
@@ -264,23 +281,31 @@ Groups enable team time management with an admin-controlled **timesheet approval
 **Schedule settings**: `share_frequency` = `daily|weekly|monthly`, `share_deadline_day` = day of week (0=Mon..6=Sun for weekly) or day of month (1-31 for monthly). Stored on `groups` table.
 
 **Component architecture**:
+
 ```
-GroupsView (client orchestrator)
+GroupsView (client orchestrator, AlertDialog for delete group confirmation)
   ├── Group selector + Create/Join + Invitations banner
-  ├── [isAdmin] → AdminDashboard
-  │     ├── Team tab → AdminTeamTable (status badges: Open/Submitted/Approved/Overdue)
-  │     ├── Reviews tab → PendingReviewsPanel → ReviewDialog (approve/deny)
-  │     ├── Reports tab → ReportDialog (date range + CSV export)
-  │     ├── Schedule tab → ScheduleSettings (frequency + deadline config)
-  │     └── Manage tab → AdminMembersPanel (invite/remove/roles)
+  ├── [isAdmin] → Admin/My Timesheets tab switcher
+  │     ├── AdminDashboard
+  │     │     ├── Team tab → AdminTeamTable (invite/remove/roles, AlertDialog for remove member)
+  │     │     ├── Reviews tab → PendingReviewsPanel → ReviewDialog (shadcn Dialog, approve/deny)
+  │     │     ├── Reports tab → ReportDialog (date range + CSV export)
+  │     │     └── Schedule tab → ScheduleSettings + CreateShareRequestDialog (shadcn Dialog)
+  │     └── MemberView (same as non-admin, see below)
   └── [!isAdmin] → MemberView
         ├── Overview tab → MemberStatsCard (today/week/month hours) + sharing status
-        ├── Current Share tab → CurrentSharePanel (auto-filled entries, project filter, submit)
+        ├── Current Share tab → CurrentSharePanel (debounced preview, project filter, submit)
         ├── History tab → past shares with status badges (approved/denied only)
         └── Members tab → name list with role badges (NO hours data)
 ```
 
+**Shared utilities** (`web/app/(authenticated)/groups/utils.ts`):
+- Types: `ProjectItem`, `TagItem`, `MemberInfo`, `OwnStats`
+- Functions: `formatHours`, `formatDuration`, `formatDate`, `formatIsoDate`, `formatPeriod`, `getInitials`
+- Imported by all group components to eliminate duplication
+
 **API routes**:
+
 - `GET /api/groups/{id}/shares?status=&mine=true` -- list shares with status filter + auto-creation
 - `POST /api/groups/{id}/shares/{shareId}/submit` -- member submits (auto-fills entries snapshot)
 - `POST /api/groups/{id}/shares/{shareId}/review` -- admin approves/denies (comment required on deny)
@@ -322,6 +347,7 @@ GroupsView (client orchestrator)
 ## Key Gotchas
 
 ### Supabase Type System (v2.97+)
+
 - Hand-crafted `Database` types don't fully work with supabase-js type inference for mutations
 - **Selects**: Use `.single<Pick<T, ...>>()` or `.returns<T[]>()` for typed results
 - **Mutations**: Use `(supabase.from('table') as any)` for insert/update/upsert operations
@@ -329,29 +355,36 @@ GroupsView (client orchestrator)
 - `Relationships: []` required on all table definitions in Database type
 
 ### Supabase Service Role
+
 - MUST use `createClient` from `@supabase/supabase-js`, NOT `createServerClient` from `@supabase/ssr`
 - SSR client passes cookies which causes RLS to apply even with service role key
 
 ### Supabase Row Limits
+
 - PostgREST defaults to 1000 rows max. Use `.range(0, 49999)` on aggregating queries
 
 ### Admin User Queries
+
 - Use `auth.admin.listUsers()` for user counts (profiles table may be incomplete)
 
 ### Promo Codes
+
 - `valid_from` field required on insert (no DB default)
 
 ### Stripe API (v20, API `2026-01-28.clover`)
+
 - `Subscription.current_period_end` moved to item-level: use `sub.items.data[0]?.current_period_end`
 - `Invoice.subscription` moved to `invoice.parent?.subscription_details?.subscription`
 - API version pinned in `web/lib/stripe.ts`
 
 ### Tailwind v4
+
 - `@theme {}` block defines CSS custom properties for colors
 - `@custom-variant dark (&:where(.dark, .dark *))` in website globals.css for class-based dark mode
 - Extension uses `@variant dark` with `@slot`
 
 ### Corporate Proxy Compatibility
+
 - `assetPrefix` in `next.config.js` reads from `NEXT_PUBLIC_ASSET_PREFIX` env var (set to `https://work-timer-web.vercel.app` on Vercel)
 - Auth forms (`LoginForm`, `RegisterForm`, `ForgotPasswordForm`) use `fetch('/api/auth/...')` instead of Supabase browser client
 - `ExtensionBridge.tsx` uses dual approach: direct `chrome.runtime.sendMessage` + content script `postMessage` relay with 500ms retry
@@ -360,6 +393,7 @@ GroupsView (client orchestrator)
 - Content script `AUTH_LOGIN` messages go through `onMessage` (internal), not `onMessageExternal` (external)
 
 ### workingDays is a COUNT, not a bitmask
+
 - `working_days` in `user_settings` is a count: `5` = Mon–Fri, `6` = Mon–Sat, `7` = Mon–Sun
 - Validated as `z.number().int().min(1).max(7)` in `web/lib/validation.ts`
 - Extension default: `5` (see `src/storage/index.ts` and `src/utils/date.ts`)
@@ -367,6 +401,7 @@ GroupsView (client orchestrator)
 - `WeeklyProjectChart` uses `Array.from({ length: count })` from week start — do NOT use bitmask logic (`1 << d.getDay()`)
 
 ### UI Test Lab (`web/app/(authenticated)/ui-test/`)
+
 - Admin-only page visible in the sidebar; protected by `requireAdminPage()` in `page.tsx`
 - `UITestLab.tsx` — single `'use client'` file with all mock data + variant components inline
 - Tabs: Entries List (4 variants), Timer Widget (9 + 3 improved variants), Quick Add (4), Dashboard (16), Project Picker (4), Daily Goal (10)
@@ -374,6 +409,7 @@ GroupsView (client orchestrator)
 - No API calls; all state is local `useState` only; no i18n (hardcoded English)
 
 ### Date Handling (UTC vs Local)
+
 - NEVER use `toISOString().slice(0, 10)` to get a local date -- it returns UTC and shifts dates in UTC+ timezones after midnight
 - Always use `new Date()` with `getFullYear()`/`getMonth()`/`getDate()` for local date strings
 - `new Date('YYYY-MM-DDTHH:mm:ss')` without `Z` suffix parses as LOCAL time in browsers
@@ -381,6 +417,7 @@ GroupsView (client orchestrator)
 - Both `TimerWidget.tsx` and `EntryFormDialog.tsx` have manual entry forms with duration mode -- changes must be applied to BOTH
 
 ### Pre-existing Lint Issues
+
 - ESLint errors in hooks (useTimer, useEntries, useProjects, useSettings) are pre-existing
 - `react-hooks/set-state-in-effect` warnings, `react-hooks/purity` in useTimer
 - These are NOT introduced by recent changes

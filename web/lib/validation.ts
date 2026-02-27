@@ -188,6 +188,12 @@ export const updateGroupMemberSchema = z.object({
   role: z.enum(['admin', 'member']),
 })
 
+export const updateShareDraftSchema = z.object({
+  project_ids: z.array(z.string()).nullable().optional(),
+  tag_ids: z.array(z.string()).nullable().optional(),
+  note: z.string().max(280).nullable().optional(),
+})
+
 export const invitationActionSchema = z.object({
   invitation_id: z.string().min(1),
   action: z.enum(['accept', 'decline']),
