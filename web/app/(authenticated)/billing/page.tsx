@@ -1,21 +1,32 @@
 import { Zap } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
+import { headers } from 'next/headers'
 import type { Metadata } from 'next'
-
-export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations('billing')
-  return { title: t('title') }
-}
 import BillingCards from './BillingCards'
 import PortalButton from './PortalButton'
 import PromoCodeInput from './PromoCodeInput'
 import { requireAuth } from '@/lib/services/auth'
 import { getUserSubscriptionForBilling } from '@/lib/repositories/subscriptions'
 
+const EU_COUNTRIES = new Set([
+  'AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE',
+  'IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE',
+  'NO','CH','IS','LI',
+])
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('billing')
+  return { title: t('title') }
+}
+
 export default async function BillingPage() {
   const t = await getTranslations('billing')
   const user = await requireAuth()
   const { data: subscription } = await getUserSubscriptionForBilling(user.id)
+
+  const headersList = await headers()
+  const country = headersList.get('x-vercel-ip-country') ?? ''
+  const currency = EU_COUNTRIES.has(country) ? '€' : '$'
 
   const currentPlan = subscription?.plan ?? 'free'
   const isPremium = currentPlan !== 'free'
@@ -84,17 +95,11 @@ export default async function BillingPage() {
 
       {/* Plan cards */}
       <div>
-        <h2 className="text-base font-semibold text-stone-900 dark:text-stone-100 mb-1">
-          {isPremium ? t('planOverview') : t('choosePlan')}
-        </h2>
-        <p className="text-sm text-stone-500 dark:text-stone-400 mb-5">
-          {isPremium ? t('premiumActive') : t('upgradePrompt')}
-        </p>
-
         <BillingCards
           currentPlan={currentPlan}
           isPremium={isPremium}
           isAllIn={isAllIn}
+          currency={currency}
           translations={{
             currentPlan: t('currentPlan'),
             notAvailable: t('notAvailable'),

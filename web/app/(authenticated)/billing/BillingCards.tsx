@@ -14,6 +14,7 @@ interface Props {
   currentPlan: string
   isPremium: boolean
   isAllIn: boolean
+  currency: string
   translations: {
     currentPlan: string
     notAvailable: string
@@ -78,7 +79,7 @@ function FeatureRow({
   )
 }
 
-export default function BillingCards({ currentPlan, isPremium, isAllIn, translations: t }: Props) {
+export default function BillingCards({ currentPlan, isPremium, isAllIn, currency, translations: t }: Props) {
   const [cycle, setCycle] = useState<'monthly' | 'yearly'>('monthly')
   const [teamTier, setTeamTier] = useState<TeamTier>('10')
 
@@ -135,10 +136,10 @@ export default function BillingCards({ currentPlan, isPremium, isAllIn, translat
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Free plan card */}
         <div className={cn(
-          'relative rounded-2xl border-2 p-6 flex flex-col',
+          'relative rounded-2xl border-2 p-5 flex flex-col',
           currentPlan === 'free'
             ? 'border-indigo-400 dark:border-indigo-500 bg-white dark:bg-[var(--dark-card)]'
             : 'border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)] opacity-60'
@@ -150,15 +151,15 @@ export default function BillingCards({ currentPlan, isPremium, isAllIn, translat
               </span>
             </div>
           )}
-          <div className="mb-5 pt-1">
-            <p className="text-sm font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">{t.freePlan.name}</p>
+          <div className="mb-4 pt-1">
+            <p className="text-base font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">{t.freePlan.name}</p>
             <div className="flex items-end gap-1">
-              <span className="text-4xl font-bold text-stone-900 dark:text-stone-100">{t.freePlan.price}</span>
+              <span className="text-3xl font-bold text-stone-900 dark:text-stone-100">{t.freePlan.price}</span>
               <span className="text-sm text-stone-400 dark:text-stone-500 mb-1">{t.freePlan.period}</span>
             </div>
             <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">{t.freePlan.noCreditCard}</p>
           </div>
-          <ul className="space-y-2.5 flex-1 mb-6">
+          <ul className="space-y-2 flex-1 mb-5">
             {FEATURES.map(f => (
               <FeatureRow key={f.label} label={f.label} value={f.free} accent={false} />
             ))}
@@ -170,7 +171,7 @@ export default function BillingCards({ currentPlan, isPremium, isAllIn, translat
 
         {/* Pro plan card */}
         <div className={cn(
-          'relative rounded-2xl border p-6 flex flex-col',
+          'relative rounded-2xl border p-5 flex flex-col',
           isProActive
             ? 'border-2 border-indigo-400 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30 shadow-lg shadow-indigo-100 dark:shadow-indigo-900/20'
             : !isPremium
@@ -191,10 +192,10 @@ export default function BillingCards({ currentPlan, isPremium, isAllIn, translat
               </span>
             </div>
           ) : null}
-          <div className="mb-5">
-            <p className="text-sm font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">Pro</p>
+          <div className="mb-4">
+            <p className="text-base font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2">Pro</p>
             <div className="flex items-end gap-0.5">
-              <span className="text-4xl font-bold text-stone-900 dark:text-stone-100">${proPrice}</span>
+              <span className="text-3xl font-bold text-stone-900 dark:text-stone-100">{currency}{proPrice}</span>
               <span className="text-sm text-stone-400 dark:text-stone-500 mb-1">{proPeriod}</span>
               {cycle === 'yearly' && (
                 <span className="ml-2 mb-1 text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded-full font-semibold">
@@ -206,7 +207,7 @@ export default function BillingCards({ currentPlan, isPremium, isAllIn, translat
               {cycle === 'yearly' ? `Save ${proSavingsPct}% vs monthly` : 'Full access, cancel anytime'}
             </p>
           </div>
-          <ul className="space-y-2.5 flex-1 mb-6">
+          <ul className="space-y-2 flex-1 mb-5">
             {FEATURES.map(f => (
               <FeatureRow key={f.label} label={f.label} value={f.pro} accent />
             ))}
@@ -228,7 +229,7 @@ export default function BillingCards({ currentPlan, isPremium, isAllIn, translat
 
         {/* Team plan card */}
         <div className={cn(
-          'relative rounded-2xl border p-6 flex flex-col',
+          'relative rounded-2xl border p-5 flex flex-col',
           isAllinActive
             ? 'border-2 border-indigo-400 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30 shadow-lg'
             : 'border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)]'
@@ -241,7 +242,7 @@ export default function BillingCards({ currentPlan, isPremium, isAllIn, translat
             </div>
           )}
           <div className="mb-4">
-            <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <p className="text-base font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
               <Users className="h-3.5 w-3.5" />
               Team
             </p>
@@ -264,13 +265,13 @@ export default function BillingCards({ currentPlan, isPremium, isAllIn, translat
 
             {teamTier === 'contact' ? (
               <div>
-                <p className="text-4xl font-bold text-stone-900 dark:text-stone-100">Custom</p>
+                <p className="text-3xl font-bold text-stone-900 dark:text-stone-100">Custom</p>
                 <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">Tailored for larger teams</p>
               </div>
             ) : (
               <div>
                 <div className="flex items-end gap-0.5">
-                  <span className="text-4xl font-bold text-stone-900 dark:text-stone-100">${teamPrice}</span>
+                  <span className="text-3xl font-bold text-stone-900 dark:text-stone-100">{currency}{teamPrice}</span>
                   <span className="text-sm text-stone-400 dark:text-stone-500 mb-1">
                     {cycle === 'monthly' ? '/month' : '/year'}
                   </span>
@@ -287,7 +288,7 @@ export default function BillingCards({ currentPlan, isPremium, isAllIn, translat
             )}
           </div>
 
-          <ul className="space-y-2.5 flex-1 mb-6">
+          <ul className="space-y-2 flex-1 mb-5">
             {FEATURES.map(f => (
               <FeatureRow key={f.label} label={f.label} value={f.team} accent />
             ))}
