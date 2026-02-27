@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Users, ClipboardCheck, FileBarChart, Calendar, Settings, Eye } from 'lucide-react'
+import { Users, ClipboardCheck, FileBarChart, Calendar, Settings, Eye, Plus } from 'lucide-react'
 import type { GroupWithMeta } from '@/lib/repositories/groups'
 import type { GroupShareWithMeta } from '@/lib/repositories/groupShares'
 import AdminTeamTable, { type TeamMember } from './AdminTeamTable'
@@ -10,6 +10,7 @@ import ReportDialog from './ReportDialog'
 import ReviewDialog from './ReviewDialog'
 import MemberDetailDialog from './MemberDetailDialog'
 import ScheduleSettings from './ScheduleSettings'
+import CreateShareRequestDialog from './CreateShareRequestDialog'
 import AdminMembersPanel from './AdminMembersPanel'
 
 interface ProjectItem { id: string; name: string; color: string }
@@ -46,6 +47,7 @@ export default function AdminDashboard({ group, projects, tags, onDeleteGroup }:
   const [submittedShares, setSubmittedShares] = useState<GroupShareWithMeta[]>([])
   const [loading, setLoading] = useState(true)
   const [showReport, setShowReport] = useState(false)
+  const [showCreateShare, setShowCreateShare] = useState(false)
   const [reviewShare, setReviewShare] = useState<GroupShareWithMeta | null>(null)
   const [viewMember, setViewMember] = useState<MemberSummary | null>(null)
 
@@ -225,12 +227,40 @@ export default function AdminDashboard({ group, projects, tags, onDeleteGroup }:
       )}
 
       {subTab === 'schedule' && (
-        <ScheduleSettings
-          groupId={group.id}
-          currentFrequency={group.share_frequency ?? null}
-          currentDeadlineDay={group.share_deadline_day ?? null}
-          onSaved={fetchData}
-        />
+        <div className="space-y-5">
+          {/* Manual share request */}
+          <div className="rounded-xl bg-white dark:bg-[var(--dark-card)] border border-stone-100 dark:border-[var(--dark-border)] shadow-sm p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Plus className="h-4 w-4 text-indigo-500" />
+              <h3 className="text-sm font-semibold text-stone-800 dark:text-stone-100">Manual Share Request</h3>
+            </div>
+            <p className="text-xs text-stone-500 dark:text-stone-400 mb-4">
+              Create a one-off share request for all members with sharing enabled. Pick a custom date range and period type.
+            </p>
+            <button
+              onClick={() => setShowCreateShare(true)}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Create Share Request
+            </button>
+          </div>
+
+          {/* Recurring schedule */}
+          <ScheduleSettings
+            groupId={group.id}
+            currentFrequency={group.share_frequency ?? null}
+            currentDeadlineDay={group.share_deadline_day ?? null}
+            onSaved={fetchData}
+          />
+
+          <CreateShareRequestDialog
+            open={showCreateShare}
+            onOpenChange={setShowCreateShare}
+            groupId={group.id}
+            onCreated={() => { setShowCreateShare(false); fetchData() }}
+          />
+        </div>
       )}
 
       {subTab === 'manage' && (

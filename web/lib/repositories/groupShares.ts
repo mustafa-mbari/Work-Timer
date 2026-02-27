@@ -340,6 +340,78 @@ export async function autoCreateOpenShare(
 }
 
 /**
+ * Admin bulk-creates open share requests for all members with sharing enabled.
+ * Skips members who already have an open or submitted share for the same period.
+ */
+export async function adminBulkCreateOpenShares(
+  groupId: string,
+  periodType: 'day' | 'week' | 'month',
+  dateFrom: string,
+  dateTo: string,
+  dueDate: string | null,
+): Promise<{ created: number; skipped: number; error: { message: string } | null }> {
+  const supabase = await createServiceClient()
+
+  // 1. Get all members with sharing_enabled
+  type SettingsRow = { user_id: string }
+  const { data: settings } = await supabase
+    .from('group_sharing_settings')
+    .select('user_id')
+    .eq('group_id', groupId)
+    .eq('sharing_enabled', true)
+    .returns<SettingsRow[]>()
+
+  const eligibleUserIds = (settings ?? []).map(s => s.user_id)
+  if (eligibleUserIds.length === 0) {
+    return { created: 0, skipped: 0, error: { message: 'No members have sharing enabled' } }
+  }
+
+  // 2. Check existing open/submitted shares for same period
+  type ExistingRow = { user_id: string }
+  const { data: existing } = await supabase
+    .from('group_shares')
+    .select('user_id')
+    .eq('group_id', groupId)
+    .eq('date_from', dateFrom)
+    .eq('date_to', dateTo)
+    .in('status', ['open', 'submitted'])
+    .returns<ExistingRow[]>()
+
+  const existingUserIds = new Set((existing ?? []).map(e => e.user_id))
+
+  // 3. Filter to those without existing share
+  const toCreate = eligibleUserIds.filter(uid => !existingUserIds.has(uid))
+  const skipped = eligibleUserIds.length - toCreate.length
+
+  if (toCreate.length === 0) {
+    return { created: 0, skipped, error: null }
+  }
+
+  // 4. Bulk insert
+  const rows = toCreate.map(userId => ({
+    group_id:    groupId,
+    user_id:     userId,
+    period_type: periodType,
+    date_from:   dateFrom,
+    date_to:     dateTo,
+    project_ids: null,
+    tag_ids:     null,
+    entry_count: 0,
+    total_hours: 0,
+    entries:     [],
+    note:        null,
+    status:      'open' as const,
+    due_date:    dueDate,
+  }))
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('group_shares') as any).insert(rows)
+
+  if (error) return { created: 0, skipped, error: { message: error.message } }
+  return { created: toCreate.length, skipped, error: null }
+}
+
+/**
  * Submit a share — snapshots entries from time_entries and sets status to 'submitted'.
  */
 export async function submitShare(

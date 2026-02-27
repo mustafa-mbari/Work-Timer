@@ -207,6 +207,14 @@ export const createShareSchema = z.object({
 })
 export const sharePreviewSchema = createShareSchema
 
+// --- Admin Bulk Share Creation ---
+export const adminCreateShareSchema = z.object({
+  period_type: z.enum(['day', 'week', 'month']),
+  date_from:   z.string().regex(dateRegex, 'Invalid date'),
+  date_to:     z.string().regex(dateRegex, 'Invalid date'),
+  due_date:    z.string().regex(dateRegex, 'Invalid date').nullable().optional().transform(v => v ?? null),
+})
+
 // --- Share Approval Workflow ---
 export const submitShareSchema = z.object({
   project_ids: z.array(z.string()).nullable().default(null),
