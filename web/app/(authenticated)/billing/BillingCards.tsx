@@ -104,7 +104,7 @@ export default function BillingCards({ currentPlan, isPremium, isAllIn, currency
   const isAllinActive = isAllIn || currentPlan === teamPlanKey
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 max-w-4xl mx-auto">
       {/* Billing cycle toggle */}
       <div className="flex items-center justify-center gap-2">
         <div className="flex items-center bg-stone-100 dark:bg-[var(--dark-elevated)] rounded-xl p-1">
@@ -136,7 +136,7 @@ export default function BillingCards({ currentPlan, isPremium, isAllIn, currency
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
         {/* Free plan card */}
         <div className={cn(
           'relative rounded-2xl border-2 p-5 flex flex-col',
