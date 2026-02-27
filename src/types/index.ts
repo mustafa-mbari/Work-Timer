@@ -182,6 +182,7 @@ export type MessageAction =
   | 'DIAGNOSE_SYNC'
   | 'CLEAR_AND_RESYNC'
   | 'POPUP_OPENED'
+  | 'CONTENT_SCRIPT_READY'
 
 export interface TimerMessage {
   action: MessageAction

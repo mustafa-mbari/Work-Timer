@@ -36,6 +36,8 @@ export default function TimerView() {
   const { activeTags: tags } = useTags()
   const { settings } = useSettings()
 
+  const entryListRef = useRef<HTMLDivElement>(null)
+
   const [mode, setMode] = useState<ExtendedMode>('stopwatch')
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [description, setDescription] = useState(state.description)
@@ -127,46 +129,32 @@ export default function TimerView() {
     }
   }
 
-  const handleStop = async () => {
-    if (pomodoroState.active) {
-      const response = await stopPomodoro()
-      if (response.discarded) {
-        showDiscardAlert(`Entry discarded — duration was less than ${entrySaveTimeSecs}s. Change in Settings → Timer.`)
-        return
-      }
-      if (response.success && response.entry) {
-        // Update entry with tags and link
-        const tagsArray = selectedTagId ? [selectedTagId] : []
-        await update({
-          ...response.entry,
-          tags: tagsArray,
-          link: link.trim() || undefined,
-        })
-        setDescription('')
-        setSelectedTagId('')
-        setLink('')
-        refetchEntries()
-      }
-    } else {
-      const response = await stop()
-      if (response.discarded) {
-        showDiscardAlert(`Entry discarded — duration was less than ${entrySaveTimeSecs}s. Change in Settings → Timer.`)
-        return
-      }
-      if (response.success && response.entry) {
-        // Update entry with tags and link
-        const tagsArray = selectedTagId ? [selectedTagId] : []
-        await update({
-          ...response.entry,
-          tags: tagsArray,
-          link: link.trim() || undefined,
-        })
-        setDescription('')
-        setSelectedTagId('')
-        setLink('')
-        refetchEntries()
-      }
+  const processStopResponse = async (response: { success: boolean; discarded?: boolean; entry?: import('@/types').TimeEntry }) => {
+    if (response.discarded) {
+      showDiscardAlert(`Entry discarded — duration was less than ${entrySaveTimeSecs}s. Change in Settings → Timer.`)
+      return
     }
+    if (response.success && response.entry) {
+      const tagsArray = selectedTagId ? [selectedTagId] : []
+      await update({
+        ...response.entry,
+        tags: tagsArray,
+        link: link.trim() || undefined,
+      })
+      setDescription('')
+      setSelectedTagId('')
+      setLink('')
+      refetchEntries()
+      // Scroll to show the newly created entry after the list re-renders
+      requestAnimationFrame(() => {
+        entryListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+    }
+  }
+
+  const handleStop = async () => {
+    const response = pomodoroState.active ? await stopPomodoro() : await stop()
+    await processStopResponse(response)
   }
 
   const handleManualSave = async () => {
@@ -238,6 +226,10 @@ export default function TimerView() {
     setDescription('')
     setSelectedTagId('')
     setLink('')
+    // Scroll to show the newly created entry
+    requestAnimationFrame(() => {
+      entryListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
   }
 
   const handleContinue = async (entryId: string, projectId: string | null, desc: string) => {
@@ -862,7 +854,7 @@ export default function TimerView() {
       )}
 
       {/* Today's Summary */}
-      <div className="flex items-center justify-between pt-3 border-t border-stone-200 dark:border-dark-border">
+      <div ref={entryListRef} className="flex items-center justify-between pt-3 border-t border-stone-200 dark:border-dark-border">
         <span className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider">Today</span>
         <span className="text-sm font-semibold text-stone-700 dark:text-stone-200">
           {formatDurationShort(totalDuration + (isActive ? elapsed : 0))}

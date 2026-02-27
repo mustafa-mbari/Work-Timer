@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, memo } from 'react'
 import type { TimeEntry, Project } from '@/types'
 import { formatTime, formatDurationShort } from '@/utils/date'
 import EntryEditModal from './EntryEditModal'
@@ -12,7 +12,7 @@ interface EntryListProps {
   onContinue?: (entryId: string, projectId: string | null, description: string) => void
 }
 
-export default function EntryList({ entries, projects, onUpdate, onDelete, onContinue }: EntryListProps) {
+export default memo(function EntryList({ entries, projects, onUpdate, onDelete, onContinue }: EntryListProps) {
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null)
 
   const sorted = useMemo(
@@ -101,4 +101,4 @@ export default function EntryList({ entries, projects, onUpdate, onDelete, onCon
       )}
     </>
   )
-}
+})

@@ -9,7 +9,7 @@ import {
   dbEntryToLocal, dbProjectToLocal, dbTagToLocal, dbSettingsToLocal,
 } from './conflictResolver'
 import {
-  getEntries, updateEntry, saveEntry,
+  getEntries,
   getProjects, updateProject, saveProject,
   getTags, saveTags,
   getSettings, updateSettings,
@@ -245,27 +245,58 @@ export async function pullDelta(): Promise<void> {
   setSuppressEnqueue(true)
   try {
     if (remoteEntries) {
+      // Batch-fetch all needed dates in one storage read instead of per-entry reads
+      const affectedDates = new Set(
+        (remoteEntries as DbTimeEntry[])
+          .filter(r => !pendingIds.has(r.id))
+          .map(r => r.date)
+      )
+      const dateKeys = [...affectedDates].map(d => `entries_${d}`)
+      const batchResult = dateKeys.length > 0
+        ? await chrome.storage.local.get(dateKeys)
+        : {}
+
+      // Build mutable in-memory map of date -> entries[]
+      const entriesByDate = new Map<string, import('@/types').TimeEntry[]>()
+      for (const date of affectedDates) {
+        const key = `entries_${date}`
+        const raw = (batchResult[key] as unknown[] | undefined) ?? []
+        entriesByDate.set(date, raw as import('@/types').TimeEntry[])
+      }
+
+      const dirtyDates = new Set<string>()
+
       for (const remote of remoteEntries as DbTimeEntry[]) {
-        // Skip if local has pending changes for this entry — local wins
         if (pendingIds.has(remote.id)) continue
 
+        const dateEntries = entriesByDate.get(remote.date) ?? []
+
         if (remote.deleted_at) {
-          // Soft-deleted remotely — remove from local
-          const local = await getEntries(remote.date)
-          const filtered = local.filter(e => e.id !== remote.id)
-          if (filtered.length !== local.length) {
-            await chrome.storage.local.set({ [`entries_${remote.date}`]: filtered })
+          const filtered = dateEntries.filter(e => e.id !== remote.id)
+          if (filtered.length !== dateEntries.length) {
+            entriesByDate.set(remote.date, filtered)
+            dirtyDates.add(remote.date)
           }
         } else {
-          // Upsert locally
           const localEntry = dbEntryToLocal(remote)
-          const existing = (await getEntries(localEntry.date)).find(e => e.id === localEntry.id)
-          if (existing) {
-            await updateEntry(localEntry)
+          const idx = dateEntries.findIndex(e => e.id === localEntry.id)
+          if (idx !== -1) {
+            dateEntries[idx] = localEntry
           } else {
-            await saveEntry(localEntry)
+            dateEntries.push(localEntry)
           }
+          entriesByDate.set(localEntry.date, dateEntries)
+          dirtyDates.add(localEntry.date)
         }
+      }
+
+      // Write all changed dates back to storage in one pass
+      if (dirtyDates.size > 0) {
+        const updates: Record<string, unknown> = {}
+        for (const date of dirtyDates) {
+          updates[`entries_${date}`] = entriesByDate.get(date)
+        }
+        await chrome.storage.local.set(updates)
       }
     }
 

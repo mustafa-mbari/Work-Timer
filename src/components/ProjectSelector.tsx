@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, memo } from 'react'
 import type { Project } from '@/types'
 import { ChevronDownIcon } from './Icons'
 
@@ -9,7 +9,7 @@ interface ProjectSelectorProps {
   disabled?: boolean
 }
 
-export default function ProjectSelector({ projects, selectedId, onChange, disabled }: ProjectSelectorProps) {
+export default memo(function ProjectSelector({ projects, selectedId, onChange, disabled }: ProjectSelectorProps) {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -111,4 +111,4 @@ export default function ProjectSelector({ projects, selectedId, onChange, disabl
       )}
     </div>
   )
-}
+})

@@ -1,4 +1,4 @@
-import type { TimerMessage, TimerResponse, TimerState, TimeEntry, IdleInfo, PomodoroState, PomodoroPhase, Settings } from '../types'
+import type { TimerMessage, TimerResponse, TimerState, TimeEntry, IdleInfo, PomodoroState, PomodoroPhase } from '../types'
 import { WEBSITE_URL } from '@shared/constants'
 import { generateId } from '../utils/id'
 import { getToday } from '../utils/date'
@@ -8,6 +8,7 @@ import { applyExternalSession, signOut as authSignOut, refreshSubscription, getS
 import { syncAll, getSyncState, uploadAllLocalData, diagnoseSyncState } from '../sync/syncEngine'
 import { setupRealtime, teardownRealtime } from '../sync/realtimeSubscription'
 import { pushUserStats } from '../sync/statsSync'
+import { getElapsed, DEFAULT_TIMER_STATE } from '../utils/timer'
 
 const TIMER_ALARM = 'timer-tick'
 const POMODORO_ALARM = 'pomodoro-tick'
@@ -24,9 +25,6 @@ const STORAGE_KEYS = {
   entries: (date: string) => `entries_${date}`,
 }
 
-// Cached minimum entry duration in ms — updated reactively via chrome.storage.onChanged
-let entrySaveTimeMs = 10_000
-
 // Dedupe guard — prevents opening the dashboard tab twice if both onMessage and onMessageExternal fire
 let lastDashboardOpenMs = 0
 function maybeOpenDashboard() {
@@ -37,15 +35,9 @@ function maybeOpenDashboard() {
   }
 }
 
-const DEFAULT_TIMER_STATE: TimerState = {
-  status: 'idle',
-  projectId: null,
-  description: '',
-  startTime: null,
-  elapsed: 0,
-  pausedAt: null,
-  continuingEntryId: null,
-}
+// --- Active content-script tab tracking ---
+// Content scripts register via CONTENT_SCRIPT_READY; we only broadcast to registered tabs.
+const activeContentTabs = new Set<number>()
 
 const DEFAULT_IDLE_INFO: IdleInfo = {
   idleStartedAt: null,
@@ -119,26 +111,16 @@ async function scheduleReminder(): Promise<void> {
 }
 
 // --- Debounced sync after entry saves ---
+// Uses chrome.alarms instead of setTimeout so the debounce survives service worker restarts.
 
-let syncDebounceTimer: ReturnType<typeof setTimeout> | null = null
+const SYNC_DEBOUNCE_ALARM = 'sync-debounce'
 
 function debouncedSync(): void {
-  if (syncDebounceTimer) clearTimeout(syncDebounceTimer)
-  syncDebounceTimer = setTimeout(() => {
-    syncDebounceTimer = null
-    void syncAll()
-    void pushUserStats()
-  }, 10_000) // 10s debounce — batches rapid entry saves into one sync
+  // Recreating the alarm with the same name cancels any previous pending alarm
+  void chrome.alarms.create(SYNC_DEBOUNCE_ALARM, { delayInMinutes: 10 / 60 }) // 10s debounce
 }
 
 // --- Time Entry Helpers ---
-
-function getElapsed(state: TimerState): number {
-  if (state.status === 'running' && state.startTime) {
-    return state.elapsed + (Date.now() - state.startTime)
-  }
-  return state.elapsed
-}
 
 async function getTimeEntry(entryId: string, date: string): Promise<TimeEntry | null> {
   const entries = await getEntries(date)
@@ -162,13 +144,12 @@ async function updateTimeEntry(entryId: string, date: string, updates: Partial<T
 async function broadcastTimerSync(state: TimerState, pomodoroState?: PomodoroState): Promise<void> {
   const result = await chrome.storage.local.get('projects')
   const projects = (result['projects'] as Array<{ id: string; name: string; color: string }> | undefined) ?? []
-  const tabs = await chrome.tabs.query({})
-  for (const tab of tabs) {
-    if (tab.id) {
-      chrome.tabs.sendMessage(tab.id, { action: 'TIMER_SYNC', state, projects, pomodoroState }).catch(() => {
-        // Tab may not have content script loaded, ignore
-      })
-    }
+  // Only send to tabs that have registered a content script (instead of ALL tabs)
+  for (const tabId of activeContentTabs) {
+    chrome.tabs.sendMessage(tabId, { action: 'TIMER_SYNC', state, projects, pomodoroState }).catch(() => {
+      // Content script may have been unloaded (navigation, tab close) — remove from set
+      activeContentTabs.delete(tabId)
+    })
   }
   // Keep context menu states in sync with every timer state change
   void refreshContextMenus()
@@ -201,6 +182,16 @@ async function updateBadge(state: TimerState): Promise<void> {
   const text = hours > 0 ? `${hours}:${String(minutes).padStart(2, '0')}` : `${minutes}m`
   await chrome.action.setBadgeText({ text })
   await chrome.action.setBadgeBackgroundColor({ color: state.status === 'paused' ? '#f59e0b' : '#3b82f6' })
+
+  // Schedule next badge update at the next minute boundary so the badge
+  // flips to the new value exactly when the minute rolls over.
+  if (state.status === 'running') {
+    const secondsIntoMinute = totalSeconds % 60
+    const secsUntilNextMinute = 60 - secondsIntoMinute
+    // chrome.alarms minimum is ~1 min for packed extensions, but we set
+    // a precise "when" timestamp which Chrome honours more accurately.
+    await chrome.alarms.create(TIMER_ALARM, { when: Date.now() + secsUntilNextMinute * 1000 })
+  }
 }
 
 // ============================================================
@@ -228,8 +219,7 @@ async function startTimer(projectId: string | null, description: string, continu
   }
   await setTimerState(state)
   await setIdleInfo(DEFAULT_IDLE_INFO)
-  await chrome.alarms.create(TIMER_ALARM, { periodInMinutes: 0.5 })
-  await updateBadge(state)
+  await updateBadge(state) // also schedules next TIMER_ALARM at next minute boundary
   // Clear any previous "user dismissed" flag so the widget auto-shows for the new session
   await chrome.storage.local.remove('floatingTimerHidden')
   void broadcastTimerSync(state)
@@ -272,8 +262,7 @@ async function resumeTimer(): Promise<TimerResponse> {
   }
   await setTimerState(updated)
   await setIdleInfo(DEFAULT_IDLE_INFO)
-  await chrome.alarms.create(TIMER_ALARM, { periodInMinutes: 0.5 })
-  await updateBadge(updated)
+  await updateBadge(updated) // also schedules next TIMER_ALARM
   void broadcastTimerSync(updated)
   return { success: true, state: updated }
 }
@@ -285,8 +274,12 @@ async function stopTimer(): Promise<TimerResponse> {
   const elapsed = getElapsed(state)
   const now = Date.now()
 
+  // Read threshold fresh from storage — module-level cache may be stale after SW restart
+  const settings = await getSettings()
+  const saveThresholdMs = Math.max(5, Math.min(240, settings.entrySaveTime ?? 10)) * 1000
+
   // Duration gate: discard entry if too short (skip for continuing entries — they already exist)
-  if (!state.continuingEntryId && elapsed < entrySaveTimeMs) {
+  if (!state.continuingEntryId && elapsed < saveThresholdMs) {
     await setTimerState(DEFAULT_TIMER_STATE)
     await setIdleInfo(DEFAULT_IDLE_INFO)
     await chrome.alarms.clear(TIMER_ALARM)
@@ -461,10 +454,9 @@ async function startPomodoro(projectId: string | null, description: string): Pro
     continuingEntryId: null,
   }
   await setTimerState(timerState)
-  await chrome.alarms.create(TIMER_ALARM, { periodInMinutes: 0.5 })
   // Create one-shot alarm for when phase should end
   await chrome.alarms.create(POMODORO_ALARM, { when: now + phaseDuration })
-  await updateBadge(timerState)
+  await updateBadge(timerState) // also schedules next TIMER_ALARM
 
   return { success: true, state: timerState, pomodoroState: pomState }
 }
@@ -478,11 +470,15 @@ async function stopPomodoro(): Promise<TimerResponse> {
   let entry: TimeEntry | undefined
   let discarded = false
 
+  // Read threshold fresh from storage — module-level cache may be stale after SW restart
+  const settings = await getSettings()
+  const saveThresholdMs = Math.max(5, Math.min(240, settings.entrySaveTime ?? 10)) * 1000
+
   if (pomState.phase === 'work') {
     // Stopped during work — save accumulated + current segment
     const currentSegment = getElapsed(timerState)
     const totalWork = (pomState.accumWork ?? 0) + currentSegment
-    if (totalWork >= entrySaveTimeMs) {
+    if (totalWork >= saveThresholdMs) {
       entry = {
         id: generateId(),
         date: getToday(),
@@ -502,7 +498,7 @@ async function stopPomodoro(): Promise<TimerResponse> {
   } else if ((pomState.accumWork ?? 0) > 0) {
     // Stopped during break but had accumulated work from earlier segments
     const totalWork = pomState.accumWork ?? 0
-    if (totalWork >= entrySaveTimeMs) {
+    if (totalWork >= saveThresholdMs) {
       entry = {
         id: generateId(),
         date: getToday(),
@@ -547,6 +543,7 @@ async function advancePomodoroPhase(pomState: PomodoroState): Promise<void> {
   const settings = await getSettings()
   const timerState = await getTimerState()
   const now = Date.now()
+  const phaseThresholdMs = Math.max(5, Math.min(240, settings.entrySaveTime ?? 10)) * 1000
 
   if (pomState.phase === 'work') {
     // Work phase ended (naturally or manually skipped to break)
@@ -556,7 +553,7 @@ async function advancePomodoroPhase(pomState: PomodoroState): Promise<void> {
 
     if (remaining <= 1000) {
       // Natural completion — save entry with total accumulated work
-      if (totalAccum >= entrySaveTimeMs) {
+      if (totalAccum >= phaseThresholdMs) {
         const entry: TimeEntry = {
           id: generateId(),
           date: getToday(),
@@ -646,9 +643,8 @@ async function advancePomodoroPhase(pomState: PomodoroState): Promise<void> {
       pausedAt: null,
     }
     await setTimerState(updated)
-    await chrome.alarms.create(TIMER_ALARM, { periodInMinutes: 0.5 })
     await chrome.alarms.create(POMODORO_ALARM, { when: now + workDuration })
-    await updateBadge(updated)
+    await updateBadge(updated) // also schedules next TIMER_ALARM
 
     if (settings.pomodoro.soundEnabled) {
       chrome.notifications.create('pomodoro-work', {
@@ -820,6 +816,12 @@ chrome.runtime.onMessage.addListener(
             })()
             return { success: true }
           }
+          case 'CONTENT_SCRIPT_READY': {
+            // Content script announces itself — register the tab for targeted broadcasts
+            const tabId = sender.tab?.id
+            if (tabId != null) activeContentTabs.add(tabId)
+            return { success: true }
+          }
           default:
             return { success: false, error: 'Unknown action' }
         }
@@ -878,6 +880,15 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === STATS_SYNC_ALARM) {
     void pushUserStats().catch(err => {
       console.warn('[work-timer] Stats sync failed:', err)
+    })
+  }
+
+  if (alarm.name === SYNC_DEBOUNCE_ALARM) {
+    void syncAll().catch(err => {
+      console.warn('[work-timer] Debounced sync failed:', err)
+    })
+    void pushUserStats().catch(err => {
+      console.warn('[work-timer] Debounced stats push failed:', err)
     })
   }
 
@@ -968,16 +979,10 @@ chrome.notifications.onClosed.addListener(async (notificationId) => {
 chrome.runtime.onStartup.addListener(async () => {
   const state = await getTimerState()
   if (state.status === 'running') {
-    await chrome.alarms.create(TIMER_ALARM, { periodInMinutes: 0.5 })
-    await updateBadge(state)
+    await updateBadge(state) // also schedules next TIMER_ALARM
 
     const settings = await getSettings()
     chrome.idle.setDetectionInterval(settings.idleTimeout * 60)
-    entrySaveTimeMs = (settings.entrySaveTime ?? 10) * 1000
-  } else {
-    // Even if timer isn't running, initialize entrySaveTimeMs
-    const settings = await getSettings()
-    entrySaveTimeMs = (settings.entrySaveTime ?? 10) * 1000
   }
 
   const pomState = await getPomodoroState()
@@ -1035,19 +1040,23 @@ self.addEventListener('online', () => {
 chrome.storage.onChanged.addListener((changes) => {
   if (changes['settings']) {
     void scheduleReminder()
-    const newSettings = changes['settings'].newValue as Partial<Settings> | undefined
-    if (newSettings?.entrySaveTime != null) {
-      entrySaveTimeMs = Math.max(5, Math.min(240, newSettings.entrySaveTime)) * 1000
-    }
   }
 })
 
 // Push timer state to a tab the moment it becomes active (so widget follows tab switches)
 chrome.tabs.onActivated.addListener(async ({ tabId }) => {
+  if (!activeContentTabs.has(tabId)) return // only send to registered tabs
   const state = await getTimerState()
   const result = await chrome.storage.local.get('projects')
   const projects = (result['projects'] as Array<{ id: string; name: string; color: string }> | undefined) ?? []
-  chrome.tabs.sendMessage(tabId, { action: 'TIMER_SYNC', state, projects }).catch(() => { })
+  chrome.tabs.sendMessage(tabId, { action: 'TIMER_SYNC', state, projects }).catch(() => {
+    activeContentTabs.delete(tabId)
+  })
+})
+
+// Clean up tracking set when tabs are closed
+chrome.tabs.onRemoved.addListener((tabId) => {
+  activeContentTabs.delete(tabId)
 })
 
 chrome.runtime.onInstalled.addListener(async (details) => {
@@ -1162,7 +1171,8 @@ chrome.commands.onCommand.addListener(async (command) => {
       // Stop timer (running or paused)
       const result = await stopTimer()
       if (result.discarded) {
-        const secs = Math.round(entrySaveTimeMs / 1000)
+        const kbSettings = await getSettings()
+        const secs = Math.round(Math.max(5, Math.min(240, kbSettings.entrySaveTime ?? 10)))
         chrome.notifications.create('entry-discarded', {
           type: 'basic',
           iconUrl: 'icons/icon-128.png',

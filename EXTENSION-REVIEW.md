@@ -4,6 +4,7 @@
 > **Scope:** Extension source code only (`src/`, `public/manifest.json`, `vite.config.ts`, `package.json`)
 > **Date:** 2026-02-27
 > **Extension Version:** 1.0.0
+> **Last Updated:** 2026-02-27 — Implementation status added for Phases 1–3, 5.1
 
 ---
 
@@ -141,12 +142,12 @@ Naming is generally **consistent and clear**:
 
 | Duplication | Locations | Impact |
 |---|---|---|
-| `getElapsed(state)` function | `background.ts:136`, `content.ts:46`, `useTimer.ts` (inline) | 3 copies of the same 5-line function |
-| `TimerState` and `Project` type definitions | `types/index.ts` (canonical), `content.ts:4-16` (redefined) | Content script defines its own subset types instead of importing |
-| `handleStop` pomodoro vs stopwatch branches | `TimerView.tsx:131-169` | Nearly identical: both check `response.discarded`, update entry with tags/link, reset state |
-| `DEFAULT_TIMER_STATE` | `background.ts:40`, `storage/index.ts:293` | Same object defined in two places |
+| ~~`getElapsed(state)` function~~ | ~~`background.ts:136`, `content.ts:46`~~ | **FIXED** — consolidated into `src/utils/timer.ts`, imported by all consumers |
+| ~~`TimerState` and `Project` type definitions~~ | ~~`content.ts:4-16`~~ | **FIXED** — content script now imports from `src/types/index.ts` |
+| ~~`handleStop` pomodoro vs stopwatch branches~~ | ~~`TimerView.tsx:131-169`~~ | **FIXED** — extracted `processStopResponse()` helper |
+| ~~`DEFAULT_TIMER_STATE`~~ | ~~`background.ts:40`, `storage/index.ts:293`~~ | **FIXED** — consolidated into `src/utils/timer.ts`, imported by all consumers |
 | Input class strings | Throughout components | Long Tailwind class strings repeated across TimerView, EntryEditModal, AddEntryModal (mitigated by `constants/styles.ts` but not consistently used) |
-| Notification icon path | `background.ts` (6 occurrences) | Hardcoded `'icons/icon-128.png'` — likely wrong (actual path is `logos/neu-icon.png`) |
+| ~~Notification icon path~~ | ~~`background.ts` (6 occurrences)~~ | **FIXED** — manifest now points to properly sized `icons/icon-{16,32,48,128}.png` |
 
 ### 2.4 Error Handling Review
 
@@ -180,23 +181,23 @@ Naming is generally **consistent and clear**:
 
 **Issue 1: `<all_urls>` host permission.** This is required for the content script to inject on all pages (floating widget) and for the auth bridge (postMessage relay from the companion website). However, CWS will require justification and may delay review. Consider narrowing: inject the content script only on the companion website domain for auth, and use `chrome.scripting.executeScript()` programmatically for the floating widget (only on user request or when timer starts).
 
-**Issue 2: `scripting` permission.** The manifest requests this permission but it doesn't appear to be used in the codebase. If unused, remove it.
+**~~Issue 2: `scripting` permission.~~** **RESOLVED** — `scripting` IS used in `src/background/ui.ts:93` (`chrome.scripting.executeScript()` for tab title updates). No change needed.
 
-**Issue 3: `http://localhost:3000/*` in `externally_connectable`.** This must be removed before publishing to the Chrome Web Store. It allows any local development server to send messages to the extension.
+**~~Issue 3: `http://localhost:3000/*` in `externally_connectable`.~~** **FIXED** — removed from `manifest.json`.
 
 #### Token Handling
 
 - **Auth tokens in postMessage:** The content script at `content.ts:568` receives `accessToken` and `refreshToken` via `window.postMessage` from the companion website. Any script running on the same page could inject fake tokens.
   - **Mitigation:** The tokens are validated by Supabase server-side when used for API calls. Fake tokens would fail authentication. However, a malicious script could potentially trigger an `AUTH_LOGIN` with stolen tokens from another source.
-  - **Recommendation:** Add origin checking on the `message` event listener. Currently only checks `event.source !== window` (line 560), which is always `false` for page-originated messages. Should validate `event.origin` against the known companion website URL.
+  - **~~Recommendation:~~** **FIXED** — Added `ALLOWED_AUTH_ORIGINS` array with `https://w-timer.com` and `https://www.w-timer.com` (plus `localhost` in dev). Auth handler now validates `location.origin` against the allow list before processing.
 
-- **PostMessage wildcard origin:** Responses at `content.ts:564` and `content.ts:576` use `window.postMessage({ ... }, '*')`. Since these responses don't contain sensitive data (just `{ success, error }`), the risk is low, but best practice is to use a specific origin.
+- **~~PostMessage wildcard origin:~~** **FIXED** — Responses now use `location.origin` instead of `'*'`.
 
 - **Token storage:** Auth tokens stored in `chrome.storage.local` under `supabase.auth.token`. This is the standard pattern for Chrome extensions and is acceptable — `chrome.storage.local` is scoped to the extension and inaccessible to web pages.
 
 #### Content Security Policy
 
-- **No CSP configured** in manifest.json. Chrome MV3 applies a default CSP, but an explicit restrictive CSP should be added:
+- **~~No CSP configured~~** **FIXED** — Explicit CSP added to `manifest.json`:
   ```json
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'none'"
@@ -204,9 +205,9 @@ Naming is generally **consistent and clear**:
   ```
 - **No CSP meta tag** in `popup.html`. The popup loads external font files from bundled `@fontsource-variable/inter` (local), so no external resource concerns.
 
-#### Notification Icon Path Bug
+#### ~~Notification Icon Path Bug~~ (FIXED)
 
-Throughout `background.ts`, notifications reference `'icons/icon-128.png'` (6 occurrences), but the actual icon files are in `logos/` (as seen in manifest.json: `"128": "logos/neu-icon.png"`). This means notifications may display without an icon or with a broken image.
+~~Throughout `background.ts`, notifications reference `'icons/icon-128.png'` (6 occurrences), but the actual icon files are in `logos/`.~~ **FIXED** — Manifest icon paths updated to use properly sized `icons/icon-{16,32,48,128}.png` which already exist in `public/icons/`.
 
 ---
 
@@ -214,40 +215,21 @@ Throughout `background.ts`, notifications reference `'icons/icon-128.png'` (6 oc
 
 ### 3.1 Background Script Efficiency
 
-#### `setTimeout` in Service Worker (Critical)
+#### ~~`setTimeout` in Service Worker~~ (FIXED)
 
-**File:** `src/background/background.ts:123-131`
+~~**Problem:** `setTimeout` used for sync debounce — lost when service worker terminates.~~
 
-```typescript
-let syncDebounceTimer: ReturnType<typeof setTimeout> | null = null
-
-function debouncedSync(): void {
-  if (syncDebounceTimer) clearTimeout(syncDebounceTimer)
-  syncDebounceTimer = setTimeout(() => {
-    syncDebounceTimer = null
-    void syncAll()
-    void pushUserStats()
-  }, 10_000)
-}
-```
-
-**Problem:** In MV3, the service worker can be terminated by Chrome after ~30 seconds of inactivity. When the worker restarts, `syncDebounceTimer` is lost and the debounced sync never fires. This means entries saved right before worker termination may not sync until the next periodic sync (15 minutes later).
-
-**Fix:** Replace `setTimeout` with a `chrome.alarms.create('sync-debounce', { delayInMinutes: 10/60 })` one-shot alarm. Chrome alarms persist across worker restarts.
+**FIXED** — Replaced with `chrome.alarms.create('sync-debounce', { delayInMinutes: 10/60 })` one-shot alarm. Handler added in `chrome.alarms.onAlarm` listener. Chrome alarms persist across worker restarts.
 
 #### Module-Level Mutable State
 
 The following module-level variables in `background.ts` are lost when the service worker restarts:
 
-| Variable | Line | Impact |
-|---|---|---|
-| `entrySaveTimeMs` | 28 | Falls back to default 10s until re-initialized on next `onStartup` |
-| `lastDashboardOpenMs` | 31 | Dedupe guard resets; could open duplicate dashboard tabs |
-| `syncDebounceTimer` | 123 | Pending debounced sync lost (see above) |
-
-The `onStartup` handler at line 968 re-initializes `entrySaveTimeMs`, and `chrome.storage.onChanged` at line 1035 keeps it updated. But if the worker restarts mid-session (not a Chrome startup), `onStartup` does not fire. The `onChanged` listener will pick up future changes but won't restore the current value.
-
-**Fix:** Read `entrySaveTimeMs` from storage at the top of `stopTimer()` / `stopPomodoro()` rather than relying on a cached variable, or re-read it in the alarm handler.
+| Variable | Line | Impact | Status |
+|---|---|---|---|
+| ~~`entrySaveTimeMs`~~ | ~~28~~ | ~~Falls back to default 10s until re-initialized~~ | **FIXED** — removed; now read from storage in `stopTimer()`/`stopPomodoro()` |
+| `lastDashboardOpenMs` | 31 | Dedupe guard resets; could open duplicate dashboard tabs | Low risk — acceptable |
+| ~~`syncDebounceTimer`~~ | ~~123~~ | ~~Pending debounced sync lost~~ | **FIXED** — replaced with `chrome.alarms` |
 
 #### Broadcasting to All Tabs
 
@@ -264,14 +246,12 @@ async function broadcastTimerSync(state: TimerState, ...): Promise<void> {
 }
 ```
 
-**Problem:** This sends a message to every open tab (could be 50-100+ tabs) every 30 seconds when the timer is running, plus on every state change. Most tabs silently error because the content script has no listener registered for that tab or the tab is a `chrome://` page.
+~~**Problem:** This sends a message to every open tab every 30 seconds.~~
 
-**Impact:** Each failed `sendMessage` generates an internal error that Chrome must handle. With 100 tabs and a 30s interval, that is ~200 suppressed errors per minute.
-
-**Fix:**
-1. Track which tabs have an active content script by having the content script send a registration message on init
-2. Only broadcast to registered tabs
-3. Alternatively, use `chrome.storage.local` as a shared bus: write timer state to storage, let content scripts listen via `chrome.storage.onChanged`
+**FIXED** — Implemented tab registration pattern:
+1. Content scripts send `CONTENT_SCRIPT_READY` message on init, registering their `tab.id` in an `activeContentTabs` Set
+2. `broadcastTimerSync()` now iterates only `activeContentTabs` instead of all tabs
+3. Failed sends auto-remove the tab from the set; `chrome.tabs.onRemoved` cleans up closed tabs
 
 ### 3.2 Content Script Injection Strategy
 
@@ -291,81 +271,31 @@ async function broadcastTimerSync(state: TimerState, ...): Promise<void> {
 
 ### 3.3 Event Listener Optimization
 
-#### Global Mouse Listeners Never Removed
+#### ~~Global Mouse Listeners Never Removed~~ (FIXED)
 
-**File:** `src/content/content.ts:385-401`
+~~**Problem:** `setupDrag()` registered `mousemove`/`mouseup` on `document` without cleanup.~~
 
-```typescript
-document.addEventListener('mousemove', (e) => { ... })
-document.addEventListener('mouseup', () => { ... })
-```
+**FIXED** — Implemented `AbortController` pattern. `dragAbortController` is created in `setupDrag()` with `{ signal }` on all listeners. `hideWidget()` calls `dragAbortController.abort()` for clean teardown.
 
-These are registered in `setupDrag()` on `document` (the host page) and never removed, even when the widget is destroyed via `removeWidget()`. Over the lifetime of a page, if the widget is created and destroyed multiple times, listeners accumulate.
+#### ~~Content Script 1s setInterval~~ (FIXED)
 
-**Fix:** Store references and call `removeEventListener` in `removeWidget()`, or use `AbortController` for clean cleanup:
+~~**Problem:** `startTick()` interval ran even when timer was paused.~~
 
-```typescript
-let dragAbortController: AbortController | null = null
-
-function setupDrag(): void {
-  dragAbortController = new AbortController()
-  const signal = dragAbortController.signal
-  document.addEventListener('mousemove', handler, { signal })
-  document.addEventListener('mouseup', handler, { signal })
-}
-
-function removeWidget(): void {
-  dragAbortController?.abort()
-  // ... existing cleanup
-}
-```
-
-#### Content Script 1s setInterval
-
-**File:** `src/content/content.ts:470-479`
-
-The `startTick()` function creates a 1-second interval to update the timer display. This runs continuously while the widget is visible, even when the timer is **paused** (the interval checks `state.status === 'running'` inside the callback but the interval itself keeps firing).
-
-**Fix:** Clear the interval when the timer is paused (not just when idle). The `updateWidget()` function already handles status checks — only call `startTick()` when `state.status === 'running'`.
+**FIXED** — `startTick()` now checks `currentState.status === 'running'` before creating the interval. Added `stopTick()` helper called when timer is paused or idle.
 
 ### 3.4 Storage Usage Patterns
 
-#### Per-Entry Storage Reads During Pull
+#### ~~Per-Entry Storage Reads During Pull~~ (FIXED)
 
-**File:** `src/sync/syncEngine.ts:247-269`
+~~**Problem:** `pullDelta()` called `getEntries(date)` per remote entry — 100 entries = 100 storage reads.~~
 
-```typescript
-for (const remote of remoteEntries) {
-  if (pendingIds.has(remote.id)) continue
-  if (remote.deleted_at) {
-    const local = await getEntries(remote.date)  // Storage read per entry
-    // ...
-  } else {
-    const localEntry = dbEntryToLocal(remote)
-    const existing = (await getEntries(localEntry.date)).find(...)  // Another read
-    // ...
-  }
-}
-```
+**FIXED** — Rewrote to batch-fetch all needed date keys in one `chrome.storage.local.get(dateKeys)` call, operate on in-memory map, then write all dirty dates back in one `chrome.storage.local.set()` call. Reduces ~100 reads to ~1 read + ~1 write.
 
-For each remote entry, `getEntries(date)` reads from `chrome.storage.local`, parses, and validates. If a sync pulls 100 entries across 20 dates, this results in 100 storage reads (many for the same date).
+#### ~~`hasAnyLocalData()` Reads Entire Storage~~ (FIXED)
 
-**Fix:** Pre-fetch all needed dates in one batch `chrome.storage.local.get(dateKeys)` before the loop, and work against an in-memory map.
+~~**Problem:** `get(null)` read entire storage just to check if data exists.~~
 
-#### `hasAnyLocalData()` Reads Entire Storage
-
-**File:** `src/storage/index.ts:332-337`
-
-```typescript
-export async function hasAnyLocalData(): Promise<boolean> {
-  const all = await chrome.storage.local.get(null)  // Reads EVERYTHING
-  // ...
-}
-```
-
-This reads the entire storage contents just to check if any `entries_*` keys exist. Called during `AUTH_LOGIN` handling.
-
-**Fix:** Use `chrome.storage.local.get('projects')` + `chrome.storage.local.getBytesInUse()` or maintain a lightweight metadata key (`hasEntries: true`).
+**FIXED** — Now uses `chrome.storage.local.get('projects')` for a quick check, then falls back to `getBytesInUse(null) > 1024` as a lightweight heuristic.
 
 ### 3.5 React Rendering Optimization
 
@@ -375,13 +305,11 @@ The following components receive arrays/objects as props and will re-render on e
 
 | Component | Props receiving arrays | Impact |
 |---|---|---|
-| `EntryList` | `entries`, `projects` | Re-renders all entry items when timer elapsed updates |
-| `ProjectSelector` | `projects` | Re-renders on any parent state change |
-| `TagSelect` | `tags` | Re-renders on any parent state change |
-| `GoalProgress` | `current` (number) | Re-renders every second when timer is active |
-| `WeeklyChart` | `entries`, `projects` | Re-renders on data changes |
-
-**Fix:** Wrap leaf components with `React.memo()`. For `EntryList`, memoize individual entry items. The `RollingTimer` component already uses `memo` for its `RollingDigit` sub-component — extend this pattern.
+| ~~`EntryList`~~ | ~~`entries`, `projects`~~ | **FIXED** — wrapped with `React.memo()` |
+| ~~`ProjectSelector`~~ | ~~`projects`~~ | **FIXED** — wrapped with `React.memo()` |
+| ~~`TagSelect`~~ | ~~`tags`~~ | **FIXED** — wrapped with `React.memo()` |
+| ~~`GoalProgress`~~ | ~~`current` (number)~~ | **FIXED** — wrapped with `React.memo()` |
+| `WeeklyChart` | `entries`, `projects` | Re-renders on data changes — still pending |
 
 #### Timer Tick Causes Full TimerView Re-render
 
@@ -410,16 +338,16 @@ The following components receive arrays/objects as props and will re-render on e
 
 | Priority | Action | File(s) | Impact |
 |---|---|---|---|
-| **P0** | Replace `setTimeout` debounce with `chrome.alarms` | `background.ts:123-131` | Prevents lost syncs on worker restart |
-| **P0** | Fix notification icon path (`icons/` -> `logos/`) | `background.ts` (6 occurrences) | Broken notification icons |
-| **P1** | Batch storage reads in `pullDelta()` | `syncEngine.ts:247-269` | Reduces ~100 storage reads to ~20 |
-| **P1** | Add `React.memo` to EntryList items, ProjectSelector, TagSelect | Component files | Eliminates unnecessary re-renders |
-| **P1** | Track active content script tabs, broadcast only to those | `background.ts:162-175` | Eliminates ~100 suppressed errors/minute |
-| **P2** | Clean up global mouse listeners on widget destroy | `content.ts:385-401` | Prevents listener accumulation |
-| **P2** | Only tick when timer is running (not paused) | `content.ts:470-479` | Reduces idle CPU in content script |
-| **P2** | Use targeted content script injection (hybrid approach) | `manifest.json`, `background.ts` | Eliminates script load on every page |
-| **P3** | Extract timer display to prevent full TimerView re-renders | `TimerView.tsx` | Smoother UI during active timer |
-| **P3** | Lazy-import sync modules for free users | `storage/index.ts`, hooks | Smaller initial bundle for free tier |
+| ~~**P0**~~ | ~~Replace `setTimeout` debounce with `chrome.alarms`~~ | ~~`background.ts`~~ | **DONE** |
+| ~~**P0**~~ | ~~Fix notification icon paths~~ | ~~`manifest.json`~~ | **DONE** |
+| ~~**P1**~~ | ~~Batch storage reads in `pullDelta()`~~ | ~~`syncEngine.ts`~~ | **DONE** |
+| ~~**P1**~~ | ~~Add `React.memo` to EntryList, ProjectSelector, TagSelect, GoalProgress~~ | ~~Component files~~ | **DONE** |
+| ~~**P1**~~ | ~~Track active content script tabs, broadcast only to those~~ | ~~`background.ts`, `content.ts`~~ | **DONE** |
+| ~~**P2**~~ | ~~Clean up global mouse listeners on widget destroy~~ | ~~`content.ts`~~ | **DONE** |
+| ~~**P2**~~ | ~~Only tick when timer is running (not paused)~~ | ~~`content.ts`~~ | **DONE** |
+| **P2** | Use targeted content script injection (hybrid approach) | `manifest.json`, `background.ts` | Pending |
+| **P3** | Extract timer display to prevent full TimerView re-renders | `TimerView.tsx` | Pending |
+| **P3** | Lazy-import sync modules for free users | `storage/index.ts`, hooks | Pending |
 
 ---
 
@@ -430,15 +358,15 @@ The following components receive arrays/objects as props and will re-render on e
 - [x] `manifest_version: 3` declared
 - [x] Background script uses service worker (not persistent background page)
 - [x] Uses `chrome.alarms` for periodic tasks (not `setInterval` in background)
-- [ ] **Fix:** `setTimeout` used for sync debounce in service worker — must migrate to `chrome.alarms`
+- [x] ~~**Fix:**~~ Sync debounce migrated from `setTimeout` to `chrome.alarms`
 - [x] Content script uses `document_idle` run_at (not `document_start`)
 - [x] Module type service worker (`"type": "module"`)
 
 ### Permission Minimization
 
 - [ ] **Fix:** Justify or narrow `<all_urls>` host permission — CWS will flag this
-- [ ] **Review:** `scripting` permission appears unused in code — remove if confirmed
-- [ ] **Fix:** Remove `http://localhost:3000/*` from `externally_connectable`
+- [x] ~~**Review:**~~ `scripting` permission confirmed used in `ui.ts:93` — no change needed
+- [x] ~~**Fix:**~~ Removed `http://localhost:3000/*` from `externally_connectable`
 - [x] Only necessary API permissions requested (storage, alarms, notifications, idle, tabs, contextMenus)
 - [ ] **Add:** `"optional_host_permissions"` for `<all_urls>` if floating widget injection is made programmatic
 
@@ -447,24 +375,24 @@ The following components receive arrays/objects as props and will re-render on e
 - [x] Lazy loading for heavy views (React.lazy)
 - [x] Dynamic imports for export libraries (xlsx, jspdf)
 - [x] Manual chunks in Vite config
-- [ ] **Fix:** Broadcast optimization (send only to active tabs)
-- [ ] **Fix:** Batch storage reads in sync pull
-- [ ] **Add:** React.memo on list components
+- [x] ~~**Fix:**~~ Broadcast optimized — sends only to registered active tabs
+- [x] ~~**Fix:**~~ Batch storage reads in sync pull
+- [x] ~~**Add:**~~ React.memo on EntryList, ProjectSelector, TagSelect, GoalProgress
 
 ### Security
 
-- [ ] **Add:** Explicit CSP in manifest.json
-- [ ] **Fix:** PostMessage origin validation in content.ts
-- [ ] **Fix:** PostMessage response should use specific origin instead of `'*'`
+- [x] ~~**Add:**~~ Explicit CSP added to manifest.json
+- [x] ~~**Fix:**~~ PostMessage origin validation added in content.ts
+- [x] ~~**Fix:**~~ PostMessage responses now use `location.origin` instead of `'*'`
 - [x] Auth tokens stored in chrome.storage.local (not localStorage)
 - [x] Supabase RLS on all tables
-- [ ] **Fix:** Notification icon paths (currently reference nonexistent `icons/` directory)
+- [x] ~~**Fix:**~~ Notification icon paths corrected in manifest.json
 
 ### Production Build Configuration
 
 - [x] Vite production build with minification
 - [x] TypeScript strict mode enabled
-- [ ] **Add:** Strip `console.log` / `console.warn` statements in production build (configure Vite `esbuild.drop: ['console']` or use `terserOptions`)
+- [x] ~~**Add:**~~ Vite configured with `esbuild: { drop: ['console', 'debugger'] }` to strip in production
 - [ ] **Fix:** Remove `eslint-disable` comments that suppress real issues (vs. pre-existing ones)
 - [ ] **Add:** Source map generation for error reporting (but exclude from published extension)
 
@@ -518,66 +446,66 @@ Locations with console output that should be stripped for production:
 
 ## 5. Refactoring Plan
 
-### Phase 1 — Critical Fixes (Before Any Publishing)
+### Phase 1 — Critical Fixes (Before Any Publishing) — **ALL COMPLETE**
 
-| # | Task | File(s) | Risk | Effort |
-|---|---|---|---|---|
-| 1.1 | Replace `setTimeout` sync debounce with `chrome.alarms` one-shot alarm | `background.ts:123-131` | Low | 30 min |
-| 1.2 | Fix notification icon paths (`icons/icon-128.png` -> `logos/neu-icon.png`) | `background.ts` (6 locations) | Low | 15 min |
-| 1.3 | Remove `http://localhost:3000/*` from `externally_connectable` | `manifest.json:49` | Low | 5 min |
-| 1.4 | Add explicit CSP to manifest.json | `manifest.json` | Low | 10 min |
-| 1.5 | Verify `scripting` permission is needed; remove if not | `manifest.json:12` | Low | 15 min |
-| 1.6 | Add origin validation to postMessage listener in content script | `content.ts:559-583` | Low | 20 min |
-| 1.7 | Create properly sized icon files (16, 32, 48, 128px) | `public/logos/` | Low | 30 min |
+| # | Task | File(s) | Status |
+|---|---|---|---|
+| 1.1 | Replace `setTimeout` sync debounce with `chrome.alarms` one-shot alarm | `background.ts` | **DONE** |
+| 1.2 | Fix manifest icon paths to use properly sized PNGs | `manifest.json` | **DONE** |
+| 1.3 | Remove `http://localhost:3000/*` from `externally_connectable` | `manifest.json` | **DONE** |
+| 1.4 | Add explicit CSP to manifest.json | `manifest.json` | **DONE** |
+| 1.5 | Verify `scripting` permission is needed | `ui.ts:93` | **DONE** — confirmed used |
+| 1.6 | Add origin validation to postMessage listener | `content.ts` | **DONE** |
+| 1.7 | Create properly sized icon files (16, 32, 48, 128px) | `public/icons/` | Already existed |
 
-### Phase 2 — Performance Optimization
+### Phase 2 — Performance Optimization — **7/8 COMPLETE**
 
-| # | Task | File(s) | Risk | Effort |
-|---|---|---|---|---|
-| 2.1 | Batch storage reads in `pullDelta()` — pre-fetch all date keys | `syncEngine.ts:247-269` | Low | 1 hour |
-| 2.2 | Track active tabs for targeted broadcasting | `background.ts:162-175`, `content.ts` | Medium | 2 hours |
-| 2.3 | Add `React.memo` to EntryList items, ProjectSelector, TagSelect, GoalProgress | Component files | Low | 1 hour |
-| 2.4 | Clean up global mouse listeners in content script on widget destroy | `content.ts:385-401` | Low | 30 min |
-| 2.5 | Only run content script tick interval when timer is `'running'` | `content.ts:470-479` | Low | 20 min |
-| 2.6 | Extract timer display into isolated component to prevent TimerView re-renders | `TimerView.tsx` | Low | 1 hour |
-| 2.7 | Replace `hasAnyLocalData()` full storage scan with lightweight check | `storage/index.ts:332-337` | Low | 20 min |
-| 2.8 | Read `entrySaveTimeMs` from storage in `stopTimer()` instead of relying on module-level cache | `background.ts:28,289` | Low | 15 min |
+| # | Task | File(s) | Status |
+|---|---|---|---|
+| 2.1 | Batch storage reads in `pullDelta()` — pre-fetch all date keys | `syncEngine.ts` | **DONE** |
+| 2.2 | Track active tabs for targeted broadcasting | `background.ts`, `content.ts` | **DONE** |
+| 2.3 | Add `React.memo` to EntryList, ProjectSelector, TagSelect, GoalProgress | Component files | **DONE** |
+| 2.4 | Clean up global mouse listeners in content script (AbortController) | `content.ts` | **DONE** |
+| 2.5 | Only run content script tick interval when timer is `'running'` | `content.ts` | **DONE** |
+| 2.6 | Extract timer display into isolated component to prevent TimerView re-renders | `TimerView.tsx` | Pending |
+| 2.7 | Replace `hasAnyLocalData()` full storage scan with lightweight check | `storage/index.ts` | **DONE** |
+| 2.8 | Read `entrySaveTimeMs` from storage in `stopTimer()` (remove module-level cache) | `background.ts` | **DONE** |
 
-### Phase 3 — Code Structure Improvements
+### Phase 3 — Code Structure Improvements — **4/7 COMPLETE**
 
-| # | Task | File(s) | Risk | Effort |
-|---|---|---|---|---|
-| 3.1 | Split `background.ts` into modules: `timerEngine.ts`, `pomodoroEngine.ts`, `authHandler.ts`, `messageRouter.ts`, `alarmHandlers.ts` | `src/background/` | Medium | 3 hours |
-| 3.2 | Extract TimerView modes into separate components: `StopwatchMode.tsx`, `ManualEntryMode.tsx`, `PomodoroMode.tsx` | `src/components/` | Medium | 2 hours |
-| 3.3 | Share `getElapsed()` utility — define once in `utils/`, import everywhere | `background.ts:136`, `content.ts:46` | Low | 20 min |
-| 3.4 | Consolidate `DEFAULT_TIMER_STATE` to single source of truth | `background.ts:40`, `storage/index.ts:293` | Low | 15 min |
-| 3.5 | Move content script CSS to a separate `.css` file (imported at build time) | `content.ts:126-292` | Low | 30 min |
-| 3.6 | Extract `handleStop` common logic in TimerView to avoid duplication | `TimerView.tsx:131-169` | Low | 30 min |
-| 3.7 | Import shared types in content script instead of redefining locally | `content.ts:4-16` | Low | 15 min |
+| # | Task | File(s) | Status |
+|---|---|---|---|
+| 3.1 | Split `background.ts` into modules | `src/background/` | Pending |
+| 3.2 | Extract TimerView modes into separate components | `src/components/` | Pending |
+| 3.3 | Share `getElapsed()` utility — single source in `utils/timer.ts` | `utils/timer.ts` | **DONE** |
+| 3.4 | Consolidate `DEFAULT_TIMER_STATE` to `utils/timer.ts` | `utils/timer.ts` | **DONE** |
+| 3.5 | Move content script CSS to a separate `.css` file | `content.ts` | Pending |
+| 3.6 | Extract `handleStop` common logic (`processStopResponse` helper) | `TimerView.tsx` | **DONE** |
+| 3.7 | Import shared types in content script from `src/types/` | `content.ts` | **DONE** |
 
-### Phase 4 — UX & Polish
+### Phase 4 — UX & Polish — **0/6 COMPLETE**
 
-| # | Task | File(s) | Risk | Effort |
-|---|---|---|---|---|
-| 4.1 | Add per-view error boundaries (StatsView, WeekView, SettingsView) | `src/popup/App.tsx`, new component | Low | 1 hour |
-| 4.2 | Add loading skeleton states for lazy-loaded views | `App.tsx` (Suspense fallbacks) | Low | 1 hour |
-| 4.3 | Add validation for manual entry date format | `TimerView.tsx:172-241` | Low | 15 min |
-| 4.4 | Verify WCAG AA color contrast ratios across all 6 themes | `src/index.css` | Low | 2 hours |
-| 4.5 | Add basic unit tests for storage layer and sync queue | New test files | Low | 4 hours |
-| 4.6 | Add integration tests for message passing (popup -> background -> response) | New test files | Medium | 4 hours |
+| # | Task | File(s) | Status |
+|---|---|---|---|
+| 4.1 | Add per-view error boundaries (StatsView, WeekView, SettingsView) | `src/popup/App.tsx` | Pending |
+| 4.2 | Add loading skeleton states for lazy-loaded views | `App.tsx` | Pending |
+| 4.3 | Add validation for manual entry date format | `TimerView.tsx` | Pending |
+| 4.4 | Verify WCAG AA color contrast ratios across all 6 themes | `src/index.css` | Pending |
+| 4.5 | Add basic unit tests for storage layer and sync queue | New test files | Pending |
+| 4.6 | Add integration tests for message passing | New test files | Pending |
 
-### Phase 5 — Store Publishing Preparation
+### Phase 5 — Store Publishing Preparation — **1/8 COMPLETE**
 
-| # | Task | File(s) | Risk | Effort |
-|---|---|---|---|---|
-| 5.1 | Configure Vite to strip `console.*` in production builds | `vite.config.ts` | Low | 15 min |
-| 5.2 | Write CWS permission justification document | New file | Low | 1 hour |
-| 5.3 | Create `_locales/en/messages.json` with name and description | `public/_locales/en/` | Low | 15 min |
-| 5.4 | Prepare store listing assets (screenshots, promotional images) | External | Low | 2 hours |
-| 5.5 | Add privacy policy URL to manifest or store listing | `manifest.json` | Low | Varies |
-| 5.6 | Narrow `<all_urls>` host permission (or provide compelling justification) | `manifest.json` | Medium | 2 hours |
-| 5.7 | Final production build + size audit (target < 5MB total) | Build pipeline | Low | 30 min |
-| 5.8 | Test on Chrome Stable, Beta, and Dev channels | Manual testing | Low | 2 hours |
+| # | Task | File(s) | Status |
+|---|---|---|---|
+| 5.1 | Configure Vite to strip `console.*` in production builds | `vite.config.ts` | **DONE** |
+| 5.2 | Write CWS permission justification document | New file | Pending |
+| 5.3 | Create `_locales/en/messages.json` with name and description | `public/_locales/en/` | Pending |
+| 5.4 | Prepare store listing assets (screenshots, promotional images) | External | Pending |
+| 5.5 | Add privacy policy URL to manifest or store listing | `manifest.json` | Pending |
+| 5.6 | Narrow `<all_urls>` host permission (or provide justification) | `manifest.json` | Pending |
+| 5.7 | Final production build + size audit (target < 5MB total) | Build pipeline | Pending |
+| 5.8 | Test on Chrome Stable, Beta, and Dev channels | Manual testing | Pending |
 
 ---
 
@@ -629,9 +557,9 @@ Locations with console output that should be stripped for production:
 
 ## 7. Open Questions
 
-1. **Is the `scripting` permission actually used anywhere?** It's declared in the manifest but I found no `chrome.scripting.*` calls in the codebase. If it was added for future use, it should be removed until needed — CWS reviewers will question unnecessary permissions.
+1. ~~**Is the `scripting` permission actually used anywhere?**~~ **RESOLVED** — Yes, used in `src/background/ui.ts:93` for `chrome.scripting.executeScript()` to update active tab titles with timer display.
 
-2. **Are the notification icon paths (`icons/icon-128.png`) intentionally different from the manifest icon paths (`logos/neu-icon.png`)?** If an `icons/` directory exists in the build output with a separate icon file, this is fine. Otherwise, notifications are likely showing without icons.
+2. ~~**Are the notification icon paths correct?**~~ **RESOLVED** — `public/icons/` directory contains properly sized PNGs (icon-16.png through icon-128.png). Manifest updated to reference these.
 
 3. **Is the `tabs` permission used for anything beyond `chrome.tabs.query({})` in broadcasting?** If so, document the usage. If not, consider whether the broadcast pattern could use `chrome.storage.onChanged` instead, eliminating the need for the `tabs` permission entirely.
 
@@ -641,4 +569,26 @@ Locations with console output that should be stripped for production:
 
 ---
 
-*End of review. All findings are based on actual source code analysis — no assumptions or generated code. File paths and line numbers reference the codebase as of 2026-02-27.*
+---
+
+## Implementation Summary
+
+**Implemented:** 18 of 30 refactoring items across Phases 1–3 and 5.1.
+
+| Phase                        | Completed | Total | Status                                |
+| ---------------------------- | --------- | ----- | ------------------------------------- |
+| Phase 1 — Critical Fixes     | 7/7       | 7     | **Complete**                          |
+| Phase 2 — Performance        | 7/8       | 8     | 2.6 (TimerView isolation) pending     |
+| Phase 3 — Code Structure     | 4/7       | 7     | 3.1, 3.2, 3.5 pending (large refactors) |
+| Phase 4 — UX & Polish        | 0/6       | 6     | Not started                           |
+| Phase 5 — Store Prep         | 1/8       | 8     | 5.1 done; rest pending                |
+
+**New files created:**
+
+- `src/utils/timer.ts` — shared `getElapsed()` function and `DEFAULT_TIMER_STATE` constant
+
+**Build status:** Clean build, all TypeScript errors resolved.
+
+---
+
+*End of review. All findings are based on actual source code analysis — no assumptions or generated code. File paths and line numbers reference the codebase as of 2026-02-27. Implementation status updated same day.*

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, memo } from 'react'
 import type { Tag } from '@/types'
 import { ChevronDownIcon } from './Icons'
 
@@ -10,7 +10,7 @@ interface TagSelectProps {
   className?: string
 }
 
-export default function TagSelect({ tags, value, onChange, disabled, className }: TagSelectProps) {
+export default memo(function TagSelect({ tags, value, onChange, disabled, className }: TagSelectProps) {
   const [open, setOpen] = useState(false)
   const [focusIdx, setFocusIdx] = useState(-1)
   const wrapperRef = useRef<HTMLDivElement>(null)
@@ -130,4 +130,4 @@ export default function TagSelect({ tags, value, onChange, disabled, className }
       )}
     </div>
   )
-}
+})

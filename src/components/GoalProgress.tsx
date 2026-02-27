@@ -1,10 +1,12 @@
+import { memo } from 'react'
+
 interface GoalProgressProps {
   label: string
   current: number // hours
   target: number // hours
 }
 
-export default function GoalProgress({ label, current, target }: GoalProgressProps) {
+export default memo(function GoalProgress({ label, current, target }: GoalProgressProps) {
   const progress = Math.min(current / target, 1)
   const percent = Math.round(progress * 100)
 
@@ -46,4 +48,4 @@ export default function GoalProgress({ label, current, target }: GoalProgressPro
       </div>
     </div>
   )
-}
+})

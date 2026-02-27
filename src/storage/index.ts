@@ -1,4 +1,5 @@
 import type { TimeEntry, Project, Settings, TimerState, Tag } from '@/types'
+import { DEFAULT_TIMER_STATE } from '@/utils/timer'
 import { getToday } from '@/utils/date'
 import { getSession } from '@/auth/authState'
 import { isCurrentUserPremium } from '@/premium/featureGate'
@@ -290,16 +291,6 @@ export async function updateSettings(partial: Partial<Settings>): Promise<void> 
 
 // --- Timer State ---
 
-const DEFAULT_TIMER_STATE: TimerState = {
-  status: 'idle',
-  projectId: null,
-  description: '',
-  startTime: null,
-  elapsed: 0,
-  pausedAt: null,
-  continuingEntryId: null,
-}
-
 export async function getTimerState(): Promise<TimerState> {
   const result = await chrome.storage.local.get(KEYS.timerState)
   return (result[KEYS.timerState] as TimerState | undefined) ?? DEFAULT_TIMER_STATE
@@ -328,12 +319,17 @@ export async function setLocalUserId(userId: string): Promise<void> {
 
 // --- Data Management ---
 
-/** Check if there is any meaningful local data (entries or projects) */
+/** Check if there is any meaningful local data (entries or projects).
+ *  Uses getBytesInUse for a lightweight check instead of reading all storage. */
 export async function hasAnyLocalData(): Promise<boolean> {
-  const all = await chrome.storage.local.get(null)
-  const hasEntries = Object.keys(all).some(k => k.startsWith('entries_'))
-  const hasProjects = Array.isArray(all[KEYS.projects]) && (all[KEYS.projects] as unknown[]).length > 0
-  return hasEntries || hasProjects
+  // Quick check: if projects exist, that's enough
+  const result = await chrome.storage.local.get(KEYS.projects)
+  if (Array.isArray(result[KEYS.projects]) && (result[KEYS.projects] as unknown[]).length > 0) {
+    return true
+  }
+  // Check total storage usage — if > 1KB, there are likely entries
+  const bytes = await chrome.storage.local.getBytesInUse(null)
+  return bytes > 1024
 }
 
 /** Clear all user data from local storage (entries, projects, tags, settings, timer, sync state) */

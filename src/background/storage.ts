@@ -4,6 +4,7 @@
 import type { TimerState, IdleInfo, PomodoroState, Settings, TimeEntry } from '../types'
 import { DEFAULT_SETTINGS } from '../storage'
 import { POMODORO_WORK_MS } from '../constants/timers'
+import { DEFAULT_TIMER_STATE } from '../utils/timer'
 
 const STORAGE_KEYS = {
   timerState: 'timerState',
@@ -11,16 +12,6 @@ const STORAGE_KEYS = {
   pomodoroState: 'pomodoroState',
   settings: 'settings',
   entries: (date: string) => `entries_${date}`,
-}
-
-const DEFAULT_TIMER_STATE: TimerState = {
-  status: 'idle',
-  projectId: null,
-  description: '',
-  startTime: null,
-  elapsed: 0,
-  pausedAt: null,
-  continuingEntryId: null,
 }
 
 const DEFAULT_IDLE_INFO: IdleInfo = {

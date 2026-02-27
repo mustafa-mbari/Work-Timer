@@ -3,19 +3,13 @@
  */
 import type { TimerState } from '../types'
 import { getPomodoroState } from './storage'
+import { getElapsed } from '../utils/timer'
+
+// Re-export for backward compatibility with any existing imports from ui.ts
+export { getElapsed }
 
 // Store original tab titles to restore them later
 const originalTabTitles = new Map<number, string>()
-
-/**
- * Calculate current elapsed time for a timer state
- */
-export function getElapsed(state: TimerState): number {
-  if (state.status === 'running' && state.startTime) {
-    return state.elapsed + (Date.now() - state.startTime)
-  }
-  return state.elapsed
-}
 
 /**
  * Format milliseconds as HH:MM:SS for display

@@ -7,6 +7,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   build: {
     outDir: 'dist',
+    minify: 'esbuild',
     rollupOptions: {
       input: {
         popup: resolve(__dirname, 'popup.html'),
@@ -25,6 +26,9 @@ export default defineConfig({
         },
       },
     },
+  },
+  esbuild: {
+    drop: ['console', 'debugger'],
   },
   resolve: {
     alias: {

@@ -1,19 +1,8 @@
 // Work Timer — Floating Mini Timer Content Script
 // Runs on every page. Shows a draggable overlay widget when the timer is active.
 
-interface TimerState {
-  status: 'idle' | 'running' | 'paused'
-  elapsed: number
-  startTime: number | null
-  projectId: string | null
-  description: string
-}
-
-interface Project {
-  id: string
-  name: string
-  color: string
-}
+import type { TimerState, Project } from '../types'
+import { getElapsed } from '../utils/timer'
 
 type ContentMessage =
   | { action: 'TIMER_SYNC'; state: TimerState; projects: Project[] }
@@ -32,6 +21,7 @@ const FULL_HEIGHT = 100 // drag-handle + project name + action buttons + padding
 let hostEl: HTMLElement | null = null
 let shadow: ShadowRoot | null = null
 let tickInterval: ReturnType<typeof setInterval> | null = null
+let dragAbortController: AbortController | null = null
 let currentState: TimerState | null = null
 let lastProjects: Project[] = []   // cached for visibility-change restores
 let isMinimized = false
@@ -42,13 +32,6 @@ let posX = -1              // distance from right edge; -1 = auto (bottom-right)
 let posY = -1
 
 // ---- Time Formatting ----
-
-function getElapsed(state: TimerState): number {
-  if (state.status === 'running' && state.startTime) {
-    return state.elapsed + (Date.now() - state.startTime)
-  }
-  return state.elapsed
-}
 
 function formatTime(ms: number): string {
   const s = Math.floor(ms / 1000)
@@ -364,6 +347,11 @@ function buildWidget(): void {
 function setupDrag(): void {
   if (!shadow || !hostEl) return
 
+  // Clean up previous drag listeners if any
+  dragAbortController?.abort()
+  dragAbortController = new AbortController()
+  const { signal } = dragAbortController
+
   const handle = shadow.getElementById('drag-handle')!
   let isDragging = false
   let startMouseX = 0
@@ -380,7 +368,7 @@ function setupDrag(): void {
     startRight = pos.right
     startBottom = pos.bottom
     e.preventDefault()
-  })
+  }, { signal })
 
   document.addEventListener('mousemove', (e) => {
     if (!isDragging || !hostEl) return
@@ -391,14 +379,14 @@ function setupDrag(): void {
     const widgetHeight = isMinimized ? MINI_HEIGHT : FULL_HEIGHT
     const newBottom = Math.max(0, Math.min(window.innerHeight - widgetHeight, startBottom + dy))
     hostEl.setAttribute('style', buildHostStyle(newRight, newBottom))
-  })
+  }, { signal })
 
   document.addEventListener('mouseup', () => {
     if (isDragging) {
       isDragging = false
       savePosition()
     }
-  })
+  }, { signal })
 }
 
 // ---- Update Widget State ----
@@ -455,6 +443,7 @@ function updateWidget(state: TimerState, projs: Project[]): void {
 // Hides the widget DOM but keeps currentState/lastProjects (for tab re-activation)
 function hideWidget(): void {
   if (tickInterval) { clearInterval(tickInterval); tickInterval = null }
+  if (dragAbortController) { dragAbortController.abort(); dragAbortController = null }
   if (hostEl) { hostEl.remove(); hostEl = null; shadow = null }
 }
 
@@ -467,14 +456,21 @@ function removeWidget(): void {
 
 // ---- Tick ----
 
+function stopTick(): void {
+  if (tickInterval) { clearInterval(tickInterval); tickInterval = null }
+}
+
 function startTick(): void {
+  // Only tick when timer is actively running — avoid wasting CPU when paused
   if (tickInterval) return
+  if (!currentState || currentState.status !== 'running') return
   tickInterval = setInterval(() => {
-    if (!shadow || !currentState) return
-    if (currentState.status === 'running') {
-      const timerEl = shadow.getElementById('timer')
-      if (timerEl) timerEl.textContent = formatTime(getElapsed(currentState))
+    if (!shadow || !currentState || currentState.status !== 'running') {
+      stopTick()
+      return
     }
+    const timerEl = shadow.getElementById('timer')
+    if (timerEl) timerEl.textContent = formatTime(getElapsed(currentState))
   }, 1000)
 }
 
@@ -556,16 +552,30 @@ chrome.runtime.onMessage.addListener((msg: ContentMessage) => {
 
 // ---- Auth Bridge: relay auth tokens from website to background ----
 
+// Allowed origins for auth messages — only accept from the companion website
+const ALLOWED_AUTH_ORIGINS = [
+  'https://w-timer.com',
+  'https://www.w-timer.com',
+]
+
+// In development, also allow localhost
+if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+  ALLOWED_AUTH_ORIGINS.push(location.origin)
+}
+
 window.addEventListener('message', (event) => {
   if (event.source !== window) return
 
-  // Lightweight ping — just confirms the extension is installed and running
+  // Lightweight ping — allowed from any origin (no sensitive data)
   if (event.data?.type === 'WORK_TIMER_PING') {
     window.postMessage({ type: 'WORK_TIMER_PONG' }, '*')
     return
   }
 
+  // Auth messages — only accept from allowed origins
   if (event.data?.type === 'WORK_TIMER_AUTH') {
+    if (!ALLOWED_AUTH_ORIGINS.includes(location.origin)) return
+
     chrome.runtime.sendMessage(
       {
         action: 'AUTH_LOGIN',
@@ -577,7 +587,7 @@ window.addEventListener('message', (event) => {
           type: 'WORK_TIMER_AUTH_RESPONSE',
           success: response?.success ?? false,
           error: chrome.runtime.lastError?.message || response?.error,
-        }, '*')
+        }, location.origin)
       }
     )
   }
@@ -589,6 +599,9 @@ async function init(): Promise<void> {
   await loadPersistedState()
 
   try {
+    // Register with background so broadcasts target only tabs with a content script
+    chrome.runtime.sendMessage({ action: 'CONTENT_SCRIPT_READY' }).catch(() => {})
+
     const response = await chrome.runtime.sendMessage({ action: 'GET_TIMER_STATE' })
     if (response?.success && response.state && response.state.status !== 'idle') {
       const projectsResult = await chrome.storage.local.get('projects')
