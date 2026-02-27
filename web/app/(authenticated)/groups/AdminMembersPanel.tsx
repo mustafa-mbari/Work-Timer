@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
-import { Copy, Trash2, UserPlus, RefreshCw } from 'lucide-react'
+import { Copy, Trash2, UserPlus, RefreshCw, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -25,14 +25,26 @@ export default function AdminMembersPanel({ group, onDeleteGroup }: Props) {
   const [loading, setLoading] = useState(true)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviting, setInviting] = useState(false)
+  const [sharingMap, setSharingMap] = useState<Record<string, boolean>>({})
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/groups/${group.id}`)
-      if (res.ok) {
-        const data = await res.json()
+      const [membersRes, sharingRes] = await Promise.all([
+        fetch(`/api/groups/${group.id}`),
+        fetch(`/api/groups/${group.id}/shared-entries`),
+      ])
+      if (membersRes.ok) {
+        const data = await membersRes.json()
         setMembers(data.members ?? [])
+      }
+      if (sharingRes.ok) {
+        const data = await sharingRes.json()
+        const map: Record<string, boolean> = {}
+        for (const m of data.members ?? []) {
+          map[m.user_id] = m.sharing_enabled ?? false
+        }
+        setSharingMap(map)
       }
     } finally {
       setLoading(false)
@@ -85,6 +97,22 @@ export default function AdminMembersPanel({ group, onDeleteGroup }: Props) {
     }
   }
 
+  async function handleToggleSharing(userId: string) {
+    const current = sharingMap[userId] ?? false
+    const res = await fetch(`/api/groups/${group.id}/sharing?userId=${userId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sharing_enabled: !current }),
+    })
+    if (res.ok) {
+      setSharingMap(prev => ({ ...prev, [userId]: !current }))
+      toast.success(current ? 'Sharing disabled' : 'Sharing enabled')
+    } else {
+      const data = await res.json()
+      toast.error(data.error ?? 'Failed to update sharing')
+    }
+  }
+
   function copyJoinCode() {
     if (group.join_code) {
       navigator.clipboard.writeText(group.join_code)
@@ -122,6 +150,17 @@ export default function AdminMembersPanel({ group, onDeleteGroup }: Props) {
               </div>
             </div>
             <div className="flex items-center gap-1.5 flex-shrink-0">
+              <button
+                onClick={() => handleToggleSharing(m.user_id)}
+                className={`p-1 rounded transition-colors ${
+                  sharingMap[m.user_id]
+                    ? 'text-emerald-500 hover:text-emerald-600'
+                    : 'text-stone-300 hover:text-stone-500 dark:hover:text-stone-400'
+                }`}
+                title={sharingMap[m.user_id] ? 'Disable sharing' : 'Enable sharing'}
+              >
+                {sharingMap[m.user_id] ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+              </button>
               <Badge variant={m.role === 'admin' ? 'default' : 'secondary'} className="text-xs">
                 {m.role}
               </Badge>

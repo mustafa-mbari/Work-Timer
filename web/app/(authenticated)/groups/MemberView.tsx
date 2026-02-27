@@ -54,6 +54,7 @@ export default function MemberView({ group, projects, tags, userId, ownStats }: 
   const [members, setMembers] = useState<MemberInfo[]>([])
   const [membersLoading, setMembersLoading] = useState(false)
   const [sharingEnabled, setSharingEnabled] = useState<boolean | null>(null)
+  const [sharingToggling, setSharingToggling] = useState(false)
   const [history, setHistory] = useState<GroupShare[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
 
@@ -63,6 +64,21 @@ export default function MemberView({ group, projects, tags, userId, ownStats }: 
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data) setSharingEnabled(data.sharing_enabled) })
   }, [group.id])
+
+  async function toggleSharing() {
+    if (sharingEnabled === null) return
+    setSharingToggling(true)
+    try {
+      const res = await fetch(`/api/groups/${group.id}/sharing`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sharing_enabled: !sharingEnabled }),
+      })
+      if (res.ok) setSharingEnabled(!sharingEnabled)
+    } finally {
+      setSharingToggling(false)
+    }
+  }
 
   const loadMembers = useCallback(async () => {
     setMembersLoading(true)
@@ -128,24 +144,37 @@ export default function MemberView({ group, projects, tags, userId, ownStats }: 
         <div className="space-y-4">
           <MemberStatsCard ownStats={ownStats} />
 
-          {/* Sharing status */}
-          <div className="rounded-xl bg-stone-50 dark:bg-[var(--dark-elevated)] px-4 py-3 flex items-center gap-3">
-            {sharingEnabled ? (
-              <Eye className="h-4 w-4 text-emerald-500" />
-            ) : (
-              <EyeOff className="h-4 w-4 text-stone-400" />
-            )}
-            <div>
-              <p className="text-sm font-medium text-stone-700 dark:text-stone-200">
-                {sharingEnabled === null ? 'Loading...' : sharingEnabled ? 'Sharing is on' : 'Sharing is off'}
-              </p>
-              <p className="text-xs text-stone-400">
-                {sharingEnabled
-                  ? 'Group admins can request your time data for reviews'
-                  : 'Enable sharing in your group settings to participate in share requests'
-                }
-              </p>
+          {/* Sharing toggle */}
+          <div className="rounded-xl bg-stone-50 dark:bg-[var(--dark-elevated)] px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {sharingEnabled ? (
+                <Eye className="h-4 w-4 text-emerald-500" />
+              ) : (
+                <EyeOff className="h-4 w-4 text-stone-400" />
+              )}
+              <div>
+                <p className="text-sm font-medium text-stone-700 dark:text-stone-200">
+                  {sharingEnabled === null ? 'Loading...' : sharingEnabled ? 'Sharing is on' : 'Sharing is off'}
+                </p>
+                <p className="text-xs text-stone-400">
+                  {sharingEnabled
+                    ? 'Admins can request your time data for reviews'
+                    : 'Enable to participate in share requests'
+                  }
+                </p>
+              </div>
             </div>
+            <button
+              onClick={toggleSharing}
+              disabled={sharingEnabled === null || sharingToggling}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50 ${
+                sharingEnabled ? 'bg-emerald-500' : 'bg-stone-300 dark:bg-stone-600'
+              }`}
+            >
+              <span className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+                sharingEnabled ? 'translate-x-6' : 'translate-x-1'
+              }`} />
+            </button>
           </div>
         </div>
       )}
