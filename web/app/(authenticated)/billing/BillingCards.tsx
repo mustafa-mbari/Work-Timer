@@ -246,22 +246,6 @@ export default function BillingCards({ currentPlan, isPremium, isAllIn, currency
               <Users className="h-3.5 w-3.5" />
               Team
             </p>
-            <div className="flex gap-1.5 mb-4">
-              {(['10', '20', 'contact'] as TeamTier[]).map(tier => (
-                <button
-                  key={tier}
-                  onClick={() => setTeamTier(tier)}
-                  className={cn(
-                    'flex-1 px-2 py-1.5 text-xs font-semibold rounded-lg transition-colors',
-                    teamTier === tier
-                      ? 'bg-indigo-500 text-white'
-                      : 'bg-stone-100 dark:bg-[var(--dark-elevated)] text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-[var(--dark-hover)]'
-                  )}
-                >
-                  {tier === 'contact' ? 'Custom' : `Up to ${tier}`}
-                </button>
-              ))}
-            </div>
 
             {teamTier === 'contact' ? (
               <div>
@@ -288,7 +272,7 @@ export default function BillingCards({ currentPlan, isPremium, isAllIn, currency
             )}
           </div>
 
-          <ul className="space-y-2 flex-1 mb-5">
+          <ul className="space-y-2 flex-1 mb-4">
             {FEATURES.map(f => (
               <FeatureRow key={f.label} label={f.label} value={f.team} accent />
             ))}
@@ -296,6 +280,24 @@ export default function BillingCards({ currentPlan, isPremium, isAllIn, currency
               <FeatureRow label={`Up to ${teamTier} members`} value={true} accent />
             )}
           </ul>
+
+          {/* Tier selector */}
+          <div className="flex gap-1.5 mb-3">
+            {(['10', '20', 'contact'] as TeamTier[]).map(tier => (
+              <button
+                key={tier}
+                onClick={() => setTeamTier(tier)}
+                className={cn(
+                  'flex-1 px-2 py-1.5 text-xs font-semibold rounded-lg transition-colors',
+                  teamTier === tier
+                    ? 'bg-indigo-500 text-white'
+                    : 'bg-stone-100 dark:bg-[var(--dark-elevated)] text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-[var(--dark-hover)]'
+                )}
+              >
+                {tier === 'contact' ? 'Custom' : `Up to ${tier}`}
+              </button>
+            ))}
+          </div>
 
           {isAllinActive ? (
             <div className="py-2.5 px-4 rounded-xl text-sm font-semibold text-center text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/30">
