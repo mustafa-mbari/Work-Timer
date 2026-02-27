@@ -133,13 +133,25 @@
   100% { background-color: transparent; transform: scale(1); }
 }
 
+@keyframes border-glow {
+  0%   { border-color: var(--glow-start); box-shadow: 0 0 8px var(--glow-shadow); }
+  50%  { border-color: var(--glow-mid);   box-shadow: 0 0 14px var(--glow-shadow); }
+  100% { border-color: transparent;       box-shadow: none; }
+}
+
 .entry-highlight {
   --entry-flash-color: rgba(99, 102, 241, 0.12);
-  animation: entry-flash 700ms ease-out forwards;
+  --glow-start: #818cf8;
+  --glow-mid: #6366f1;
+  --glow-shadow: rgba(99, 102, 241, 0.35);
+  animation: entry-flash 700ms ease-out forwards, border-glow 1s ease-out forwards;
 }
 
 :is(.dark, .dark *) .entry-highlight {
   --entry-flash-color: rgba(129, 140, 248, 0.15);
+  --glow-start: #a5b4fc;
+  --glow-mid: #818cf8;
+  --glow-shadow: rgba(129, 140, 248, 0.4);
 }
 
 /* Rolling timer digit faces */

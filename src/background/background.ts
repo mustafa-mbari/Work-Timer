@@ -144,10 +144,16 @@ async function updateTimeEntry(entryId: string, date: string, updates: Partial<T
 async function broadcastTimerSync(state: TimerState, pomodoroState?: PomodoroState): Promise<void> {
   const result = await chrome.storage.local.get('projects')
   const projects = (result['projects'] as Array<{ id: string; name: string; color: string }> | undefined) ?? []
-  // Only send to tabs that have registered a content script (instead of ALL tabs)
+  const msg = { action: 'TIMER_SYNC', state, projects, pomodoroState }
+
+  // Send to popup / options page via runtime messaging
+  chrome.runtime.sendMessage(msg).catch(() => {
+    // No popup/extension page open — safe to ignore
+  })
+
+  // Send to content script tabs
   for (const tabId of activeContentTabs) {
-    chrome.tabs.sendMessage(tabId, { action: 'TIMER_SYNC', state, projects, pomodoroState }).catch(() => {
-      // Content script may have been unloaded (navigation, tab close) — remove from set
+    chrome.tabs.sendMessage(tabId, msg).catch(() => {
       activeContentTabs.delete(tabId)
     })
   }

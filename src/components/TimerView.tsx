@@ -99,29 +99,36 @@ export default function TimerView() {
     }
   }, [pomodoroState.active])
 
+  // Resolve the best default tag: project-linked tag first, then global default tag
+  const getDefaultTagId = useCallback((projectId: string | null): string => {
+    if (projectId) {
+      const project = activeProjects.find(p => p.id === projectId)
+      if (project?.defaultTagId) return project.defaultTagId
+    }
+    // Fall back to tag marked as isDefault (the user's "favorite" tag)
+    const defaultTag = tags.find(t => t.isDefault)
+    return defaultTag?.id ?? ''
+  }, [activeProjects, tags])
+
   // Auto-select linked tag when project changes
   const handleProjectChange = (projectId: string | null) => {
     setSelectedProjectId(projectId)
-    if (projectId) {
-      const project = activeProjects.find(p => p.id === projectId)
-      if (project?.defaultTagId) {
-        setSelectedTagId(project.defaultTagId)
-      }
-    }
+    setSelectedTagId(getDefaultTagId(projectId))
   }
 
-  // Auto-select default project when not running and no project chosen yet
+  // Auto-select default project + tag when not running and no project chosen yet
   useEffect(() => {
     if (!isActive && selectedProjectId === null && activeProjects.length > 0) {
       const defaultProject = activeProjects.find(p => p.isDefault)
       if (defaultProject) {
         setSelectedProjectId(defaultProject.id) // eslint-disable-line react-hooks/set-state-in-effect
-        if (defaultProject.defaultTagId) {
-          setSelectedTagId(defaultProject.defaultTagId) // eslint-disable-line react-hooks/set-state-in-effect
-        }
+        setSelectedTagId(getDefaultTagId(defaultProject.id)) // eslint-disable-line react-hooks/set-state-in-effect
+      } else {
+        // No default project — still try to select the default tag
+        setSelectedTagId(getDefaultTagId(null)) // eslint-disable-line react-hooks/set-state-in-effect
       }
     }
-  }, [activeProjects, isActive, selectedProjectId])
+  }, [activeProjects, isActive, selectedProjectId, getDefaultTagId])
 
   const handleStart = async () => {
     if (mode === 'pomodoro') {
@@ -145,9 +152,8 @@ export default function TimerView() {
       })
       setDescription('')
       setLink('')
-      // Re-apply the project's default tag (so it's pre-selected for the next timer)
-      const currentProject = activeProjects.find(p => p.id === selectedProjectId)
-      setSelectedTagId(currentProject?.defaultTagId ?? '')
+      // Re-apply the default tag for the next timer
+      setSelectedTagId(getDefaultTagId(selectedProjectId))
       setHighlightEntryId(response.entry.id)
       refetchEntries()
       // Scroll to the entry list after re-render
@@ -231,9 +237,8 @@ export default function TimerView() {
     setManualMinutes('')
     setDescription('')
     setLink('')
-    // Re-apply the project's default tag (so it's pre-selected for the next entry)
-    const currentProject = activeProjects.find(p => p.id === selectedProjectId)
-    setSelectedTagId(currentProject?.defaultTagId ?? '')
+    // Re-apply the default tag for the next entry
+    setSelectedTagId(getDefaultTagId(selectedProjectId))
     setHighlightEntryId(entryId)
     // Scroll to the entry list after re-render
     requestAnimationFrame(() => {
