@@ -13,15 +13,8 @@ import GroupsView from './GroupsView'
 export default async function GroupsPage() {
   const user = await requireAuth()
 
-  // Fetch subscription check in parallel with all data to avoid sequential waterfall
-  const [allIn, groups, invitations, allProjects, allTags, ownStats] = await Promise.all([
-    isAllInUser(user.id),
-    getUserGroups(user.id),
-    getUserPendingInvitations(user.email ?? ''),
-    getUserProjects(user.id),
-    getUserTags(user.id),
-    getUserOwnStats(user.id),
-  ])
+  // Check subscription FIRST — skip heavy data fetches for non-subscribers
+  const allIn = await isAllInUser(user.id)
 
   if (!allIn) {
     return (
@@ -47,6 +40,15 @@ export default async function GroupsPage() {
       </div>
     )
   }
+
+  // Only fetch group data for subscribers
+  const [groups, invitations, allProjects, allTags, ownStats] = await Promise.all([
+    getUserGroups(user.id),
+    getUserPendingInvitations(user.email ?? ''),
+    getUserProjects(user.id),
+    getUserTags(user.id),
+    getUserOwnStats(user.id),
+  ])
 
   const projects = allProjects
     .filter(p => !p.archived)

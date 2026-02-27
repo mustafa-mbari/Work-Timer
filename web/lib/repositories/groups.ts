@@ -24,20 +24,21 @@ export async function getUserGroups(userId: string): Promise<GroupWithMeta[]> {
   const groupIds = memberships.map(m => m.group_id)
   const roleMap = new Map(memberships.map(m => [m.group_id, m.role]))
 
-  const { data: groups } = await supabase
-    .from('groups')
-    .select('*')
-    .in('id', groupIds)
-    .returns<Group[]>()
+  // Fetch groups and member counts in parallel (both only depend on groupIds)
+  const [{ data: groups }, { data: memberRows }] = await Promise.all([
+    supabase
+      .from('groups')
+      .select('*')
+      .in('id', groupIds)
+      .returns<Group[]>(),
+    supabase
+      .from('group_members')
+      .select('group_id')
+      .in('group_id', groupIds)
+      .returns<Pick<GroupMember, 'group_id'>[]>(),
+  ])
 
   if (!groups?.length) return []
-
-  // Get member counts in a single query (avoids N+1)
-  const { data: memberRows } = await supabase
-    .from('group_members')
-    .select('group_id')
-    .in('group_id', groupIds)
-    .returns<Pick<GroupMember, 'group_id'>[]>()
 
   const counts = new Map<string, number>()
   for (const row of memberRows ?? []) {
