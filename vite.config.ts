@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { resolve } from 'path'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss()],
   build: {
     outDir: 'dist',
@@ -27,13 +27,12 @@ export default defineConfig({
       },
     },
   },
-  esbuild: {
-    drop: ['console', 'debugger'],
-  },
+  // Only strip console/debugger in production builds — keep them for dev debugging
+  esbuild: mode === 'production' ? { drop: ['console', 'debugger'] } : {},
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
       '@shared': resolve(__dirname, 'shared'),
     },
   },
-})
+}))

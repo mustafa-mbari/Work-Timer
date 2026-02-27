@@ -142,8 +142,10 @@ export default function TimerView() {
         link: link.trim() || undefined,
       })
       setDescription('')
-      setSelectedTagId('')
       setLink('')
+      // Re-apply the project's default tag (so it's pre-selected for the next timer)
+      const currentProject = activeProjects.find(p => p.id === selectedProjectId)
+      setSelectedTagId(currentProject?.defaultTagId ?? '')
       refetchEntries()
       // Scroll to show the newly created entry after the list re-renders
       requestAnimationFrame(() => {
@@ -224,8 +226,10 @@ export default function TimerView() {
     setManualHours('')
     setManualMinutes('')
     setDescription('')
-    setSelectedTagId('')
     setLink('')
+    // Re-apply the project's default tag (so it's pre-selected for the next entry)
+    const currentProject = activeProjects.find(p => p.id === selectedProjectId)
+    setSelectedTagId(currentProject?.defaultTagId ?? '')
     // Scroll to show the newly created entry
     requestAnimationFrame(() => {
       entryListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })

@@ -1,8 +1,29 @@
 // Work Timer — Floating Mini Timer Content Script
 // Runs on every page. Shows a draggable overlay widget when the timer is active.
 
-import type { TimerState, Project } from '../types'
-import { getElapsed } from '../utils/timer'
+// NOTE: Content scripts are injected as plain scripts by Chrome — they CANNOT
+// use ES module imports or load shared chunks. All utilities must be inlined.
+
+interface TimerState {
+  status: 'idle' | 'running' | 'paused'
+  elapsed: number
+  startTime: number | null
+  projectId: string | null
+  description: string
+}
+
+interface Project {
+  id: string
+  name: string
+  color: string
+}
+
+function getElapsed(state: TimerState): number {
+  if (state.status === 'running' && state.startTime) {
+    return state.elapsed + (Date.now() - state.startTime)
+  }
+  return state.elapsed
+}
 
 type ContentMessage =
   | { action: 'TIMER_SYNC'; state: TimerState; projects: Project[] }
