@@ -1,4 +1,4 @@
-import { useState, useMemo, memo } from 'react'
+import { useState, useMemo, useEffect, useRef, memo } from 'react'
 import type { TimeEntry, Project } from '@/types'
 import { formatTime, formatDurationShort } from '@/utils/date'
 import EntryEditModal from './EntryEditModal'
@@ -10,15 +10,28 @@ interface EntryListProps {
   onUpdate: (entry: TimeEntry) => Promise<void>
   onDelete: (id: string) => Promise<void>
   onContinue?: (entryId: string, projectId: string | null, description: string) => void
+  highlightEntryId?: string | null
+  onHighlightDone?: () => void
 }
 
-export default memo(function EntryList({ entries, projects, onUpdate, onDelete, onContinue }: EntryListProps) {
+export default memo(function EntryList({ entries, projects, onUpdate, onDelete, onContinue, highlightEntryId, onHighlightDone }: EntryListProps) {
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null)
+  const highlightRef = useRef<HTMLDivElement>(null)
 
   const sorted = useMemo(
     () => [...entries].sort((a, b) => b.startTime - a.startTime),
     [entries]
   )
+
+  // Scroll to and animate the highlighted entry
+  useEffect(() => {
+    if (!highlightEntryId || !highlightRef.current) return
+    highlightRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    const el = highlightRef.current
+    const handleEnd = () => onHighlightDone?.()
+    el.addEventListener('animationend', handleEnd, { once: true })
+    return () => el.removeEventListener('animationend', handleEnd)
+  }, [highlightEntryId, onHighlightDone])
 
   if (entries.length === 0) {
     return (
@@ -36,7 +49,8 @@ export default memo(function EntryList({ entries, projects, onUpdate, onDelete, 
           return (
             <div
               key={entry.id}
-              className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-white dark:bg-dark-card border border-stone-200 dark:border-dark-border hover:border-stone-300 dark:hover:border-dark-hover hover:shadow-sm transition-all"
+              ref={entry.id === highlightEntryId ? highlightRef : undefined}
+              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-white dark:bg-dark-card border border-stone-200 dark:border-dark-border hover:border-stone-300 dark:hover:border-dark-hover hover:shadow-sm transition-all${entry.id === highlightEntryId ? ' entry-highlight' : ''}`}
               role="listitem"
             >
               <span

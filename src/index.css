@@ -127,6 +127,21 @@
   100% { transform: translateX(350%); }
 }
 
+@keyframes entry-flash {
+  0%   { background-color: var(--entry-flash-color); transform: scale(1); }
+  40%  { transform: scale(1.02); }
+  100% { background-color: transparent; transform: scale(1); }
+}
+
+.entry-highlight {
+  --entry-flash-color: rgba(99, 102, 241, 0.12);
+  animation: entry-flash 700ms ease-out forwards;
+}
+
+:is(.dark, .dark *) .entry-highlight {
+  --entry-flash-color: rgba(129, 140, 248, 0.15);
+}
+
 /* Rolling timer digit faces */
 .rolling-face {
   background: #d8d8d8;

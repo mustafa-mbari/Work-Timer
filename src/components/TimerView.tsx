@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, type ReactNode, type FC } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback, type ReactNode, type FC } from 'react'
 import type { TimerMode } from '@/types'
 import { useTimer } from '@/hooks/useTimer'
 import { useProjects } from '@/hooks/useProjects'
@@ -37,6 +37,8 @@ export default function TimerView() {
   const { settings } = useSettings()
 
   const entryListRef = useRef<HTMLDivElement>(null)
+  const [highlightEntryId, setHighlightEntryId] = useState<string | null>(null)
+  const clearHighlight = useCallback(() => setHighlightEntryId(null), [])
 
   const [mode, setMode] = useState<ExtendedMode>('stopwatch')
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
@@ -146,8 +148,9 @@ export default function TimerView() {
       // Re-apply the project's default tag (so it's pre-selected for the next timer)
       const currentProject = activeProjects.find(p => p.id === selectedProjectId)
       setSelectedTagId(currentProject?.defaultTagId ?? '')
+      setHighlightEntryId(response.entry.id)
       refetchEntries()
-      // Scroll to show the newly created entry after the list re-renders
+      // Scroll to the entry list after re-render
       requestAnimationFrame(() => {
         entryListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       })
@@ -202,9 +205,10 @@ export default function TimerView() {
     }
 
     const tagsArray = selectedTagId ? [selectedTagId] : []
+    const entryId = generateId()
 
     await add({
-      id: generateId(),
+      id: entryId,
       date: manualDate,
       startTime,
       endTime,
@@ -230,7 +234,8 @@ export default function TimerView() {
     // Re-apply the project's default tag (so it's pre-selected for the next entry)
     const currentProject = activeProjects.find(p => p.id === selectedProjectId)
     setSelectedTagId(currentProject?.defaultTagId ?? '')
-    // Scroll to show the newly created entry
+    setHighlightEntryId(entryId)
+    // Scroll to the entry list after re-render
     requestAnimationFrame(() => {
       entryListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     })
@@ -872,6 +877,8 @@ export default function TimerView() {
         onUpdate={update}
         onDelete={remove}
         onContinue={handleContinue}
+        highlightEntryId={highlightEntryId}
+        onHighlightDone={clearHighlight}
       />
     </div>
   )
