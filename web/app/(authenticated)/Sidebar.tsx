@@ -225,8 +225,8 @@ export default function AppSidebar({ isAdmin, isPremium, isAllIn, userInfo }: Pr
 
   const NAV_MAIN = [
     { href: '/dashboard', label: tn('dashboard'), icon: LayoutDashboard },
-    { href: '/analytics', label: tn('analytics'), icon: BarChart2 },
     { href: '/entries', label: tn('entries'), icon: Clock },
+    { href: '/analytics', label: tn('analytics'), icon: BarChart2 },
     { href: '/earnings', label: 'Earnings', icon: DollarSign },
     ...(isAllIn ? [{ href: '/groups', label: 'Groups', icon: Users }] : []),
   ]

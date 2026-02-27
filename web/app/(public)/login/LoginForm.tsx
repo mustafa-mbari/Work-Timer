@@ -56,7 +56,7 @@ export default function LoginForm() {
       if (isExtension) {
         window.location.href = '/auth/callback/extension'
       } else {
-        let destination = '/dashboard'
+        let destination = '/entries'
         try {
           const lastPage = localStorage.getItem('lastPage')
           if (lastPage && lastPage.startsWith('/') && !lastPage.startsWith('/login') && !lastPage.startsWith('/register')) {

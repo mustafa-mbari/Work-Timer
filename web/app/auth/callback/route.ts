@@ -42,6 +42,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL(next, request.url))
   }
 
-  // Otherwise go to dashboard
-  return NextResponse.redirect(new URL('/dashboard', request.url))
+  // Otherwise go to entries
+  return NextResponse.redirect(new URL('/entries', request.url))
 }

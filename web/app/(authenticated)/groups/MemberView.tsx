@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { BarChart3, Send, Clock, Users, Eye, EyeOff } from 'lucide-react'
+import { BarChart3, Clock, Users, Eye, EyeOff } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import type { GroupWithMeta } from '@/lib/repositories/groups'
 import type { GroupShare } from '@/lib/repositories/groupShares'
@@ -18,7 +18,7 @@ interface Props {
   ownStats: OwnStats
 }
 
-type Tab = 'overview' | 'share' | 'history' | 'members'
+type Tab = 'overview' | 'history' | 'members'
 
 function getStatusBadge(status: string) {
   switch (status) {
@@ -44,6 +44,23 @@ export default function MemberView({ group, projects, tags, userId, ownStats }: 
   const [history, setHistory] = useState<GroupShare[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
   const [historyLoaded, setHistoryLoaded] = useState(false)
+
+  // Share counts for the analytics grid (4th card)
+  const [openShareCount, setOpenShareCount] = useState(0)
+  const [submittedShareCount, setSubmittedShareCount] = useState(0)
+  const [sharesLoading, setSharesLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`/api/groups/${group.id}/shares?status=open&mine=true`),
+      fetch(`/api/groups/${group.id}/shares?status=submitted&mine=true`),
+    ]).then(async ([openRes, subRes]) => {
+      const open: GroupShare[] = openRes.ok ? await openRes.json() : []
+      const submitted: GroupShare[] = subRes.ok ? await subRes.json() : []
+      setOpenShareCount(open.length)
+      setSubmittedShareCount(submitted.length)
+    }).catch(() => {}).finally(() => setSharesLoading(false))
+  }, [group.id])
 
   // Fetch sharing status on mount
   useEffect(() => {
@@ -109,7 +126,6 @@ export default function MemberView({ group, projects, tags, userId, ownStats }: 
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: 'overview', label: 'Overview', icon: <BarChart3 className="h-3.5 w-3.5" /> },
-    { key: 'share', label: 'Current Share', icon: <Send className="h-3.5 w-3.5" /> },
     { key: 'history', label: 'History', icon: <Clock className="h-3.5 w-3.5" /> },
     { key: 'members', label: 'Members', icon: <Users className="h-3.5 w-3.5" /> },
   ]
@@ -137,7 +153,13 @@ export default function MemberView({ group, projects, tags, userId, ownStats }: 
       {/* Tab content */}
       {tab === 'overview' && (
         <div className="space-y-4">
-          <MemberStatsCard ownStats={ownStats} />
+          <MemberStatsCard
+            ownStats={ownStats}
+            openShareCount={openShareCount}
+            submittedShareCount={submittedShareCount}
+            sharesLoading={sharesLoading}
+            hasSchedule={!!group.share_frequency}
+          />
 
           {/* Sharing toggle */}
           <div className="rounded-xl bg-stone-50 dark:bg-[var(--dark-elevated)] px-4 py-3 flex items-center justify-between">
@@ -173,16 +195,15 @@ export default function MemberView({ group, projects, tags, userId, ownStats }: 
               }`} />
             </button>
           </div>
-        </div>
-      )}
 
-      {tab === 'share' && (
-        <CurrentSharePanel
-          groupId={group.id}
-          projects={projects}
-          tags={tags}
-          hasSchedule={!!group.share_frequency}
-        />
+          {/* Current share requests */}
+          <CurrentSharePanel
+            groupId={group.id}
+            projects={projects}
+            tags={tags}
+            hasSchedule={!!group.share_frequency}
+          />
+        </div>
       )}
 
       {tab === 'history' && (

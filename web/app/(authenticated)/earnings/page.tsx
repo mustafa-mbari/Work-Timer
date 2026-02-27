@@ -111,7 +111,7 @@ export default async function EarningsPage({
         hourly_rate: t.hourly_rate,
         earnings_enabled: t.earnings_enabled as boolean,
       }))
-    : allProjects.map(p => ({
+    : allProjects.filter(p => !p.archived).map(p => ({
         id: p.id,
         name: p.name,
         color: p.color,
@@ -208,13 +208,19 @@ export default async function EarningsPage({
 
       <EarningsChart data={data.daily_earnings ?? []} currencySymbol={currencySymbol} />
 
-      <EarningsView data={data} groupBy={groupBy} />
-
-      <EarningsProjectsManager
-        items={managerItems}
-        currency={currencySymbol}
-        groupBy={groupBy}
-      />
+      <div className="flex gap-4 items-start">
+        <div className="flex-1 min-w-0" style={{ flexBasis: '75%' }}>
+          <EarningsView data={data} groupBy={groupBy} />
+        </div>
+        <div className="shrink-0" style={{ flexBasis: '25%' }}>
+          <EarningsProjectsManager
+            key={groupBy}
+            items={managerItems}
+            currency={currencySymbol}
+            groupBy={groupBy}
+          />
+        </div>
+      </div>
     </div>
   )
 }

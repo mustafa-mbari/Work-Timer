@@ -51,6 +51,10 @@ export function formatPeriod(share: Pick<GroupShare, 'date_from' | 'date_to' | '
   return `${from.toLocaleDateString(undefined, opts)} – ${to.toLocaleDateString(undefined, opts)}`
 }
 
+export function periodLabel(type: string): string {
+  return type === 'day' ? 'Daily' : type === 'week' ? 'Weekly' : 'Monthly'
+}
+
 export function getInitials(name: string | null, email: string): string {
   if (name) return name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()
   return email.slice(0, 2).toUpperCase()
