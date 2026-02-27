@@ -29,6 +29,8 @@ interface PomodoroConfig {
   sessionsBeforeLongBreak: number
 }
 
+type WeekDay = { label: string; totalMs: number; isToday: boolean }
+
 interface Props {
   projects: ProjectSummary[]
   tags: TagSummary[]
@@ -36,6 +38,7 @@ interface Props {
   dailyTargetHours: number
   todayTotalMs: number
   entrySaveTime: number
+  weekDayTotals: WeekDay[]
   onEntrySaved: () => void
 }
 
@@ -341,15 +344,16 @@ function interpolateGaugeColor(t: number): string {
   return `rgb(${r},${g},${b})`
 }
 
-function DailyGoalGauge({ percentage, todayHours, targetHours }: { percentage: number; todayHours: string; targetHours: number }) {
+function DailyGoalGauge({ percentage, todayHours, targetHours, weekDays }: { percentage: number; todayHours: string; targetHours: number; weekDays: WeekDay[] }) {
   const filled = Math.round(Math.min(100, Math.max(0, percentage)) / 100 * GAUGE_SEGMENTS)
   const cx = 100, cy = 100, radius = 72
   const segW = 18, segH = 34, segRx = 6
+  const goalMs = targetHours * 3600000
 
   return (
-    <div className="flex flex-col items-center justify-center h-full w-full">
+    <div className="flex flex-col items-center w-full">
       <div className="relative w-full flex justify-center">
-        <svg viewBox="0 0 200 120" className="w-full max-w-[240px] text-stone-900 dark:text-stone-100">
+        <svg viewBox="0 0 200 120" className="w-full max-w-[190px] text-stone-900 dark:text-stone-100">
           {Array.from({ length: GAUGE_SEGMENTS }).map((_, i) => {
             const angleDeg = 180 - i * (180 / (GAUGE_SEGMENTS - 1))
             const angleRad = angleDeg * Math.PI / 180
@@ -377,7 +381,7 @@ function DailyGoalGauge({ percentage, todayHours, targetHours }: { percentage: n
           </text>
         </svg>
       </div>
-      <div className="text-center mt-1">
+      <div className="text-center -mt-1">
         <div className="text-[10px] font-medium text-stone-500 dark:text-stone-400 uppercase tracking-wider">
           Daily Goal
         </div>
@@ -385,13 +389,34 @@ function DailyGoalGauge({ percentage, todayHours, targetHours }: { percentage: n
           {todayHours} / {targetHours}h
         </div>
       </div>
+      {weekDays.length > 0 && (
+        <div className="mt-3 w-full px-1">
+          <p className="text-[9px] text-stone-400 dark:text-stone-500 mb-1.5">This week</p>
+          <div className="flex gap-1.5">
+            {weekDays.map((d, i) => {
+              const dp = goalMs > 0 ? Math.min(100, Math.round(d.totalMs / goalMs * 100)) : 0
+              return (
+                <div key={i} className="flex-1 space-y-1">
+                  <div className={`h-1.5 rounded-full overflow-hidden ${d.isToday ? 'bg-indigo-100 dark:bg-indigo-900/30' : 'bg-stone-100 dark:bg-stone-800'}`}>
+                    <div
+                      className={`h-full rounded-full transition-all ${d.isToday ? 'bg-indigo-500' : 'bg-stone-400 dark:bg-stone-600'}`}
+                      style={{ width: `${dp}%` }}
+                    />
+                  </div>
+                  <p className={`text-center text-[8px] font-medium ${d.isToday ? 'text-indigo-600 dark:text-indigo-400' : 'text-stone-400 dark:text-stone-600'}`}>{d.label}</p>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTargetHours, todayTotalMs, entrySaveTime, onEntrySaved }: Props) {
+export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTargetHours, todayTotalMs, entrySaveTime, weekDayTotals, onEntrySaved }: Props) {
   const pom = { ...DEFAULT_POM, ...pomodoroConfig }
 
   // ── Restore from session storage (runs once on mount) ──
@@ -1116,7 +1141,7 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTarge
 
         {/* Daily Goal gauge – 25% */}
         <div className="flex-1 border-t xl:border-t-0 xl:border-l border-stone-100 dark:border-[var(--dark-border)] p-4 flex items-center justify-center">
-          <DailyGoalGauge percentage={goalPct} todayHours={todayHoursLabel} targetHours={dailyTargetHours} />
+          <DailyGoalGauge percentage={goalPct} todayHours={todayHoursLabel} targetHours={dailyTargetHours} weekDays={weekDayTotals} />
         </div>
       </div>
     </div>

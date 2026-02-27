@@ -23,6 +23,8 @@ interface PomodoroConfig {
   sessionsBeforeLongBreak: number
 }
 
+type WeekDay = { label: string; totalMs: number; isToday: boolean }
+
 interface Props {
   entriesPage: TimeEntryPage
   projects: ProjectSummary[]
@@ -32,9 +34,10 @@ interface Props {
   dailyTargetHours: number
   todayTotalMs: number
   entrySaveTime: number
+  weekDayTotals: WeekDay[]
 }
 
-export default function EntriesView({ entriesPage, projects, tags, filters, pomodoroConfig, dailyTargetHours, todayTotalMs, entrySaveTime }: Props) {
+export default function EntriesView({ entriesPage, projects, tags, filters, pomodoroConfig, dailyTargetHours, todayTotalMs, entrySaveTime, weekDayTotals }: Props) {
   const router = useRouter()
   const [showAddDialog, setShowAddDialog] = useState(false)
 
@@ -59,6 +62,7 @@ export default function EntriesView({ entriesPage, projects, tags, filters, pomo
         dailyTargetHours={dailyTargetHours}
         todayTotalMs={todayTotalMs}
         entrySaveTime={entrySaveTime}
+        weekDayTotals={weekDayTotals}
         onEntrySaved={() => router.refresh()}
       />
 

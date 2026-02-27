@@ -156,6 +156,43 @@ export default async function EntriesPage({ searchParams }: Props) {
   const dailyTargetHours = settings?.daily_target ?? 8
   const entrySaveTime = (settings as Record<string, unknown> | null)?.entry_save_time as number | undefined ?? 10
 
+  // Fetch this week's entries for the "This week" bars in the Daily Goal card
+  const weekStartDay = (settings?.week_start_day ?? 1) as 0 | 1
+  const workingDays = settings?.working_days ?? 5
+  const fmtDate = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const now = new Date()
+  const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const diff = (todayDate.getDay() - weekStartDay + 7) % 7
+  const weekStart = new Date(todayDate)
+  weekStart.setDate(todayDate.getDate() - diff)
+  const fetchFrom = new Date(weekStart)
+  fetchFrom.setDate(weekStart.getDate() - 1) // 1 day before to catch midnight-crossing entries
+  const todayStr = fmtDate(todayDate)
+
+  const weekEntriesResult = await getUserTimeEntries(user.id, {
+    dateFrom: fmtDate(fetchFrom),
+    dateTo: todayStr,
+    pageSize: 500,
+  })
+
+  const dayTotalsMap: Record<string, number> = {}
+  for (const entry of weekEntriesResult.data) {
+    dayTotalsMap[entry.date] = (dayTotalsMap[entry.date] ?? 0) + entry.duration
+  }
+
+  const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const weekDayTotals = Array.from({ length: workingDays }, (_, i) => {
+    const d = new Date(weekStart)
+    d.setDate(weekStart.getDate() + i)
+    const dateStr = fmtDate(d)
+    return {
+      label: DAY_LABELS[d.getDay()],
+      totalMs: dayTotalsMap[dateStr] ?? 0,
+      isToday: dateStr === todayStr,
+    }
+  })
+
   return (
     <div className="animate-fade-in">
       <Suspense fallback={<div className="h-64" />}>
@@ -168,6 +205,7 @@ export default async function EntriesPage({ searchParams }: Props) {
           dailyTargetHours={dailyTargetHours}
           todayTotalMs={todayTotalMs}
           entrySaveTime={entrySaveTime}
+          weekDayTotals={weekDayTotals}
         />
       </Suspense>
     </div>
