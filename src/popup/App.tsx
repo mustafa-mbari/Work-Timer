@@ -85,13 +85,15 @@ export default function App() {
 
   useEffect(() => {
     // Read initial sync state
-    chrome.storage.local.get('syncState').then(({ syncState }) => {
-      if (syncState?.status) setSyncStatus(syncState.status as SyncStatus)
+    chrome.storage.local.get('syncState').then((result) => {
+      const ss = result.syncState as { status?: string } | undefined
+      if (ss?.status) setSyncStatus(ss.status as SyncStatus)
     })
     // Listen for live updates while popup is open
     const listener = (changes: { [key: string]: chrome.storage.StorageChange }) => {
-      if (changes['syncState']?.newValue?.status) {
-        setSyncStatus(changes['syncState'].newValue.status as SyncStatus)
+      const nv = changes['syncState']?.newValue as { status?: string } | undefined
+      if (nv?.status) {
+        setSyncStatus(nv.status as SyncStatus)
       }
     }
     chrome.storage.onChanged.addListener(listener)

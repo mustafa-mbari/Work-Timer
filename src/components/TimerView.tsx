@@ -10,6 +10,7 @@ import { useSettings } from '@/hooks/useSettings'
 import { msToHours } from '@/utils/date'
 import { ENTRY_SAVE_TIME } from '@shared/constants'
 import ProjectSelector from './ProjectSelector'
+import TagSelect from './TagSelect'
 import EntryList from './EntryList'
 import GoalProgress from './GoalProgress'
 import { PlayIcon, PauseIcon, StopIcon, SkipIcon, TimerIcon, PencilIcon, TomatoIcon } from './Icons'
@@ -522,17 +523,7 @@ export default function TimerView() {
               />
             )}
             {activeTab === 'tag' && (
-              <select
-                value={selectedTagId}
-                onChange={(e) => setSelectedTagId(e.target.value)}
-                className="w-full border border-stone-300 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
-                aria-label="Select tag"
-              >
-                <option value="">No Tag</option>
-                {tags.map((tag) => (
-                  <option key={tag.id} value={tag.id}>{tag.name}</option>
-                ))}
-              </select>
+              <TagSelect tags={tags} value={selectedTagId} onChange={setSelectedTagId} />
             )}
             {activeTab === 'link' && (
               <input
@@ -795,20 +786,7 @@ export default function TimerView() {
             />
           )}
           {activeTab === 'tag' && (
-            <select
-              value={selectedTagId}
-              onChange={(e) => setSelectedTagId(e.target.value)}
-              disabled={isActive}
-              className="w-full border border-stone-300 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400 disabled:opacity-50"
-              aria-label="Select tag"
-            >
-              <option value="">No Tag</option>
-              {tags.map((tag) => (
-                <option key={tag.id} value={tag.id}>
-                  {tag.name}
-                </option>
-              ))}
-            </select>
+            <TagSelect tags={tags} value={selectedTagId} onChange={setSelectedTagId} disabled={isActive} />
           )}
           {activeTab === 'link' && (
             <input

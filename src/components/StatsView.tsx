@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { PieChart, Pie, Cell } from 'recharts'
 import { useEntries, useEntriesRange } from '@/hooks/useEntries'
 import { useProjects } from '@/hooks/useProjects'
-import { getWeekRange, getWeekDays, formatDate, formatDurationShort, msToHours } from '@/utils/date'
-import { format, addMonths } from 'date-fns'
+import { useSettings } from '@/hooks/useSettings'
+import { getWeekRange, formatDate, formatDurationShort, msToHours } from '@/utils/date'
+import { addMonths } from 'date-fns'
 import ExportMenu from './ExportMenu'
+import WeeklyChart from './WeeklyChart'
 import CalendarHeatmap from './CalendarHeatmap'
 import { usePremium } from '@/hooks/usePremium'
 import UpgradePrompt from './UpgradePrompt'
@@ -15,31 +17,19 @@ export default function StatsView() {
   const [monthOffset, setMonthOffset] = useState(0)
   const [showUpgrade, setShowUpgrade] = useState(false)
   const { isPremium } = usePremium()
+  const { settings } = useSettings()
   const displayDate = addMonths(new Date(), monthOffset)
   const displayYear = displayDate.getFullYear()
   const displayMonth = displayDate.getMonth()
 
-  const weekStartsOn = 1 as const
+  const weekStartsOn = (settings?.weekStartDay ?? 1) as 0 | 1
+  const workingDays = settings?.workingDays ?? 5
   const { start, end } = getWeekRange(new Date(), weekStartsOn)
-  const days = getWeekDays(new Date(), weekStartsOn, 7)
   const { entries: weekEntries } = useEntriesRange(formatDate(start), formatDate(end))
 
   const weekTotal = weekEntries.reduce((sum, e) => sum + e.duration, 0)
   const daysWithEntries = new Set(weekEntries.map(e => e.date)).size
   const avgDaily = daysWithEntries > 0 ? weekTotal / daysWithEntries : 0
-
-  const barData = useMemo(() => {
-    return days.map(day => {
-      const key = formatDate(day)
-      const total = weekEntries
-        .filter(e => e.date === key)
-        .reduce((sum, e) => sum + e.duration, 0)
-      return {
-        day: format(day, 'EEE'),
-        hours: msToHours(total),
-      }
-    })
-  }, [days, weekEntries])
 
   const pieData = useMemo(() => {
     const byProject = new Map<string, number>()
@@ -85,29 +75,13 @@ export default function StatsView() {
         </div>
       </div>
 
-      {/* Weekly Bar Chart */}
-      <div>
-        <h3 className="text-[11px] font-semibold text-stone-500 dark:text-stone-400 mb-2.5 uppercase tracking-wider">This Week</h3>
-        <div className="h-36 bg-white dark:bg-dark-card rounded-xl p-3 border border-stone-100 dark:border-dark-border">
-          <ResponsiveContainer width="100%" height={120} minWidth={0} debounce={1}>
-            <BarChart data={barData}>
-              <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#A8A29E' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: '#A8A29E' }} width={20} axisLine={false} tickLine={false} />
-              <Tooltip
-                formatter={(value) => [`${value}h`, 'Hours']}
-                contentStyle={{
-                  fontSize: 12,
-                  borderRadius: 8,
-                  border: '1px solid #E7E5E4',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                  padding: '6px 10px',
-                }}
-              />
-              <Bar dataKey="hours" fill="#6366F1" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+      {/* Weekly Stacked Chart */}
+      <WeeklyChart
+        entries={weekEntries}
+        projects={activeProjects}
+        weekStartsOn={weekStartsOn}
+        workingDays={workingDays}
+      />
 
       {/* Today by Project */}
       {pieData.length > 0 && (

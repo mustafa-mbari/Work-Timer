@@ -106,6 +106,7 @@ export interface PomodoroState {
 export interface AuthSession {
   userId: string
   email: string
+  displayName?: string
   accessToken: string
   refreshToken: string
   expiresAt: number // Unix timestamp seconds
@@ -180,6 +181,7 @@ export type MessageAction =
   | 'ACCOUNT_SWITCH_CHOICE'
   | 'DIAGNOSE_SYNC'
   | 'CLEAR_AND_RESYNC'
+  | 'POPUP_OPENED'
 
 export interface TimerMessage {
   action: MessageAction

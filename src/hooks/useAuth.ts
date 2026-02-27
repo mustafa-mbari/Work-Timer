@@ -20,6 +20,9 @@ export function useAuth() {
           session: {
             userId: session.user.id,
             email: session.user.email ?? '',
+            displayName: session.user.user_metadata?.full_name
+                      || session.user.user_metadata?.name
+                      || undefined,
             accessToken: session.access_token,
             refreshToken: session.refresh_token ?? '',
             expiresAt: session.expires_at ?? 0,
@@ -38,6 +41,9 @@ export function useAuth() {
           session: {
             userId: session.user.id,
             email: session.user.email ?? '',
+            displayName: session.user.user_metadata?.full_name
+                      || session.user.user_metadata?.name
+                      || undefined,
             accessToken: session.access_token,
             refreshToken: session.refresh_token ?? '',
             expiresAt: session.expires_at ?? 0,

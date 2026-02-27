@@ -4,7 +4,7 @@ import { getSettings, updateSettings } from '@/storage'
 import { useProjects, ProjectLimitError } from '@/hooks/useProjects'
 import { useTags } from '@/hooks/useTags'
 import { useTheme, THEMES } from '@/hooks/useTheme'
-import { MonitorIcon, PlusIcon, XIcon, PencilIcon, DotsIcon, DragHandleIcon, StarIcon } from './Icons'
+import { MonitorIcon, PlusIcon, XIcon, PencilIcon, DotsIcon, DragHandleIcon, StarIcon, CloudDownloadIcon } from './Icons'
 import { PROJECT_COLORS } from '@/constants/colors'
 import { inputClass, labelClass } from '@/constants/styles'
 import ConfirmDialog from './ConfirmDialog'
@@ -23,7 +23,8 @@ export default function SettingsView() {
   const { session, loading: authLoading, signIn, signOut } = useAuth()
   const { isPremium, subscription } = usePremium()
 
-  const [tab, setTab] = useState<SettingsTab>('general')
+  const [tab, setTab] = useState<SettingsTab>('account')
+  const [dataTab, setDataTab] = useState<'projects' | 'tags'>('projects')
   const [showUpgradeForProject, setShowUpgradeForProject] = useState(false)
 
   const [newProjectName, setNewProjectName] = useState('')
@@ -58,6 +59,7 @@ export default function SettingsView() {
   const [diagnostics, setDiagnostics] = useState<SyncDiagnostics | null>(null)
   const [clearingLocal, setClearingLocal] = useState(false)
   const [confirmClear, setConfirmClear] = useState(false)
+  const [copiedUserId, setCopiedUserId] = useState(false)
 
   useEffect(() => {
     getSettings().then(setSettings)
@@ -247,65 +249,50 @@ export default function SettingsView() {
             {/* Theme */}
             <div>
               <label className={labelClass}>Theme</label>
-              <p className="text-[10px] text-stone-400 dark:text-stone-500 mb-1.5">Light</p>
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                {THEMES.filter(t => !t.isDark).map(({ id, label, swatchBg, swatchAccent }) => {
+              <div className="grid grid-cols-7 gap-1.5">
+                {THEMES.map(({ id, label, swatchBg, swatchAccent, isDark }) => {
                   const isActive = theme === id
                   return (
                     <button
                       key={id}
                       onClick={() => setTheme(id)}
                       aria-label={`Set theme to ${label}`}
-                      className={`flex flex-col items-center gap-1.5 py-2.5 rounded-xl border-2 transition-all ${
+                      title={label}
+                      className={`flex flex-col items-center gap-1 py-2 rounded-xl border-2 transition-all ${
                         isActive
                           ? 'border-indigo-500 dark:border-indigo-400 shadow-sm shadow-indigo-500/20'
                           : 'border-stone-200 dark:border-dark-border hover:border-stone-300 dark:hover:border-dark-hover'
                       }`}
                     >
-                      <span className="w-8 h-8 rounded-full border border-black/10 relative flex items-center justify-center" style={{ backgroundColor: swatchBg }}>
-                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: swatchAccent }} />
+                      <span
+                        className="w-6 h-6 rounded-full border relative flex items-center justify-center"
+                        style={{ backgroundColor: swatchBg, borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}
+                      >
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: swatchAccent }} />
                       </span>
-                      <span className="text-[11px] font-medium text-stone-600 dark:text-stone-300">{label}</span>
+                      <span className="text-[9px] font-medium text-stone-500 dark:text-stone-400 leading-tight">{label}</span>
                     </button>
                   )
                 })}
+                <button
+                  onClick={() => setTheme('system')}
+                  aria-label="Set theme to system"
+                  title="System (follows OS)"
+                  className={`flex flex-col items-center gap-1 py-2 rounded-xl border-2 transition-all ${
+                    theme === 'system'
+                      ? 'border-indigo-500 dark:border-indigo-400 shadow-sm shadow-indigo-500/20'
+                      : 'border-stone-200 dark:border-dark-border hover:border-stone-300 dark:hover:border-dark-hover'
+                  }`}
+                >
+                  <span className="w-6 h-6 flex items-center justify-center">
+                    <MonitorIcon className="w-4 h-4 text-stone-400 dark:text-stone-500" />
+                  </span>
+                  <span className="text-[9px] font-medium text-stone-500 dark:text-stone-400 leading-tight">System</span>
+                </button>
               </div>
-              <p className="text-[10px] text-stone-400 dark:text-stone-500 mb-1.5">Dark</p>
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                {THEMES.filter(t => t.isDark).map(({ id, label, swatchBg, swatchAccent }) => {
-                  const isActive = theme === id
-                  return (
-                    <button
-                      key={id}
-                      onClick={() => setTheme(id)}
-                      aria-label={`Set theme to ${label}`}
-                      className={`flex flex-col items-center gap-1.5 py-2.5 rounded-xl border-2 transition-all ${
-                        isActive
-                          ? 'border-indigo-500 dark:border-indigo-400 shadow-sm shadow-indigo-500/20'
-                          : 'border-stone-200 dark:border-dark-border hover:border-stone-300 dark:hover:border-dark-hover'
-                      }`}
-                    >
-                      <span className="w-8 h-8 rounded-full border border-white/10 relative flex items-center justify-center" style={{ backgroundColor: swatchBg }}>
-                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: swatchAccent }} />
-                      </span>
-                      <span className="text-[11px] font-medium text-stone-600 dark:text-stone-300">{label}</span>
-                    </button>
-                  )
-                })}
-              </div>
-              <button
-                onClick={() => setTheme('system')}
-                aria-label="Set theme to system"
-                className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl border-2 transition-all text-sm font-medium ${
-                  theme === 'system'
-                    ? 'border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400 shadow-sm shadow-indigo-500/20'
-                    : 'border-stone-200 dark:border-dark-border text-stone-500 dark:text-stone-400 hover:border-stone-300 dark:hover:border-dark-hover'
-                }`}
-              >
-                <MonitorIcon className="w-3.5 h-3.5" />
-                System (follows OS)
-              </button>
             </div>
+
+            <hr className="border-stone-100 dark:border-dark-border" />
 
             {/* Working Days */}
             <div>
@@ -319,6 +306,8 @@ export default function SettingsView() {
               </div>
             </div>
 
+            <hr className="border-stone-100 dark:border-dark-border" />
+
             {/* Week Start Day */}
             <div>
               <label className={labelClass}>Week Starts On</label>
@@ -330,6 +319,8 @@ export default function SettingsView() {
                 ))}
               </div>
             </div>
+
+            <hr className="border-stone-100 dark:border-dark-border" />
 
             {/* Daily & Weekly Targets */}
             <div className="grid grid-cols-2 gap-3">
@@ -354,6 +345,8 @@ export default function SettingsView() {
                 />
               </div>
             </div>
+
+            <hr className="border-stone-100 dark:border-dark-border" />
 
             {/* Floating Widget */}
             <div>
@@ -399,6 +392,8 @@ export default function SettingsView() {
               </p>
             </div>
 
+            <hr className="border-stone-100 dark:border-dark-border" />
+
             {/* Minimum Entry Duration */}
             <div>
               <label className={labelClass}>Minimum Entry Duration</label>
@@ -416,6 +411,8 @@ export default function SettingsView() {
                 Entries shorter than this are automatically discarded.
               </p>
             </div>
+
+            <hr className="border-stone-100 dark:border-dark-border" />
 
             {/* Pomodoro */}
             <div>
@@ -456,6 +453,8 @@ export default function SettingsView() {
                 Sound notifications
               </label>
             </div>
+
+            <hr className="border-stone-100 dark:border-dark-border" />
 
             {/* Weekly Reminder */}
             <div>
@@ -530,6 +529,8 @@ export default function SettingsView() {
               </div>
             </div>
 
+            <hr className="border-stone-100 dark:border-dark-border" />
+
             {/* Keyboard Shortcuts */}
             <div>
               <label className={labelClass}>Keyboard Shortcuts</label>
@@ -557,8 +558,25 @@ export default function SettingsView() {
         {/* ── DATA TAB ── */}
         {tab === 'data' && (
           <>
+            {/* Sub-tab bar */}
+            <div className="flex gap-1 bg-stone-100 dark:bg-dark-card rounded-lg p-0.5">
+              {(['projects', 'tags'] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setDataTab(t)}
+                  className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-all capitalize ${
+                    dataTab === t
+                      ? 'bg-white dark:bg-dark-elevated text-stone-900 dark:text-stone-100 shadow-sm'
+                      : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+
             {/* Projects */}
-            <div>
+            {dataTab === 'projects' && <div>
               <div className="flex justify-between items-center mb-2.5">
                 <label className={labelClass + ' mb-0'}>Projects</label>
                 {archivedProjects.length > 0 && (
@@ -773,13 +791,10 @@ export default function SettingsView() {
                   <PlusIcon className="w-4 h-4" />
                 </button>
               </div>
-            </div>
-
-            {/* Divider */}
-            <div className="border-t border-stone-100 dark:border-dark-border" />
+            </div>}
 
             {/* Tags */}
-            <div>
+            {dataTab === 'tags' && <div>
               <div className="flex justify-between items-center mb-2.5">
                 <label className={labelClass + ' mb-0'}>Tags</label>
                 {archivedTags.length > 0 && (
@@ -965,7 +980,7 @@ export default function SettingsView() {
                   <PlusIcon className="w-4 h-4" />
                 </button>
               </div>
-            </div>
+            </div>}
           </>
         )}
 
@@ -1036,6 +1051,8 @@ export default function SettingsView() {
                   </div>
                 )}
 
+                <hr className="border-stone-100 dark:border-dark-border" />
+
                 {/* Open Dashboard */}
                 <button
                   onClick={() => chrome.tabs.create({ url: `${WEBSITE_URL}/dashboard` })}
@@ -1047,6 +1064,8 @@ export default function SettingsView() {
                   </svg>
                   Open Dashboard
                 </button>
+
+                <hr className="border-stone-100 dark:border-dark-border" />
 
                 {/* Cloud Sync */}
                 {isPremium && (
@@ -1062,14 +1081,18 @@ export default function SettingsView() {
                       )}
                     </div>
 
-                    {/* Sync now */}
+                    {/* Sync from cloud */}
                     <button
                       onClick={handleSyncNow}
                       disabled={syncing || uploading}
                       className="w-full border border-indigo-200 dark:border-indigo-500/30 text-indigo-600 dark:text-indigo-400 py-2 rounded-lg text-xs font-medium hover:bg-indigo-50 dark:hover:bg-indigo-500/10 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
                     >
-                      {syncing && <span className="w-3 h-3 border border-indigo-500 border-t-transparent rounded-full animate-spin" />}
-                      {syncing ? 'Syncing…' : 'Sync now'}
+                      {syncing ? (
+                        <span className="w-3 h-3 border border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <CloudDownloadIcon className="w-3.5 h-3.5" />
+                      )}
+                      {syncing ? 'Syncing…' : 'Sync from cloud'}
                     </button>
 
                     {/* Re-upload all */}
@@ -1124,7 +1147,24 @@ export default function SettingsView() {
                         {diagnostics.sessionUserId && (
                           <div className="flex justify-between gap-2">
                             <span className="text-stone-400 flex-shrink-0">User ID</span>
-                            <span className="text-stone-500 break-all text-right">{diagnostics.sessionUserId}</span>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(diagnostics.sessionUserId!)
+                                setCopiedUserId(true)
+                                setTimeout(() => setCopiedUserId(false), 2000)
+                              }}
+                              className="text-stone-500 hover:text-indigo-500 transition-colors text-right flex items-center gap-1"
+                              title="Click to copy full User ID"
+                            >
+                              <span>{diagnostics.sessionUserId.slice(0, 8)}...{diagnostics.sessionUserId.slice(-4)}</span>
+                              {copiedUserId ? (
+                                <span className="text-emerald-500 text-[9px]">Copied!</span>
+                              ) : (
+                                <svg className="w-3 h-3 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                              )}
+                            </button>
                           </div>
                         )}
                         <div className="flex justify-between">

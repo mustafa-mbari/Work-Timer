@@ -54,7 +54,7 @@ Track your work time with stopwatch, manual entry, and Pomodoro modes. Start wit
 - **Default Tag per Project** -- Link a tag to a project; selecting the project auto-selects its linked tag
 - **Entry Links** -- Attach URLs to time entries (opens in new tab)
 - **Idle Detection** -- Prompt to keep or discard idle time
-- **Export** -- CSV and Excel export with auto-sized columns
+- **Export** -- CSV, Excel, and PDF export. PDF reports include user info, summary stats, weekly stacked bar chart, project/tag breakdowns with percentages, daily summary table, and detailed entries with tags column. Branded footer with page numbers.
 - **Browser Integration** -- Floating timer widget, timer in tab title, right-click context menu
 
 ### Plans & Pricing

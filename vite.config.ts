@@ -21,6 +21,7 @@ export default defineConfig({
           recharts: ['recharts'],
           xlsx: ['xlsx'],
           supabase: ['@supabase/supabase-js'],
+          jspdf: ['jspdf', 'jspdf-autotable'],
         },
       },
     },

@@ -20,7 +20,7 @@ Work-Timer is a Chrome Extension (Manifest V3) + Next.js companion website for t
 - **Sync:** Supabase (push/pull with sync queue, Realtime channels)
 - **Auth:** Supabase Auth (session bridged from website via content script `postMessage` relay or direct `chrome.runtime.sendMessage`)
 - **Charts:** Recharts (lazy loaded)
-- **Export:** xlsx (dynamic import) + file-saver
+- **Export:** xlsx (dynamic import) + jsPDF/jspdf-autotable (dynamic import) + file-saver
 - **IDs:** nanoid
 - **Dates:** date-fns
 - **Font:** Inter Variable (`@fontsource-variable/inter`)
@@ -189,8 +189,8 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 - `useTimer` uses event-driven `TIMER_SYNC` messages (no 5s polling)
 - Premium status cached in module-level variable with `chrome.storage.onChanged` invalidation
 - `React.lazy()` for WeekView, StatsView, SettingsView with `<Suspense>`
-- Dynamic `import('xlsx')` inside export function (not top-level)
-- Vite `manualChunks`: recharts (366KB), xlsx (429KB), supabase (170KB) -- loaded on demand
+- Dynamic `import('xlsx')` and `import('jspdf')` inside export functions (not top-level)
+- Vite `manualChunks`: recharts (290KB), xlsx (429KB), jspdf (418KB), supabase (170KB) -- loaded on demand
 - Single multiplexed Realtime channel (1 connection per user, not 4)
 - Conditional pull via `has_changes_since()` RPC -- skips full pull when nothing changed
 - Selective column pulls (explicit `.select()` instead of `select('*')`)
@@ -220,6 +220,25 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 - **`TimerWidget.tsx`**: Inline form on entries page with Stopwatch/Manual/Pomodoro tabs. Duration mode has typeable `<input type="number">` for hours/minutes with +/- stepper buttons
 - **`EntryFormDialog.tsx`**: Modal dialog for editing/adding entries. Same typeable duration inputs
 - Both derive `entry.date` from `startMs` using local date (not UTC) and anchor duration-mode timestamps to the selected date
+
+### PDF Export (`src/utils/export.ts`)
+
+`exportPDF()` generates a comprehensive A4 report with 8 sections:
+
+1. **Header** -- "Work Timer" branding + date range (left), user display name + email (right)
+2. **Summary Box** -- Bordered box with Total Hours, Entries, Projects, Daily Average
+3. **Weekly Bar Chart** -- Stacked bars drawn with jsPDF rect() primitives, project-colored segments, midnight-crossing splitting, today highlight, hour labels, legend
+4. **Project Breakdown** -- 2-column layout with colored circles, hours, and percentages
+5. **Tag Breakdown** -- Same layout for tags (resolves tag IDs to names via Tag[] parameter)
+6. **Daily Summary Table** -- autoTable with Day, Date, Hours, Entries, Projects + bold totals row
+7. **Entries Table** -- autoTable with Date, Start, End, Duration, Project, Tags, Description
+8. **Footer** -- `w-timer.com` + `info@w-timer.com` (left), generation timestamp (center), page numbers (right)
+
+Signature: `exportPDF(entries, projects, tags, filename, dateRange, options?)` where options includes `userName`, `userEmail`, `weekStartDay`, `workingDays`.
+
+`ExportMenu.tsx` uses `useAuth()`, `useTags()`, `useSettings()` hooks to gather all data internally (no prop drilling from parent components).
+
+`AuthSession` type includes optional `displayName` extracted from `session.user.user_metadata.full_name` or `.name` (populated by OAuth providers like Google).
 
 ### Sync Engine (`src/sync/`)
 

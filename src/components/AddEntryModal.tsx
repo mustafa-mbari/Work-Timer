@@ -5,6 +5,7 @@ import { useTags } from '@/hooks/useTags'
 import { generateId } from '@/utils/id'
 import { saveEntry } from '@/storage'
 import ProjectSelector from './ProjectSelector'
+import TagSelect from './TagSelect'
 import { format, parseISO } from 'date-fns'
 import { PROJECT_COLORS } from '@/constants/colors'
 import { inputClass, labelClass, addInputClass } from '@/constants/styles'
@@ -266,16 +267,7 @@ export default function AddEntryModal({ date: initialDate, onSave, onClose }: Ad
           <div>
             <label className={labelClass}>Tag</label>
             <div className="flex gap-2">
-              <select
-                value={selectedTagId}
-                onChange={e => { setSelectedTagId(e.target.value); setShowNewTag(false) }}
-                className={`${inputClass} flex-1 appearance-none`}
-              >
-                <option value="">No Tag</option>
-                {tags.map(t => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </select>
+              <TagSelect tags={tags} value={selectedTagId} onChange={(id) => { setSelectedTagId(id); setShowNewTag(false) }} className="flex-1" />
               <button
                 onClick={() => { setShowNewTag(!showNewTag); setShowNewProject(false) }}
                 className={plusBtnClass(showNewTag)}

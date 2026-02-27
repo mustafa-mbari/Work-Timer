@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import type { TimeEntry, Project } from '@/types'
-import { exportCSV, exportExcel } from '@/utils/export'
+import { exportCSV, exportExcel, exportPDF } from '@/utils/export'
 import { DownloadIcon } from './Icons'
 import { useToast } from './Toast'
 import { usePremium } from '@/hooks/usePremium'
+import { useAuth } from '@/hooks/useAuth'
+import { useTags } from '@/hooks/useTags'
+import { useSettings } from '@/hooks/useSettings'
 import UpgradePrompt from './UpgradePrompt'
 
 interface ExportMenuProps {
@@ -17,10 +20,13 @@ export default function ExportMenu({ entries, projects, filename }: ExportMenuPr
   const [showUpgrade, setShowUpgrade] = useState(false)
   const { showToast } = useToast()
   const { isPremium } = usePremium()
+  const { session } = useAuth()
+  const { tags } = useTags()
+  const { settings } = useSettings()
 
   const handleExportCSV = () => {
     try {
-      exportCSV(entries, projects, filename)
+      exportCSV(entries, projects, filename, tags)
       showToast('CSV file exported successfully', 'success')
       setOpen(false)
     } catch (err) {
@@ -30,8 +36,25 @@ export default function ExportMenu({ entries, projects, filename }: ExportMenuPr
 
   const handleExportExcel = async () => {
     try {
-      await exportExcel(entries, projects, filename)
+      await exportExcel(entries, projects, filename, tags)
       showToast('Excel file exported successfully', 'success')
+      setOpen(false)
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Export failed', 'error')
+    }
+  }
+
+  const handleExportPDF = async () => {
+    try {
+      const dates = entries.map(e => e.date).sort()
+      const dateRange = { start: dates[0], end: dates[dates.length - 1] }
+      await exportPDF(entries, projects, tags, filename, dateRange, {
+        userName: session?.displayName,
+        userEmail: session?.email,
+        weekStartDay: (settings?.weekStartDay ?? 1) as 0 | 1,
+        workingDays: settings?.workingDays ?? 5,
+      })
+      showToast('PDF file exported successfully', 'success')
       setOpen(false)
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Export failed', 'error')
@@ -44,7 +67,7 @@ export default function ExportMenu({ entries, projects, filename }: ExportMenuPr
     <>
       <UpgradePrompt
         isOpen={showUpgrade}
-        feature="CSV & Excel export"
+        feature="CSV, Excel & PDF export"
         onClose={() => setShowUpgrade(false)}
       />
 
@@ -79,6 +102,12 @@ export default function ExportMenu({ entries, projects, filename }: ExportMenuPr
                 className="w-full text-left px-3.5 py-2 text-xs font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-dark-hover transition-colors"
               >
                 Excel (.xlsx)
+              </button>
+              <button
+                onClick={handleExportPDF}
+                className="w-full text-left px-3.5 py-2 text-xs font-medium text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-dark-hover transition-colors"
+              >
+                PDF (.pdf)
               </button>
             </div>
           </>

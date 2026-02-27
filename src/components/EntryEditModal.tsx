@@ -4,6 +4,7 @@ import { XIcon } from './Icons'
 import { useProjects } from '@/hooks/useProjects'
 import { useTags } from '@/hooks/useTags'
 import ProjectSelector from './ProjectSelector'
+import TagSelect from './TagSelect'
 
 interface EntryEditModalProps {
   entry: TimeEntry
@@ -200,17 +201,7 @@ export default function EntryEditModal({ entry, onSave, onDelete, onClose }: Ent
               />
             )}
             {activeTab === 'tag' && (
-              <select
-                value={selectedTagId}
-                onChange={(e) => setSelectedTagId(e.target.value)}
-                className="w-full border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
-                aria-label="Select tag"
-              >
-                <option value="">No Tag</option>
-                {tags.map((tag) => (
-                  <option key={tag.id} value={tag.id}>{tag.name}</option>
-                ))}
-              </select>
+              <TagSelect tags={tags} value={selectedTagId} onChange={setSelectedTagId} />
             )}
             {activeTab === 'link' && (
               <input
