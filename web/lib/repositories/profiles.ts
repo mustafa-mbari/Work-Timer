@@ -31,12 +31,3 @@ export async function updateProfileDisplayName(userId: string, displayName: stri
     .eq('id', userId)
 }
 
-export async function getAllProfiles(): Promise<Pick<Profile, 'id' | 'display_name' | 'role'>[]> {
-  const supabase = await createServiceClient()
-  const { data } = await supabase
-    .from('profiles')
-    .select('id, display_name, role')
-    .range(0, 49999)
-    .returns<Pick<Profile, 'id' | 'display_name' | 'role'>[]>()
-  return data ?? []
-}

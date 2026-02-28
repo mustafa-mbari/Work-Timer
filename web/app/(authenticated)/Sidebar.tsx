@@ -39,7 +39,6 @@ import { cn } from '@/lib/utils'
 interface UserInfo {
   email: string
   displayName: string | null
-  role: 'user' | 'admin'
 }
 
 interface Props {
