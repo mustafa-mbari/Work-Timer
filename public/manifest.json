@@ -48,6 +48,7 @@
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'none'"
   },
+  "privacy_policy": "https://w-timer.com/privacy",
   "commands": {
     "_execute_action": {
       "suggested_key": {
