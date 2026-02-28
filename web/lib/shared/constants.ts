@@ -2,6 +2,7 @@
 
 export const FREE_LIMITS = {
   maxProjects: 5,
+  maxTags: 5,
   historyDays: 14,
   allowExport: false,
   allowCloudSync: false,
@@ -11,6 +12,7 @@ export const FREE_LIMITS = {
 
 export const PREMIUM_LIMITS = {
   maxProjects: Infinity,
+  maxTags: Infinity,
   historyDays: Infinity,
   allowExport: true,
   allowCloudSync: true,

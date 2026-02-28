@@ -62,7 +62,7 @@ Track your work time with stopwatch, manual entry, and Pomodoro modes. Start wit
 
 | Plan | Monthly | Yearly | Highlights |
 | ---- | ------- | ------ | ---------- |
-| **Free** | $0 | — | 5 projects · 14-day history · local only · all timer modes |
+| **Free** | $0 | — | 5 projects · 5 tags · 14-day history · local only · all timer modes |
 | **Pro** | $1.99 | $17.99 | Unlimited projects & tags · cloud sync · granular sync controls · analytics & earnings · CSV export |
 | **Team (≤10)** | $29 | $260 | Everything in Pro + group workspace · timesheet approval · team reports |
 | **Team (≤20)** | $49 | $440 | Same as Team (10) with up to 20 members |
@@ -232,6 +232,8 @@ pnpm run lint
 - **Corporate proxy safe**: Static assets served from trusted CDN domain via `assetPrefix`; all auth flows use server-side API routes (no browser-to-Supabase calls); extension bridge uses content script relay (no extension ID dependency).
 - **Groups performance**: Batch member count queries (no N+1), parallel data fetching, debounced preview requests, granular refresh (member-only vs full).
 - **Modular service worker**: Background split into 7 focused modules (timer, pomodoro, idle, context menus, reminders, storage, UI) instead of a single monolithic file.
+- **Auth session hardening**: Proactive token refresh every 60 minutes; free users auto-logged out after 7 days of inactivity.
+- **Free plan limit enforcement**: Projects and tags capped at 5 total (active + archived) to prevent archive-then-create bypass.
 - **WCAG AA compliant**: All 6 themes verified for color contrast ratios (4.5:1+ for text).
 - **Test coverage**: 83 tests across storage, sync queue, timer engine, and utility functions via Vitest with chrome.storage.local mock.
 

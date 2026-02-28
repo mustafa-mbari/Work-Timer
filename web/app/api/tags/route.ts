@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuthApi } from '@/lib/services/auth'
-import { getUserTags, createTag, reorderTags } from '@/lib/repositories/tags'
+import { isPremiumUser } from '@/lib/services/billing'
+import { getUserTags, countUserTags, createTag, reorderTags } from '@/lib/repositories/tags'
 import { createTagSchema, reorderSchema, parseBody } from '@/lib/validation'
+
+const FREE_TAG_LIMIT = 5
 
 export async function GET() {
   const user = await requireAuthApi()
@@ -18,6 +21,18 @@ export async function POST(request: NextRequest) {
   const body = await request.json()
   const parsed = parseBody(createTagSchema, body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error }, { status: 400 })
+
+  // Enforce tag limit for free users
+  const premium = await isPremiumUser(user.id)
+  if (!premium) {
+    const count = await countUserTags(user.id)
+    if (count >= FREE_TAG_LIMIT) {
+      return NextResponse.json(
+        { error: `Free plan is limited to ${FREE_TAG_LIMIT} tags. Upgrade to Premium for unlimited tags.` },
+        { status: 403 },
+      )
+    }
+  }
 
   const { error } = await createTag(user.id, parsed.data)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

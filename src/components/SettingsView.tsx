@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import type { Settings, SyncDiagnostics, SyncPreferences } from '@/types'
 import { getSettings, updateSettings, getSyncPreferences, updateSyncPreferences, DEFAULT_SYNC_PREFERENCES } from '@/storage'
 import { useProjects, ProjectLimitError } from '@/hooks/useProjects'
-import { useTags } from '@/hooks/useTags'
+import { useTags, TagLimitError } from '@/hooks/useTags'
 import { useTheme, THEMES } from '@/hooks/useTheme'
 import { MonitorIcon, PlusIcon, XIcon, PencilIcon, DotsIcon, DragHandleIcon, StarIcon, CloudDownloadIcon } from './Icons'
 import { PROJECT_COLORS } from '@/constants/colors'
@@ -26,6 +26,7 @@ export default function SettingsView() {
   const [tab, setTab] = useState<SettingsTab>('account')
   const [dataTab, setDataTab] = useState<'projects' | 'tags'>('projects')
   const [showUpgradeForProject, setShowUpgradeForProject] = useState(false)
+  const [showUpgradeForTag, setShowUpgradeForTag] = useState(false)
 
   const [newProjectName, setNewProjectName] = useState('')
   const [newProjectColor, setNewProjectColor] = useState(PROJECT_COLORS[0])
@@ -197,9 +198,15 @@ export default function SettingsView() {
 
   const handleCreateTag = async () => {
     if (!newTagName.trim()) return
-    await createTag(newTagName.trim(), newTagColor)
-    setNewTagName('')
-    setNewTagColor(PROJECT_COLORS[0])
+    try {
+      await createTag(newTagName.trim(), newTagColor)
+      setNewTagName('')
+      setNewTagColor(PROJECT_COLORS[0])
+    } catch (err) {
+      if (err instanceof TagLimitError) {
+        setShowUpgradeForTag(true)
+      }
+    }
   }
 
   const handleSaveTag = async () => {
@@ -1292,6 +1299,12 @@ export default function SettingsView() {
         isOpen={showUpgradeForProject}
         feature="Unlimited projects"
         onClose={() => setShowUpgradeForProject(false)}
+      />
+
+      <UpgradePrompt
+        isOpen={showUpgradeForTag}
+        feature="Unlimited tags"
+        onClose={() => setShowUpgradeForTag(false)}
       />
 
       <ConfirmDialog

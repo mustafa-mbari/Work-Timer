@@ -375,6 +375,24 @@ GroupsView (client orchestrator, AlertDialog for delete group confirmation)
 
 **Migrations**: `013_groups.sql` (tables), `018_group_sharing.sql` (sharing settings + RPCs), `026_group_shares.sql` (snapshot table), `027_share_approval_workflow.sql` (approval columns + schedule settings)
 
+### Auth Session Hardening
+
+- **Proactive token refresh**: `SUBSCRIPTION_ALARM` (every 60 min) calls `supabase.auth.refreshSession()` with 120-second buffer before expiry, preventing `auth.uid()` NULL errors on server-side RLS
+- **Free user auto-logout**: Free users are automatically signed out 7 days after their last login. Tracked via `lastLoginAt` timestamp in `chrome.storage.local`. Checked on startup and every `SUBSCRIPTION_ALARM` cycle
+- **Login stamp**: `stampLoginTime()` called in both `AUTH_LOGIN` handlers (`onMessage` internal + `onMessageExternal` external) in `src/background/background.ts`
+- **Session expiry check**: `checkFreeSessionExpiry()` in `src/auth/authState.ts` — reads cached subscription, skips premium users, compares `lastLoginAt` against 7-day window
+- Premium users (active/trialing, non-free plan) are never auto-logged out
+
+### Free Plan Limits
+
+- **Projects**: Max 5 (active + archived combined) — enforced in `useProjects.ts` create function
+- **Tags**: Max 5 (active + archived combined) — enforced in `useTags.ts` create function + `web/app/api/tags/route.ts` POST handler
+- **Constants**: `FREE_LIMITS.maxProjects` and `FREE_LIMITS.maxTags` in `shared/constants.ts` (extension) and `web/lib/shared/constants.ts` (website)
+- **Archive bypass prevention**: Limit check counts ALL items (not just active) to prevent archive-then-create workaround
+- **Error classes**: `ProjectLimitError` (`useProjects.ts`) and `TagLimitError` (`useTags.ts`) thrown on limit exceeded
+- **UI**: UpgradePrompt modal shown in SettingsView when limit reached (both projects and tags)
+- Premium users: unlimited projects and tags (`Infinity`)
+
 ### Security
 
 - All API inputs validated with Zod schemas (`web/lib/validation.ts`)

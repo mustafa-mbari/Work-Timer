@@ -51,8 +51,8 @@ export function useProjects() {
   const create = useCallback(async (name: string, color: string) => {
     const sub = await getCachedSubscription()
     const limits = getLimits(sub)
-    const currentActive = projects.filter(p => !p.archived)
-    if (currentActive.length >= limits.maxProjects) {
+    // Count ALL projects (active + archived) to prevent bypass via archive-then-create
+    if (projects.length >= limits.maxProjects) {
       throw new ProjectLimitError()
     }
     const project: Project = {
