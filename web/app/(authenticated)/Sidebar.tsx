@@ -13,8 +13,6 @@ import {
   CreditCard,
   Settings2,
   Zap,
-  Shield,
-  FlaskConical,
   PanelLeft,
   Check,
   type LucideIcon,
@@ -274,28 +272,7 @@ export default function AppSidebar({ isAdmin, isPremium, isAllIn, userInfo }: Pr
           ))}
         </div>
 
-        {/* Admin nav */}
-        {isAdmin && (
-          <>
-            <SidebarSeparator className="my-3" />
-            <div className="flex flex-col gap-1">
-              <NavItem
-                href="/admin"
-                label={tn('adminPanel')}
-                icon={Shield}
-                isActive={isActive('/admin')}
-                open={open}
-              />
-              <NavItem
-                href="/ui-test"
-                label="UI Test"
-                icon={FlaskConical}
-                isActive={isActive('/ui-test')}
-                open={open}
-              />
-            </div>
-          </>
-        )}
+
       </SidebarContent>
 
       <SidebarFooterContent isPremium={isPremium} />

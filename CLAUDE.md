@@ -219,7 +219,6 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 - `projects.ts` -- CRUD + reorder + default tag linking (`default_tag_id`)
 - `tags.ts` -- CRUD + reorder + color + hourly rate + earnings toggle
 - `earnings.ts` -- `get_earnings_report` RPC with `groupBy` parameter ('tag' | 'project')
-- `admin.ts` -- RPC calls (`get_platform_stats`, `get_active_users`, `get_user_growth`, etc.) + auth admin
 - `analytics.ts` -- `get_user_analytics` RPC
 - `groups.ts` -- CRUD + member management + join code + `GroupWithMeta` type (includes `role`, `member_count`, `share_frequency`, `share_deadline_day`)
 - `groupShares.ts` -- Timesheet approval workflow: `getSharesByStatus()`, `autoCreateOpenShare()`, `submitShare()`, `reviewShare()`, snapshot JSONB entries
@@ -229,7 +228,7 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 **Services** (business logic):
 
 - `auth.ts` -- `requireAuth()`, `getUser()` (React `cache()` wrapped), `requireAdminApi()`, `requireAuthApi()`
-- `analytics.ts` -- `getAdminStats()` (aggregates 11 RPC calls)
+- `analytics.ts` -- `getUserAnalytics()` (wraps `get_user_analytics` RPC)
 - `billing.ts` -- checkout/portal helpers
 - `earnings.ts` -- `getEarningsReport()` with groupBy passthrough, `formatEarningsCsv()`
 
@@ -516,9 +515,9 @@ GroupsView (client orchestrator, AlertDialog for delete group confirmation)
 - Website default in `dashboard/page.tsx`: `settings?.working_days ?? 5`
 - `WeeklyProjectChart` uses `Array.from({ length: count })` from week start — do NOT use bitmask logic (`1 << d.getDay()`)
 
-### UI Test Lab (`web/app/(authenticated)/ui-test/`)
+### UI Test Lab (`admin/app/(admin)/ui-test/`)
 
-- Admin-only page visible in the sidebar; protected by `requireAdminPage()` in `page.tsx`
+- Admin-only page in the standalone admin app; protected by `requireAdmin()` in `page.tsx`
 - `UITestLab.tsx` — single `'use client'` file with all mock data + variant components inline
 - Tabs: Entries List (4 variants), Timer Widget (9 + 3 improved variants), Quick Add (4), Dashboard (16), Project Picker (4), Daily Goal (10)
 - Timer improved variants include tag chip multi-select and typeable duration inputs

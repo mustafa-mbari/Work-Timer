@@ -27,19 +27,6 @@ export async function requireAuth(): Promise<User> {
 }
 
 /**
- * Require an admin user. Redirects non-admins to dashboard.
- * For use in Server Components (layouts/pages).
- */
-export async function requireAdminPage(): Promise<User> {
-  const user = await requireAuth()
-  const role = await getProfileRole(user.id)
-  if (role !== 'admin') {
-    redirect('/dashboard')
-  }
-  return user
-}
-
-/**
  * Require an admin user for API routes.
  * Returns the service-role Supabase client if admin, null otherwise.
  * For use in API route handlers.
