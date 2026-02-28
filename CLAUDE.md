@@ -34,7 +34,7 @@ Work-Timer is a Chrome Extension (Manifest V3) + Next.js companion website for t
 - **UI Components:** shadcn/ui (Radix primitives)
 - **Charts:** Recharts
 - **Auth & DB:** Supabase (`@supabase/ssr` v0.8+ for user client, `@supabase/supabase-js` v2.97+ for service role client)
-- **Payments:** Stripe v20 (checkout sessions, billing portal, webhooks; API version `2026-01-28.clover`)
+- **Payments:** Stripe v20 (checkout sessions, billing portal, webhooks; API version `2026-02-25.clover`)
 - **Validation:** Zod (all API route inputs)
 - **Icons:** Lucide React
 
@@ -486,7 +486,7 @@ GroupsView (client orchestrator, AlertDialog for delete group confirmation)
 
 - `valid_from` field required on insert (no DB default)
 
-### Stripe API (v20, API `2026-01-28.clover`)
+### Stripe API (v20, API `2026-02-25.clover`)
 
 - `Subscription.current_period_end` moved to item-level: use `sub.items.data[0]?.current_period_end`
 - `Invoice.subscription` moved to `invoice.parent?.subscription_details?.subscription`
