@@ -64,9 +64,9 @@ export default memo(function EntryList({ entries, projects, onUpdate, onDelete, 
                 aria-label={`Edit ${project?.name ?? 'No Project'}, ${formatDurationShort(entry.duration)}`}
               >
                 <div className="text-[13px] font-medium text-stone-800 dark:text-stone-200 truncate">
-                  {project?.name ?? <span className="text-stone-400 dark:text-stone-500">No Project</span>}
+                  {project?.name ?? <span className="text-stone-400 dark:text-stone-400">No Project</span>}
                 </div>
-                <div className="text-[11px] text-stone-400 dark:text-stone-500 mt-0.5 truncate">
+                <div className="text-[11px] text-stone-400 dark:text-stone-400 mt-0.5 truncate">
                   {formatTime(entry.startTime)} – {formatTime(entry.endTime)}
                   {entry.description && <span className="ml-1.5">· {entry.description}</span>}
                 </div>
@@ -77,7 +77,7 @@ export default memo(function EntryList({ entries, projects, onUpdate, onDelete, 
               {entry.link && (
                 <button
                   onClick={() => chrome.tabs.create({ url: entry.link! })}
-                  className="p-1.5 rounded-lg text-stone-400 hover:text-indigo-500 hover:bg-indigo-50 dark:text-stone-500 dark:hover:text-indigo-400 dark:hover:bg-indigo-500/10 flex-shrink-0 transition-colors"
+                  className="p-1.5 rounded-lg text-stone-400 hover:text-indigo-500 hover:bg-indigo-50 dark:text-stone-400 dark:hover:text-indigo-400 dark:hover:bg-indigo-500/10 flex-shrink-0 transition-colors"
                   aria-label="Open link"
                   title={entry.link}
                 >
@@ -87,7 +87,7 @@ export default memo(function EntryList({ entries, projects, onUpdate, onDelete, 
               {onContinue && (
                 <button
                   onClick={() => onContinue(entry.id, entry.projectId, entry.description)}
-                  className="p-1.5 rounded-lg text-stone-400 hover:text-indigo-500 hover:bg-indigo-50 dark:text-stone-500 dark:hover:text-indigo-400 dark:hover:bg-indigo-500/10 flex-shrink-0 transition-colors"
+                  className="p-1.5 rounded-lg text-stone-400 hover:text-indigo-500 hover:bg-indigo-50 dark:text-stone-400 dark:hover:text-indigo-400 dark:hover:bg-indigo-500/10 flex-shrink-0 transition-colors"
                   aria-label="Continue timing this task"
                   title="Continue"
                 >

@@ -129,12 +129,14 @@ The background script mixes orchestration (message routing) with business logic 
 ### 2.2 Naming Conventions
 
 Naming is generally **consistent and clear**:
+
 - Hooks: `use{Feature}` pattern (useTimer, useProjects, useEntries, useTags, useSettings, useAuth, usePremium, useTheme)
 - Storage keys: descriptive (`entries_YYYY-MM-DD`, `timerState`, `syncQueue`, `subscriptionInfo`)
 - Message actions: SCREAMING_SNAKE_CASE (`START_TIMER`, `TIMER_SYNC`, `AUTH_LOGIN`)
 - Components: PascalCase, files match component name
 
 **Minor issues:**
+
 - `background/ui.ts` is misleadingly named — it contains badge updates and broadcast helpers, not UI components. Consider `badgeAndBroadcast.ts` or `backgroundUi.ts`.
 - `background/storage.ts` only exports 6 helper functions that duplicate what `src/storage/index.ts` already provides. Some of these (getTimerState, setTimerState) are imported from storage/index.ts while others (getIdleInfo, getPomodoroState) are defined locally. Inconsistent.
 
@@ -152,6 +154,7 @@ Naming is generally **consistent and clear**:
 ### 2.4 Error Handling Review
 
 **Good patterns:**
+
 - `storageSet()` in `storage/index.ts:62` — exponential backoff retry with quota detection
 - `syncEngine.ts:32` — `isRlsUsingError()` detects RLS policy failures and skips rather than blocking
 - `ErrorBoundary.tsx` — catches React render errors with user-friendly message and retry button
@@ -159,6 +162,7 @@ Naming is generally **consistent and clear**:
 - Background message handler wraps all actions in try/catch at `background.ts:826`
 
 **Problem patterns:**
+
 - **Silent catch in content.ts:608** — `catch { }` swallows all errors during init without logging
 - **`void` fire-and-forget** used extensively in background.ts (e.g., `void syncAll()`, `void broadcastTimerSync()`) — errors from these are never surfaced to the user
 - **No error boundary per view** — a crash in StatsView takes down the entire popup
@@ -198,11 +202,13 @@ Naming is generally **consistent and clear**:
 #### Content Security Policy
 
 - **~~No CSP configured~~** **FIXED** — Explicit CSP added to `manifest.json`:
+
   ```json
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'none'"
   }
   ```
+
 - **No CSP meta tag** in `popup.html`. The popup loads external font files from bundled `@fontsource-variable/inter` (local), so no external resource concerns.
 
 #### ~~Notification Icon Path Bug~~ (FIXED)
@@ -249,6 +255,7 @@ async function broadcastTimerSync(state: TimerState, ...): Promise<void> {
 ~~**Problem:** This sends a message to every open tab every 30 seconds.~~
 
 **FIXED** — Implemented tab registration pattern:
+
 1. Content scripts send `CONTENT_SCRIPT_READY` message on init, registering their `tab.id` in an `activeContentTabs` Set
 2. `broadcastTimerSync()` now iterates only `activeContentTabs` instead of all tabs
 3. Failed sends auto-remove the tab from the set; `chrome.tabs.onRemoved` cleans up closed tabs
@@ -258,6 +265,7 @@ async function broadcastTimerSync(state: TimerState, ...): Promise<void> {
 **Current:** Content script matches `<all_urls>` and runs `document_idle` on every single page the user visits.
 
 **Impact:**
+
 - Every page load executes ~617 lines of JavaScript
 - Calls `chrome.runtime.sendMessage({ action: 'GET_TIMER_STATE' })` on init (line 592)
 - Calls `chrome.storage.local.get([...])` to load persisted state (line 67)
@@ -265,6 +273,7 @@ async function broadcastTimerSync(state: TimerState, ...): Promise<void> {
 - If timer is active: builds widget DOM, starts 1s setInterval tick
 
 **Optimization options:**
+
 1. **Programmatic injection:** Remove content script from manifest. Use `chrome.scripting.executeScript()` from background when timer starts, targeting only the active tab. This eliminates the overhead on pages where the timer isn't active.
 2. **Hybrid approach:** Keep content script for auth bridge on companion website domain only (`matches: ["https://w-timer.com/*", "https://www.w-timer.com/*"]`), use programmatic injection for the floating widget.
 3. **Minimal init:** If keeping `<all_urls>`, defer widget building until `TIMER_SYNC` message is received (already partially done), and skip the initial `GET_TIMER_STATE` message — let the first `TIMER_SYNC` broadcast handle it.

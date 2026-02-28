@@ -67,15 +67,19 @@ export default function AddEntryModal({ date: initialDate, onSave, onClose }: Ad
   const handleSave = async () => {
     setError('')
     if (!date) { setError('Please select a date'); return }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { setError('Invalid date format'); return }
 
     let startTime: number, endTime: number, duration: number
 
     const baseDate = new Date(date + 'T00:00:00')
+    if (isNaN(baseDate.getTime())) { setError('Invalid date'); return }
 
     if (inputType === 'timeRange') {
       if (!from || !to) { setError('Please enter start and end times'); return }
+      if (!/^\d{2}:\d{2}$/.test(from) || !/^\d{2}:\d{2}$/.test(to)) { setError('Invalid time format'); return }
       const [fromH, fromM] = from.split(':').map(Number)
       const [toH, toM] = to.split(':').map(Number)
+      if (fromH > 23 || fromM > 59 || toH > 23 || toM > 59) { setError('Invalid time values'); return }
       const startDate = new Date(baseDate)
       startDate.setHours(fromH, fromM, 0, 0)
       const endDate = new Date(baseDate)
@@ -123,7 +127,7 @@ export default function AddEntryModal({ date: initialDate, onSave, onClose }: Ad
     : (parseInt(hours) || 0) > 0 || (parseInt(minutes) || 0) > 0
 
   const plusBtnClass = (active: boolean) =>
-    `p-2.5 rounded-lg border transition-colors ${active ? 'border-indigo-500 text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10' : 'border-stone-200 dark:border-dark-border text-stone-400 dark:text-stone-500 hover:text-indigo-500 hover:border-indigo-400 dark:hover:text-indigo-400 dark:hover:border-indigo-400/60'}`
+    `p-2.5 rounded-lg border transition-colors ${active ? 'border-indigo-500 text-indigo-500 bg-indigo-50 dark:bg-indigo-500/10' : 'border-stone-200 dark:border-dark-border text-stone-400 dark:text-stone-400 hover:text-indigo-500 hover:border-indigo-400 dark:hover:text-indigo-400 dark:hover:border-indigo-400/60'}`
 
   const displayDate = date ? format(parseISO(date), 'EEEE, MMM d yyyy') : ''
 
@@ -141,12 +145,12 @@ export default function AddEntryModal({ date: initialDate, onSave, onClose }: Ad
           <div>
             <h2 className="text-sm font-semibold text-stone-900 dark:text-stone-100">Add Entry</h2>
             {displayDate && (
-              <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-0.5">{displayDate}</p>
+              <p className="text-[11px] text-stone-400 dark:text-stone-400 mt-0.5">{displayDate}</p>
             )}
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-dark-elevated text-stone-400 dark:text-stone-500 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-dark-elevated text-stone-400 dark:text-stone-400 transition-colors"
             aria-label="Close"
           >
             <XIcon className="w-4 h-4" />

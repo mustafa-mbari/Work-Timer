@@ -39,7 +39,7 @@ export default function NavBar({ currentView, onViewChange, syncStatus }: NavBar
             className={`flex-1 relative flex flex-col items-center justify-center gap-0.5 py-1.5 pt-2 text-[10px] font-medium transition-colors ${
               isActive
                 ? 'text-indigo-600 dark:text-indigo-400 font-semibold'
-                : 'text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300'
+                : 'text-stone-400 dark:text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
             }`}
           >
             {isActive && (

@@ -285,7 +285,7 @@ export default function SettingsView() {
                   }`}
                 >
                   <span className="w-6 h-6 flex items-center justify-center">
-                    <MonitorIcon className="w-4 h-4 text-stone-400 dark:text-stone-500" />
+                    <MonitorIcon className="w-4 h-4 text-stone-400 dark:text-stone-400" />
                   </span>
                   <span className="text-[9px] font-medium text-stone-500 dark:text-stone-400 leading-tight">System</span>
                 </button>
@@ -362,7 +362,7 @@ export default function SettingsView() {
                   <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${settings.floatingTimerAutoShow ? 'translate-x-4' : 'translate-x-0.5'}`} />
                 </div>
               </label>
-              <p className="text-[10px] text-stone-400 dark:text-stone-500 mt-1.5 px-1">
+              <p className="text-[10px] text-stone-400 dark:text-stone-400 mt-1.5 px-1">
                 When disabled, use right-click on the extension icon → "Show Floating Widget" to display it manually.
               </p>
             </div>
@@ -387,7 +387,7 @@ export default function SettingsView() {
                 className={inputClass}
                 aria-label="Idle detection timeout in minutes"
               />
-              <p className="text-[10px] text-stone-400 dark:text-stone-500 mt-1.5 px-1">
+              <p className="text-[10px] text-stone-400 dark:text-stone-400 mt-1.5 px-1">
                 Prompt to discard idle time after this many minutes of inactivity.
               </p>
             </div>
@@ -407,7 +407,7 @@ export default function SettingsView() {
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
-              <p className="text-[10px] text-stone-400 dark:text-stone-500 mt-1.5 px-1">
+              <p className="text-[10px] text-stone-400 dark:text-stone-400 mt-1.5 px-1">
                 Entries shorter than this are automatically discarded.
               </p>
             </div>
@@ -419,25 +419,25 @@ export default function SettingsView() {
               <label className={labelClass}>Pomodoro</label>
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="text-[10px] text-stone-400 dark:text-stone-500 block mb-1">Work (min)</label>
+                  <label className="text-[10px] text-stone-400 dark:text-stone-400 block mb-1">Work (min)</label>
                   <input type="number" min="1" max="120" value={settings.pomodoro.workMinutes}
                     onChange={(e) => handleSettingChange('pomodoro', { ...settings.pomodoro, workMinutes: Number(e.target.value) })}
                     className={inputClass} />
                 </div>
                 <div>
-                  <label className="text-[10px] text-stone-400 dark:text-stone-500 block mb-1">Short Break (min)</label>
+                  <label className="text-[10px] text-stone-400 dark:text-stone-400 block mb-1">Short Break (min)</label>
                   <input type="number" min="1" max="30" value={settings.pomodoro.shortBreakMinutes}
                     onChange={(e) => handleSettingChange('pomodoro', { ...settings.pomodoro, shortBreakMinutes: Number(e.target.value) })}
                     className={inputClass} />
                 </div>
                 <div>
-                  <label className="text-[10px] text-stone-400 dark:text-stone-500 block mb-1">Long Break (min)</label>
+                  <label className="text-[10px] text-stone-400 dark:text-stone-400 block mb-1">Long Break (min)</label>
                   <input type="number" min="1" max="60" value={settings.pomodoro.longBreakMinutes}
                     onChange={(e) => handleSettingChange('pomodoro', { ...settings.pomodoro, longBreakMinutes: Number(e.target.value) })}
                     className={inputClass} />
                 </div>
                 <div>
-                  <label className="text-[10px] text-stone-400 dark:text-stone-500 block mb-1">Sessions before long</label>
+                  <label className="text-[10px] text-stone-400 dark:text-stone-400 block mb-1">Sessions before long</label>
                   <input type="number" min="1" max="10" value={settings.pomodoro.sessionsBeforeLongBreak}
                     onChange={(e) => handleSettingChange('pomodoro', { ...settings.pomodoro, sessionsBeforeLongBreak: Number(e.target.value) })}
                     className={inputClass} />
@@ -463,7 +463,7 @@ export default function SettingsView() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-medium text-stone-700 dark:text-stone-300">Export reminder</p>
-                    <p className="text-[10px] text-stone-400 dark:text-stone-500 mt-0.5">
+                    <p className="text-[10px] text-stone-400 dark:text-stone-400 mt-0.5">
                       Remind to export/review work records
                     </p>
                   </div>
@@ -520,7 +520,7 @@ export default function SettingsView() {
                       />
                     </div>
                     {!isPremium && (
-                      <p className="text-[10px] text-stone-400 dark:text-stone-500">
+                      <p className="text-[10px] text-stone-400 dark:text-stone-400">
                         Upgrade to Premium to customize the reminder day and time.
                       </p>
                     )}
@@ -548,7 +548,7 @@ export default function SettingsView() {
                   </div>
                 ))}
               </div>
-              <p className="text-[10px] text-stone-400 dark:text-stone-500 mt-2">
+              <p className="text-[10px] text-stone-400 dark:text-stone-400 mt-2">
                 Shortcuts work globally in Chrome, even when the popup is closed.
               </p>
             </div>
@@ -638,7 +638,7 @@ export default function SettingsView() {
                         {project.defaultTagId && (() => {
                           const linkedTag = activeTags.find(t => t.id === project.defaultTagId)
                           return linkedTag ? (
-                            <span className="text-[10px] font-medium text-stone-400 dark:text-stone-500 bg-stone-100 dark:bg-dark-elevated px-1.5 py-0.5 rounded-md flex-shrink-0 flex items-center gap-1">
+                            <span className="text-[10px] font-medium text-stone-400 dark:text-stone-400 bg-stone-100 dark:bg-dark-elevated px-1.5 py-0.5 rounded-md flex-shrink-0 flex items-center gap-1">
                               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: linkedTag.color ?? '#6366F1' }} />
                               {linkedTag.name}
                             </span>
@@ -651,7 +651,7 @@ export default function SettingsView() {
                         )}
                         <button
                           onClick={() => setEditingProject({ id: project.id, name: project.name, color: project.color })}
-                          className="text-stone-400 dark:text-stone-500 hover:text-indigo-500 dark:hover:text-indigo-400 p-1 rounded transition-colors flex-shrink-0"
+                          className="text-stone-400 dark:text-stone-400 hover:text-indigo-500 dark:hover:text-indigo-400 p-1 rounded transition-colors flex-shrink-0"
                           aria-label={`Edit ${project.name}`}
                         >
                           <PencilIcon className="w-3.5 h-3.5" />
@@ -659,7 +659,7 @@ export default function SettingsView() {
                         <div className="relative flex-shrink-0">
                           <button
                             onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === project.id ? null : project.id) }}
-                            className="text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 p-1 rounded transition-colors"
+                            className="text-stone-400 dark:text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 p-1 rounded transition-colors"
                             aria-label={`More options for ${project.name}`}
                           >
                             <DotsIcon className="w-3.5 h-3.5" />
@@ -746,7 +746,7 @@ export default function SettingsView() {
                 {showArchived && archivedProjects.map((project) => (
                   <div key={project.id} className="flex items-center gap-2.5 p-2.5 rounded-xl border border-stone-100 dark:border-dark-border bg-stone-50 dark:bg-dark-card opacity-60">
                     <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: project.color }} aria-hidden="true" />
-                    <span className="text-sm text-stone-400 dark:text-stone-500 flex-1 line-through">{project.name}</span>
+                    <span className="text-sm text-stone-400 dark:text-stone-400 flex-1 line-through">{project.name}</span>
                     <button
                       onClick={() => update({ ...project, archived: false })}
                       className="text-[10px] font-medium text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 px-1.5 py-0.5 rounded"
@@ -767,7 +767,7 @@ export default function SettingsView() {
                     value={newProjectName}
                     onChange={(e) => setNewProjectName(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleCreateProject()}
-                    className={`${inputClass} dark:placeholder-stone-600`}
+                    className={`${inputClass} dark:placeholder-stone-500`}
                     aria-label="New project name"
                   />
                 </div>
@@ -828,7 +828,7 @@ export default function SettingsView() {
                       </button>
                       <button
                         onClick={() => setEditingTag(null)}
-                        className="p-1 text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
+                        className="p-1 text-stone-400 dark:text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
                         aria-label="Cancel"
                       >
                         <XIcon className="w-3.5 h-3.5" />
@@ -864,7 +864,7 @@ export default function SettingsView() {
                         )}
                         <button
                           onClick={() => setEditingTag({ id: tag.id, name: tag.name })}
-                          className="text-stone-400 dark:text-stone-500 hover:text-indigo-500 dark:hover:text-indigo-400 p-1 rounded transition-colors flex-shrink-0"
+                          className="text-stone-400 dark:text-stone-400 hover:text-indigo-500 dark:hover:text-indigo-400 p-1 rounded transition-colors flex-shrink-0"
                           aria-label={`Edit ${tag.name}`}
                         >
                           <PencilIcon className="w-3.5 h-3.5" />
@@ -872,7 +872,7 @@ export default function SettingsView() {
                         <div className="relative flex-shrink-0">
                           <button
                             onClick={(e) => { e.stopPropagation(); setOpenTagMenuId(openTagMenuId === tag.id ? null : tag.id) }}
-                            className="text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 p-1 rounded transition-colors"
+                            className="text-stone-400 dark:text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 p-1 rounded transition-colors"
                             aria-label={`More options for ${tag.name}`}
                           >
                             <DotsIcon className="w-3.5 h-3.5" />
@@ -936,7 +936,7 @@ export default function SettingsView() {
                 {showArchivedTags && archivedTags.map((tag) => (
                   <div key={tag.id} className="flex items-center gap-2.5 p-2.5 rounded-xl border border-stone-100 dark:border-dark-border bg-stone-50 dark:bg-dark-card opacity-60">
                     <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: tag.color ?? '#6366F1' }} aria-hidden="true" />
-                    <span className="text-sm text-stone-400 dark:text-stone-500 flex-1 line-through">{tag.name}</span>
+                    <span className="text-sm text-stone-400 dark:text-stone-400 flex-1 line-through">{tag.name}</span>
                     <button
                       onClick={() => void updateTag({ ...tag, archived: false })}
                       className="text-[10px] font-medium text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 px-1.5 py-0.5 rounded"
@@ -967,7 +967,7 @@ export default function SettingsView() {
                     value={newTagName}
                     onChange={(e) => setNewTagName(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
-                    className={`${inputClass} dark:placeholder-stone-600`}
+                    className={`${inputClass} dark:placeholder-stone-500`}
                     aria-label="New tag name"
                   />
                 </div>
@@ -1002,7 +1002,7 @@ export default function SettingsView() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-stone-800 dark:text-stone-100 truncate">{session.email}</p>
-                    <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-0.5">
+                    <p className="text-[11px] text-stone-400 dark:text-stone-400 mt-0.5">
                       {isPremium ? 'Premium' : 'Free plan'}
                     </p>
                   </div>
@@ -1038,7 +1038,7 @@ export default function SettingsView() {
                       {subscription.cancelAtPeriodEnd && ' · cancels at period end'}
                     </p>
                     {subscription.currentPeriodEnd && (
-                      <p className="text-xs text-stone-400 dark:text-stone-500">
+                      <p className="text-xs text-stone-400 dark:text-stone-400">
                         Renews {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
                       </p>
                     )}
@@ -1073,11 +1073,11 @@ export default function SettingsView() {
                     <div>
                       <p className="text-xs font-medium text-stone-700 dark:text-stone-300">Cloud sync</p>
                       {lastSyncAt ? (
-                        <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-0.5">
+                        <p className="text-[11px] text-stone-400 dark:text-stone-400 mt-0.5">
                           Last synced {new Date(lastSyncAt).toLocaleTimeString()}
                         </p>
                       ) : (
-                        <p className="text-[11px] text-stone-400 dark:text-stone-500 mt-0.5">Not synced yet</p>
+                        <p className="text-[11px] text-stone-400 dark:text-stone-400 mt-0.5">Not synced yet</p>
                       )}
                     </div>
 
@@ -1228,7 +1228,7 @@ export default function SettingsView() {
               <>
                 <div className="flex flex-col gap-2 text-center py-2">
                   <p className="text-sm font-medium text-stone-700 dark:text-stone-200">Sign in to Work Timer</p>
-                  <p className="text-xs text-stone-400 dark:text-stone-500">
+                  <p className="text-xs text-stone-400 dark:text-stone-400">
                     Enable cloud sync across devices and unlock Premium features.
                   </p>
                 </div>

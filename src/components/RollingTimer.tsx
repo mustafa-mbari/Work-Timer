@@ -90,7 +90,7 @@ export default function RollingTimer({ elapsed }: RollingTimerProps) {
         <Fragment key={gi}>
           {gi > 0 && (
             <span
-              className="text-2xl font-semibold leading-none text-stone-400 dark:text-stone-500"
+              className="text-2xl font-semibold leading-none text-stone-400 dark:text-stone-400"
               style={FONT_STYLE}
             >
               :

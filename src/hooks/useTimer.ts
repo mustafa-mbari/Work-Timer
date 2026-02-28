@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { TimerState, TimerMessage, TimerResponse, IdleInfo, PomodoroState } from '@/types'
 import { POMODORO_WORK_MS } from '@/constants/timers'
+// NOTE: Real-time elapsed/pomodoroTimeRemaining are now computed by individual
+// components via useElapsed / usePomodoroRemaining (src/hooks/useTimerTick.ts).
+// This avoids re-rendering the entire TimerView tree every second.
 
 const DEFAULT_STATE: TimerState = {
   status: 'idle',
@@ -37,8 +40,6 @@ export function useTimer() {
   const [state, setState] = useState<TimerState>(DEFAULT_STATE)
   const [idleInfo, setIdleInfo] = useState<IdleInfo>(DEFAULT_IDLE)
   const [pomodoroState, setPomodoroState] = useState<PomodoroState>(DEFAULT_POMODORO)
-  const [, setTick] = useState(0) // Triggers re-renders for real-time display
-
   const fetchState = useCallback(async () => {
     try {
       const response = await sendMessage({ action: 'GET_TIMER_STATE' })
@@ -52,12 +53,8 @@ export function useTimer() {
     }
   }, [])
 
-  // Tick every second to trigger re-renders for real-time display
   useEffect(() => {
     fetchState()
-
-    const interval = window.setInterval(() => setTick(t => t + 1), 1000)
-    return () => window.clearInterval(interval)
   }, [fetchState])
 
   // Listen for TIMER_SYNC broadcasts from background instead of polling every 5s
@@ -151,22 +148,11 @@ export function useTimer() {
     return response
   }, [])
 
-  // Compute elapsed in real-time
-  const now = Date.now() // eslint-disable-line react-hooks/purity
-  const elapsed = state.status === 'running' && state.startTime
-    ? state.elapsed + (now - state.startTime)
-    : state.elapsed
-
-  // Compute pomodoro time remaining in real-time
-  const pomodoroTimeRemaining = pomodoroState.active && pomodoroState.phaseStartedAt
-    ? Math.max(0, pomodoroState.phaseDuration - (now - pomodoroState.phaseStartedAt))
-    : pomodoroState.phaseDuration
-
   return {
-    state, elapsed,
+    state,
     start, pause, resume, stop,
     idleInfo, idleKeep, idleDiscard,
-    pomodoroState, pomodoroTimeRemaining, startPomodoro, stopPomodoro, skipPhase,
+    pomodoroState, startPomodoro, stopPomodoro, skipPhase,
     refetch: fetchState,
   }
 }

@@ -92,7 +92,7 @@ export default memo(function TagSelect({ tags, value, onChange, disabled, classN
             <span className="flex-1 truncate">{selected.name}</span>
           </>
         ) : (
-          <span className="flex-1 text-stone-400 dark:text-stone-500">No Tag</span>
+          <span className="flex-1 text-stone-400 dark:text-stone-400">No Tag</span>
         )}
         <ChevronDownIcon className={`w-3.5 h-3.5 text-stone-400 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>

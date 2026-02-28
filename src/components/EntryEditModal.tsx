@@ -88,7 +88,7 @@ export default function EntryEditModal({ entry, onSave, onDelete, onClose }: Ent
 
   const timeInputClass = "flex-1 border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
   const sectionLabel = "text-[11px] font-medium text-stone-500 dark:text-stone-400 uppercase tracking-wider block mb-1.5"
-  const stepperBtn = "w-8 h-8 rounded-full border-2 border-stone-300 dark:border-stone-600 bg-white dark:bg-dark-elevated text-stone-400 dark:text-stone-500 flex items-center justify-center hover:border-indigo-400 hover:text-indigo-500 dark:hover:border-indigo-400 dark:hover:text-indigo-400 transition-colors active:scale-95 text-lg leading-none"
+  const stepperBtn = "w-8 h-8 rounded-full border-2 border-stone-300 dark:border-stone-600 bg-white dark:bg-dark-elevated text-stone-400 dark:text-stone-400 flex items-center justify-center hover:border-indigo-400 hover:text-indigo-500 dark:hover:border-indigo-400 dark:hover:text-indigo-400 transition-colors active:scale-95 text-lg leading-none"
   const toggleBtn = (active: boolean) =>
     `text-[11px] font-medium px-2.5 py-1 rounded-md transition-all ${active ? 'bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 shadow-sm' : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'}`
   const tabBtn = (active: boolean) =>
@@ -111,7 +111,7 @@ export default function EntryEditModal({ entry, onSave, onDelete, onClose }: Ent
           <h2 className="font-semibold text-sm text-stone-900 dark:text-stone-100">Edit Entry</h2>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-dark-elevated transition-colors"
+            className="p-1 rounded-lg text-stone-400 dark:text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 hover:bg-stone-100 dark:hover:bg-dark-elevated transition-colors"
             aria-label="Close"
           >
             <XIcon className="w-4 h-4" />
@@ -156,7 +156,7 @@ export default function EntryEditModal({ entry, onSave, onDelete, onClose }: Ent
                     <span className="text-2xl font-semibold w-9 text-center tabular-nums text-stone-900 dark:text-stone-100">{parseInt(hours) || 0}</span>
                     <button onClick={() => setHours(h => String(Math.min(23, (parseInt(h) || 0) + 1)))} className={stepperBtn} aria-label="Increase hours">+</button>
                   </div>
-                  <span className="text-[10px] text-stone-400 dark:text-stone-500">hours</span>
+                  <span className="text-[10px] text-stone-400 dark:text-stone-400">hours</span>
                 </div>
 
                 <span className="text-xl text-stone-200 dark:text-stone-700 mb-3.5">:</span>
@@ -168,7 +168,7 @@ export default function EntryEditModal({ entry, onSave, onDelete, onClose }: Ent
                     <span className="text-2xl font-semibold w-9 text-center tabular-nums text-stone-900 dark:text-stone-100">{String(parseInt(minutes) || 0).padStart(2, '0')}</span>
                     <button onClick={() => setMinutes(m => String(Math.min(55, (parseInt(m) || 0) + 5)))} className={stepperBtn} aria-label="Increase minutes">+</button>
                   </div>
-                  <span className="text-[10px] text-stone-400 dark:text-stone-500">min</span>
+                  <span className="text-[10px] text-stone-400 dark:text-stone-400">min</span>
                 </div>
               </div>
             )}
@@ -196,7 +196,7 @@ export default function EntryEditModal({ entry, onSave, onDelete, onClose }: Ent
                 placeholder="What did you work on?"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full resize-none border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
+                className="w-full resize-none border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
                 aria-label="Task description"
               />
             )}
@@ -209,7 +209,7 @@ export default function EntryEditModal({ entry, onSave, onDelete, onClose }: Ent
                 placeholder="https://..."
                 value={link}
                 onChange={(e) => setLink(e.target.value)}
-                className="w-full border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
+                className="w-full border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
                 aria-label="Link URL"
               />
             )}

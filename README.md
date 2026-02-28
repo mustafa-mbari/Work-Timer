@@ -55,7 +55,7 @@ Track your work time with stopwatch, manual entry, and Pomodoro modes. Start wit
 - **Entry Links** -- Attach URLs to time entries (opens in new tab)
 - **Idle Detection** -- Prompt to keep or discard idle time
 - **Export** -- CSV, Excel, and PDF export. PDF reports include user info, summary stats, weekly stacked bar chart, project/tag breakdowns with percentages, daily summary table, and detailed entries with tags column. Branded footer with page numbers.
-- **Browser Integration** -- Floating timer widget, timer in tab title, right-click context menu
+- **Browser Integration** -- Floating timer widget, right-click context menu
 
 ### Plans & Pricing
 
@@ -85,7 +85,7 @@ See [HowToDoPlan.md](HowToDoPlan.md) for the full Stripe setup guide (creating p
 
 ### Prerequisites
 
-- Node.js 18+ and npm
+- Node.js 18+ and pnpm
 - Google Chrome browser
 
 ### Installation
@@ -93,8 +93,8 @@ See [HowToDoPlan.md](HowToDoPlan.md) for the full Stripe setup guide (creating p
 ```bash
 git clone https://github.com/mustafa-mbari/Work-Timer.git
 cd Work-Timer
-npm install
-npm run build
+pnpm install
+pnpm run build
 ```
 
 ### Load in Chrome
@@ -107,10 +107,10 @@ npm run build
 
 ```bash
 # Extension (with HMR)
-npm run dev
+pnpm run dev
 
 # Website
-cd web && npm install && npm run dev
+cd web && pnpm install && pnpm run dev
 ```
 
 ---
@@ -124,17 +124,26 @@ Work-Timer/
     constants.ts        # Free/Premium limits
   src/                  # Chrome Extension
     popup/              # Popup entry point
-    background/         # Service worker (timer, sync, auth)
+    background/         # Service worker modules
+      background.ts     # Message router + lifecycle
+      timerEngine.ts    # Start/pause/resume/stop logic
+      pomodoroEngine.ts # Pomodoro phase management
+      idleDetection.ts  # Idle state detection
+      contextMenus.ts   # Right-click menu items
+      reminders.ts      # Weekly reminder notifications
+      storage.ts        # Background-specific storage helpers
+      ui.ts             # Badge updates + content-script broadcasts
     components/         # React UI components
     hooks/              # Custom hooks (useTimer, useAuth, usePremium, etc.)
     auth/               # Supabase auth client
     sync/               # Cloud sync engine (queue, push/pull, conflict resolver)
     premium/            # Feature gating
     storage/            # chrome.storage.local wrapper
-    content/            # Floating timer widget (content script)
-    utils/              # Helpers (date/time, export, logger, etc.)
+    content/            # Floating timer widget (content script + widget.css)
+    utils/              # Helpers (date/time, export, timer, etc.)
     constants/          # Colors, timers, styles
     types/              # TypeScript interfaces
+    __tests__/          # Test setup (chrome.storage mock)
   web/                  # Companion Website (Next.js 16)
     app/                # App Router pages + API routes
     components/         # UI components (shadcn/ui)
@@ -160,6 +169,7 @@ Work-Timer/
 | React 18 + TypeScript | Component UI with type safety |
 | TailwindCSS v4 | Utility-first styling |
 | Vite | Build tool with HMR |
+| Vitest | Unit and integration tests |
 | Recharts | Charts (lazy loaded) |
 | xlsx | Excel export (dynamic import) |
 | Supabase | Auth + cloud sync |
@@ -186,15 +196,17 @@ Work-Timer/
 
 ```bash
 # Extension
-npm run dev          # Dev build with HMR
-npm run build        # Production build -> dist/
-npm run lint         # ESLint
+pnpm run dev          # Dev build with HMR
+pnpm run build        # Production build -> dist/
+pnpm run lint         # ESLint
+pnpm test             # Run unit + integration tests (vitest)
+pnpm test:watch       # Run tests in watch mode
 
 # Website
 cd web
-npm run dev          # Next.js dev server (port 3000)
-npm run build        # Production build
-npm run lint
+pnpm run dev          # Next.js dev server (port 3000)
+pnpm run build        # Production build
+pnpm run lint
 ```
 
 ### Path Aliases
@@ -217,6 +229,9 @@ npm run lint
 - **Input validation**: All API routes validated with Zod schemas.
 - **Corporate proxy safe**: Static assets served from trusted CDN domain via `assetPrefix`; all auth flows use server-side API routes (no browser-to-Supabase calls); extension bridge uses content script relay (no extension ID dependency).
 - **Groups performance**: Batch member count queries (no N+1), parallel data fetching, debounced preview requests, granular refresh (member-only vs full).
+- **Modular service worker**: Background split into 7 focused modules (timer, pomodoro, idle, context menus, reminders, storage, UI) instead of a single monolithic file.
+- **WCAG AA compliant**: All 6 themes verified for color contrast ratios (4.5:1+ for text).
+- **Test coverage**: 83 tests across storage, sync queue, timer engine, and utility functions via Vitest with chrome.storage.local mock.
 
 ---
 

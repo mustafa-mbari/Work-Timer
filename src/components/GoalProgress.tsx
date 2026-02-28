@@ -29,7 +29,7 @@ export default memo(function GoalProgress({ label, current, target }: GoalProgre
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex justify-between items-center">
-        <span className="text-[11px] font-medium text-stone-500 dark:text-stone-500">{label}</span>
+        <span className="text-[11px] font-medium text-stone-500 dark:text-stone-400">{label}</span>
         <span className={`text-[11px] font-semibold ${textColor}`}>
           {current.toFixed(1)}h / {target}h ({percent}%)
         </span>

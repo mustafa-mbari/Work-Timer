@@ -123,7 +123,7 @@ export default function WeeklyChart({ entries, projects, weekStartsOn, workingDa
           <div>
             <p className="text-xs font-semibold text-stone-800 dark:text-stone-100">This Week</p>
             {hasData && (
-              <p className="text-[10px] text-stone-400 dark:text-stone-500">
+              <p className="text-[10px] text-stone-400 dark:text-stone-400">
                 {totalHours.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}h total
               </p>
             )}
@@ -147,7 +147,7 @@ export default function WeeklyChart({ entries, projects, weekStartsOn, workingDa
       {!hasData ? (
         <div className="h-36 flex flex-col items-center justify-center gap-1.5 pb-4">
           <BarChart3Icon className="h-6 w-6 text-stone-300 dark:text-stone-600" />
-          <p className="text-xs text-stone-400 dark:text-stone-500">No entries this week</p>
+          <p className="text-xs text-stone-400 dark:text-stone-400">No entries this week</p>
         </div>
       ) : (
         <div className="px-3 pb-4">
@@ -197,7 +197,7 @@ export default function WeeklyChart({ entries, projects, weekStartsOn, workingDa
 
                   {/* Day label */}
                   <span className={`text-[9px] font-medium mt-0.5 ${
-                    isToday ? 'text-indigo-500 dark:text-indigo-400' : 'text-stone-400 dark:text-stone-500'
+                    isToday ? 'text-indigo-500 dark:text-indigo-400' : 'text-stone-400 dark:text-stone-400'
                   }`}>
                     {day.dayShort}
                   </span>
@@ -205,7 +205,7 @@ export default function WeeklyChart({ entries, projects, weekStartsOn, workingDa
                   {/* Hover tooltip */}
                   {hoveredDay === day.date && dayTotal > 0 && (
                     <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-20 bg-white dark:bg-dark-card border border-stone-200 dark:border-dark-border rounded-xl shadow-xl px-2.5 py-2 text-[10px] min-w-[110px] pointer-events-none">
-                      <p className="text-[9px] text-stone-400 dark:text-stone-500 mb-1">{day.label}</p>
+                      <p className="text-[9px] text-stone-400 dark:text-stone-400 mb-1">{day.label}</p>
                       <div className="space-y-0.5">
                         {segments.map(p => (
                           <div key={p.name} className="flex items-center justify-between gap-2">

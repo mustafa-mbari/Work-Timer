@@ -72,7 +72,7 @@ export default memo(function ProjectSelector({ projects, selectedId, onChange, d
 
       {/* Chevron icon */}
       <ChevronDownIcon
-        className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-stone-500 pointer-events-none transition-transform ${isOpen ? 'rotate-180' : ''}`}
+        className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 dark:text-stone-400 pointer-events-none transition-transform ${isOpen ? 'rotate-180' : ''}`}
       />
 
       {/* Dropdown menu */}

@@ -83,7 +83,7 @@ export default function CalendarHeatmap({ year, month, onPrev, onNext }: Props) 
       {/* Day-of-week headers */}
       <div className="grid grid-cols-7 gap-1 mb-1">
         {DAY_LABELS.map((label, i) => (
-          <div key={i} className="text-[9px] font-medium text-stone-400 dark:text-stone-500 text-center">
+          <div key={i} className="text-[9px] font-medium text-stone-400 dark:text-stone-400 text-center">
             {label}
           </div>
         ))}
@@ -124,7 +124,7 @@ export default function CalendarHeatmap({ year, month, onPrev, onNext }: Props) 
         {LEGEND.map(item => (
           <div key={item.label} className="flex items-center gap-1">
             <div className={`w-2.5 h-2.5 rounded-sm ${item.color}`} aria-hidden="true" />
-            <span className="text-[9px] text-stone-400 dark:text-stone-500">{item.label}</span>
+            <span className="text-[9px] text-stone-400 dark:text-stone-400">{item.label}</span>
           </div>
         ))}
       </div>

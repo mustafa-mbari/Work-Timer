@@ -6,6 +6,8 @@ import TimerView from '@/components/TimerView'
 const WeekView = lazy(() => import('@/components/WeekView'))
 const StatsView = lazy(() => import('@/components/StatsView'))
 const SettingsView = lazy(() => import('@/components/SettingsView'))
+import ErrorBoundary from '@/components/ErrorBoundary'
+import { WeekSkeleton, StatsSkeleton, SettingsSkeleton } from '@/components/ViewSkeleton'
 import NavBar from '@/components/NavBar'
 import InitialSyncDialog from '@/components/InitialSyncDialog'
 import AccountSwitchModal from '@/components/AccountSwitchModal'
@@ -122,11 +124,21 @@ export default function App() {
     <div className="flex flex-col h-[520px] bg-stone-50 dark:bg-dark">
       <main className="flex-1 overflow-y-auto">
         {view === 'timer' && <TimerView />}
-        <Suspense fallback={null}>
-          {view === 'week' && <WeekView />}
-          {view === 'stats' && <StatsView />}
-          {view === 'settings' && <SettingsView />}
-        </Suspense>
+        {view === 'week' && (
+          <ErrorBoundary compact>
+            <Suspense fallback={<WeekSkeleton />}><WeekView /></Suspense>
+          </ErrorBoundary>
+        )}
+        {view === 'stats' && (
+          <ErrorBoundary compact>
+            <Suspense fallback={<StatsSkeleton />}><StatsView /></Suspense>
+          </ErrorBoundary>
+        )}
+        {view === 'settings' && (
+          <ErrorBoundary compact>
+            <Suspense fallback={<SettingsSkeleton />}><SettingsView /></Suspense>
+          </ErrorBoundary>
+        )}
       </main>
       <NavBar currentView={view} onViewChange={setView} syncStatus={syncStatus} />
       <InitialSyncDialog

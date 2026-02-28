@@ -16,7 +16,7 @@ export default function AuthGate({ signIn }: AuthGateProps) {
       </div>
 
       <h1 className="text-lg font-bold text-stone-800 dark:text-stone-100 mb-1">Work Timer</h1>
-      <p className="text-xs text-stone-400 dark:text-stone-500 text-center mb-8 max-w-[240px]">
+      <p className="text-xs text-stone-400 dark:text-stone-400 text-center mb-8 max-w-[240px]">
         Sign in or create an account to start tracking your work time.
       </p>
 

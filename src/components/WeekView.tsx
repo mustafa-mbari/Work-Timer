@@ -61,7 +61,7 @@ export default function WeekView() {
       <div className="flex items-center justify-between">
         <button
           onClick={() => setWeekOffset(w => w - 1)}
-          className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-dark-card text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
+          className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-dark-card text-stone-400 dark:text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
           aria-label="Previous week"
         >
           <ChevronLeftIcon className="w-4 h-4" />
@@ -74,7 +74,7 @@ export default function WeekView() {
         </div>
         <button
           onClick={() => setWeekOffset(w => w + 1)}
-          className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-dark-card text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
+          className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-dark-card text-stone-400 dark:text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
           aria-label="Next week"
         >
           <ChevronRightIcon className="w-4 h-4" />
@@ -156,7 +156,7 @@ export default function WeekView() {
                   <span className={`text-sm font-medium ${isToday ? 'text-indigo-700 dark:text-indigo-400' : 'text-stone-700 dark:text-stone-300'}`}>
                     {format(day, 'EEE')}
                   </span>
-                  <span className="text-[11px] text-stone-400 dark:text-stone-500">{format(day, 'MMM d')}</span>
+                  <span className="text-[11px] text-stone-400 dark:text-stone-400">{format(day, 'MMM d')}</span>
                   {isToday && (
                     <span className="text-[10px] font-medium bg-indigo-500 text-white px-2 py-0.5 rounded-full">
                       Today
@@ -169,7 +169,7 @@ export default function WeekView() {
                   </span>
                   <button
                     onClick={() => setAddingForDate(key)}
-                    className="p-0.5 rounded-md hover:bg-stone-200 dark:hover:bg-dark-elevated text-stone-400 dark:text-stone-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+                    className="p-0.5 rounded-md hover:bg-stone-200 dark:hover:bg-dark-elevated text-stone-400 dark:text-stone-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
                     aria-label={`Add entry for ${key}`}
                   >
                     <PlusIcon className="w-3.5 h-3.5" />

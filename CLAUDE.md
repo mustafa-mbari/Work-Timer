@@ -25,6 +25,7 @@ Work-Timer is a Chrome Extension (Manifest V3) + Next.js companion website for t
 - **Dates:** date-fns
 - **Font:** Inter Variable (`@fontsource-variable/inter`)
 - **Icons:** Custom SVG components in `src/components/Icons.tsx`
+- **Testing:** Vitest
 
 ### Companion Website (`web/`)
 
@@ -41,22 +42,24 @@ Work-Timer is a Chrome Extension (Manifest V3) + Next.js companion website for t
 
 ```bash
 # Extension
-npm install          # Install dependencies
-npm run dev          # Development build with HMR
-npm run build        # Production build -> dist/
-npm run lint         # Run ESLint
+pnpm install         # Install dependencies
+pnpm dev             # Development build with HMR
+pnpm build           # Production build -> dist/
+pnpm lint            # Run ESLint
+pnpm test            # Run unit tests (Vitest)
+pnpm test:watch      # Run tests in watch mode
 
 # Website
 cd web
-npm install
-npm run dev          # Next.js dev server (port 3000)
-npm run build        # Production build
-npm run lint
+pnpm install
+pnpm dev             # Next.js dev server (port 3000)
+pnpm build           # Production build
+pnpm lint
 ```
 
 Load the extension in Chrome:
 
-1. `npm run build`
+1. `pnpm build`
 2. Open `chrome://extensions`, enable Developer Mode
 3. Click "Load unpacked" -> select the `dist/` folder
 
@@ -72,17 +75,26 @@ Load the extension in Chrome:
 ```
 src/
   popup/          # Popup entry point (popup.html + popup.tsx)
-  background/     # Service worker (timer engine, sync alarms, auth)
+  background/     # Service worker modules:
+    background.ts #   Main entry (message router, alarms, auth)
+    timerEngine.ts#   Timer state machine (start/pause/resume/stop)
+    pomodoroEngine.ts # Pomodoro cycle management
+    storage.ts    #   Storage helpers (entry save, settings)
+    ui.ts         #   Badge updates, content script broadcasts
+    contextMenus.ts # Right-click context menu actions
+    idleDetection.ts # Idle timeout detection
+    reminders.ts  #   Notification reminders
   components/     # React UI components
   hooks/          # Custom React hooks (useTimer, useAuth, usePremium, etc.)
   auth/           # Supabase client + auth state
   sync/           # Cloud sync engine (queue, push/pull, conflict resolver)
   premium/        # Feature gating utilities
   storage/        # chrome.storage.local wrapper with sync hooks
-  content/        # Content script (floating mini timer widget)
+  content/        # Content script (floating mini timer widget + widget.css)
   utils/          # Helper functions (date/time formatting, export, etc.)
   constants/      # Shared constants (colors, timers, styles)
   types/          # TypeScript interfaces
+  __tests__/      # Test setup (chrome.storage mock)
   index.css       # Global styles + Tailwind v4 theme tokens
 ```
 
@@ -443,7 +455,15 @@ GroupsView (client orchestrator, AlertDialog for delete group confirmation)
 
 ## Chrome APIs Used
 
-`storage`, `alarms`, `notifications`, `idle`, `tabs`, `scripting`, `contextMenus`, `runtime`
+`storage`, `alarms`, `notifications`, `idle`, `tabs`, `contextMenus`, `runtime`
+
+## Test Infrastructure
+
+- **Framework:** Vitest (config in `vitest.config.ts`)
+- **Setup:** `src/__tests__/setup.ts` — in-memory `chrome.storage.local` mock with `onChanged` listener support, `self` global mock for service worker context
+- **Test files:** Co-located with source (`*.test.ts`), excluded from build via `tsconfig.app.json`
+- **Coverage:** Storage layer (34 tests), sync queue (13 tests), date utils (13 tests), timer utils (5 tests), timer engine integration (18 tests)
+- **Run:** `pnpm test` (single run) or `pnpm test:watch` (watch mode)
 
 ## Non-Functional Requirements
 

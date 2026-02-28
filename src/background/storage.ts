@@ -1,26 +1,31 @@
 /**
- * Background storage operations for timer state, idle info, and pomodoro state
+ * Background storage operations + shared constants for the service worker modules.
  */
 import type { TimerState, IdleInfo, PomodoroState, Settings, TimeEntry } from '../types'
 import { DEFAULT_SETTINGS } from '../storage'
 import { POMODORO_WORK_MS } from '../constants/timers'
 import { DEFAULT_TIMER_STATE } from '../utils/timer'
 
-const STORAGE_KEYS = {
-  timerState: 'timerState',
-  idleInfo: 'idleInfo',
-  pomodoroState: 'pomodoroState',
-  settings: 'settings',
-  entries: (date: string) => `entries_${date}`,
-}
+// ── Alarm name constants (shared across all background modules) ──
 
-const DEFAULT_IDLE_INFO: IdleInfo = {
+export const TIMER_ALARM = 'timer-tick'
+export const POMODORO_ALARM = 'pomodoro-tick'
+export const SUBSCRIPTION_ALARM = 'subscription-refresh'
+export const SYNC_ALARM = 'sync-periodic'
+export const REMINDER_ALARM = 'weekly-reminder'
+export const REMINDER_RETRY_ALARM = 'reminder-retry'
+export const STATS_SYNC_ALARM = 'stats-sync'
+export const SYNC_DEBOUNCE_ALARM = 'sync-debounce'
+
+// ── Default state objects ──
+
+export const DEFAULT_IDLE_INFO: IdleInfo = {
   idleStartedAt: null,
   idleDuration: 0,
   pending: false,
 }
 
-const DEFAULT_POMODORO_STATE: PomodoroState = {
+export const DEFAULT_POMODORO_STATE: PomodoroState = {
   active: false,
   phase: 'work',
   phaseStartedAt: null,
@@ -31,7 +36,15 @@ const DEFAULT_POMODORO_STATE: PomodoroState = {
   accumWork: 0,
 }
 
-// --- Timer State ---
+const STORAGE_KEYS = {
+  timerState: 'timerState',
+  idleInfo: 'idleInfo',
+  pomodoroState: 'pomodoroState',
+  settings: 'settings',
+  entries: (date: string) => `entries_${date}`,
+}
+
+// ── Timer State ──
 
 export async function getTimerState(): Promise<TimerState> {
   const result = await chrome.storage.local.get(STORAGE_KEYS.timerState)
@@ -42,7 +55,7 @@ export async function setTimerState(state: TimerState): Promise<void> {
   await chrome.storage.local.set({ [STORAGE_KEYS.timerState]: state })
 }
 
-// --- Idle Info ---
+// ── Idle Info ──
 
 export async function getIdleInfo(): Promise<IdleInfo> {
   const result = await chrome.storage.local.get(STORAGE_KEYS.idleInfo)
@@ -53,7 +66,7 @@ export async function setIdleInfo(info: IdleInfo): Promise<void> {
   await chrome.storage.local.set({ [STORAGE_KEYS.idleInfo]: info })
 }
 
-// --- Pomodoro State ---
+// ── Pomodoro State ──
 
 export async function getPomodoroState(): Promise<PomodoroState> {
   const result = await chrome.storage.local.get(STORAGE_KEYS.pomodoroState)
@@ -64,7 +77,7 @@ export async function setPomodoroState(state: PomodoroState): Promise<void> {
   await chrome.storage.local.set({ [STORAGE_KEYS.pomodoroState]: state })
 }
 
-// --- Settings ---
+// ── Settings ──
 
 export async function getSettings(): Promise<Settings> {
   const result = await chrome.storage.local.get(STORAGE_KEYS.settings)
@@ -72,7 +85,7 @@ export async function getSettings(): Promise<Settings> {
   return { ...DEFAULT_SETTINGS, ...stored }
 }
 
-// --- Time Entries ---
+// ── Time Entries ──
 
 export async function saveTimeEntry(entry: TimeEntry): Promise<void> {
   const key = STORAGE_KEYS.entries(entry.date)
@@ -98,4 +111,12 @@ export async function getTimeEntry(entryId: string, date: string): Promise<TimeE
   const result = await chrome.storage.local.get(key)
   const entries: TimeEntry[] = (result[key] as TimeEntry[] | undefined) ?? []
   return entries.find(e => e.id === entryId) ?? null
+}
+
+// ── Debounced sync ──
+// Uses chrome.alarms so the debounce survives service worker restarts.
+
+export function debouncedSync(): void {
+  // Recreating the alarm with the same name cancels any previous pending alarm
+  void chrome.alarms.create(SYNC_DEBOUNCE_ALARM, { delayInMinutes: 10 / 60 }) // 10s debounce
 }
