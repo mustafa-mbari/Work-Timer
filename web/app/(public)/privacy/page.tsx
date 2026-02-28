@@ -67,18 +67,18 @@ function InlineLink({ href, children }: { href: string; children: React.ReactNod
 // ─── Table of contents ────────────────────────────────────────────────────────
 
 const TOC_ITEMS = [
-  { id: 'introduction',      label: 'Introduction' },
-  { id: 'data-collected',    label: 'Data we collect' },
-  { id: 'data-storage',      label: 'Where your data is stored' },
-  { id: 'how-we-use',        label: 'How we use your data' },
-  { id: 'what-we-dont-do',   label: 'What we do NOT do' },
-  { id: 'third-parties',     label: 'Third-party services' },
-  { id: 'retention',         label: 'Data retention & deletion' },
-  { id: 'security',          label: 'Security' },
+  { id: 'introduction', label: 'Introduction' },
+  { id: 'data-collected', label: 'Data we collect' },
+  { id: 'data-storage', label: 'Where your data is stored' },
+  { id: 'how-we-use', label: 'How we use your data' },
+  { id: 'what-we-dont-do', label: 'What we do NOT do' },
+  { id: 'third-parties', label: 'Third-party services' },
+  { id: 'retention', label: 'Data retention & deletion' },
+  { id: 'security', label: 'Security' },
   { id: 'childrens-privacy', label: "Children's privacy" },
-  { id: 'changes',           label: 'Changes to this policy' },
-  { id: 'your-rights',       label: 'Your rights' },
-  { id: 'contact',           label: 'Contact us' },
+  { id: 'changes', label: 'Changes to this policy' },
+  { id: 'your-rights', label: 'Your rights' },
+  { id: 'contact', label: 'Contact us' },
 ]
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -93,11 +93,11 @@ export default function PrivacyPage() {
           Privacy Policy
         </h1>
         <p className="text-sm text-stone-500 dark:text-stone-500">
-          Last updated: <time dateTime="2025-01-01">January 1, 2025</time>
+          Last updated: <time dateTime="2025-01-01">February 28, 2026</time>
         </p>
         <p className="mt-4 text-stone-600 dark:text-stone-400 leading-relaxed">
           Your privacy matters to us. Work Timer is built on an <Strong>offline-first,
-          privacy-first</Strong> philosophy — your time entries live on your own device by
+            privacy-first</Strong> philosophy — your time entries live on your own device by
           default and are never shared without your explicit action. This policy explains
           exactly what data we collect (and what we don&apos;t), where it goes, and how you
           can delete it at any time.
@@ -166,7 +166,7 @@ export default function PrivacyPage() {
           <H3>a) Local-only storage (no account required)</H3>
           <p>
             When you use the Chrome extension without signing in, <Strong>all data is stored
-            locally on your device</Strong> using Chrome&apos;s{' '}
+              locally on your device</Strong> using Chrome&apos;s{' '}
             <Code>chrome.storage.local</Code> API. This allows the extension to work fully
             offline and keeps every piece of your data on your own machine — nothing is
             transmitted to our servers. The data stored locally includes:
