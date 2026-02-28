@@ -1,0 +1,15 @@
+{
+  "app": {
+    "[project]/admin/app/(admin)/domains/page": [],
+    "[project]/admin/app/(admin)/groups/page": [],
+    "[project]/admin/app/(admin)/page": [],
+    "[project]/admin/app/(admin)/promos/page": [],
+    "[project]/admin/app/(admin)/stats/page": [],
+    "[project]/admin/app/(admin)/subscriptions/page": [],
+    "[project]/admin/app/(admin)/users/page": [],
+    "[project]/admin/app/login/page": []
+  },
+  "appUsingSizeAdjust": false,
+  "pages": {},
+  "pagesUsingSizeAdjust": false
+}

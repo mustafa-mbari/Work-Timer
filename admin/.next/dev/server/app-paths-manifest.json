@@ -1,0 +1,13 @@
+{
+  "/(admin)/domains/page": "app/(admin)/domains/page.js",
+  "/(admin)/groups/page": "app/(admin)/groups/page.js",
+  "/(admin)/page": "app/(admin)/page.js",
+  "/(admin)/promos/page": "app/(admin)/promos/page.js",
+  "/(admin)/stats/page": "app/(admin)/stats/page.js",
+  "/(admin)/subscriptions/page": "app/(admin)/subscriptions/page.js",
+  "/(admin)/users/page": "app/(admin)/users/page.js",
+  "/api/domains/route": "app/api/domains/route.js",
+  "/api/promos/route": "app/api/promos/route.js",
+  "/api/subscriptions/route": "app/api/subscriptions/route.js",
+  "/login/page": "app/login/page.js"
+}

@@ -77,7 +77,7 @@ See [HowToDoPlan.md](HowToDoPlan.md) for the full Stripe setup guide (creating p
 - **Groups** -- Team time management with timesheet approval workflow. Admins configure recurring share schedules, review and approve/deny member submissions, generate CSV reports. Members submit auto-filled timesheets, view own stats, and see team member names (no hours). Shared UI components (StatusBadge, MemberAvatar, EmptyState) with 3-level tab hierarchy (pill segments, underline tabs, filter pills)
 - **Analytics** -- Weekly trends, project breakdowns, peak hours, streaks
 - **Billing** -- Subscription management, promo codes, Stripe checkout
-- **Admin Panel** -- User management, platform stats, domain whitelisting, promo codes
+- **Admin Panel** -- Separate app at `admin/` (port 3001). User management, platform stats, domain whitelisting, promo codes, group management
 - **UI Test Lab** -- Admin-only page (`/ui-test`) for prototyping alternative UI designs across Entries, Timer, Quick Add, Dashboard, Project Picker, and Daily Goal tabs; each tab has multiple design variants for side-by-side comparison
 
 ---
@@ -110,8 +110,11 @@ pnpm run build
 # Extension (with HMR)
 pnpm run dev
 
-# Website
+# Website (port 3000)
 cd web && pnpm install && pnpm run dev
+
+# Admin Panel (port 3001)
+cd admin && pnpm install && pnpm run dev
 ```
 
 ---
@@ -145,7 +148,7 @@ Work-Timer/
     constants/          # Colors, timers, styles
     types/              # TypeScript interfaces
     __tests__/          # Test setup (chrome.storage mock)
-  web/                  # Companion Website (Next.js 16)
+  web/                  # Companion Website (Next.js 16, port 3000)
     app/                # App Router pages + API routes
     components/         # UI components (shadcn/ui)
     lib/
@@ -154,6 +157,14 @@ Work-Timer/
       validation.ts     # Zod schemas for API inputs
       supabase/         # Server + service role clients
       stripe.ts         # Stripe config
+  admin/                # Admin Panel (Next.js 16, separate app, port 3001)
+    app/                # App Router pages + API routes
+    components/         # AdminHeader, AdminNav, shadcn/ui
+    lib/
+      repositories/     # Admin-only Supabase queries
+      services/         # Admin auth + analytics
+      validation.ts     # Admin Zod schemas
+      supabase/         # Server + service role clients
   supabase/
     migrations/         # SQL migrations (indexes, RPCs, promo, stripe_events)
   public/               # Extension assets + manifest.json

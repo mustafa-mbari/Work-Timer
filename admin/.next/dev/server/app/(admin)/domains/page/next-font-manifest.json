@@ -1,0 +1,8 @@
+{
+  "pages": {},
+  "app": {
+    "[project]/admin/app/(admin)/domains/page": []
+  },
+  "appUsingSizeAdjust": false,
+  "pagesUsingSizeAdjust": false
+}

@@ -55,6 +55,13 @@ pnpm install
 pnpm dev             # Next.js dev server (port 3000)
 pnpm build           # Production build
 pnpm lint
+
+# Admin App
+cd admin
+pnpm install
+pnpm dev             # Next.js dev server (port 3001)
+pnpm build           # Production build
+pnpm lint
 ```
 
 Load the extension in Chrome:
@@ -67,6 +74,7 @@ Load the extension in Chrome:
 
 - Extension: `@/` -> `src/`, `@shared/` -> `shared/` (in `vite.config.ts` + `tsconfig.app.json`)
 - Website: `@/` -> `web/`, `@shared/` -> `shared/` (in `web/tsconfig.json`)
+- Admin: `@/` -> `admin/` (in `admin/tsconfig.json`)
 
 ## Architecture
 
@@ -105,9 +113,7 @@ web/
   app/
     (authenticated)/    # Route group (dashboard, billing, analytics, entries)
                         #   dashboard/ includes WeeklyProjectChart (CSS stacked bars, no Recharts)
-                        #   ui-test/ — admin-only UI prototype lab (sidebar nav, requireAdminPage())
-    admin/              # Admin panel (overview, users, stats, domains, promos, subscriptions)
-    api/                # API routes (checkout, billing, webhooks, admin CRUD, promo)
+    api/                # API routes (checkout, billing, webhooks, promo)
     auth/               # OAuth callback + extension bridge (postMessage relay)
     api/auth/           # Server-side auth routes (sign-in, sign-up, magic-link, forgot-password, google, session)
     login/, register/   # Auth forms
@@ -125,6 +131,39 @@ web/
     utils.ts            # cn() helper
     theme.ts            # Cookie-based theme provider
   middleware.ts         # Auth guards (skips public routes for performance) — deprecated name, will become proxy.ts
+```
+
+### Admin App Source Layout (`admin/`)
+
+Standalone Next.js 16 app on port 3001. No next-intl. All strings hardcoded English.
+
+```
+admin/
+  app/
+    (admin)/            # Route group (layout with AdminHeader + AdminNav)
+      page.tsx          # Overview (user counts, premium breakdown, recent sign-ups)
+      users/            # User table with search + pagination
+      stats/            # Full platform stats
+      domains/          # Whitelist domain management
+      promos/           # Promo code management
+      subscriptions/    # Grant/view premium
+      groups/           # Group management
+      ui-test/          # UITestLab (admin-only design prototyping)
+    api/                # Admin API routes (domains, promos, subscriptions, groups)
+    login/              # Admin login (role check: profiles.role === 'admin')
+    globals.css         # Design tokens + dark mode
+  components/
+    ui/                 # shadcn/ui (16 components, only those used)
+    AdminHeader.tsx     # Top bar (branding, user email, theme toggle, sign out)
+    AdminNav.tsx        # Horizontal pill nav (7 items)
+    ThemeProvider.tsx   # Cookie-based theme
+  lib/
+    repositories/       # Admin-only Supabase queries (admin, domains, promoCodes, subscriptions, profiles)
+    services/           # auth.ts (requireAdmin, requireAdminApi), analytics.ts
+    validation.ts       # Admin Zod schemas only
+    supabase/           # Server + service role clients
+    shared/             # types.ts + constants.ts (copied from shared/)
+  middleware.ts         # Protects all routes; checks auth + admin role
 ```
 
 ### Popup <-> Background Communication
