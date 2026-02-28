@@ -21,6 +21,14 @@ function Section({ id, title, children }: { id: string; title: string; children:
   )
 }
 
+function H3({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="font-semibold text-stone-800 dark:text-stone-200 mt-5 mb-1">
+      {children}
+    </h3>
+  )
+}
+
 function Ul({ children }: { children: React.ReactNode }) {
   return (
     <ul className="list-disc list-outside ml-5 space-y-1.5 text-stone-600 dark:text-stone-400">
@@ -35,6 +43,14 @@ function Li({ children }: { children: React.ReactNode }) {
 
 function Strong({ children }: { children: React.ReactNode }) {
   return <strong className="font-semibold text-stone-800 dark:text-stone-200">{children}</strong>
+}
+
+function Code({ children }: { children: React.ReactNode }) {
+  return (
+    <code className="text-xs bg-stone-100 dark:bg-[var(--dark-elevated)] px-1 py-0.5 rounded font-mono">
+      {children}
+    </code>
+  )
 }
 
 function InlineLink({ href, children }: { href: string; children: React.ReactNode }) {
@@ -61,6 +77,7 @@ const TOC_ITEMS = [
   { id: 'security',          label: 'Security' },
   { id: 'childrens-privacy', label: "Children's privacy" },
   { id: 'changes',           label: 'Changes to this policy' },
+  { id: 'your-rights',       label: 'Your rights' },
   { id: 'contact',           label: 'Contact us' },
 ]
 
@@ -69,6 +86,7 @@ const TOC_ITEMS = [
 export default function PrivacyPage() {
   return (
     <div className="max-w-3xl mx-auto px-6 py-14">
+
       {/* ── Header ── */}
       <header className="mb-10">
         <h1 className="text-3xl font-bold text-stone-900 dark:text-stone-100 mb-2">
@@ -112,14 +130,23 @@ export default function PrivacyPage() {
       <article className="divide-y divide-stone-100 dark:divide-[var(--dark-border)]">
 
         {/* 1. Introduction */}
+        {/* CHANGE 1: added 2–3 sentences clarifying extension + web app relationship */}
         <Section id="introduction" title="1. Introduction">
           <p>
             Work Timer (&ldquo;Work Timer&rdquo;, &ldquo;we&rdquo;, &ldquo;our&rdquo;, or
-            &ldquo;us&rdquo;) is a time-tracking application available as a Chrome
-            extension and a companion web app at{' '}
+            &ldquo;us&rdquo;) is a time-tracking tool that consists of two parts: a{' '}
+            <Strong>Chrome extension</Strong> and a <Strong>companion web app</Strong>{' '}
+            at{' '}
             <InlineLink href="https://w-timer.com">w-timer.com</InlineLink>. This Privacy
-            Policy applies to both the extension and the website and describes how we handle
-            your information when you use our services.
+            Policy applies to both and describes how we handle your information when you use
+            either part of the service.
+          </p>
+          <p>
+            You can use the Chrome extension entirely on its own, with no account and no
+            internet connection required — all your data stays on your device in that case.
+            Optionally, you can create a free account to unlock cloud sync, which lets your
+            data follow you across multiple devices and browsers. This policy covers both
+            usage modes.
           </p>
           <p>
             By installing the extension or using the website you agree to the practices
@@ -135,25 +162,28 @@ export default function PrivacyPage() {
             collected depends on how you use Work Timer:
           </p>
 
-          <h3 className="font-semibold text-stone-800 dark:text-stone-200 mt-4 mb-1">
-            a) Local-only (no account required)
-          </h3>
+          {/* CHANGE 2: explicit chrome.storage.local mention */}
+          <H3>a) Local-only storage (no account required)</H3>
           <p>
-            When you use the extension without signing in, <Strong>all data stays on your
-            device</Strong> inside Chrome&apos;s local storage. Nothing is transmitted to
-            our servers. This includes:
+            When you use the Chrome extension without signing in, <Strong>all data is stored
+            locally on your device</Strong> using Chrome&apos;s{' '}
+            <Code>chrome.storage.local</Code> API. This allows the extension to work fully
+            offline and keeps every piece of your data on your own machine — nothing is
+            transmitted to our servers. The data stored locally includes:
           </p>
           <Ul>
             <Li>Time entries (start time, end time, duration, description)</Li>
             <Li>Projects and tags you create</Li>
             <Li>Timer state (running/paused, elapsed time)</Li>
             <Li>App settings (theme, Pomodoro configuration, idle timeout, notifications)</Li>
-            <Li>Sync queue (a temporary list of pending changes, processed locally)</Li>
+            <Li>Sync queue (a temporary list of pending changes, only used locally unless sync is enabled)</Li>
           </Ul>
+          <p>
+            <Code>chrome.storage.local</Code> is sandboxed to the Work Timer extension and
+            cannot be read by websites you visit or by other browser extensions.
+          </p>
 
-          <h3 className="font-semibold text-stone-800 dark:text-stone-200 mt-4 mb-1">
-            b) Account &amp; cloud sync (optional)
-          </h3>
+          <H3>b) Account &amp; cloud sync (optional)</H3>
           <p>
             If you create an account and enable cloud sync, the data listed above is
             uploaded to our servers so it can be accessed across devices. We additionally
@@ -166,18 +196,18 @@ export default function PrivacyPage() {
             <Li>Sync cursor timestamps (to enable incremental sync and detect conflicts)</Li>
           </Ul>
 
-          <h3 className="font-semibold text-stone-800 dark:text-stone-200 mt-4 mb-1">
-            c) Usage analytics (premium)
-          </h3>
+          {/* CHANGE 5 (part 1): revised analytics section — no third-party trackers in extension */}
+          <H3>c) Usage analytics (premium)</H3>
           <p>
-            Premium subscribers can access aggregated analytics (weekly totals, daily
-            averages, project breakdowns). These are derived entirely from your own time
-            entries — we do not use third-party analytics trackers.
+            We do not use any third-party analytics tools inside the Chrome extension. The
+            extension itself generates no telemetry or usage statistics beyond the time
+            entries you deliberately create. Premium subscribers can access aggregated
+            personal analytics (weekly totals, daily averages, project breakdowns) on the
+            web app — these are computed entirely from your own time entries and displayed
+            only to you.
           </p>
 
-          <h3 className="font-semibold text-stone-800 dark:text-stone-200 mt-4 mb-1">
-            d) Payment information
-          </h3>
+          <H3>d) Payment information</H3>
           <p>
             If you subscribe to a paid plan, your payment is processed by a third-party
             payment provider (see &ldquo;Third-party services&rdquo; below). We receive only
@@ -185,14 +215,58 @@ export default function PrivacyPage() {
             your full card number, CVV, or bank details.
           </p>
 
-          <h3 className="font-semibold text-stone-800 dark:text-stone-200 mt-4 mb-1">
-            e) Automatic technical data
-          </h3>
+          {/* CHANGE 5 (part 2): revised technical logs section — more precise */}
+          <H3>e) Technical server logs</H3>
           <p>
-            Our servers (via Supabase and our hosting provider) may log standard HTTP
-            request metadata such as IP address, browser user-agent, and timestamps for
-            security and reliability purposes. These logs are retained for up to 30 days
-            and are not used for advertising.
+            When you use the web app or the extension&apos;s cloud sync feature, our
+            hosting infrastructure automatically records standard server logs. These may
+            include your IP address, browser type and version, operating system, the pages
+            or API endpoints requested, and error traces. We use this information solely to
+            keep the service secure, diagnose technical problems, and measure overall
+            availability. Logs are retained for up to 30 days and are not used for
+            advertising or profiling.
+          </p>
+          <p>
+            We do not use third-party behavioral analytics services (such as Mixpanel,
+            Amplitude, or Segment) on the web app. Where possible, log data is handled in
+            an aggregated or pseudonymous form.
+          </p>
+
+          {/* CHANGE 3: new dedicated subsection on content script behavior */}
+          <H3>f) Content script behavior</H3>
+          <p>
+            The Work Timer Chrome extension injects a small <Strong>content script</Strong>{' '}
+            into the pages you visit in order to display a floating timer widget. This
+            script is limited in what it does:
+          </p>
+          <Ul>
+            <Li>
+              <Strong>It does not read page content.</Strong> The script never reads, copies,
+              or transmits the text, form inputs, passwords, cookies, or any other content
+              from the pages you visit.
+            </Li>
+            <Li>
+              <Strong>It only renders the timer UI.</Strong> Its sole purpose is to inject and
+              manage the floating timer overlay so you can start, pause, and stop timers
+              without leaving the tab.
+            </Li>
+            <Li>
+              <Strong>It handles authentication messages securely.</Strong> When you are on{' '}
+              <Code>w-timer.com</Code>, the script relays sign-in status between the website
+              and the extension. This communication is restricted to{' '}
+              <Code>https://w-timer.com/*</Code> only and uses no third-party code.
+            </Li>
+            <Li>
+              <Strong>It does not inject third-party tracking scripts</Strong> into the pages
+              you visit. The extension enforces a strict Content Security Policy (
+              <Code>script-src &apos;self&apos;; object-src &apos;none&apos;</Code>) that
+              prevents any external JavaScript from running inside extension contexts.
+            </Li>
+          </Ul>
+          <p>
+            The extension declares <Code>content_scripts</Code> on{' '}
+            <Code>&lt;all_urls&gt;</Code> but has no <Code>host_permissions</Code>, which
+            means it cannot make privileged cross-origin requests on behalf of those pages.
           </p>
         </Section>
 
@@ -201,24 +275,24 @@ export default function PrivacyPage() {
           <p>Work Timer uses two distinct storage tiers:</p>
           <Ul>
             <Li>
-              <Strong>chrome.storage.local</Strong> — All time entries, projects, tags,
-              settings, and timer state are stored inside Chrome on your own machine. This
-              storage is sandboxed to the extension and inaccessible to websites or other
-              extensions.
+              <Strong>chrome.storage.local (local)</Strong> — All time entries, projects,
+              tags, settings, and timer state are stored inside Chrome on your own machine.
+              This storage is sandboxed to the extension and inaccessible to websites or
+              other extensions. No network request is made to store or retrieve this data.
             </Li>
             <Li>
-              <Strong>Supabase (cloud)</Strong> — When you sign in and cloud sync is
-              enabled, your data is replicated to a PostgreSQL database hosted on Supabase
+              <Strong>Supabase (cloud, optional)</Strong> — When you sign in and cloud sync
+              is enabled, your data is replicated to a PostgreSQL database hosted on Supabase
               (supabase.com). Supabase stores data in data centers operated by AWS or Google
               Cloud. All data is encrypted in transit (TLS) and at rest (AES-256). Supabase
-              enforces row-level security so each user can only read their own data.
+              enforces row-level security so each user can only read their own records.
             </Li>
           </Ul>
           <p>
-            Data stored in the cloud is logically associated with your account via your
-            user ID. If you are in the European Economic Area (EEA), please note that our
-            cloud infrastructure may process data outside the EEA; Supabase operates under
-            standard contractual clauses for such transfers.
+            Cloud data is logically associated with your account via your user ID. If you
+            are in the European Economic Area (EEA), please note that our cloud
+            infrastructure may process data outside the EEA; Supabase operates under
+            Standard Contractual Clauses for such transfers.
           </p>
         </Section>
 
@@ -236,32 +310,28 @@ export default function PrivacyPage() {
             </Li>
             <Li>
               <Strong>Notifications &amp; reminders</Strong> — Using the Chrome{' '}
-              <code className="text-xs bg-stone-100 dark:bg-[var(--dark-elevated)] px-1 py-0.5 rounded font-mono">notifications</code>{' '}
-              API and{' '}
-              <code className="text-xs bg-stone-100 dark:bg-[var(--dark-elevated)] px-1 py-0.5 rounded font-mono">alarms</code>{' '}
-              API to deliver Pomodoro transition alerts, idle-time prompts, and optional
-              weekly timesheet reminders. You can disable all notifications in Settings.
+              <Code>notifications</Code> API and <Code>alarms</Code> API to deliver Pomodoro
+              transition alerts, idle-time prompts, and optional weekly timesheet reminders.
+              You can disable all notifications in Settings.
             </Li>
             <Li>
-              <Strong>Idle detection</Strong> — Using Chrome&apos;s{' '}
-              <code className="text-xs bg-stone-100 dark:bg-[var(--dark-elevated)] px-1 py-0.5 rounded font-mono">idle</code>{' '}
-              API to detect when you step away from your computer. If idle time is detected
-              while a timer is running, Work Timer will ask whether to keep or discard the
-              idle portion. No data about your idle activity is transmitted to our servers.
+              <Strong>Idle detection</Strong> — Using Chrome&apos;s <Code>idle</Code> API to
+              detect when you step away from your computer. If idle time is detected while a
+              timer is running, Work Timer will ask whether to keep or discard the idle
+              portion. No data about your idle activity is transmitted to our servers.
             </Li>
             <Li>
-              <Strong>Analytics (premium)</Strong> — Computing your personal usage
-              statistics (daily averages, project breakdowns, earnings estimates) from your
-              own time entries. This computation happens server-side for premium users; the
-              results are displayed only to you.
+              <Strong>Personal analytics (premium)</Strong> — Computing your usage statistics
+              (daily averages, project breakdowns, earnings estimates) from your own time
+              entries. Results are displayed only to you.
             </Li>
             <Li>
-              <Strong>Account management</Strong> — Sending transactional emails
-              (password reset, email verification) when you request them.
+              <Strong>Account management</Strong> — Sending transactional emails (password
+              reset, email verification) when you request them.
             </Li>
             <Li>
-              <Strong>Subscription management</Strong> — Tracking your plan tier and
-              feature entitlements.
+              <Strong>Subscription management</Strong> — Tracking your plan tier and feature
+              entitlements.
             </Li>
           </Ul>
         </Section>
@@ -278,19 +348,15 @@ export default function PrivacyPage() {
             </Li>
             <Li>
               <Strong>We do not read or modify web page content.</Strong> The floating timer
-              widget is injected as a content script on all pages so it can appear while you
-              browse, but it renders only its own UI. It does not read page text, form
-              inputs, passwords, cookies, or any other page data. The extension has no{' '}
-              <code className="text-xs bg-stone-100 dark:bg-[var(--dark-elevated)] px-1 py-0.5 rounded font-mono">host_permissions</code>{' '}
-              and its content-security policy blocks all third-party scripts.
+              widget is injected as a content script so it can appear while you browse, but
+              it renders only its own UI. It does not read page text, form inputs, passwords,
+              cookies, or any other page data (see section 2f for full details).
             </Li>
             <Li>
               <Strong>We do not inject advertising or tracking scripts.</Strong> The
               extension enforces a strict Content Security Policy (
-              <code className="text-xs bg-stone-100 dark:bg-[var(--dark-elevated)] px-1 py-0.5 rounded font-mono">
-                script-src &apos;self&apos;; object-src &apos;none&apos;
-              </code>
-              ) that prevents any third-party JavaScript from running inside extension pages.
+              <Code>script-src &apos;self&apos;; object-src &apos;none&apos;</Code>) that
+              prevents any third-party JavaScript from running inside extension pages.
             </Li>
             <Li>
               <Strong>We do not track your browsing history.</Strong> The extension does not
@@ -334,8 +400,8 @@ export default function PrivacyPage() {
               <Strong>
                 <InlineLink href="https://vercel.com/legal/privacy-policy">Vercel</InlineLink>
               </Strong>{' '}
-              — Our web hosting provider for the companion website. Vercel may log
-              request metadata (IP address, user-agent) for up to 30 days for security and
+              — Our web hosting provider for the companion website. Vercel may log request
+              metadata (IP address, user-agent) for up to 30 days for security and
               reliability purposes.
             </Li>
             <Li>
@@ -345,30 +411,21 @@ export default function PrivacyPage() {
             </Li>
           </Ul>
           <p>
-            We do not use any advertising networks, behavioral analytics platforms (e.g.,
-            Mixpanel, Amplitude, Segment), or social media tracking pixels on our website
-            or in our extension.
+            We do not use any advertising networks, behavioral analytics platforms, or
+            social media tracking pixels on our website or in our extension.
           </p>
         </Section>
 
         {/* 7. Retention & deletion */}
         <Section id="retention" title="7. Data retention & deletion">
-          <h3 className="font-semibold text-stone-800 dark:text-stone-200 mt-4 mb-1">
-            Local data (extension)
-          </h3>
+          <H3>Local data (extension)</H3>
           <p>
-            Data stored in{' '}
-            <code className="text-xs bg-stone-100 dark:bg-[var(--dark-elevated)] px-1 py-0.5 rounded font-mono">
-              chrome.storage.local
-            </code>{' '}
-            is retained until you uninstall the extension, clear the extension&apos;s
-            storage via Chrome settings, or use the &ldquo;Clear all data&rdquo; option
-            inside Work Timer&apos;s Settings view.
+            Data stored in <Code>chrome.storage.local</Code> is retained until you uninstall
+            the extension, clear the extension&apos;s storage via Chrome settings, or use
+            the &ldquo;Clear all data&rdquo; option inside Work Timer&apos;s Settings view.
           </p>
 
-          <h3 className="font-semibold text-stone-800 dark:text-stone-200 mt-4 mb-1">
-            Cloud data (account)
-          </h3>
+          <H3>Cloud data (account)</H3>
           <p>
             If you have an account, your cloud data is retained for as long as your account
             is active. You can delete your account at any time from the Account Settings
@@ -378,21 +435,17 @@ export default function PrivacyPage() {
             <Li>All your time entries, projects, tags, and settings are permanently deleted from our database.</Li>
             <Li>Your authentication record is removed.</Li>
             <Li>Any active subscription is cancelled immediately (you retain access until the end of the current billing period).</Li>
-            <Li>Deletion is irreversible. We do not retain soft-deleted copies of your data beyond a 30-day backup window (see below).</Li>
+            <Li>Deletion is irreversible. We do not retain soft-deleted copies of your data beyond the backup window described below.</Li>
           </Ul>
 
-          <h3 className="font-semibold text-stone-800 dark:text-stone-200 mt-4 mb-1">
-            Backups
-          </h3>
+          <H3>Backups</H3>
           <p>
             Supabase takes automated database backups. Deleted data may remain in encrypted
             backups for up to 30 days before being permanently overwritten. We will not
             restore your data from backup after you request deletion.
           </p>
 
-          <h3 className="font-semibold text-stone-800 dark:text-stone-200 mt-4 mb-1">
-            Data portability
-          </h3>
+          <H3>Data portability</H3>
           <p>
             You can export all your time entries at any time as CSV, Excel (.xlsx), or PDF
             from within the extension or website. You own your data and can take it with you
@@ -409,25 +462,19 @@ export default function PrivacyPage() {
             <Li>All data is transmitted over HTTPS/TLS.</Li>
             <Li>Cloud data is encrypted at rest using AES-256.</Li>
             <Li>
-              Row-level security in the database ensures users can only access their own
-              data.
+              Row-level security in the database ensures each user can only access their
+              own records.
             </Li>
             <Li>
               The extension enforces a strict Content Security Policy that blocks
               third-party script injection.
             </Li>
             <Li>
-              The extension communicates with the website only via{' '}
-              <code className="text-xs bg-stone-100 dark:bg-[var(--dark-elevated)] px-1 py-0.5 rounded font-mono">
-                externally_connectable
-              </code>{' '}
-              restricted to{' '}
-              <code className="text-xs bg-stone-100 dark:bg-[var(--dark-elevated)] px-1 py-0.5 rounded font-mono">
-                https://w-timer.com/*
-              </code>
-              , preventing spoofing from other origins.
+              Extension-to-website messaging is restricted via{' '}
+              <Code>externally_connectable</Code> to{' '}
+              <Code>https://w-timer.com/*</Code>, preventing spoofing from other origins.
             </Li>
-            <Li>API routes validate all inputs using strict Zod schemas.</Li>
+            <Li>All API routes validate inputs using strict Zod schemas.</Li>
           </Ul>
           <p>
             No method of transmission or storage is 100% secure. If you discover a
@@ -453,7 +500,7 @@ export default function PrivacyPage() {
           <p>
             We may update this Privacy Policy from time to time. When we do, we will update
             the &ldquo;Last updated&rdquo; date at the top of this page. For material
-            changes (changes that significantly affect how we process your data), we will
+            changes — those that significantly affect how we process your data — we will
             notify you by email (if you have an account) or by displaying a notice in the
             extension or on the website at least 14 days before the change takes effect.
           </p>
@@ -464,15 +511,66 @@ export default function PrivacyPage() {
           </p>
         </Section>
 
-        {/* 11. Contact */}
-        <Section id="contact" title="11. Contact us">
+        {/* 11. Your rights — CHANGE 4: new GDPR-style section */}
+        <Section id="your-rights" title="11. Your rights">
+          <p>
+            Depending on where you live, you may have certain rights over your personal
+            data under applicable privacy law (including, where relevant, the GDPR and
+            similar regulations). These rights may include:
+          </p>
+          <Ul>
+            <Li>
+              <Strong>Right of access</Strong> — You can request a copy of the personal data
+              we hold about you.
+            </Li>
+            <Li>
+              <Strong>Right to rectification</Strong> — You can ask us to correct inaccurate
+              or incomplete data.
+            </Li>
+            <Li>
+              <Strong>Right to erasure</Strong> — You can request deletion of your personal
+              data, subject to any legal obligations we may have to retain it.
+            </Li>
+            <Li>
+              <Strong>Right to restriction</Strong> — You can ask us to limit how we process
+              your data in certain circumstances.
+            </Li>
+            <Li>
+              <Strong>Right to data portability</Strong> — You can request your data in a
+              structured, machine-readable format. Work Timer supports this directly via the
+              CSV and Excel export features.
+            </Li>
+            <Li>
+              <Strong>Right to object</Strong> — You can object to certain types of
+              processing, such as direct marketing (we do not send marketing emails).
+            </Li>
+          </Ul>
+          <p>
+            Most of these rights can be exercised directly within the app: you can export
+            your data at any time, and you can delete your account (and all associated data)
+            from the Account Settings page. To exercise any right that is not handled
+            in-app, or if you have questions, please contact us using the details in the
+            &ldquo;Contact us&rdquo; section below. We will respond within 30 days.
+          </p>
+          <p>
+            If you are in the EEA or UK and believe we have not addressed your concern, you
+            have the right to lodge a complaint with your local data protection authority.
+          </p>
+        </Section>
+
+        {/* 12. Contact — CHANGE 6: added operator sentence */}
+        <Section id="contact" title="12. Contact us">
           <p>
             If you have any questions, concerns, or requests regarding this Privacy Policy
-            or your personal data, please contact us:
+            or your personal data, please get in touch:
           </p>
-          <div className="rounded-xl border border-stone-200 dark:border-[var(--dark-border)] bg-stone-50 dark:bg-[var(--dark-card)] px-6 py-5 mt-4 space-y-1 text-stone-700 dark:text-stone-300">
+          <div className="rounded-xl border border-stone-200 dark:border-[var(--dark-border)] bg-stone-50 dark:bg-[var(--dark-card)] px-6 py-5 mt-4 space-y-1.5 text-stone-700 dark:text-stone-300">
             <p>
               <Strong>Work Timer</Strong>
+            </p>
+            <p className="text-sm text-stone-500 dark:text-stone-500">
+              Operated by{' '}
+              <span className="italic">[Your Legal Name / Company Name, Country]</span>
             </p>
             <p>
               Email:{' '}
