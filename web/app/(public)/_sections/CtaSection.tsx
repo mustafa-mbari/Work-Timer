@@ -48,6 +48,17 @@ export async function CtaSection({ isLoggedIn }: Props) {
         <p className="text-indigo-200/70 text-xs mt-6">
           {t('disclaimer')}
         </p>
+        <p className="text-indigo-200/50 text-xs mt-2">
+          By creating an account you agree to our{' '}
+          <Link href="/privacy" className="underline underline-offset-2 hover:text-indigo-100 transition-colors">
+            Privacy Policy
+          </Link>
+          {' '}and{' '}
+          <Link href="/terms" className="underline underline-offset-2 hover:text-indigo-100 transition-colors">
+            Terms of Service
+          </Link>
+          .
+        </p>
       </div>
     </section>
   )
