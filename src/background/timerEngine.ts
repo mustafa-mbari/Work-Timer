@@ -2,7 +2,7 @@
  * Timer engine: start, pause, resume, stop for the stopwatch timer.
  */
 import type { TimerState, TimeEntry, TimerResponse } from '../types'
-import { getTimerState, setTimerState, setIdleInfo, getSettings, getTimeEntry, saveTimeEntry, updateTimeEntry, DEFAULT_IDLE_INFO, TIMER_ALARM, debouncedSync } from './storage'
+import { getTimerState, setTimerState, setIdleInfo, getSettings, getTimeEntry, saveTimeEntry, updateTimeEntry, DEFAULT_IDLE_INFO, TIMER_ALARM, debouncedSync, getPomodoroState, setPomodoroState, DEFAULT_POMODORO_STATE, POMODORO_ALARM } from './storage'
 import { broadcastTimerSync, updateBadge } from './ui'
 import { getElapsed, DEFAULT_TIMER_STATE } from '../utils/timer'
 import { generateId } from '../utils/id'
@@ -84,6 +84,10 @@ export async function stopTimer(): Promise<TimerResponse> {
   const elapsed = getElapsed(state)
   const now = Date.now()
 
+  // Check if a pomodoro session is active (e.g. stopped via floating widget STOP_TIMER)
+  const pomState = await getPomodoroState()
+  const hadActivePomodoro = pomState.active
+
   // Read threshold fresh from storage — module-level cache may be stale after SW restart
   const settings = await getSettings()
   const saveThresholdMs = Math.max(5, Math.min(240, settings.entrySaveTime ?? 10)) * 1000
@@ -93,8 +97,12 @@ export async function stopTimer(): Promise<TimerResponse> {
     await setTimerState(DEFAULT_TIMER_STATE)
     await setIdleInfo(DEFAULT_IDLE_INFO)
     await chrome.alarms.clear(TIMER_ALARM)
+    if (hadActivePomodoro) {
+      await setPomodoroState(DEFAULT_POMODORO_STATE)
+      await chrome.alarms.clear(POMODORO_ALARM)
+    }
     await updateBadge(DEFAULT_TIMER_STATE)
-    void broadcastTimerSync(DEFAULT_TIMER_STATE)
+    void broadcastTimerSync(DEFAULT_TIMER_STATE, hadActivePomodoro ? DEFAULT_POMODORO_STATE : undefined)
     return { success: true, state: DEFAULT_TIMER_STATE, discarded: true }
   }
 
@@ -156,8 +164,12 @@ export async function stopTimer(): Promise<TimerResponse> {
   await setTimerState(DEFAULT_TIMER_STATE)
   await setIdleInfo(DEFAULT_IDLE_INFO)
   await chrome.alarms.clear(TIMER_ALARM)
+  if (hadActivePomodoro) {
+    await setPomodoroState(DEFAULT_POMODORO_STATE)
+    await chrome.alarms.clear(POMODORO_ALARM)
+  }
   await updateBadge(DEFAULT_TIMER_STATE)
-  void broadcastTimerSync(DEFAULT_TIMER_STATE)
+  void broadcastTimerSync(DEFAULT_TIMER_STATE, hadActivePomodoro ? DEFAULT_POMODORO_STATE : undefined)
 
   return { success: true, state: DEFAULT_TIMER_STATE, entry }
 }

@@ -108,7 +108,7 @@ export async function stopPomodoro(): Promise<TimerResponse> {
   await setIdleInfo(DEFAULT_IDLE_INFO)
   await chrome.alarms.clear(TIMER_ALARM)
   await updateBadge(DEFAULT_TIMER_STATE)
-  void broadcastTimerSync(DEFAULT_TIMER_STATE)
+  void broadcastTimerSync(DEFAULT_TIMER_STATE, DEFAULT_POMODORO_STATE)
 
   return { success: true, state: DEFAULT_TIMER_STATE, pomodoroState: DEFAULT_POMODORO_STATE, entry, discarded }
 }
