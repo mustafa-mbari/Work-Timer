@@ -7,7 +7,7 @@ import type { TimerMessage, TimerResponse } from '../types'
 import { WEBSITE_URL } from '@shared/constants'
 import { generateId } from '../utils/id'
 import { getLocalUserId, setLocalUserId, hasAnyLocalData, clearAllLocalData } from '../storage'
-import { applyExternalSession, signOut as authSignOut, refreshSubscription, getSession } from '../auth/authState'
+import { applyExternalSession, signOut as authSignOut, refreshSubscription, getSession, stampLoginTime, checkFreeSessionExpiry } from '../auth/authState'
 import { syncAll, getSyncState, uploadAllLocalData, diagnoseSyncState } from '../sync/syncEngine'
 import { setupRealtime, teardownRealtime } from '../sync/realtimeSubscription'
 import { pushUserStats } from '../sync/statsSync'
@@ -166,6 +166,7 @@ chrome.runtime.onMessage.addListener(
             if (!session) {
               return { success: false, error: 'Failed to apply session' }
             }
+            await stampLoginTime()
             const localUserId = await getLocalUserId()
             const hasData = await hasAnyLocalData()
             if (localUserId && localUserId !== session.userId && hasData) {
@@ -237,8 +238,17 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   }
 
   if (alarm.name === SUBSCRIPTION_ALARM) {
-    const session = await getSession()
+    // Proactive token refresh — keeps session alive even when service worker is suspended for hours
+    const session = await getSession() // triggers refresh if token expiring within 120s
     if (session) {
+      // Check if free user session has expired (7 days)
+      const loggedOut = await checkFreeSessionExpiry()
+      if (loggedOut) {
+        teardownRealtime()
+        await chrome.alarms.clear(SYNC_ALARM)
+        await chrome.alarms.clear(STATS_SYNC_ALARM)
+        return
+      }
       await refreshSubscription().catch(err => {
         console.warn('[work-timer] Subscription refresh failed:', err)
       })
@@ -337,6 +347,12 @@ chrome.runtime.onStartup.addListener(async () => {
 
   const session = await getSession()
   if (session) {
+    // Auto-logout free users after 7 days
+    const loggedOut = await checkFreeSessionExpiry()
+    if (loggedOut) {
+      teardownRealtime()
+      return
+    }
     void refreshSubscription().catch(err => {
       console.warn('[work-timer] Startup subscription refresh failed:', err)
     })
@@ -502,6 +518,7 @@ chrome.runtime.onMessageExternal.addListener(
       if (message.action === 'AUTH_LOGIN' && message.accessToken && message.refreshToken) {
         const session = await applyExternalSession(message.accessToken, message.refreshToken)
         if (session) {
+          await stampLoginTime()
           const localUserId = await getLocalUserId()
           const hasData = await hasAnyLocalData()
 

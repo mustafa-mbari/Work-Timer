@@ -14,6 +14,7 @@ import {
   getTags, saveTags,
   getSettings, updateSettings,
   setSuppressEnqueue,
+  getSyncPreferences,
 } from '@/storage'
 import type { SyncState, SyncDiagnostics } from '@/types'
 import type { DbTimeEntry, DbProject, DbTag, DbUserSettings } from '@shared/types'
@@ -81,6 +82,8 @@ export async function pushQueue(): Promise<void> {
   const queue = await getQueue()
   if (queue.length === 0) return
 
+  const syncPrefs = await getSyncPreferences()
+
   // Process in batches
   for (let i = 0; i < queue.length; i += BATCH_SIZE) {
     const batch = queue.slice(i, i + BATCH_SIZE)
@@ -99,99 +102,100 @@ export async function pushQueue(): Promise<void> {
     // Push projects FIRST — entries have a FK constraint on project_id,
     // so the referenced project must exist in Supabase before entries are pushed.
 
-    // Push project upserts
-    if (projectUpserts.length > 0) {
-      const allProjects = await getProjects()
-      const rows = projectUpserts
-        .map(item => allProjects.find(p => p.id === item.recordId))
-        .filter(Boolean)
-        .map(p => localProjectToDb(p!, session.userId))
-      if (rows.length > 0) {
-        const { error } = await supabase.from('projects').upsert(rows as any)
-        if (error) {
-          if (isRlsUsingError(error)) {
-            // Rows exist in Supabase under a different user_id — cannot update via RLS.
-            // Dequeue and skip so future syncs are not permanently blocked.
-            console.warn('[work-timer] Projects upsert skipped (user_id mismatch in Supabase):', error.message)
-          } else {
-            throw new Error(`Sync push failed (projects upsert): ${error.message}`)
+    if (syncPrefs.projects) {
+      // Push project upserts
+      if (projectUpserts.length > 0) {
+        const allProjects = await getProjects()
+        const rows = projectUpserts
+          .map(item => allProjects.find(p => p.id === item.recordId))
+          .filter(Boolean)
+          .map(p => localProjectToDb(p!, session.userId))
+        if (rows.length > 0) {
+          const { error } = await supabase.from('projects').upsert(rows as any)
+          if (error) {
+            if (isRlsUsingError(error)) {
+              console.warn('[work-timer] Projects upsert skipped (user_id mismatch in Supabase):', error.message)
+            } else {
+              throw new Error(`Sync push failed (projects upsert): ${error.message}`)
+            }
           }
         }
       }
+
+      // Push project deletes (soft delete)
+      if (projectDeletes.length > 0) {
+        const now = new Date().toISOString()
+        const { error } = await (supabase.from('projects') as any)
+          .update({ deleted_at: now, updated_at: now })
+          .in('id', projectDeletes.map(item => item.recordId))
+          .eq('user_id', session.userId)
+        if (error) throw new Error(`Sync push failed (projects delete): ${error.message}`)
+      }
     }
 
-    // Push project deletes (soft delete)
-    if (projectDeletes.length > 0) {
-      const now = new Date().toISOString()
-      const { error } = await (supabase.from('projects') as any)
-        .update({ deleted_at: now, updated_at: now })
-        .in('id', projectDeletes.map(item => item.recordId))
-        .eq('user_id', session.userId)
-      if (error) throw new Error(`Sync push failed (projects delete): ${error.message}`)
-    }
-
-    // Dequeue projects immediately after successful push
+    // Dequeue projects (even if sync disabled — prevent queue buildup)
     const projectIds = [...projectUpserts, ...projectDeletes].map(item => item.id)
     if (projectIds.length > 0) await dequeue(projectIds)
 
-    // Push time entry upserts (after projects, to satisfy FK constraint)
-    if (entryUpserts.length > 0) {
-      const rows: Partial<DbTimeEntry>[] = []
-      for (const item of entryUpserts) {
-        if (!item.date) continue // skip items without date (old queue entries)
-        const entries = await getEntries(item.date)
-        const found = entries.find(e => e.id === item.recordId)
-        if (found) rows.push(localEntryToDb(found, session.userId))
+    if (syncPrefs.entries) {
+      // Push time entry upserts (after projects, to satisfy FK constraint)
+      if (entryUpserts.length > 0) {
+        const rows: Partial<DbTimeEntry>[] = []
+        for (const item of entryUpserts) {
+          if (!item.date) continue // skip items without date (old queue entries)
+          const entries = await getEntries(item.date)
+          const found = entries.find(e => e.id === item.recordId)
+          if (found) rows.push(localEntryToDb(found, session.userId))
+        }
+        if (rows.length > 0) {
+          const { error } = await supabase.from('time_entries').upsert(rows as any)
+          if (error) {
+            if (isRlsUsingError(error)) {
+              console.warn('[work-timer] Entries upsert skipped (user_id mismatch in Supabase):', error.message)
+            } else {
+              throw new Error(`Sync push failed (entries upsert): ${error.message}`)
+            }
+          }
+        }
       }
-      if (rows.length > 0) {
-        const { error } = await supabase.from('time_entries').upsert(rows as any)
-        if (error) {
-          if (isRlsUsingError(error)) {
-            console.warn('[work-timer] Entries upsert skipped (user_id mismatch in Supabase):', error.message)
-          } else {
-            throw new Error(`Sync push failed (entries upsert): ${error.message}`)
+
+      // Push time entry deletes (soft delete)
+      if (entryDeletes.length > 0) {
+        const now = new Date().toISOString()
+        const { error } = await (supabase.from('time_entries') as any)
+          .update({ deleted_at: now, updated_at: now })
+          .in('id', entryDeletes.map(item => item.recordId))
+          .eq('user_id', session.userId)
+        if (error) throw new Error(`Sync push failed (entries delete): ${error.message}`)
+      }
+    }
+
+    // Dequeue entries (even if sync disabled — prevent queue buildup)
+    const entryIds = [...entryUpserts, ...entryDeletes].map(item => item.id)
+    if (entryIds.length > 0) await dequeue(entryIds)
+
+    if (syncPrefs.tags) {
+      // Push tag upserts — only push tags that are in the queue
+      if (tagUpserts.length > 0) {
+        const allTags = await getTags()
+        const queuedIds = new Set(tagUpserts.map(item => item.recordId))
+        const rows = allTags
+          .filter(tag => queuedIds.has(tag.id))
+          .map(tag => localTagToDb(tag, session.userId))
+        if (rows.length > 0) {
+          const { error } = await supabase.from('tags').upsert(rows as any)
+          if (error) {
+            console.warn('[work-timer] Tags sync skipped (RLS):', error.message)
           }
         }
       }
     }
 
-    // Push time entry deletes (soft delete)
-    if (entryDeletes.length > 0) {
-      const now = new Date().toISOString()
-      const { error } = await (supabase.from('time_entries') as any)
-        .update({ deleted_at: now, updated_at: now })
-        .in('id', entryDeletes.map(item => item.recordId))
-        .eq('user_id', session.userId)
-      if (error) throw new Error(`Sync push failed (entries delete): ${error.message}`)
-    }
-
-    // Dequeue entries immediately after successful push
-    const entryIds = [...entryUpserts, ...entryDeletes].map(item => item.id)
-    if (entryIds.length > 0) await dequeue(entryIds)
-
-    // Push tag upserts — only push tags that are in the queue
-    if (tagUpserts.length > 0) {
-      const allTags = await getTags()
-      const queuedIds = new Set(tagUpserts.map(item => item.recordId))
-      const rows = allTags
-        .filter(tag => queuedIds.has(tag.id))
-        .map(tag => localTagToDb(tag, session.userId))
-      if (rows.length > 0) {
-        const { error } = await supabase.from('tags').upsert(rows as any)
-        if (error) {
-          // RLS errors can happen when switching accounts — tag IDs from a
-          // previous account still exist locally. Log and continue instead
-          // of failing the entire sync batch.
-          console.warn('[work-timer] Tags sync skipped (RLS):', error.message)
-        }
-      }
-    }
-
-    // Dequeue tags after push
+    // Dequeue tags (even if sync disabled — prevent queue buildup)
     const tagIds = tagUpserts.map(item => item.id)
     if (tagIds.length > 0) await dequeue(tagIds)
 
-    // Push settings upserts
+    // Push settings upserts (always — no toggle for settings sync)
     const settingsUpserts = batch.filter(item => item.table === 'user_settings' && item.action === 'upsert')
     if (settingsUpserts.length > 0) {
       const settings = await getSettings()
@@ -229,13 +233,17 @@ export async function pullDelta(): Promise<void> {
     }
   }
 
+  const syncPrefs = await getSyncPreferences()
+
   // Pull time entries (only columns needed by dbEntryToLocal + deleted_at for soft-delete check)
-  const { data: remoteEntries } = await supabase
-    .from('time_entries')
-    .select('id, date, start_time, end_time, duration, project_id, task_id, description, type, tags, link, deleted_at')
-    .eq('user_id', session.userId)
-    .gt('updated_at', since)
-    .range(0, 49999)
+  const remoteEntries = syncPrefs.entries
+    ? (await supabase
+        .from('time_entries')
+        .select('id, date, start_time, end_time, duration, project_id, task_id, description, type, tags, link, deleted_at')
+        .eq('user_id', session.userId)
+        .gt('updated_at', since)
+        .range(0, 49999)).data
+    : null
 
   // Build set of record IDs with pending local changes — skip overwriting these
   const queue = await getQueue()
@@ -301,12 +309,14 @@ export async function pullDelta(): Promise<void> {
     }
 
     // Pull projects (only columns needed by dbProjectToLocal + deleted_at)
-    const { data: remoteProjects } = await supabase
-      .from('projects')
-      .select('id, name, color, target_hours, archived, created_at, is_default, default_tag_id, sort_order, deleted_at')
-      .eq('user_id', session.userId)
-      .gt('updated_at', since)
-      .range(0, 49999)
+    const remoteProjects = syncPrefs.projects
+      ? (await supabase
+          .from('projects')
+          .select('id, name, color, target_hours, archived, created_at, is_default, default_tag_id, sort_order, deleted_at')
+          .eq('user_id', session.userId)
+          .gt('updated_at', since)
+          .range(0, 49999)).data
+      : null
 
     if (remoteProjects) {
       const localProjects = await getProjects()
@@ -333,12 +343,14 @@ export async function pullDelta(): Promise<void> {
     }
 
     // Pull tags (only columns needed by dbTagToLocal + deleted_at)
-    const { data: remoteTags } = await supabase
-      .from('tags')
-      .select('id, name, color, is_default, sort_order, deleted_at')
-      .eq('user_id', session.userId)
-      .gt('updated_at', since)
-      .range(0, 49999)
+    const remoteTags = syncPrefs.tags
+      ? (await supabase
+          .from('tags')
+          .select('id, name, color, is_default, sort_order, deleted_at')
+          .eq('user_id', session.userId)
+          .gt('updated_at', since)
+          .range(0, 49999)).data
+      : null
 
     if (remoteTags) {
       const localTags = await getTags()

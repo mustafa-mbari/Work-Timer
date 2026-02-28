@@ -8,6 +8,7 @@ import {
   getTags, saveTags,
   updateSettings,
   setSuppressEnqueue,
+  getSyncPreferences,
 } from '@/storage'
 import type { DbTimeEntry, DbProject, DbTag, DbUserSettings } from '@shared/types'
 
@@ -22,6 +23,9 @@ type ChangePayload<T> = {
 async function handleTimeEntryChange(payload: ChangePayload<DbTimeEntry>): Promise<void> {
   const remote = payload.new
   if (!remote?.id) return
+
+  const syncPrefs = await getSyncPreferences()
+  if (!syncPrefs.entries) return
 
   // Skip if local has a pending change for this record — local wins
   const queue = await getQueue()
@@ -57,6 +61,9 @@ async function handleProjectChange(payload: ChangePayload<DbProject>): Promise<v
   const remote = payload.new
   if (!remote?.id) return
 
+  const syncPrefs = await getSyncPreferences()
+  if (!syncPrefs.projects) return
+
   // Skip if local has a pending change for this record — local wins
   const queue = await getQueue()
   if (queue.some(item => item.recordId === remote.id)) return
@@ -90,6 +97,9 @@ async function handleProjectChange(payload: ChangePayload<DbProject>): Promise<v
 async function handleTagChange(payload: ChangePayload<DbTag>): Promise<void> {
   const remote = payload.new
   if (!remote?.id) return
+
+  const syncPrefs = await getSyncPreferences()
+  if (!syncPrefs.tags) return
 
   // Skip if local has a pending change for this record — local wins
   const queue = await getQueue()

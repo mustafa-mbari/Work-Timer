@@ -262,6 +262,22 @@ Signature: `exportPDF(entries, projects, tags, filename, dateRange, options?)` w
 - **Initial upload**: Batch upload with per-batch retry (1 retry, 1s backoff)
 - **Data transfer**: ~97 KB egress/user/day, ~150-300 queries/user/day
 
+### Selective Sync Preferences (Premium)
+
+Premium users can disable cloud sync per data category via Settings > Account > Data Sync Controls.
+
+- **Type**: `SyncPreferences` (`src/types/index.ts`) — `{ entries, statistics, projects, tags }` (all boolean, default `true`)
+- **Storage**: Stored in `chrome.storage.local` under key `syncPreferences` — local-only, never synced to cloud
+- **Helpers**: `getSyncPreferences()`, `updateSyncPreferences()`, `DEFAULT_SYNC_PREFERENCES` in `src/storage/index.ts`
+- **Categories**:
+  - `entries` → gates `time_entries` table sync (enqueue, push, pull, realtime)
+  - `statistics` → gates `pushUserStats()` in `src/sync/statsSync.ts`
+  - `projects` → gates `projects` table sync (enqueue, push, pull, realtime)
+  - `tags` → gates `tags` table sync (enqueue, push, pull, realtime)
+- **Settings sync**: `user_settings` always syncs (no toggle) — essential for cross-device consistency
+- **Interception points**: `enqueueSyncItem()` (storage), `pushQueue()` / `pullDelta()` (syncEngine), realtime handlers (realtimeSubscription), `pushUserStats()` (statsSync)
+- **Queue cleanup**: Disabled categories still dequeue items in `pushQueue()` to prevent queue buildup
+
 ### Earnings System
 
 Earnings are **tag-based** (not project-based). Each tag can have:

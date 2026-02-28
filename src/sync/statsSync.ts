@@ -1,6 +1,6 @@
 import { supabase } from '@/auth/supabaseClient'
 import { getSession } from '@/auth/authState'
-import { getProjects } from '@/storage'
+import { getProjects, getSyncPreferences } from '@/storage'
 
 /**
  * Lightweight stats push for ALL authenticated users (free and premium).
@@ -11,6 +11,9 @@ export async function pushUserStats(): Promise<void> {
   const session = await getSession()
   if (!session) return
   if (!navigator.onLine) return
+
+  const syncPrefs = await getSyncPreferences()
+  if (!syncPrefs.statistics) return
 
   // Compute aggregates from local storage
   const allStorage = await chrome.storage.local.get(null)

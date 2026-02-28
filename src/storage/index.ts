@@ -1,4 +1,4 @@
-import type { TimeEntry, Project, Settings, TimerState, Tag } from '@/types'
+import type { TimeEntry, Project, Settings, TimerState, Tag, SyncPreferences } from '@/types'
 import { DEFAULT_TIMER_STATE } from '@/utils/timer'
 import { getToday } from '@/utils/date'
 import { getSession } from '@/auth/authState'
@@ -34,6 +34,13 @@ if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
   })
 }
 
+const TABLE_TO_PREF: Record<string, keyof SyncPreferences | null> = {
+  time_entries: 'entries',
+  projects: 'projects',
+  tags: 'tags',
+  user_settings: null, // always syncs
+}
+
 async function enqueueSyncItem(
   table: 'time_entries' | 'projects' | 'tags' | 'user_settings',
   recordId: string,
@@ -42,6 +49,11 @@ async function enqueueSyncItem(
 ): Promise<void> {
   if (suppressEnqueue) return
   if (!(await checkSyncEligible())) return
+  const prefKey = TABLE_TO_PREF[table]
+  if (prefKey) {
+    const prefs = await getSyncPreferences()
+    if (!prefs[prefKey]) return
+  }
   await enqueue(table, recordId, action, date)
 }
 
@@ -287,6 +299,27 @@ export async function updateSettings(partial: Partial<Settings>): Promise<void> 
   const current = await getSettings()
   await storageSet({ [KEYS.settings]: { ...current, ...partial } })
   await enqueueSyncItem('user_settings', 'self', 'upsert')
+}
+
+// --- Sync Preferences (local-only, never synced to cloud) ---
+
+const SYNC_PREFS_KEY = 'syncPreferences'
+
+export const DEFAULT_SYNC_PREFERENCES: SyncPreferences = {
+  entries: true,
+  statistics: true,
+  projects: true,
+  tags: true,
+}
+
+export async function getSyncPreferences(): Promise<SyncPreferences> {
+  const result = await chrome.storage.local.get(SYNC_PREFS_KEY)
+  const stored = result[SYNC_PREFS_KEY] as Partial<SyncPreferences> | undefined
+  return { ...DEFAULT_SYNC_PREFERENCES, ...stored }
+}
+
+export async function updateSyncPreferences(prefs: SyncPreferences): Promise<void> {
+  await chrome.storage.local.set({ [SYNC_PREFS_KEY]: prefs })
 }
 
 // --- Timer State ---

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import type { Settings, SyncDiagnostics } from '@/types'
-import { getSettings, updateSettings } from '@/storage'
+import type { Settings, SyncDiagnostics, SyncPreferences } from '@/types'
+import { getSettings, updateSettings, getSyncPreferences, updateSyncPreferences, DEFAULT_SYNC_PREFERENCES } from '@/storage'
 import { useProjects, ProjectLimitError } from '@/hooks/useProjects'
 import { useTags } from '@/hooks/useTags'
 import { useTheme, THEMES } from '@/hooks/useTheme'
@@ -60,9 +60,11 @@ export default function SettingsView() {
   const [clearingLocal, setClearingLocal] = useState(false)
   const [confirmClear, setConfirmClear] = useState(false)
   const [copiedUserId, setCopiedUserId] = useState(false)
+  const [syncPrefs, setSyncPrefs] = useState<SyncPreferences>(DEFAULT_SYNC_PREFERENCES)
 
   useEffect(() => {
     getSettings().then(setSettings)
+    getSyncPreferences().then(setSyncPrefs)
   }, [])
 
   // Load last sync time when on account tab
@@ -1079,6 +1081,41 @@ export default function SettingsView() {
                       ) : (
                         <p className="text-[11px] text-stone-400 dark:text-stone-400 mt-0.5">Not synced yet</p>
                       )}
+                    </div>
+
+                    {/* Data sync controls */}
+                    <div className="rounded-lg border border-stone-100 dark:border-dark-border px-3 py-2.5 space-y-1.5">
+                      <div className="mb-1">
+                        <p className="text-[11px] font-medium text-stone-500 dark:text-stone-400">Data sync controls</p>
+                        <p className="text-[10px] text-stone-400 dark:text-stone-500">Choose which data syncs to the cloud</p>
+                      </div>
+                      {([
+                        { key: 'entries' as const, label: 'Time entries' },
+                        { key: 'statistics' as const, label: 'Statistics' },
+                        { key: 'projects' as const, label: 'Projects' },
+                        { key: 'tags' as const, label: 'Tags' },
+                      ]).map(({ key, label }) => (
+                        <div key={key} className="flex items-center justify-between py-1">
+                          <span className="text-xs text-stone-600 dark:text-stone-300">{label}</span>
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={syncPrefs[key]}
+                            onClick={() => {
+                              const updated = { ...syncPrefs, [key]: !syncPrefs[key] }
+                              setSyncPrefs(updated)
+                              updateSyncPreferences(updated)
+                            }}
+                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                              syncPrefs[key] ? 'bg-indigo-500' : 'bg-stone-300 dark:bg-dark-border'
+                            }`}
+                          >
+                            <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${
+                              syncPrefs[key] ? 'translate-x-[18px]' : 'translate-x-[3px]'
+                            }`} />
+                          </button>
+                        </div>
+                      ))}
                     </div>
 
                     {/* Sync from cloud */}

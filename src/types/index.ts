@@ -63,6 +63,13 @@ export interface Settings {
   entrySaveTime: number // Minimum entry duration in seconds (5-240, default 10)
 }
 
+export interface SyncPreferences {
+  entries: boolean
+  statistics: boolean
+  projects: boolean
+  tags: boolean
+}
+
 export interface TimerState {
   status: TimerStatus
   projectId: string | null

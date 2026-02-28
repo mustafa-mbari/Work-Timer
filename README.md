@@ -63,7 +63,7 @@ Track your work time with stopwatch, manual entry, and Pomodoro modes. Start wit
 | Plan | Monthly | Yearly | Highlights |
 | ---- | ------- | ------ | ---------- |
 | **Free** | $0 | — | 5 projects · 14-day history · local only · all timer modes |
-| **Pro** | $1.99 | $17.99 | Unlimited projects & tags · cloud sync · analytics & earnings · CSV export |
+| **Pro** | $1.99 | $17.99 | Unlimited projects & tags · cloud sync · granular sync controls · analytics & earnings · CSV export |
 | **Team (≤10)** | $29 | $260 | Everything in Pro + group workspace · timesheet approval · team reports |
 | **Team (≤20)** | $49 | $440 | Same as Team (10) with up to 20 members |
 | **Team (larger)** | Contact | — | [hello@w-timer.com](mailto:hello@w-timer.com) |
@@ -224,6 +224,7 @@ pnpm run lint
 - **Code splitting**: Heavy libraries (recharts, xlsx, supabase) in separate chunks, lazy loaded.
 - **Repository pattern**: All database queries centralized in `web/lib/repositories/` with typed Supabase calls.
 - **Server-side aggregation**: Admin stats and user analytics computed via PostgreSQL RPC functions (not client-side JS).
+- **Selective sync controls**: Premium users can disable cloud sync per category (entries, statistics, projects, tags) via Settings. Preferences stored locally, never synced.
 - **Sync conflict resolution**: Queue-based -- local changes win over remote when pending in sync queue.
 - **Optimized sync**: Conditional pull via `has_changes_since()` RPC, single multiplexed Realtime channel (1 connection per user), 15-minute periodic sync with debounced entry saves (~150-300 queries/user/day, ~97 KB egress/day).
 - **Webhook idempotency**: Stripe events deduplicated via `stripe_events` table.

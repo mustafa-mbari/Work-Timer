@@ -289,6 +289,13 @@ export default function PrivacyPage() {
             </Li>
           </Ul>
           <p>
+            Premium users can selectively disable cloud sync for individual data
+            categories (time entries, statistics, projects, and tags) from the
+            extension&apos;s Settings &gt; Account &gt; Data Sync Controls. When a category is
+            disabled, that data remains exclusively on your local device and is never
+            transmitted to our servers.
+          </p>
+          <p>
             Cloud data is logically associated with your account via your user ID. If you
             are in the European Economic Area (EEA), please note that our cloud
             infrastructure may process data outside the EEA; Supabase operates under
@@ -306,7 +313,9 @@ export default function PrivacyPage() {
             </Li>
             <Li>
               <Strong>Cloud sync</Strong> — Replicating your local data to the server
-              (and vice versa) so you can use Work Timer on multiple devices.
+              (and vice versa) so you can use Work Timer on multiple devices. You can
+              control exactly which categories of data are synced via the Data Sync
+              Controls in Settings.
             </Li>
             <Li>
               <Strong>Notifications &amp; reminders</Strong> — Using the Chrome{' '}

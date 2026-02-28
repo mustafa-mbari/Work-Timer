@@ -2,6 +2,8 @@ import { supabase } from './supabaseClient'
 import type { AuthSession, SubscriptionInfo } from '@/types'
 
 const SUBSCRIPTION_KEY = 'subscriptionInfo'
+const LAST_LOGIN_KEY = 'lastLoginAt'
+const FREE_SESSION_MAX_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
 
 // --- Session ---
 
@@ -49,7 +51,43 @@ export async function applyExternalSession(accessToken: string, refreshToken: st
 
 export async function signOut(): Promise<void> {
   await supabase.auth.signOut()
-  await chrome.storage.local.remove([SUBSCRIPTION_KEY, 'syncQueue', 'syncCursor', 'localUserId'])
+  await chrome.storage.local.remove([SUBSCRIPTION_KEY, LAST_LOGIN_KEY, 'syncQueue', 'syncCursor', 'localUserId'])
+}
+
+// --- Login timestamp (for free-user session expiry) ---
+
+export async function stampLoginTime(): Promise<void> {
+  await chrome.storage.local.set({ [LAST_LOGIN_KEY]: Date.now() })
+}
+
+/**
+ * Auto-logout free users after 7 days since last login.
+ * Premium users are never auto-logged out.
+ * Returns true if the user was logged out.
+ */
+export async function checkFreeSessionExpiry(): Promise<boolean> {
+  const session = await getSession()
+  if (!session) return false
+
+  const sub = await getCachedSubscription()
+  const isPremium = sub && ['active', 'trialing'].includes(sub.status) && sub.plan !== 'free'
+  if (isPremium) return false
+
+  const result = await chrome.storage.local.get(LAST_LOGIN_KEY)
+  const loginAt = result[LAST_LOGIN_KEY] as number | undefined
+  if (!loginAt) {
+    // No timestamp yet — stamp now (migration for existing users)
+    await stampLoginTime()
+    return false
+  }
+
+  if (Date.now() - loginAt > FREE_SESSION_MAX_MS) {
+    console.log('[work-timer] Free session expired (7 days). Auto-logging out.')
+    await signOut()
+    return true
+  }
+
+  return false
 }
 
 // --- Subscription ---
