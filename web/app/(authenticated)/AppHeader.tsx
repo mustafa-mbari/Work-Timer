@@ -17,19 +17,11 @@ const PAGE_META: { match: string; title: string; description?: string }[] = [
   { match: '/groups', title: 'Groups', description: 'Team collaboration' },
   { match: '/billing', title: 'Billing & Plans', description: 'Manage your subscription' },
   { match: '/settings', title: 'Settings', description: 'App and account preferences' },
-  { match: '/admin/users', title: 'Users', description: 'Administration control' },
-  { match: '/admin/stats', title: 'Statistics', description: 'System-wide performance' },
-  { match: '/admin/domains', title: 'Domains', description: 'Whitelist management' },
-  { match: '/admin/promos', title: 'Promo Codes', description: 'Discounts and offers' },
-  { match: '/admin/subscriptions', title: 'Subscriptions', description: 'Active member list' },
-  { match: '/admin/groups', title: 'Groups', description: 'Group management' },
-  { match: '/admin', title: 'Admin Dashboard', description: 'Platform overview' },
 ]
 
 interface UserInfo {
   email: string
   displayName: string | null
-  role: 'user' | 'admin'
 }
 
 interface Props {
@@ -101,7 +93,6 @@ export default function AppHeader({ userInfo }: Props) {
           <UserMenu
             email={userInfo.email}
             displayName={userInfo.displayName}
-            role={userInfo.role}
           />
         </div>
       </div>

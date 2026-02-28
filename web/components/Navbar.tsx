@@ -15,24 +15,23 @@ export default async function Navbar() {
   const { data: { user } } = await supabase.auth.getUser()
   const t = await getTranslations('common.nav')
 
-  // Fetch profile for display name and role if logged in
-  let profile: { display_name: string | null; role: 'user' | 'admin' } | null = null
+  // Fetch profile for display name if logged in
+  let profile: { display_name: string | null } | null = null
   if (user) {
     const { data } = await (supabase
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .from('profiles') as any)
-      .select('display_name, role')
+      .select('display_name')
       .eq('id', user.id)
       .single()
     if (data) {
-      profile = { display_name: data.display_name, role: data.role }
+      profile = { display_name: data.display_name }
     }
   }
 
   const userInfo = user && profile ? {
     email: user.email || '',
     displayName: profile.display_name,
-    role: profile.role,
   } : null
 
   const navLinkClass = 'px-3 py-1.5 text-sm rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-50 transition-colors dark:text-stone-400 dark:hover:text-stone-100 dark:hover:bg-[var(--dark-hover)]'
@@ -79,7 +78,6 @@ export default async function Navbar() {
                 <UserMenu
                   email={userInfo.email}
                   displayName={userInfo.displayName}
-                  role={userInfo.role}
                 />
               </div>
             </>

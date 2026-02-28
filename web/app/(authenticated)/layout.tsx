@@ -32,7 +32,7 @@ export default async function AuthenticatedLayout({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [{ data }, { isPremium: premium, isAllIn: allIn }] = await Promise.all([
     (supabase.from('profiles') as any)
-      .select('display_name, role')
+      .select('display_name')
       .eq('id', user.id)
       .single(),
     getSubscriptionFlags(user.id),
@@ -41,7 +41,6 @@ export default async function AuthenticatedLayout({
   const userInfo = {
     email: user.email ?? '',
     displayName: (data?.display_name ?? null) as string | null,
-    role: (data?.role ?? 'user') as 'user' | 'admin',
   }
 
   // Read sidebar preferences from cookies (written client-side by shadcn sidebar)
@@ -56,7 +55,7 @@ export default async function AuthenticatedLayout({
   return (
     <SidebarProvider defaultOpen={sidebarOpen}>
       <SidebarLockProvider defaultMode={sidebarMode}>
-        <AppSidebar isAdmin={userInfo.role === 'admin'} isPremium={premium} isAllIn={allIn} userInfo={userInfo} />
+        <AppSidebar isPremium={premium} isAllIn={allIn} userInfo={userInfo} />
         <SidebarInset className="bg-stone-50 dark:bg-[var(--dark)]">
           <AppHeader userInfo={userInfo} />
           <ExtensionBanner />

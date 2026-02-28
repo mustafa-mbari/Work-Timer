@@ -43,7 +43,6 @@ interface UserInfo {
 }
 
 interface Props {
-  isAdmin?: boolean
   isPremium?: boolean
   isAllIn?: boolean
   userInfo?: UserInfo
@@ -205,7 +204,7 @@ function SidebarFooterContent({
   )
 }
 
-export default function AppSidebar({ isAdmin, isPremium, isAllIn, userInfo }: Props) {
+export default function AppSidebar({ isPremium, isAllIn, userInfo }: Props) {
   const pathname = usePathname()
   const tn = useTranslations('common.nav')
   const { setOpen, isMobile, open } = useSidebar()

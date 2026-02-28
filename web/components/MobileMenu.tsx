@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
   Menu, LogOut, LayoutDashboard, BarChart2, Clock,
-  CreditCard, Settings2, ShieldCheck,
+  CreditCard, Settings2,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/sheet"
 
 interface MobileMenuProps {
-  user: { email: string; displayName: string | null; role: "user" | "admin" } | null
+  user: { email: string; displayName: string | null } | null
 }
 
 const authLinks = [
@@ -29,10 +29,6 @@ const authLinks = [
   { href: "/entries",   label: "Entries",    icon: Clock },
   { href: "/billing",   label: "Billing",    icon: CreditCard },
   { href: "/settings",  label: "Settings",   icon: Settings2 },
-]
-
-const adminLinks = [
-  { href: "/admin", label: "Admin Panel", icon: ShieldCheck },
 ]
 
 export function MobileMenu({ user }: MobileMenuProps) {
@@ -48,9 +44,7 @@ export function MobileMenu({ user }: MobileMenuProps) {
     router.refresh()
   }
 
-  const links = user
-    ? [...authLinks, ...(user.role === "admin" ? adminLinks : [])]
-    : []
+  const links = user ? authLinks : []
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
