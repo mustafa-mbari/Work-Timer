@@ -316,23 +316,35 @@ Groups enable team time management with an admin-controlled **timesheet approval
 ```
 GroupsView (client orchestrator, AlertDialog for delete group confirmation)
   ├── Group selector + Create/Join + Invitations banner
-  ├── [isAdmin] → Admin/My Timesheets tab switcher
-  │     ├── AdminDashboard
-  │     │     ├── Team tab → AdminTeamTable (invite/remove/roles, AlertDialog for remove member)
-  │     │     ├── Reviews tab → PendingReviewsPanel → ReviewDialog (shadcn Dialog, approve/deny)
-  │     │     ├── Reports tab → ReportDialog (date range + CSV export)
-  │     │     └── Schedule tab → ScheduleSettings + CreateShareRequestDialog (shadcn Dialog)
+  ├── [isAdmin] → Admin/My Timesheets tab switcher (pill/segment style)
+  │     ├── AdminDashboard (underline tabs)
+  │     │     ├── Team tab → AdminTeamTable (invite/remove/roles, danger zone, mobile cards)
+  │     │     ├── Reviews tab → PendingReviewsPanel (filter pills, mobile cards) → ReviewDialog
+  │     │     ├── Reports tab → ReportDialog (shadcn Dialog, date range + CSV export)
+  │     │     └── Schedule tab → ScheduleSettings + CreateShareRequestDialog (2-col grid on lg+)
   │     └── MemberView (same as non-admin, see below)
-  └── [!isAdmin] → MemberView
-        ├── Overview tab → MemberStatsCard (today/week/month hours) + sharing status
-        ├── Current Share tab → CurrentSharePanel (debounced preview, project filter, submit)
+  └── [!isAdmin] → MemberView (underline tabs)
+        ├── Overview tab → MemberStatsCard + sharing toggle (shadcn Switch) + CurrentSharePanel
         ├── History tab → past shares with status badges (approved/denied only)
         └── Members tab → name list with role badges (NO hours data)
 ```
 
+**Shared UI components** (`web/app/(authenticated)/groups/`):
+
+- `StatusBadge.tsx` -- `StatusBadge` (open/submitted/approved/denied/returned) + `TypeBadge` (day/week/month)
+- `MemberAvatar.tsx` -- Consistent avatar with initials, `size?: 'sm' | 'md' | 'lg'`
+- `EmptyState.tsx` -- Shared empty state with `variant?: 'default' | 'success' | 'dashed'`
+
+**Tab hierarchy** (3 visually distinct levels):
+
+- Level 1: Pill/segment tabs (GroupsView Admin/My Timesheets) — `rounded-lg bg-stone-100 p-1`, active: `bg-white shadow-sm`
+- Level 2: Underline tabs (AdminDashboard, MemberView) — `border-b-2`, active: `border-indigo-500`
+- Level 3: Filter pills (PendingReviewsPanel) — `rounded-lg border`, active: `bg-indigo-50 border-indigo-200`
+
 **Shared utilities** (`web/app/(authenticated)/groups/utils.ts`):
-- Types: `ProjectItem`, `TagItem`, `MemberInfo`, `OwnStats`
-- Functions: `formatHours`, `formatDuration`, `formatDate`, `formatIsoDate`, `formatPeriod`, `getInitials`
+
+- Types: `ProjectItem`, `TagItem`, `MemberInfo`, `OwnStats`, `QuickRange`, `PeriodType`
+- Functions: `formatHours`, `formatDuration`, `formatDate`, `formatIsoDate`, `formatPeriod`, `getInitials`, `getQuickRange`, `periodLabel`, `QUICK_RANGES`
 - Imported by all group components to eliminate duplication
 
 **API routes**:

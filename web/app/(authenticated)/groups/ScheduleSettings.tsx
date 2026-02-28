@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Calendar, Save } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface Props {
   groupId: string
@@ -128,14 +129,14 @@ export default function ScheduleSettings({ groupId, currentFrequency, currentDea
 
         {/* Save button */}
         <div className="mt-5 flex justify-end">
-          <button
+          <Button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-xl transition-colors"
+            className="gap-1.5 bg-indigo-600 hover:bg-indigo-700"
           >
             <Save className="h-3.5 w-3.5" />
             {saving ? 'Saving...' : 'Save Schedule'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

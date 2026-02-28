@@ -9,6 +9,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import type { GroupShareWithMeta, SnapshotEntry } from '@/lib/repositories/groupShares'
 import { formatHours, formatPeriod } from './utils'
 
@@ -191,23 +192,24 @@ export default function ReviewDialog({ open, onOpenChange, share, groupId, onRev
         </div>
 
         <DialogFooter className="gap-2 sm:gap-2">
-          <button
+          <Button
+            variant="outline"
             onClick={() => handleAction('deny')}
             disabled={processing || (showDenyForm && !comment.trim())}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-900/20 hover:bg-rose-100 dark:hover:bg-rose-900/30 disabled:opacity-50 rounded-xl transition-colors"
+            className="gap-1.5 text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-900/20 hover:bg-rose-100 dark:hover:bg-rose-900/30 border-rose-200 dark:border-rose-800/50"
           >
             <XCircle className="h-3.5 w-3.5" />
             {showDenyForm ? 'Confirm Deny' : 'Deny'}
-          </button>
+          </Button>
           {!showDenyForm && (
-            <button
+            <Button
               onClick={() => handleAction('approve')}
               disabled={processing}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl transition-colors"
+              className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
             >
               <Check className="h-3.5 w-3.5" />
               Approve
-            </button>
+            </Button>
           )}
         </DialogFooter>
       </DialogContent>

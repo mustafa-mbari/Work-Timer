@@ -9,7 +9,9 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { formatDate } from './utils'
+import { Button } from '@/components/ui/button'
+import { getQuickRange, QUICK_RANGES, formatDate } from './utils'
+import type { QuickRange, PeriodType } from './utils'
 
 interface Props {
   open: boolean
@@ -17,48 +19,6 @@ interface Props {
   groupId: string
   onCreated: () => void
 }
-
-type PeriodType = 'day' | 'week' | 'month'
-type QuickRange = 'today' | 'this-week' | 'last-week' | 'this-month' | 'last-month'
-
-function getQuickRange(type: QuickRange): { from: string; to: string; period: PeriodType } {
-  const now = new Date()
-  if (type === 'today') {
-    const today = formatDate(now)
-    return { from: today, to: today, period: 'day' }
-  }
-  if (type === 'this-week') {
-    const mon = new Date(now)
-    mon.setDate(now.getDate() - ((now.getDay() + 6) % 7))
-    const sun = new Date(mon)
-    sun.setDate(mon.getDate() + 6)
-    return { from: formatDate(mon), to: formatDate(sun), period: 'week' }
-  }
-  if (type === 'last-week') {
-    const mon = new Date(now)
-    mon.setDate(now.getDate() - ((now.getDay() + 6) % 7) - 7)
-    const sun = new Date(mon)
-    sun.setDate(mon.getDate() + 6)
-    return { from: formatDate(mon), to: formatDate(sun), period: 'week' }
-  }
-  if (type === 'this-month') {
-    const first = new Date(now.getFullYear(), now.getMonth(), 1)
-    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-    return { from: formatDate(first), to: formatDate(last), period: 'month' }
-  }
-  // last-month
-  const first = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-  const last = new Date(now.getFullYear(), now.getMonth(), 0)
-  return { from: formatDate(first), to: formatDate(last), period: 'month' }
-}
-
-const QUICK_RANGES: { key: QuickRange; label: string }[] = [
-  { key: 'today', label: 'Today' },
-  { key: 'this-week', label: 'This Week' },
-  { key: 'last-week', label: 'Last Week' },
-  { key: 'this-month', label: 'This Month' },
-  { key: 'last-month', label: 'Last Month' },
-]
 
 export default function CreateShareRequestDialog({ open, onOpenChange, groupId, onCreated }: Props) {
   const [periodType, setPeriodType] = useState<PeriodType>('week')
@@ -80,7 +40,6 @@ export default function CreateShareRequestDialog({ open, onOpenChange, groupId, 
 
   function handlePeriodChange(p: PeriodType) {
     setPeriodType(p)
-    // If day mode, sync dateTo = dateFrom
     if (p === 'day' && dateFrom) setDateTo(dateFrom)
     setResult(null)
     setError(null)
@@ -250,21 +209,18 @@ export default function CreateShareRequestDialog({ open, onOpenChange, groupId, 
         </div>
 
         <DialogFooter className="gap-2 sm:gap-2">
-          <button
-            onClick={handleClose}
-            className="px-4 py-2 text-sm font-medium text-stone-600 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 transition-colors"
-          >
+          <Button variant="outline" onClick={handleClose}>
             {result ? 'Close' : 'Cancel'}
-          </button>
+          </Button>
           {!result && (
-            <button
+            <Button
               onClick={handleCreate}
               disabled={creating || !dateFrom || !dateTo}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-xl transition-colors"
+              className="gap-1.5 bg-indigo-600 hover:bg-indigo-700"
             >
               <Plus className="h-3.5 w-3.5" />
               {creating ? 'Creating...' : 'Create for All Members'}
-            </button>
+            </Button>
           )}
         </DialogFooter>
       </DialogContent>

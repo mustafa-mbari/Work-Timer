@@ -311,14 +311,14 @@ export default function GroupsView({ initialGroups, initialInvitations, projects
         </div>
       ) : isAdmin ? (
         <div className="space-y-4">
-          {/* Admin view switcher */}
-          <div className="flex border-b border-stone-200 dark:border-[var(--dark-border)]">
+          {/* Admin view switcher — pill/segment style (Level 1 tabs) */}
+          <div className="inline-flex rounded-lg bg-stone-100 dark:bg-[var(--dark-elevated)] p-1">
             <button
               onClick={() => setAdminView('admin')}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap ${
+              className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md transition-all whitespace-nowrap ${
                 adminView === 'admin'
-                  ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
-                  : 'border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
+                  ? 'bg-white dark:bg-[var(--dark-card)] text-stone-800 dark:text-stone-100 shadow-sm'
+                  : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
               }`}
             >
               <Settings2 className="h-3.5 w-3.5" />
@@ -326,10 +326,10 @@ export default function GroupsView({ initialGroups, initialInvitations, projects
             </button>
             <button
               onClick={() => setAdminView('group')}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap ${
+              className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md transition-all whitespace-nowrap ${
                 adminView === 'group'
-                  ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
-                  : 'border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-stone-300'
+                  ? 'bg-white dark:bg-[var(--dark-card)] text-stone-800 dark:text-stone-100 shadow-sm'
+                  : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
               }`}
             >
               <Send className="h-3.5 w-3.5" />

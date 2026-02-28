@@ -11,8 +11,11 @@ import ReviewDialog from './ReviewDialog'
 import MemberDetailDialog from './MemberDetailDialog'
 import ScheduleSettings from './ScheduleSettings'
 import CreateShareRequestDialog from './CreateShareRequestDialog'
-import { formatDate, formatPeriod, getInitials } from './utils'
+import { formatDate, formatPeriod } from './utils'
 import type { ProjectItem, TagItem } from './utils'
+import { Button } from '@/components/ui/button'
+import { MemberAvatar } from './MemberAvatar'
+import { StatusBadge } from './StatusBadge'
 
 interface MemberSummary {
   user_id: string
@@ -170,7 +173,7 @@ export default function AdminDashboard({ group, projects, tags, onDeleteGroup }:
   return (
     <div className="space-y-5">
       {/* Summary stats */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="rounded-xl bg-white dark:bg-[var(--dark-card)] border border-stone-100 dark:border-[var(--dark-border)] px-4 py-3">
           <div className="flex items-center gap-1.5 mb-0.5">
             <Users className="h-3.5 w-3.5 text-indigo-500" />
@@ -183,10 +186,28 @@ export default function AdminDashboard({ group, projects, tags, onDeleteGroup }:
         <div className="rounded-xl bg-white dark:bg-[var(--dark-card)] border border-stone-100 dark:border-[var(--dark-border)] px-4 py-3">
           <div className="flex items-center gap-1.5 mb-0.5">
             <Eye className="h-3.5 w-3.5 text-emerald-500" />
-            <span className="text-xs text-stone-400 dark:text-stone-500">Sharing Enabled</span>
+            <span className="text-xs text-stone-400 dark:text-stone-500">Sharing</span>
           </div>
           <p className="text-xl font-bold text-stone-800 dark:text-stone-100">
             {loading ? '…' : `${memberSummaries.filter(m => m.sharing_enabled).length} / ${memberSummaries.length}`}
+          </p>
+        </div>
+        <div className="rounded-xl bg-white dark:bg-[var(--dark-card)] border border-stone-100 dark:border-[var(--dark-border)] px-4 py-3">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <ClipboardCheck className="h-3.5 w-3.5 text-amber-500" />
+            <span className="text-xs text-stone-400 dark:text-stone-500">Pending Reviews</span>
+          </div>
+          <p className="text-xl font-bold text-stone-800 dark:text-stone-100">
+            {loading ? '…' : pendingCount}
+          </p>
+        </div>
+        <div className="rounded-xl bg-white dark:bg-[var(--dark-card)] border border-stone-100 dark:border-[var(--dark-border)] px-4 py-3">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <ListChecks className="h-3.5 w-3.5 text-purple-500" />
+            <span className="text-xs text-stone-400 dark:text-stone-500">Open Shares</span>
+          </div>
+          <p className="text-xl font-bold text-stone-800 dark:text-stone-100">
+            {loading ? '…' : openShares.length}
           </p>
         </div>
       </div>
@@ -196,7 +217,10 @@ export default function AdminDashboard({ group, projects, tags, onDeleteGroup }:
         {subTabs.map(t => (
           <button
             key={t.key}
-            onClick={() => setSubTab(t.key)}
+            onClick={() => {
+              setSubTab(t.key)
+              if (t.key === 'reports') setShowReport(true)
+            }}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap ${
               subTab === t.key
                 ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
@@ -232,20 +256,26 @@ export default function AdminDashboard({ group, projects, tags, onDeleteGroup }:
       )}
 
       {subTab === 'reports' && (
-        <div className="space-y-4">
-          <div className="rounded-xl bg-white dark:bg-[var(--dark-card)] border border-stone-100 dark:border-[var(--dark-border)] shadow-sm p-6 text-center">
-            <FileBarChart className="h-10 w-10 text-stone-300 dark:text-stone-600 mx-auto mb-3" />
-            <h3 className="text-sm font-semibold text-stone-700 dark:text-stone-200 mb-1">Team Reports</h3>
-            <p className="text-xs text-stone-400 dark:text-stone-500 mb-4 max-w-sm mx-auto">
-              Generate detailed reports for any date range. View hours per member, project breakdown, and export as CSV.
-            </p>
-            <button
+        <div className="rounded-xl bg-white dark:bg-[var(--dark-card)] border border-stone-100 dark:border-[var(--dark-border)] shadow-sm p-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
+                <FileBarChart className="h-4.5 w-4.5 text-indigo-500" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-stone-800 dark:text-stone-100">Team Reports</h3>
+                <p className="text-xs text-stone-400 dark:text-stone-500">
+                  Generate reports for any date range and export as CSV.
+                </p>
+              </div>
+            </div>
+            <Button
               onClick={() => setShowReport(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors"
+              className="gap-1.5 bg-indigo-600 hover:bg-indigo-700"
             >
               <FileBarChart className="h-3.5 w-3.5" />
               Generate Report
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -287,9 +317,7 @@ export default function AdminDashboard({ group, projects, tags, onDeleteGroup }:
               <div className="divide-y divide-stone-50 dark:divide-[var(--dark-border)]">
                 {openShares.map(share => (
                   <div key={share.id} className="flex items-center gap-3 px-5 py-3 hover:bg-stone-50/50 dark:hover:bg-[var(--dark-hover)] transition-colors">
-                    <div className="h-7 w-7 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-xs font-semibold text-indigo-700 dark:text-indigo-300 shrink-0">
-                      {getInitials(share.sharer_name, share.sharer_email)}
-                    </div>
+                    <MemberAvatar name={share.sharer_name} email={share.sharer_email} size="md" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-stone-800 dark:text-stone-100 truncate">
                         {share.sharer_name || share.sharer_email.split('@')[0]}
@@ -304,40 +332,39 @@ export default function AdminDashboard({ group, projects, tags, onDeleteGroup }:
                         <span>Due {new Date(share.due_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
                       </div>
                     ) : null}
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 shrink-0">
-                      Open
-                    </span>
+                    <StatusBadge status="open" />
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Manual share request */}
-          <div className="rounded-xl bg-white dark:bg-[var(--dark-card)] border border-stone-100 dark:border-[var(--dark-border)] shadow-sm p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <Plus className="h-4 w-4 text-indigo-500" />
-              <h3 className="text-sm font-semibold text-stone-800 dark:text-stone-100">Manual Share Request</h3>
+          {/* Manual + Recurring — 2-column on lg+ */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <div className="rounded-xl bg-white dark:bg-[var(--dark-card)] border border-stone-100 dark:border-[var(--dark-border)] shadow-sm p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Plus className="h-4 w-4 text-indigo-500" />
+                <h3 className="text-sm font-semibold text-stone-800 dark:text-stone-100">Manual Share Request</h3>
+              </div>
+              <p className="text-xs text-stone-500 dark:text-stone-400 mb-4">
+                Create a one-off share request for all members with sharing enabled.
+              </p>
+              <Button
+                onClick={() => setShowCreateShare(true)}
+                className="gap-1.5 bg-indigo-600 hover:bg-indigo-700"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Create Share Request
+              </Button>
             </div>
-            <p className="text-xs text-stone-500 dark:text-stone-400 mb-4">
-              Create a one-off share request for all members with sharing enabled. Pick a custom date range and period type.
-            </p>
-            <button
-              onClick={() => setShowCreateShare(true)}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Create Share Request
-            </button>
-          </div>
 
-          {/* Recurring schedule */}
-          <ScheduleSettings
-            groupId={group.id}
-            currentFrequency={group.share_frequency ?? null}
-            currentDeadlineDay={group.share_deadline_day ?? null}
-            onSaved={fetchData}
-          />
+            <ScheduleSettings
+              groupId={group.id}
+              currentFrequency={group.share_frequency ?? null}
+              currentDeadlineDay={group.share_deadline_day ?? null}
+              onSaved={fetchData}
+            />
+          </div>
 
           <CreateShareRequestDialog
             open={showCreateShare}

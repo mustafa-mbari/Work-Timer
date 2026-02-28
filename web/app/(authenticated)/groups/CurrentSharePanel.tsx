@@ -5,6 +5,8 @@ import { Send, AlertCircle, CheckCircle2, Clock, Loader2, CalendarRange, FolderO
 import type { GroupShare, SnapshotEntry } from '@/lib/repositories/groupShares'
 import { formatPeriod, formatHours, periodLabel } from './utils'
 import type { ProjectItem, TagItem } from './utils'
+import { StatusBadge } from './StatusBadge'
+import { EmptyState } from './EmptyState'
 import {
   Dialog,
   DialogContent,
@@ -252,78 +254,77 @@ export function SubmitDialog({
 
 // ─── Open Share Row ───────────────────────────────────────────────────────────
 
-function OpenShareRow({ share, groupId, projects, onSubmitted }: {
+function OpenShareRow({ share, groupId, projects, onSubmitted, variant }: {
   share: GroupShare
   groupId: string
   projects: ProjectItem[]
   onSubmitted: () => void
+  variant: 'table' | 'card'
 }) {
   const [dialogOpen, setDialogOpen] = useState(false)
 
   const statusBadge = share.admin_comment ? (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 whitespace-nowrap">
-      <AlertCircle className="h-3 w-3 shrink-0" /> Returned
-    </span>
+    <StatusBadge status="returned" showIcon />
   ) : (
-    <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400">
-      Open
-    </span>
+    <StatusBadge status="open" />
   )
 
   return (
     <>
-      {/* Desktop table row */}
-      <tr className="border-b border-stone-100 dark:border-[var(--dark-border)] last:border-0 hidden sm:table-row">
-        <td className="py-3 pl-4 pr-3">
-          <p className="text-sm font-medium text-stone-800 dark:text-stone-100 leading-tight">
-            {periodLabel(share.period_type)}
-          </p>
-          <p className="text-xs text-stone-400 mt-0.5">{formatPeriod(share)}</p>
-        </td>
-        <td className="py-3 pr-3 text-sm text-stone-500 dark:text-stone-400 whitespace-nowrap">
-          {share.due_date
-            ? new Date(share.due_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-            : <span className="text-stone-300 dark:text-stone-600">—</span>
-          }
-        </td>
-        <td className="py-3 pr-4">{statusBadge}</td>
-        <td className="py-3 pr-4 text-right">
-          <button
-            onClick={() => setDialogOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors whitespace-nowrap"
-          >
-            <Send className="h-3 w-3" />
-            Review &amp; Submit
-          </button>
-        </td>
-      </tr>
-
-      {/* Mobile card row */}
-      <div className="sm:hidden border-b border-stone-100 dark:border-[var(--dark-border)] last:border-0 px-4 py-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-sm font-medium text-stone-800 dark:text-stone-100">
-                {periodLabel(share.period_type)}
-              </p>
-              {statusBadge}
-            </div>
+      {variant === 'table' ? (
+        <tr className="border-b border-stone-100 dark:border-[var(--dark-border)] last:border-0">
+          <td className="py-3 pl-4 pr-3">
+            <p className="text-sm font-medium text-stone-800 dark:text-stone-100 leading-tight">
+              {periodLabel(share.period_type)}
+            </p>
             <p className="text-xs text-stone-400 mt-0.5">{formatPeriod(share)}</p>
-            {share.due_date && (
-              <p className="text-xs text-stone-400 mt-0.5">
-                Due {new Date(share.due_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-              </p>
-            )}
+          </td>
+          <td className="py-3 pr-3 text-sm text-stone-500 dark:text-stone-400 whitespace-nowrap">
+            {share.due_date
+              ? new Date(share.due_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+              : <span className="text-stone-300 dark:text-stone-600">—</span>
+            }
+          </td>
+          <td className="py-3 pr-4">{statusBadge}</td>
+          <td className="py-3 pr-4 text-right">
+            <Button
+              size="sm"
+              onClick={() => setDialogOpen(true)}
+              className="gap-1.5 text-xs bg-indigo-600 hover:bg-indigo-700"
+            >
+              <Send className="h-3 w-3" />
+              Review &amp; Submit
+            </Button>
+          </td>
+        </tr>
+      ) : (
+        <div className="border-b border-stone-100 dark:border-[var(--dark-border)] last:border-0 px-4 py-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-sm font-medium text-stone-800 dark:text-stone-100">
+                  {periodLabel(share.period_type)}
+                </p>
+                {statusBadge}
+              </div>
+              <p className="text-xs text-stone-400 mt-0.5">{formatPeriod(share)}</p>
+              {share.due_date && (
+                <p className="text-xs text-stone-400 mt-0.5">
+                  Due {new Date(share.due_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                </p>
+              )}
+            </div>
+            <Button
+              size="sm"
+              onClick={() => setDialogOpen(true)}
+              className="shrink-0 gap-1.5 text-xs bg-indigo-600 hover:bg-indigo-700"
+            >
+              <Send className="h-3 w-3" />
+              Submit
+            </Button>
           </div>
-          <button
-            onClick={() => setDialogOpen(true)}
-            className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
-          >
-            <Send className="h-3 w-3" />
-            Submit
-          </button>
         </div>
-      </div>
+      )}
 
       <SubmitDialog
         open={dialogOpen}
@@ -409,23 +410,21 @@ export default function CurrentSharePanel({ groupId, projects, tags, hasSchedule
   if (openShares.length === 0 && submittedShares.length === 0) {
     if (!hasSchedule) {
       return (
-        <div className="rounded-xl border-2 border-dashed border-stone-200 dark:border-[var(--dark-border)] p-10 text-center">
-          <Clock className="h-8 w-8 text-stone-300 dark:text-stone-600 mx-auto mb-2" />
-          <p className="text-sm font-medium text-stone-600 dark:text-stone-300">No pending shares</p>
-          <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">
-            Your admin hasn&apos;t created any share requests yet.
-          </p>
-        </div>
+        <EmptyState
+          variant="dashed"
+          icon={<Clock className="h-8 w-8" />}
+          title="No pending shares"
+          description="Your admin hasn't created any share requests yet."
+        />
       )
     }
     return (
-      <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800/30 p-8 text-center">
-        <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
-        <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">You&apos;re all caught up!</p>
-        <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70 mt-1">
-          No pending share requests at the moment.
-        </p>
-      </div>
+      <EmptyState
+        variant="success"
+        icon={<CheckCircle2 className="h-8 w-8 text-emerald-500" />}
+        title="You're all caught up!"
+        description="No pending share requests at the moment."
+      />
     )
   }
 
@@ -456,6 +455,7 @@ export default function CurrentSharePanel({ groupId, projects, tags, hasSchedule
                     groupId={groupId}
                     projects={projects}
                     onSubmitted={fetchShares}
+                    variant="table"
                   />
                 ))}
               </tbody>
@@ -469,6 +469,7 @@ export default function CurrentSharePanel({ groupId, projects, tags, hasSchedule
                   groupId={groupId}
                   projects={projects}
                   onSubmitted={fetchShares}
+                  variant="card"
                 />
               ))}
             </div>

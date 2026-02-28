@@ -38,6 +38,7 @@ interface Props {
 }
 
 import { formatHours, formatDuration } from './utils'
+import { MemberAvatar } from './MemberAvatar'
 
 function formatTime(ts: number) {
   const d = new Date(ts)
@@ -93,9 +94,7 @@ export default function MemberDetailDialog({ open, onOpenChange, groupId, member
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-sm font-bold text-indigo-600 dark:text-indigo-400 flex-shrink-0">
-              {displayName[0]?.toUpperCase() ?? '?'}
-            </div>
+            <MemberAvatar name={member.display_name} email={member.email} size="lg" />
             <div>
               <p className="text-base">{displayName}</p>
               <p className="text-xs font-normal text-stone-400">{periodLabel}</p>

@@ -1,7 +1,18 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { X, Download, FileBarChart, Calendar } from 'lucide-react'
+import { Download, FileBarChart, Calendar } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { MemberAvatar } from './MemberAvatar'
+import { getQuickRange, QUICK_RANGES } from './utils'
+import type { QuickRange } from './utils'
 
 interface MemberInfo {
   user_id: string
@@ -32,39 +43,6 @@ interface Props {
   members: MemberInfo[]
 }
 
-function formatDate(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-function getQuickRange(type: string): { from: string; to: string } {
-  const now = new Date()
-  if (type === 'this-week') {
-    const mon = new Date(now)
-    mon.setDate(now.getDate() - ((now.getDay() + 6) % 7))
-    const sun = new Date(mon)
-    sun.setDate(mon.getDate() + 6)
-    return { from: formatDate(mon), to: formatDate(sun) }
-  }
-  if (type === 'last-week') {
-    const mon = new Date(now)
-    mon.setDate(now.getDate() - ((now.getDay() + 6) % 7) - 7)
-    const sun = new Date(mon)
-    sun.setDate(mon.getDate() + 6)
-    return { from: formatDate(mon), to: formatDate(sun) }
-  }
-  if (type === 'this-month') {
-    const first = new Date(now.getFullYear(), now.getMonth(), 1)
-    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-    return { from: formatDate(first), to: formatDate(last) }
-  }
-  if (type === 'last-month') {
-    const first = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    const last = new Date(now.getFullYear(), now.getMonth(), 0)
-    return { from: formatDate(first), to: formatDate(last) }
-  }
-  return { from: formatDate(now), to: formatDate(now) }
-}
-
 export default function ReportDialog({ open, onOpenChange, groupId, members }: Props) {
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
@@ -80,7 +58,7 @@ export default function ReportDialog({ open, onOpenChange, groupId, members }: P
     return reports.reduce((sum, r) => sum + r.entries.length, 0)
   }, [reports])
 
-  function applyQuickRange(type: string) {
+  function applyQuickRange(type: QuickRange) {
     const range = getQuickRange(type)
     setDateFrom(range.from)
     setDateTo(range.to)
@@ -145,35 +123,27 @@ export default function ReportDialog({ open, onOpenChange, groupId, members }: P
     URL.revokeObjectURL(url)
   }
 
-  if (!open) return null
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50" onClick={() => onOpenChange(false)} />
-      <div className="relative w-full max-w-2xl max-h-[85vh] bg-white dark:bg-[var(--dark-card)] rounded-2xl shadow-xl overflow-hidden flex flex-col mx-4">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 dark:border-[var(--dark-border)]">
-          <div className="flex items-center gap-2">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
             <FileBarChart className="h-5 w-5 text-indigo-500" />
-            <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-100">Generate Report</h2>
-          </div>
-          <button onClick={() => onOpenChange(false)} className="p-1.5 rounded-lg hover:bg-stone-100 dark:hover:bg-[var(--dark-hover)] transition-colors">
-            <X className="h-4 w-4 text-stone-500" />
-          </button>
-        </div>
+            Generate Report
+          </DialogTitle>
+        </DialogHeader>
 
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-5">
+        <div className="flex-1 overflow-y-auto space-y-5">
           {/* Date range */}
           <div className="space-y-3">
             <div className="flex items-center gap-2 flex-wrap">
-              {['this-week', 'last-week', 'this-month', 'last-month'].map(type => (
+              {QUICK_RANGES.filter(r => r.key !== 'today').map(r => (
                 <button
-                  key={type}
-                  onClick={() => applyQuickRange(type)}
+                  key={r.key}
+                  onClick={() => applyQuickRange(r.key)}
                   className="px-3 py-1.5 text-xs font-medium rounded-lg border border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-elevated)] text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-[var(--dark-hover)] transition-colors"
                 >
-                  {type.replace('-', ' ').replace(/^\w/, c => c.toUpperCase()).replace(/\s\w/, c => c.toUpperCase())}
+                  {r.label}
                 </button>
               ))}
             </div>
@@ -203,13 +173,13 @@ export default function ReportDialog({ open, onOpenChange, groupId, members }: P
                 </div>
               </div>
               <div className="pt-5">
-                <button
+                <Button
                   onClick={handleGenerate}
                   disabled={loading || !dateFrom || !dateTo}
-                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-xl transition-colors whitespace-nowrap"
+                  className="bg-indigo-600 hover:bg-indigo-700 whitespace-nowrap"
                 >
                   {loading ? 'Generating...' : 'Generate'}
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -244,9 +214,7 @@ export default function ReportDialog({ open, onOpenChange, groupId, members }: P
                     <div key={r.member.user_id} className="rounded-xl border border-stone-100 dark:border-[var(--dark-border)] p-4">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <div className="h-6 w-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-[10px] font-semibold text-indigo-700 dark:text-indigo-300">
-                            {(r.member.display_name || r.member.email).slice(0, 2).toUpperCase()}
-                          </div>
+                          <MemberAvatar name={r.member.display_name} email={r.member.email} size="sm" />
                           <span className="text-sm font-medium text-stone-800 dark:text-stone-100">
                             {r.member.display_name || r.member.email.split('@')[0]}
                           </span>
@@ -266,17 +234,14 @@ export default function ReportDialog({ open, onOpenChange, groupId, members }: P
 
         {/* Footer */}
         {generated && reports.length > 0 && (
-          <div className="flex items-center justify-end px-6 py-4 border-t border-stone-100 dark:border-[var(--dark-border)]">
-            <button
-              onClick={exportCsv}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors"
-            >
+          <DialogFooter>
+            <Button onClick={exportCsv} className="gap-1.5 bg-indigo-600 hover:bg-indigo-700">
               <Download className="h-3.5 w-3.5" />
               Export CSV
-            </button>
-          </div>
+            </Button>
+          </DialogFooter>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

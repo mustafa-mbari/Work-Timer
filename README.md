@@ -43,8 +43,9 @@ Track your work time with stopwatch, manual entry, and Pomodoro modes. Start wit
 - **Admin Review** -- Approve or deny submissions with required comment on denial; denied shares return to member for editing and resubmission
 - **Admin & Member Views** -- Admins switch between admin dashboard and personal timesheets; members see their own stats, shares, and team list
 - **Team Reports** -- Generate reports for any date range across all members, export as CSV
-- **Safety Confirmations** -- Destructive actions (delete group, remove member) require explicit confirmation
+- **Safety Confirmations** -- Destructive actions (delete group, remove member) require explicit confirmation with danger zone styling
 - **Privacy-First** -- Members see team names only (no hours); admin sees data only after member submits
+- **Responsive Design** -- Desktop tables with mobile card layouts for all data views
 
 ### Advanced Features
 
@@ -73,7 +74,7 @@ See [HowToDoPlan.md](HowToDoPlan.md) for the full Stripe setup guide (creating p
 
 - **Dashboard** -- Account overview, weekly stacked bar chart (CSS, per-project colors, hours per day), project/tag management with inline editing, default tag linking
 - **Earnings** -- Tag-based earnings reports with daily charts, groupBy toggle (tag/project), CSV export
-- **Groups** -- Team time management with timesheet approval workflow. Admins configure recurring share schedules, review and approve/deny member submissions, generate CSV reports. Members submit auto-filled timesheets, view own stats, and see team member names (no hours)
+- **Groups** -- Team time management with timesheet approval workflow. Admins configure recurring share schedules, review and approve/deny member submissions, generate CSV reports. Members submit auto-filled timesheets, view own stats, and see team member names (no hours). Shared UI components (StatusBadge, MemberAvatar, EmptyState) with 3-level tab hierarchy (pill segments, underline tabs, filter pills)
 - **Analytics** -- Weekly trends, project breakdowns, peak hours, streaks
 - **Billing** -- Subscription management, promo codes, Stripe checkout
 - **Admin Panel** -- User management, platform stats, domain whitelisting, promo codes

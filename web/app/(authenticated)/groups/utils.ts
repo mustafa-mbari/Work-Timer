@@ -59,3 +59,47 @@ export function getInitials(name: string | null, email: string): string {
   if (name) return name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()
   return email.slice(0, 2).toUpperCase()
 }
+
+// ─── Quick Date Range Utilities ───────────────────────────────────────────────
+
+export type QuickRange = 'today' | 'this-week' | 'last-week' | 'this-month' | 'last-month'
+export type PeriodType = 'day' | 'week' | 'month'
+
+export const QUICK_RANGES: { key: QuickRange; label: string }[] = [
+  { key: 'today', label: 'Today' },
+  { key: 'this-week', label: 'This Week' },
+  { key: 'last-week', label: 'Last Week' },
+  { key: 'this-month', label: 'This Month' },
+  { key: 'last-month', label: 'Last Month' },
+]
+
+export function getQuickRange(type: QuickRange): { from: string; to: string; period: PeriodType } {
+  const now = new Date()
+  if (type === 'today') {
+    const today = formatDate(now)
+    return { from: today, to: today, period: 'day' }
+  }
+  if (type === 'this-week') {
+    const mon = new Date(now)
+    mon.setDate(now.getDate() - ((now.getDay() + 6) % 7))
+    const sun = new Date(mon)
+    sun.setDate(mon.getDate() + 6)
+    return { from: formatDate(mon), to: formatDate(sun), period: 'week' }
+  }
+  if (type === 'last-week') {
+    const mon = new Date(now)
+    mon.setDate(now.getDate() - ((now.getDay() + 6) % 7) - 7)
+    const sun = new Date(mon)
+    sun.setDate(mon.getDate() + 6)
+    return { from: formatDate(mon), to: formatDate(sun), period: 'week' }
+  }
+  if (type === 'this-month') {
+    const first = new Date(now.getFullYear(), now.getMonth(), 1)
+    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    return { from: formatDate(first), to: formatDate(last), period: 'month' }
+  }
+  // last-month
+  const first = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  const last = new Date(now.getFullYear(), now.getMonth(), 0)
+  return { from: formatDate(first), to: formatDate(last), period: 'month' }
+}

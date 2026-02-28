@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import {
   Eye, EyeOff, ClipboardCheck, FileText, RefreshCw,
-  Trash2, UserPlus, Copy, ShieldCheck,
+  Trash2, UserPlus, Copy, ShieldCheck, Users,
 } from 'lucide-react'
 import type { GroupWithMeta } from '@/lib/repositories/groups'
 import { Input } from '@/components/ui/input'
@@ -19,7 +19,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { getInitials } from './utils'
+import { StatusBadge } from './StatusBadge'
+import { MemberAvatar } from './MemberAvatar'
 
 export interface MergedMember {
   user_id: string
@@ -43,21 +44,6 @@ interface Props {
   onViewMember: (member: MergedMember) => void
   onMemberUpdate: () => void
   onDeleteGroup: (id: string) => void
-}
-
-function StatusBadge({ status }: { status: MergedMember['current_share_status'] }) {
-  switch (status) {
-    case 'open':
-      return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300">Open</span>
-    case 'submitted':
-      return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300">Submitted</span>
-    case 'approved':
-      return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300">Approved</span>
-    case 'overdue':
-      return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300">Overdue</span>
-    default:
-      return <span className="text-xs text-stone-400 dark:text-stone-500">—</span>
-  }
 }
 
 export default function AdminTeamTable({
@@ -180,7 +166,9 @@ export default function AdminTeamTable({
       <div className="rounded-xl bg-white dark:bg-[var(--dark-card)] border border-stone-100 dark:border-[var(--dark-border)] shadow-sm overflow-hidden">
         {members.length === 0 ? (
           <div className="p-10 text-center">
-            <p className="text-sm text-stone-500 dark:text-stone-400">No members yet. Use the invite section below to add members.</p>
+            <Users className="h-8 w-8 text-stone-300 dark:text-stone-600 mx-auto mb-2" />
+            <p className="text-sm font-medium text-stone-600 dark:text-stone-300">No members yet</p>
+            <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">Use the invite section below to add members.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -203,9 +191,7 @@ export default function AdminTeamTable({
                     {/* Member */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-xs font-semibold text-indigo-700 dark:text-indigo-300 shrink-0">
-                          {getInitials(member.display_name, member.email)}
-                        </div>
+                        <MemberAvatar name={member.display_name} email={member.email} size="lg" />
                         <div className="min-w-0">
                           <p className="text-sm font-medium text-stone-800 dark:text-stone-100 truncate">
                             {member.display_name || member.email.split('@')[0]}
@@ -232,10 +218,10 @@ export default function AdminTeamTable({
                           <button
                             onClick={() => handleToggleRole(member)}
                             disabled={togglingRole === member.user_id}
-                            className="text-stone-300 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors p-0.5 disabled:opacity-50"
+                            className="flex items-center justify-center h-7 w-7 rounded-lg text-stone-300 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/10 transition-colors disabled:opacity-50"
                             title={member.role === 'admin' ? 'Demote to member' : 'Promote to admin'}
                           >
-                            <RefreshCw className={`h-3 w-3 ${togglingRole === member.user_id ? 'animate-spin' : ''}`} />
+                            <RefreshCw className={`h-3.5 w-3.5 ${togglingRole === member.user_id ? 'animate-spin' : ''}`} />
                           </button>
                         )}
                         {member.is_owner && (
@@ -249,7 +235,7 @@ export default function AdminTeamTable({
                       <button
                         onClick={() => handleToggleSharing(member)}
                         disabled={togglingSharing === member.user_id}
-                        className={`mx-auto flex items-center justify-center h-7 w-7 rounded-lg transition-colors disabled:opacity-50 ${
+                        className={`mx-auto flex items-center justify-center h-8 w-8 rounded-lg transition-colors disabled:opacity-50 ${
                           member.sharing_enabled
                             ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30'
                             : 'bg-stone-100 dark:bg-stone-800 text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
@@ -257,46 +243,49 @@ export default function AdminTeamTable({
                         title={member.sharing_enabled ? 'Disable sharing' : 'Enable sharing'}
                       >
                         {member.sharing_enabled
-                          ? <Eye className="h-3.5 w-3.5" />
-                          : <EyeOff className="h-3.5 w-3.5" />
+                          ? <Eye className="h-4 w-4" />
+                          : <EyeOff className="h-4 w-4" />
                         }
                       </button>
                     </td>
 
                     {/* Status */}
                     <td className="px-4 py-3 text-center">
-                      <StatusBadge status={member.current_share_status} />
+                      <StatusBadge status={member.current_share_status} label={member.current_share_status === 'submitted' ? 'Submitted' : undefined} />
                     </td>
 
                     {/* Actions */}
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1.5">
                         {member.current_share_status === 'submitted' && (
-                          <button
+                          <Button
+                            size="sm"
                             onClick={() => onReviewMember(member)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+                            className="gap-1 text-xs bg-indigo-600 hover:bg-indigo-700"
                           >
                             <ClipboardCheck className="h-3 w-3" />
                             Review
-                          </button>
+                          </Button>
                         )}
                         {member.current_share_status === 'approved' && (
-                          <button
+                          <Button
+                            size="sm"
+                            variant="secondary"
                             onClick={() => onViewMember(member)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-stone-600 dark:text-stone-300 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-lg transition-colors"
+                            className="gap-1 text-xs"
                           >
                             <FileText className="h-3 w-3" />
                             View
-                          </button>
+                          </Button>
                         )}
                         {!member.is_owner && (
                           <button
                             onClick={() => setMemberToRemove(member)}
                             disabled={removing === member.user_id}
-                            className="flex items-center justify-center h-7 w-7 rounded-lg text-stone-300 dark:text-stone-600 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-colors disabled:opacity-50"
+                            className="flex items-center justify-center h-8 w-8 rounded-lg text-stone-300 dark:text-stone-600 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/10 transition-colors disabled:opacity-50"
                             title="Remove member"
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
+                            <Trash2 className="h-4 w-4" />
                           </button>
                         )}
                       </div>
@@ -351,16 +340,24 @@ export default function AdminTeamTable({
       </div>
 
       {/* Danger zone */}
-      <div className="flex justify-end">
-        <Button
-          size="sm"
-          variant="ghost"
-          className="text-xs text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/10 gap-1.5 px-3"
-          onClick={() => onDeleteGroup(group.id)}
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-          Delete Group
-        </Button>
+      <div className="rounded-xl border border-rose-200 dark:border-rose-900/30 bg-rose-50/50 dark:bg-rose-950/10 p-4">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h4 className="text-sm font-medium text-rose-700 dark:text-rose-300">Danger Zone</h4>
+            <p className="text-xs text-rose-500/80 dark:text-rose-400/70 mt-0.5">
+              Permanently delete this group and remove all members.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="shrink-0 gap-1.5 border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/20"
+            onClick={() => onDeleteGroup(group.id)}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Delete Group
+          </Button>
+        </div>
       </div>
 
       {/* Remove member confirmation */}

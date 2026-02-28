@@ -3,12 +3,16 @@
 import { useState, useEffect, useCallback } from 'react'
 import { BarChart3, Clock, Users, Eye, EyeOff } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
 import type { GroupWithMeta } from '@/lib/repositories/groups'
 import type { GroupShare } from '@/lib/repositories/groupShares'
 import MemberStatsCard from './MemberStatsCard'
 import CurrentSharePanel from './CurrentSharePanel'
 import { formatPeriod } from './utils'
 import type { ProjectItem, TagItem, OwnStats, MemberInfo } from './utils'
+import { StatusBadge } from './StatusBadge'
+import { MemberAvatar } from './MemberAvatar'
+import { EmptyState } from './EmptyState'
 
 interface Props {
   group: GroupWithMeta
@@ -19,19 +23,6 @@ interface Props {
 }
 
 type Tab = 'overview' | 'history' | 'members'
-
-function getStatusBadge(status: string) {
-  switch (status) {
-    case 'approved':
-      return <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300">Approved</span>
-    case 'denied':
-      return <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300">Denied</span>
-    case 'submitted':
-      return <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300">Submitted</span>
-    default:
-      return <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300">Open</span>
-  }
-}
 
 export default function MemberView({ group, projects, tags, userId, ownStats }: Props) {
   const [tab, setTab] = useState<Tab>('overview')
@@ -183,17 +174,11 @@ export default function MemberView({ group, projects, tags, userId, ownStats }: 
                 </p>
               </div>
             </div>
-            <button
-              onClick={toggleSharing}
+            <Switch
+              checked={!!sharingEnabled}
+              onCheckedChange={toggleSharing}
               disabled={sharingEnabled === null || sharingToggling}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500/30 disabled:opacity-50 ${
-                sharingEnabled ? 'bg-emerald-500' : 'bg-stone-300 dark:bg-stone-600'
-              }`}
-            >
-              <span className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-                sharingEnabled ? 'translate-x-6' : 'translate-x-1'
-              }`} />
-            </button>
+            />
           </div>
 
           {/* Current share requests */}
@@ -211,14 +196,24 @@ export default function MemberView({ group, projects, tags, userId, ownStats }: 
           {historyLoading ? (
             <div className="space-y-2">
               {[1, 2, 3].map(i => (
-                <div key={i} className="h-16 rounded-xl bg-stone-100 dark:bg-stone-800 animate-pulse" />
+                <div key={i} className="rounded-xl bg-white dark:bg-[var(--dark-card)] border border-stone-100 dark:border-[var(--dark-border)] p-4 animate-pulse">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-2">
+                      <div className="h-3.5 w-32 rounded bg-stone-200 dark:bg-stone-700" />
+                      <div className="h-2.5 w-48 rounded bg-stone-100 dark:bg-stone-800" />
+                    </div>
+                    <div className="h-5 w-16 rounded-full bg-stone-200 dark:bg-stone-700" />
+                  </div>
+                </div>
               ))}
             </div>
           ) : history.length === 0 ? (
-            <div className="rounded-xl border-2 border-dashed border-stone-200 dark:border-[var(--dark-border)] p-10 text-center">
-              <Clock className="h-8 w-8 text-stone-300 dark:text-stone-600 mx-auto mb-2" />
-              <p className="text-sm text-stone-500 dark:text-stone-400">No share history yet</p>
-            </div>
+            <EmptyState
+              variant="dashed"
+              icon={<Clock className="h-8 w-8" />}
+              title="No share history yet"
+              description="Approved and denied shares will appear here."
+            />
           ) : (
             history.map(share => (
               <div
@@ -247,7 +242,7 @@ export default function MemberView({ group, projects, tags, userId, ownStats }: 
                       </p>
                     )}
                   </div>
-                  {getStatusBadge(share.status)}
+                  <StatusBadge status={share.status} />
                 </div>
               </div>
             ))
@@ -258,9 +253,16 @@ export default function MemberView({ group, projects, tags, userId, ownStats }: 
       {tab === 'members' && (
         <div className="space-y-1">
           {membersLoading ? (
-            <div className="space-y-2">
+            <div className="space-y-1">
               {[1, 2, 3].map(i => (
-                <div key={i} className="h-10 rounded-xl bg-stone-100 dark:bg-stone-800 animate-pulse" />
+                <div key={i} className="flex items-center gap-2.5 py-2 px-2 animate-pulse">
+                  <div className="h-8 w-8 rounded-full bg-stone-200 dark:bg-stone-700" />
+                  <div className="space-y-1.5 flex-1">
+                    <div className="h-3 w-28 rounded bg-stone-200 dark:bg-stone-700" />
+                    <div className="h-2.5 w-40 rounded bg-stone-100 dark:bg-stone-800" />
+                  </div>
+                  <div className="h-5 w-14 rounded-full bg-stone-200 dark:bg-stone-700" />
+                </div>
               ))}
             </div>
           ) : members.length === 0 ? (
@@ -272,9 +274,7 @@ export default function MemberView({ group, projects, tags, userId, ownStats }: 
                 className="flex items-center justify-between py-2 px-2 rounded-lg hover:bg-stone-50 dark:hover:bg-stone-800/30 transition-colors"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="h-8 w-8 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-xs font-semibold text-indigo-600 dark:text-indigo-400 flex-shrink-0">
-                    {(m.display_name || m.email)?.[0]?.toUpperCase() ?? '?'}
-                  </div>
+                  <MemberAvatar name={m.display_name} email={m.email} size="lg" />
                   <div className="min-w-0">
                     <p className="text-sm text-stone-700 dark:text-stone-200 truncate">
                       {m.display_name || m.email}
