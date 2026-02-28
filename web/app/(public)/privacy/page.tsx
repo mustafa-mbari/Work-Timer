@@ -93,7 +93,7 @@ export default function PrivacyPage() {
           Privacy Policy
         </h1>
         <p className="text-sm text-stone-500 dark:text-stone-500">
-          Last updated: <time dateTime="2025-01-01">February 28, 2026</time>
+          Last updated: <time dateTime="2026-02-28">February 28, 2026</time>
         </p>
         <p className="mt-4 text-stone-600 dark:text-stone-400 leading-relaxed">
           Your privacy matters to us. Work Timer is built on an <Strong>offline-first,
@@ -569,8 +569,7 @@ export default function PrivacyPage() {
               <Strong>Work Timer</Strong>
             </p>
             <p className="text-sm text-stone-500 dark:text-stone-500">
-              Operated by{' '}
-              <span className="italic">[Your Legal Name / Company Name, Country]</span>
+              Operated by Mustafa Mbari / Work Timer, Germany
             </p>
             <p>
               Email:{' '}
