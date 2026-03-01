@@ -10,45 +10,54 @@ export async function HowItWorksSection() {
   const steps = t.raw('steps') as Array<{ title: string; desc: string }>
 
   return (
-    <section
-      className="bg-stone-50 dark:bg-[var(--dark-card)] border-y border-stone-100 dark:border-[var(--dark-border)] py-20"
-      aria-label="How it works"
-    >
+    <section className="py-24" aria-label="How it works">
       <Container variant="marketing">
-        <div className="text-center mb-14">
+        <div className="text-center mb-16">
           <Badge variant="secondary" className="mb-4">{t('badge')}</Badge>
-          <h2 className="text-3xl font-bold text-stone-900 dark:text-stone-100">
+          <h2 className="text-3xl sm:text-4xl font-bold text-stone-900 dark:text-stone-100 tracking-tight">
             {t('title')}
           </h2>
         </div>
 
-        <div className="relative flex flex-row gap-0">
-          {/* Horizontal connector line */}
+        <div className="relative max-w-4xl mx-auto">
+          {/* Connector line — horizontal on lg, vertical on mobile */}
           <div
-            className="absolute top-8 left-[calc(16.67%+2rem)] right-[calc(16.67%+2rem)] h-px bg-stone-200 dark:bg-[var(--dark-border)]"
+            className="hidden lg:block absolute top-10 left-[calc(16.67%+2rem)] right-[calc(16.67%+2rem)] h-px bg-gradient-to-r from-indigo-200 via-violet-200 to-indigo-200 dark:from-indigo-800 dark:via-violet-800 dark:to-indigo-800"
+            aria-hidden="true"
+          />
+          <div
+            className="lg:hidden absolute top-10 bottom-10 left-6 w-px bg-gradient-to-b from-indigo-200 via-violet-200 to-indigo-200 dark:from-indigo-800 dark:via-violet-800 dark:to-indigo-800"
             aria-hidden="true"
           />
 
-          {steps.map((step, idx) => {
-            const Icon = STEP_ICONS[idx]
-            return (
-              <div key={idx} className="relative flex-1 flex flex-col items-center text-center px-4">
-                <div className="relative z-10 h-16 w-16 rounded-2xl bg-indigo-600 flex items-center justify-center mb-5 shadow-lg shadow-indigo-200/60 dark:shadow-indigo-900/40">
-                  <Icon className="h-7 w-7 text-white" aria-hidden="true" />
-                  <span
-                    className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-white dark:bg-[var(--dark-card)] border-2 border-indigo-600 text-[10px] font-bold text-indigo-600 flex items-center justify-center"
-                    aria-label={`${t('stepLabel')} ${idx + 1}`}
-                  >
-                    {idx + 1}
-                  </span>
+          <div className="flex flex-col lg:flex-row gap-8 lg:gap-0">
+            {steps.map((step, idx) => {
+              const Icon = STEP_ICONS[idx]
+              return (
+                <div key={idx} className="relative flex-1 flex flex-row lg:flex-col items-start lg:items-center text-left lg:text-center gap-5 lg:gap-0 lg:px-6">
+                  {/* Step icon */}
+                  <div className="relative z-10 shrink-0">
+                    <div className="h-14 w-14 lg:h-16 lg:w-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/25 dark:shadow-indigo-900/40 lg:mb-6">
+                      <Icon className="h-6 w-6 lg:h-7 lg:w-7 text-white" aria-hidden="true" />
+                    </div>
+                    <span
+                      className="absolute -top-1.5 -right-1.5 h-6 w-6 rounded-full bg-white dark:bg-[var(--dark)] border-2 border-indigo-500 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-sm"
+                      aria-label={`${t('stepLabel')} ${idx + 1}`}
+                    >
+                      {idx + 1}
+                    </span>
+                  </div>
+
+                  <div>
+                    <h3 className="font-bold text-stone-900 dark:text-stone-100 text-lg mb-1.5">{step.title}</h3>
+                    <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed lg:max-w-[240px]">
+                      {step.desc}
+                    </p>
+                  </div>
                 </div>
-                <h3 className="font-bold text-stone-900 dark:text-stone-100 mb-2">{step.title}</h3>
-                <p className="text-sm text-stone-500 dark:text-stone-400 leading-relaxed max-w-[220px]">
-                  {step.desc}
-                </p>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
       </Container>
     </section>

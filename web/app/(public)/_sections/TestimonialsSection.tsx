@@ -1,6 +1,5 @@
-import { Star } from 'lucide-react'
+import { Star, Quote } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
-import { Card, CardContent } from '@/components/ui/card'
 import { Container, SectionHeader } from '@/components/layout'
 
 interface TestimonialItem {
@@ -10,54 +9,61 @@ interface TestimonialItem {
   quote: string
 }
 
+const AVATAR_GRADIENTS = [
+  'from-indigo-500 to-violet-500',
+  'from-emerald-500 to-teal-500',
+  'from-amber-500 to-orange-500',
+]
+
 export async function TestimonialsSection() {
   const t = await getTranslations('landing.testimonials')
   const items = t.raw('items') as TestimonialItem[]
   const starsLabel = t('starsLabel')
 
   return (
-    <section
-      className="bg-stone-50 dark:bg-[var(--dark-card)] border-y border-stone-100 dark:border-[var(--dark-border)] py-20"
-      aria-label="Testimonials"
-    >
+    <section className="py-24" aria-label="Testimonials">
       <Container variant="marketing">
         <SectionHeader
           eyebrow={t('badge')}
           title={t('title')}
         />
 
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {items.map((item, idx) => (
-            <Card
+            <div
               key={idx}
-              className="bg-white dark:bg-[var(--dark)] border-stone-200 dark:border-[var(--dark-border)] flex flex-col"
+              className="group relative rounded-2xl border border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)] p-7 flex flex-col transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
             >
-              <CardContent className="pt-6 flex flex-col flex-1">
-                <div className="flex gap-0.5 mb-4" aria-label={`5 ${starsLabel}`}>
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" aria-hidden="true" />
-                  ))}
+              {/* Decorative quote icon */}
+              <Quote
+                className="absolute top-6 right-6 h-8 w-8 text-stone-100 dark:text-[var(--dark-elevated)] rotate-180"
+                strokeWidth={1.5}
+                aria-hidden="true"
+              />
+
+              <div className="flex gap-0.5 mb-5" aria-label={`5 ${starsLabel}`}>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" aria-hidden="true" />
+                ))}
+              </div>
+
+              <p className="text-[15px] text-stone-600 dark:text-stone-300 leading-relaxed flex-1 mb-8">
+                &ldquo;{item.quote}&rdquo;
+              </p>
+
+              <div className="flex items-center gap-3 pt-5 border-t border-stone-100 dark:border-[var(--dark-border)]">
+                <div
+                  className={`h-10 w-10 rounded-full bg-gradient-to-br ${AVATAR_GRADIENTS[idx]} flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm`}
+                  aria-hidden="true"
+                >
+                  {item.initials}
                 </div>
-                <p className="text-3xl text-stone-200 dark:text-[var(--dark-elevated)] leading-none mb-1 select-none font-serif" aria-hidden="true">
-                  &ldquo;
-                </p>
-                <p className="text-sm text-stone-600 dark:text-stone-400 leading-relaxed flex-1 mb-6">
-                  {item.quote}
-                </p>
-                <div className="flex items-center gap-3">
-                  <div
-                    className="h-9 w-9 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-xs font-bold text-indigo-700 dark:text-indigo-300 shrink-0"
-                    aria-hidden="true"
-                  >
-                    {item.initials}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">{item.name}</p>
-                    <p className="text-xs text-stone-400 dark:text-stone-500">{item.role}</p>
-                  </div>
+                <div>
+                  <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">{item.name}</p>
+                  <p className="text-xs text-stone-400 dark:text-stone-500">{item.role}</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ))}
         </div>
       </Container>

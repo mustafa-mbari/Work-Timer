@@ -49,37 +49,46 @@
   "landing": {
     "hero": {
       "badge": "Free Chrome Extension",
-      "headlineStart": "Stop Guessing",
-      "headlineAccent": "Where Your Time Goes",
-      "subtitle": "Work Timer is a free Chrome extension that quietly tracks every hour — no friction, no account required. Just open it and start.",
+      "headlineStart": "Smart Time Tracking",
+      "headlineAccent": "for Everyone Who Works",
+      "subtitle": "Track focused work sessions, billable hours, and study time — with a privacy-first timer that lives right in your browser. No account needed.",
       "ctaPrimary": "Add to Chrome — It's Free",
       "ctaSecondary": "Create Free Account",
+      "reassurance": "Start in under 10 seconds. No login required.",
       "ratingLabel": "5 star rating",
       "rating": "5.0",
       "usersCount": "Trusted by <strong>2,400+</strong> professionals",
       "noAds": "No ads, ever"
     },
-    "problem": {
-      "badge": "Sound familiar?",
-      "title": "Time tracking shouldn't feel like extra work",
-      "painLabel": "The problem",
-      "solutionLabel": "Work Timer fixes this",
-      "painPoints": [
-        "Losing track of billable hours across client projects",
-        "Spreadsheets you forget to update mid-task",
-        "Apps that need an account just to start a timer",
-        "Heavy desktop apps eating RAM and disk space"
-      ],
-      "solutions": [
-        "One click to start — no login, no setup required",
-        "Lives in your browser toolbar, always one click away",
-        "All data stays on your device by default, offline-first",
-        "Cloud sync across devices when you're ready (Premium)"
+    "audience": {
+      "title": "Who is Work Timer for?",
+      "cards": [
+        {
+          "title": "Companies & Teams",
+          "description": "Track employee focus time, billable hours, and project work — without complex setups or IT overhead. Get clear reports your whole team can actually use.",
+          "icon": "building"
+        },
+        {
+          "title": "Employees",
+          "description": "See exactly where your work hours go. Improve your focus, cut wasted time, and share accurate time reports whenever you need them.",
+          "icon": "user"
+        },
+        {
+          "title": "Students",
+          "description": "Plan study sessions, avoid burnout, and see how much you really study each day. Build better habits with data you can trust.",
+          "icon": "graduationCap"
+        },
+        {
+          "title": "Freelancers",
+          "description": "Never lose a billable minute again. Track time across projects and tags, and generate clean overviews of your hours and earnings — ready for clients.",
+          "icon": "briefcase"
+        }
       ]
     },
     "features": {
       "badge": "Features",
       "title": "Built for real work, not demos",
+      "positioning": "Designed for modern work — from solo freelancers and students to small teams and growing companies.",
       "subtitle": "Every feature exists because someone needed it. Nothing is here just to fill a pricing table.",
       "featureLabel": "Feature",
       "items": [

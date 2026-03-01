@@ -11,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 import { HeroSection } from './_sections/HeroSection'
-import { ProblemSection } from './_sections/ProblemSection'
+import { AudienceSection } from './_sections/AudienceSection'
 import { FeaturesSection } from './_sections/FeaturesSection'
 import { HowItWorksSection } from './_sections/HowItWorksSection'
 import { FeatureGridSection } from './_sections/FeatureGridSection'
@@ -28,7 +28,7 @@ export default async function LandingPage() {
   return (
     <div className="overflow-x-hidden">
       <HeroSection isLoggedIn={isLoggedIn} />
-      <ProblemSection />
+      <AudienceSection />
       <FeaturesSection />
       <HowItWorksSection />
       <FeatureGridSection />
