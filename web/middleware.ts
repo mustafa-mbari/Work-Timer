@@ -16,6 +16,7 @@ export async function middleware(request: NextRequest) {
     '/forgot-password',
     '/reset-password',
     '/verify-email',
+    '/api/auth',
   ]
   if (publicPaths.some(p => pathname === p || pathname.startsWith(p + '/'))) {
     return NextResponse.next({ request })

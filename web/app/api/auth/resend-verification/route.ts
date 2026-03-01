@@ -2,8 +2,11 @@ import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
-  const { email, password, ext, displayName } = await request.json()
-  const redirectTo = `${request.nextUrl.origin}/auth/callback${ext ? '?ext=true' : ''}`
+  const { email } = await request.json()
+
+  if (!email || typeof email !== 'string') {
+    return NextResponse.json({ error: 'Email is required' }, { status: 400 })
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const cookiesToSet: any[] = []
@@ -19,28 +22,16 @@ export async function POST(request: NextRequest) {
     }
   )
 
-  const { data, error } = await supabase.auth.signUp({
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
     email,
-    password,
     options: {
-      emailRedirectTo: redirectTo,
-      data: displayName ? { full_name: displayName } : undefined,
+      emailRedirectTo: `${request.nextUrl.origin}/auth/callback`,
     },
   })
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 })
-  }
-
-  // Supabase returns an empty identities array when the email already exists
-  // (unconfirmed user). In this case signUp() succeeds but sends NO email.
-  // Trigger a resend so the user actually gets the verification link.
-  if (data.user && data.user.identities?.length === 0) {
-    await supabase.auth.resend({
-      type: 'signup',
-      email,
-      options: { emailRedirectTo: redirectTo },
-    })
   }
 
   const response = NextResponse.json({ success: true })

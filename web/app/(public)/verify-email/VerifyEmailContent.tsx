@@ -4,7 +4,6 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Mail } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
@@ -22,8 +21,6 @@ export default function VerifyEmailContent() {
   const email = searchParams.get('email') ?? ''
   const [loading, setLoading] = useState(false)
 
-  const supabase = createClient()
-
   async function handleResend() {
     if (!email) {
       toast.error('No email address found. Please register again.')
@@ -32,14 +29,13 @@ export default function VerifyEmailContent() {
 
     setLoading(true)
     try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
+      const res = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
       })
-      if (error) throw error
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Failed to resend')
       toast.success('Verification email sent! Check your inbox.')
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to resend verification email'

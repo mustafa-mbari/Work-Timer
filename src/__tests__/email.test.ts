@@ -477,3 +477,81 @@ describe('sendEmail', () => {
     )
   })
 })
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 5. Sign-up flow logic (existing unconfirmed user detection)
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('Sign-up flow — unconfirmed user detection', () => {
+  // Mirrors the logic in web/app/api/auth/sign-up/route.ts
+
+  function shouldResendVerification(
+    data: { user: { identities?: { id: string }[] } | null }
+  ): boolean {
+    return !!(data.user && data.user.identities?.length === 0)
+  }
+
+  it('detects existing unconfirmed user (empty identities)', () => {
+    const data = { user: { identities: [] } }
+    expect(shouldResendVerification(data)).toBe(true)
+  })
+
+  it('does not trigger resend for new user (has identities)', () => {
+    const data = { user: { identities: [{ id: 'abc-123' }] } }
+    expect(shouldResendVerification(data)).toBe(false)
+  })
+
+  it('does not trigger resend when user is null', () => {
+    const data = { user: null }
+    expect(shouldResendVerification(data)).toBe(false)
+  })
+
+  it('does not trigger resend when identities is undefined', () => {
+    const data = { user: { identities: undefined } }
+    expect(shouldResendVerification(data)).toBe(false)
+  })
+
+  it('handles multiple identities (OAuth + email)', () => {
+    const data = { user: { identities: [{ id: 'email-1' }, { id: 'google-1' }] } }
+    expect(shouldResendVerification(data)).toBe(false)
+  })
+})
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 6. Resend verification endpoint — input validation
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('Resend verification — input validation', () => {
+  // Mirrors the validation in web/app/api/auth/resend-verification/route.ts
+
+  function validateResendInput(body: unknown): { valid: boolean; error?: string } {
+    if (!body || typeof body !== 'object') return { valid: false, error: 'Invalid body' }
+    const { email } = body as { email?: unknown }
+    if (!email || typeof email !== 'string') return { valid: false, error: 'Email is required' }
+    return { valid: true }
+  }
+
+  it('accepts valid email', () => {
+    expect(validateResendInput({ email: 'user@example.com' })).toEqual({ valid: true })
+  })
+
+  it('rejects missing email', () => {
+    expect(validateResendInput({})).toEqual({ valid: false, error: 'Email is required' })
+  })
+
+  it('rejects null email', () => {
+    expect(validateResendInput({ email: null })).toEqual({ valid: false, error: 'Email is required' })
+  })
+
+  it('rejects numeric email', () => {
+    expect(validateResendInput({ email: 123 })).toEqual({ valid: false, error: 'Email is required' })
+  })
+
+  it('rejects empty string email', () => {
+    expect(validateResendInput({ email: '' })).toEqual({ valid: false, error: 'Email is required' })
+  })
+
+  it('rejects null body', () => {
+    expect(validateResendInput(null)).toEqual({ valid: false, error: 'Invalid body' })
+  })
+})
