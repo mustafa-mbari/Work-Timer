@@ -57,29 +57,38 @@
       "ratingLabel": "5-Sterne-Bewertung",
       "rating": "5,0",
       "usersCount": "Vertraut von <strong>2.400+</strong> Profis",
-      "noAds": "Keine Werbung, nie"
+      "noAds": "Keine Werbung, nie",
+      "reassurance": "In unter 10 Sekunden starten. Kein Login nötig."
     },
-    "problem": {
-      "badge": "Kommt dir das bekannt vor?",
-      "title": "Zeiterfassung sollte sich nicht wie Mehrarbeit anfühlen",
-      "painLabel": "Das Problem",
-      "solutionLabel": "Work Timer löst das",
-      "painPoints": [
-        "Abrechnungsstunden bei Kundenprojekten aus dem Blick verlieren",
-        "Tabellen, die du mitten in der Aufgabe zu aktualisieren vergisst",
-        "Apps, die einen Account brauchen, nur um einen Timer zu starten",
-        "Schwere Desktop-Apps, die RAM und Speicherplatz fressen"
-      ],
-      "solutions": [
-        "Ein Klick zum Starten — kein Login, keine Einrichtung nötig",
-        "In deiner Browser-Symbolleiste, immer einen Klick entfernt",
-        "Alle Daten bleiben standardmäßig auf deinem Gerät, offline-first",
-        "Geräteübergreifende Cloud-Synchronisierung bei Bedarf (Premium)"
+    "audience": {
+      "title": "Für wen ist Work Timer?",
+      "cards": [
+        {
+          "title": "Unternehmen & Teams",
+          "description": "Erfasse Fokuszeiten, abrechnungsfähige Stunden und Projektarbeit — ohne komplexe Einrichtung oder IT-Aufwand. Erhalte klare Berichte, die dein ganzes Team nutzen kann.",
+          "icon": "building"
+        },
+        {
+          "title": "Angestellte",
+          "description": "Verstehe, wo deine Arbeitsstunden wirklich hingehen. Schärfe deinen Fokus, reduziere Leerlauf und teile genaue Berichte, wenn dein Vorgesetzter danach fragt.",
+          "icon": "user"
+        },
+        {
+          "title": "Studierende",
+          "description": "Plane Lernsitzungen, vermeide Burnout und sieh, wie viel du wirklich jeden Tag lernst. Baue bessere Gewohnheiten mit Daten, denen du vertrauen kannst.",
+          "icon": "graduationCap"
+        },
+        {
+          "title": "Freiberufler",
+          "description": "Verliere nie wieder eine abrechnungsfähige Minute. Erfasse Zeit über Projekte und Tags hinweg und erstelle saubere Übersichten deiner Stunden und Einnahmen — bereit für Kunden.",
+          "icon": "briefcase"
+        }
       ]
     },
     "features": {
       "badge": "Funktionen",
       "title": "Für echte Arbeit entwickelt, nicht für Demos",
+      "positioning": "Entwickelt für modernes Arbeiten — vom Solo-Freelancer und Studierenden bis hin zu kleinen Teams und wachsenden Unternehmen.",
       "subtitle": "Jede Funktion existiert, weil jemand sie brauchte. Nichts ist hier, nur um eine Preistabelle zu füllen.",
       "featureLabel": "Funktion",
       "items": [
@@ -162,7 +171,8 @@
         "badge": "Dauerhaft",
         "description": "5 Projekte · 14-Tage-Verlauf · Alle Timer-Modi · Nur lokale Speicherung",
         "price": "0 €",
-        "noCreditCard": "Keine Kreditkarte erforderlich"
+        "noCreditCard": "Keine Kreditkarte erforderlich",
+        "noAccountLine": "Nutze die Chrome-Erweiterung ohne Account — einfach installieren und loslegen."
       },
       "trustBadges": [
         "Datenschutz zuerst",
@@ -176,33 +186,34 @@
       "items": [
         {
           "q": "Brauche ich einen Account, um es zu nutzen?",
-          "a": "Nein. Die Erweiterung funktioniert vollständig offline ohne Account. Erstelle einen Account nur, wenn du Cloud-Synchronisierung oder Zugang zum Begleiter-Dashboard möchtest."
+          "a": "Überhaupt nicht. Installiere die Chrome-Erweiterung und starte sofort — keine Anmeldung, keine E-Mail, keine Kreditkarte. Ein Account ist nur nötig, wenn du Cloud-Sync, Zugriff auf mehreren Geräten oder das Web-Dashboard möchtest."
         },
         {
           "q": "Wo werden meine Daten gespeichert?",
-          "a": "Lokal in deinem Browser über chrome.storage.local. Premium-Nutzer können optional die Supabase-Cloud-Synchronisierung aktivieren — deine Daten werden niemals verkauft oder an Dritte weitergegeben."
+          "a": "Alle deine Zeitdaten bleiben lokal in deinem Browser. Nichts wird an einen Server gesendet, es sei denn, du aktivierst die Cloud-Synchronisierung im Premium-Plan. Deine Daten werden niemals verkauft oder an Dritte weitergegeben."
         },
         {
           "q": "Was ist der Unterschied zwischen Kostenlos und Premium?",
-          "a": "Kostenlos bietet bis zu 5 Projekte, 30 Tage Verlauf und alle drei Timer-Modi. Premium schaltet unbegrenzte Projekte, vollständigen Verlauf, CSV- und Excel-Export, Cloud-Synchronisierung und erweiterte Analysen frei."
+          "a": "Kostenlos bietet bis zu 5 Projekte, 14 Tage Verlauf und alle drei Timer-Modi — mehr als genug für den Einstieg. Premium schaltet unbegrenzte Projekte, vollständigen Verlauf, CSV- und Excel-Export, Cloud-Synchronisierung und detaillierte Analysen frei."
         },
         {
           "q": "Kann ich meine Zeiteinträge exportieren?",
-          "a": "Ja, mit einem Premium-Plan. Als CSV oder Excel exportieren, gefiltert nach Projekt und Datumsbereich — formatiert und bereit für die Kundenabrechnung."
+          "a": "Ja. Premium-Nutzer können Einträge als CSV oder Excel exportieren, gefiltert nach Projekt und Datumsbereich. Berichte sind formatiert und bereit für Kundenabrechnung, Teamreviews oder persönliche Aufzeichnungen."
         },
         {
           "q": "Funktioniert es offline?",
-          "a": "Vollständig. Die Erweiterung nutzt Browser-Speicher und Chrome-Alarme — eine Internetverbindung ist nie erforderlich. Die Cloud-Synchronisierung läuft im Hintergrund, wenn Konnektivität verfügbar ist."
+          "a": "Vollständig. Die Erweiterung läuft komplett in deinem Browser ohne Internetverbindung — im Flugzeug, in einer Hütte, wo auch immer du arbeitest. Wenn Cloud-Sync aktiviert ist, werden Daten automatisch synchronisiert, sobald du wieder online bist."
         },
         {
           "q": "Gibt es eine mobile App?",
-          "a": "Work Timer ist heute eine Chrome-Erweiterung. Ein Begleiter-Web-Dashboard ist für Premium-Nutzer unter w-timer.com verfügbar für Analysen und Eintrags-Management auf jedem Bildschirm."
+          "a": "Work Timer konzentriert sich auf Desktop-Browser — wo die meiste konzentrierte Arbeit stattfindet. Premium-Nutzer erhalten zusätzlich Zugang zum Web-Dashboard unter w-timer.com, um Analysen und Einträge von jedem Gerät aus zu verwalten."
         }
       ]
     },
     "cta": {
       "title": "Deine produktivste Woche beginnt mit einem Klick.",
       "subtitle": "Installiere Work Timer kostenlos und sieh, wo deine Zeit wirklich hingeht. Keine Anmeldung erforderlich, um zu starten.",
+      "socialProof": "Schließe dich 2.400+ Profis an, die ihre Zeit bereits mit Work Timer erfassen.",
       "ctaPrimary": "Zu Chrome hinzufügen — Kostenlos",
       "ctaSecondary": "Account erstellen",
       "disclaimer": "Keine Kreditkarte erforderlich · Funktioniert offline · Kernfunktionen dauerhaft kostenlos"
