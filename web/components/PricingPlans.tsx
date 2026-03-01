@@ -157,6 +157,7 @@ export default function PricingPlans({ isLoggedIn }: PricingPlansProps) {
               <span className="text-sm text-stone-400 dark:text-stone-500 mb-1">/mo</span>
             </div>
             <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">No credit card required</p>
+            <p className="text-xs text-indigo-500 dark:text-indigo-400 mt-2 font-medium">No account needed — just install and start.</p>
           </div>
           <ul className="space-y-2.5 flex-1 mb-6">
             {FEATURES.map(f => (

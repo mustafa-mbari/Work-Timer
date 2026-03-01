@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
 import { Button } from '@/components/ui/button'
+import { CHROME_STORE_URL } from '@/lib/shared/constants'
 
 interface Props {
   isLoggedIn: boolean
@@ -33,8 +34,11 @@ export async function CtaSection({ isLoggedIn }: Props) {
         <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-5 leading-tight tracking-tight">
           {t('title')}
         </h2>
-        <p className="text-indigo-100 mb-10 text-lg sm:text-xl leading-relaxed">
+        <p className="text-indigo-100 mb-4 text-lg sm:text-xl leading-relaxed">
           {t('subtitle')}
+        </p>
+        <p className="text-indigo-200/80 text-sm font-medium mb-10">
+          {t('socialProof')}
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button
@@ -42,7 +46,7 @@ export async function CtaSection({ isLoggedIn }: Props) {
             size="lg"
             className="bg-white text-indigo-600 hover:bg-indigo-50 shadow-xl shadow-indigo-900/30 font-semibold text-base px-8 h-12"
           >
-            <a href="https://chrome.google.com/webstore">
+            <a href={CHROME_STORE_URL}>
               {t('ctaPrimary')}
               <ArrowRight className="h-4 w-4 ml-2" aria-hidden="true" />
             </a>

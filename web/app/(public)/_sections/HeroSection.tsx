@@ -5,6 +5,7 @@ import { getTranslations } from 'next-intl/server'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Container } from '@/components/layout'
+import { CHROME_STORE_URL } from '@/lib/shared/constants'
 
 interface Props {
   isLoggedIn: boolean
@@ -51,7 +52,7 @@ export async function HeroSection({ isLoggedIn }: Props) {
               size="lg"
               className="shadow-lg shadow-indigo-500/25 dark:shadow-indigo-900/40 text-base px-8 h-12"
             >
-              <a href="https://chrome.google.com/webstore">
+              <a href={CHROME_STORE_URL}>
                 {t('ctaPrimary')}
                 <ArrowRight className="h-4 w-4 ml-2" aria-hidden="true" />
               </a>

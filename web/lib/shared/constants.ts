@@ -82,3 +82,7 @@ export const ENTRY_SAVE_TIME = {
 } as const
 
 export const WEBSITE_URL = 'https://w-timer.com'
+
+// TODO: Replace with your published extension URL once live
+// e.g. 'https://chrome.google.com/webstore/detail/work-timer/YOUR_EXTENSION_ID'
+export const CHROME_STORE_URL = 'https://chrome.google.com/webstore'

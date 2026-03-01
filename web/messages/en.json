@@ -70,7 +70,7 @@
         },
         {
           "title": "Employees",
-          "description": "See exactly where your work hours go. Improve your focus, cut wasted time, and share accurate time reports whenever you need them.",
+          "description": "Understand where your work hours actually go. Sharpen your focus, cut wasted time, and share accurate reports whenever your manager asks.",
           "icon": "user"
         },
         {
@@ -171,7 +171,8 @@
         "badge": "Forever",
         "description": "5 projects · 14-day history · All timer modes · Local storage only",
         "price": "$0",
-        "noCreditCard": "No credit card required"
+        "noCreditCard": "No credit card required",
+        "noAccountLine": "Use the Chrome extension with no account — just install and start."
       },
       "trustBadges": [
         "Privacy first",
@@ -185,33 +186,34 @@
       "items": [
         {
           "q": "Do I need an account to use it?",
-          "a": "No. The extension works completely offline with zero account required. Create an account only when you want cloud sync or access to the companion dashboard."
+          "a": "Not at all. Install the Chrome extension and start tracking immediately — no sign-up, no email, no credit card. An account is only needed if you want cloud sync, multi-device access, or the web dashboard."
         },
         {
           "q": "Where is my data stored?",
-          "a": "Locally in your browser via chrome.storage.local. Premium users can optionally enable Supabase cloud sync — your data is never sold or shared with third parties."
+          "a": "All your time data lives locally in your browser. Nothing is sent to any server unless you explicitly enable cloud sync on a Premium plan. Your data is never sold or shared with third parties."
         },
         {
           "q": "What's the difference between Free and Premium?",
-          "a": "Free gives you up to 5 projects, 30 days of history, and all three timer modes. Premium unlocks unlimited projects, full history, CSV & Excel export, cloud sync, and advanced analytics."
+          "a": "Free gives you up to 5 projects, 14 days of history, and all three timer modes — more than enough to get started. Premium unlocks unlimited projects, full history, CSV & Excel export, cloud sync across devices, and detailed analytics."
         },
         {
           "q": "Can I export my time entries?",
-          "a": "Yes, with a Premium plan. Export to CSV or Excel filtered by project and date range — formatted and ready for client invoicing."
+          "a": "Yes. Premium users can export entries to CSV or Excel, filtered by project and date range. Reports are formatted and ready for client invoicing, team reviews, or personal records."
         },
         {
           "q": "Does it work offline?",
-          "a": "Entirely. The extension uses browser storage and Chrome alarms — no internet connection is ever required. Cloud sync runs in the background when connectivity is available."
+          "a": "Completely. The extension runs entirely in your browser with no internet required — on a plane, in a cabin, wherever you work. If cloud sync is enabled, it catches up automatically when you're back online."
         },
         {
           "q": "Is there a mobile app?",
-          "a": "Work Timer is a Chrome extension today. A companion web dashboard is available for Premium users at w-timer.com for analytics and entry management on any screen."
+          "a": "Work Timer is focused on desktop browsers — where most deep work happens. Premium users also get access to the web dashboard at w-timer.com for viewing analytics and managing entries from any device."
         }
       ]
     },
     "cta": {
       "title": "Your most productive week starts with one click.",
-      "subtitle": "Install Work Timer for free and see where your time actually goes. No sign-up required to start.",
+      "subtitle": "Install Work Timer for free and see where your time actually goes. No sign-up required.",
+      "socialProof": "Join 2,400+ professionals who already track their time with Work Timer.",
       "ctaPrimary": "Add to Chrome — Free",
       "ctaSecondary": "Create an Account",
       "disclaimer": "No credit card required · Works offline · Free forever for core features"
