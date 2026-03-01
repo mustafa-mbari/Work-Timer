@@ -19,7 +19,7 @@ export default function ExportMenu({ entries, projects, filename }: ExportMenuPr
   const [open, setOpen] = useState(false)
   const [showUpgrade, setShowUpgrade] = useState(false)
   const { showToast } = useToast()
-  const { isPremium } = usePremium()
+  const { isPremium, isGuest } = usePremium()
   const { session } = useAuth()
   const { tags } = useTags()
   const { settings } = useSettings()
@@ -67,8 +67,9 @@ export default function ExportMenu({ entries, projects, filename }: ExportMenuPr
     <>
       <UpgradePrompt
         isOpen={showUpgrade}
-        feature="CSV, Excel & PDF export"
+        feature={isGuest ? 'Data export' : 'CSV, Excel & PDF export'}
         onClose={() => setShowUpgrade(false)}
+        isGuest={isGuest}
       />
 
       <div className="relative">

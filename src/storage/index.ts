@@ -5,6 +5,8 @@ import { getSession } from '@/auth/authState'
 import { isCurrentUserPremium } from '@/premium/featureGate'
 import { enqueue } from '@/sync/syncQueue'
 import { syncAll } from '@/sync/syncEngine'
+import { generateId } from '@/utils/id'
+import { GUEST_SESSION_MAX_MS } from '@shared/constants'
 
 // Set to true during pull operations (pullDelta, Realtime handlers) to prevent
 // re-enqueueing changes that originated from the server (would cause sync loops).
@@ -380,4 +382,47 @@ export async function clearAllLocalData(): Promise<void> {
   if (keysToRemove.length > 0) {
     await chrome.storage.local.remove(keysToRemove)
   }
+}
+
+// --- Guest Mode ---
+
+const GUEST_STARTED_KEY = 'guestStartedAt'
+
+export async function getGuestStartedAt(): Promise<number | null> {
+  const result = await chrome.storage.local.get(GUEST_STARTED_KEY)
+  return (result[GUEST_STARTED_KEY] as number | undefined) ?? null
+}
+
+export async function isGuestMode(): Promise<boolean> {
+  return (await getGuestStartedAt()) !== null
+}
+
+export async function activateGuestMode(): Promise<void> {
+  // Clear any residual data from a previous session
+  await clearAllLocalData()
+  await chrome.storage.local.remove(['localUserId', 'initialSyncDone'])
+  // Create a starter project for the guest
+  const projects = [{
+    id: generateId(),
+    name: 'Default',
+    color: '#3b82f6',
+    targetHours: null,
+    archived: false,
+    createdAt: Date.now(),
+  }]
+  await chrome.storage.local.set({
+    [GUEST_STARTED_KEY]: Date.now(),
+    projects,
+  })
+}
+
+export async function clearGuestMode(): Promise<void> {
+  await chrome.storage.local.remove(GUEST_STARTED_KEY)
+}
+
+export async function getGuestDaysRemaining(): Promise<number | null> {
+  const startedAt = await getGuestStartedAt()
+  if (startedAt === null) return null
+  const remaining = GUEST_SESSION_MAX_MS - (Date.now() - startedAt)
+  return Math.max(0, Math.ceil(remaining / (24 * 60 * 60 * 1000)))
 }

@@ -11,6 +11,7 @@ import ConfirmDialog from './ConfirmDialog'
 import UpgradePrompt from './UpgradePrompt'
 import { useAuth } from '@/hooks/useAuth'
 import { usePremium } from '@/hooks/usePremium'
+import { useGuest } from '@/hooks/useGuest'
 import { WEBSITE_URL, PRICING, ENTRY_SAVE_TIME } from '@shared/constants'
 
 type SettingsTab = 'general' | 'timer' | 'data' | 'account'
@@ -21,7 +22,8 @@ export default function SettingsView() {
   const { tags, activeTags, create: createTag, update: updateTag, remove: removeTag, archive: archiveTag, setDefault: setDefaultTag, reorder: reorderTags } = useTags()
   const { theme, setTheme } = useTheme()
   const { session, loading: authLoading, signIn, signOut } = useAuth()
-  const { isPremium, subscription } = usePremium()
+  const { isPremium, isGuest, subscription } = usePremium()
+  const { daysRemaining, exitGuestMode } = useGuest()
 
   const [tab, setTab] = useState<SettingsTab>('account')
   const [dataTab, setDataTab] = useState<'projects' | 'tags'>('projects')
@@ -1268,6 +1270,47 @@ export default function SettingsView() {
                   Sign out
                 </button>
               </>
+            ) : isGuest ? (
+              <>
+                {/* Guest Mode Info Card */}
+                <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-4 border border-indigo-200 dark:border-indigo-800/40">
+                  <h3 className="text-sm font-semibold text-indigo-800 dark:text-indigo-300 mb-1">Guest Mode</h3>
+                  <p className="text-xs text-indigo-700 dark:text-indigo-400 mb-3">
+                    {daysRemaining != null && daysRemaining > 0
+                      ? `${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} remaining — log in to keep your data forever.`
+                      : 'Your guest trial has expired.'}
+                  </p>
+                  <p className="text-xs text-stone-600 dark:text-stone-400 mb-3">
+                    Create a free account to save your data, sync across devices, and unlock more projects and tags.
+                  </p>
+                  <button
+                    onClick={signIn}
+                    className="w-full bg-indigo-500 hover:bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm"
+                  >
+                    Create Free Account
+                  </button>
+                </div>
+
+                {/* Visit Website */}
+                <button
+                  onClick={() => chrome.tabs.create({ url: WEBSITE_URL })}
+                  className="w-full border border-stone-200 dark:border-dark-border text-stone-700 dark:text-stone-200 py-2.5 rounded-xl text-sm font-medium hover:bg-stone-50 dark:hover:bg-dark-hover transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
+                    <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
+                  </svg>
+                  Visit Website
+                </button>
+
+                {/* Log out (exit guest mode) */}
+                <button
+                  onClick={exitGuestMode}
+                  className="w-full border border-stone-200 dark:border-dark-border text-stone-600 dark:text-stone-300 py-2.5 rounded-xl text-sm font-medium hover:bg-stone-50 dark:hover:bg-dark-hover transition-colors"
+                >
+                  Log out
+                </button>
+              </>
             ) : (
               <>
                 <div className="flex flex-col gap-2 text-center py-2">
@@ -1297,14 +1340,16 @@ export default function SettingsView() {
 
       <UpgradePrompt
         isOpen={showUpgradeForProject}
-        feature="Unlimited projects"
+        feature={isGuest ? 'More projects' : 'Unlimited projects'}
         onClose={() => setShowUpgradeForProject(false)}
+        isGuest={isGuest}
       />
 
       <UpgradePrompt
         isOpen={showUpgradeForTag}
-        feature="Unlimited tags"
+        feature={isGuest ? 'More tags' : 'Unlimited tags'}
         onClose={() => setShowUpgradeForTag(false)}
+        isGuest={isGuest}
       />
 
       <ConfirmDialog

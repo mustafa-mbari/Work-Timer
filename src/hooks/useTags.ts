@@ -2,12 +2,11 @@ import { useState, useEffect, useCallback } from 'react'
 import type { Tag } from '@/types'
 import { getTags, saveTags } from '@/storage'
 import { generateId } from '@/utils/id'
-import { getCachedSubscription } from '@/auth/authState'
-import { getLimits } from '@/premium/featureGate'
+import { getCurrentLimits } from '@/premium/featureGate'
 
 export class TagLimitError extends Error {
-  constructor() {
-    super('You have reached the 5-tag limit on the free plan.')
+  constructor(limit: number = 5) {
+    super(`You have reached the ${limit}-tag limit.`)
     this.name = 'TagLimitError'
   }
 }
@@ -43,12 +42,11 @@ export function useTags() {
     })
 
   const create = useCallback(async (name: string, color?: string) => {
-    const sub = await getCachedSubscription()
-    const limits = getLimits(sub)
+    const limits = await getCurrentLimits()
     const current = await getTags()
     // Count ALL tags (active + archived) to prevent bypass via archive-then-create
     if (current.length >= limits.maxTags) {
-      throw new TagLimitError()
+      throw new TagLimitError(limits.maxTags)
     }
     const tag: Tag = { id: generateId(), name, color: color ?? '#6366F1' }
     await saveTags([...current, tag])

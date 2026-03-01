@@ -4,9 +4,9 @@
  * alarm dispatch, lifecycle events, and cross-cutting listener registration.
  */
 import type { TimerMessage, TimerResponse } from '../types'
-import { WEBSITE_URL } from '@shared/constants'
+import { WEBSITE_URL, GUEST_SESSION_MAX_MS } from '@shared/constants'
 import { generateId } from '../utils/id'
-import { getLocalUserId, setLocalUserId, hasAnyLocalData, clearAllLocalData } from '../storage'
+import { getLocalUserId, setLocalUserId, hasAnyLocalData, clearAllLocalData, getGuestStartedAt, clearGuestMode } from '../storage'
 import { applyExternalSession, signOut as authSignOut, refreshSubscription, getSession, stampLoginTime, checkFreeSessionExpiry } from '../auth/authState'
 import { syncAll, getSyncState, uploadAllLocalData, diagnoseSyncState } from '../sync/syncEngine'
 import { setupRealtime, teardownRealtime } from '../sync/realtimeSubscription'
@@ -17,6 +17,7 @@ import {
   getTimerState, getIdleInfo, getPomodoroState, getSettings,
   TIMER_ALARM, POMODORO_ALARM, SUBSCRIPTION_ALARM, SYNC_ALARM,
   STATS_SYNC_ALARM, SYNC_DEBOUNCE_ALARM, REMINDER_ALARM, REMINDER_RETRY_ALARM,
+  GUEST_EXPIRY_ALARM,
 } from './storage'
 import { broadcastTimerSync, updateBadge, activeContentTabs, registerContentTab, unregisterContentTab } from './ui'
 import { startTimer, pauseTimer, resumeTimer, stopTimer } from './timerEngine'
@@ -167,6 +168,8 @@ chrome.runtime.onMessage.addListener(
               return { success: false, error: 'Failed to apply session' }
             }
             await stampLoginTime()
+            // Clear guest mode flag if transitioning from guest to authenticated
+            await clearGuestMode()
             const localUserId = await getLocalUserId()
             const hasData = await hasAnyLocalData()
             if (localUserId && localUserId !== session.userId && hasData) {
@@ -312,6 +315,20 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
       })
     }
   }
+
+  if (alarm.name === GUEST_EXPIRY_ALARM) {
+    const startedAt = await getGuestStartedAt()
+    if (startedAt === null) {
+      await chrome.alarms.clear(GUEST_EXPIRY_ALARM)
+      return
+    }
+    if (Date.now() - startedAt > GUEST_SESSION_MAX_MS) {
+      console.log('[work-timer] Guest session expired (5 days). Clearing data.')
+      await clearAllLocalData()
+      await clearGuestMode()
+      await chrome.alarms.clear(GUEST_EXPIRY_ALARM)
+    }
+  }
 })
 
 // ============================================================
@@ -345,6 +362,18 @@ chrome.runtime.onStartup.addListener(async () => {
   await chrome.alarms.create(STATS_SYNC_ALARM, { periodInMinutes: 60 })
   void scheduleReminder()
 
+  // Re-create guest expiry alarm if in guest mode
+  const guestStartedAt = await getGuestStartedAt()
+  if (guestStartedAt !== null) {
+    if (Date.now() - guestStartedAt > GUEST_SESSION_MAX_MS) {
+      console.log('[work-timer] Guest session expired on startup. Clearing data.')
+      await clearAllLocalData()
+      await clearGuestMode()
+    } else {
+      await chrome.alarms.create(GUEST_EXPIRY_ALARM, { periodInMinutes: 60 })
+    }
+  }
+
   const session = await getSession()
   if (session) {
     // Auto-logout free users after 7 days
@@ -374,6 +403,17 @@ self.addEventListener('online', () => {
 chrome.storage.onChanged.addListener((changes) => {
   if (changes['settings']) {
     void scheduleReminder()
+  }
+})
+
+// React to guest mode activation/deactivation
+chrome.storage.onChanged.addListener(async (changes) => {
+  if ('guestStartedAt' in changes) {
+    if (changes['guestStartedAt'].newValue) {
+      await chrome.alarms.create(GUEST_EXPIRY_ALARM, { periodInMinutes: 60 })
+    } else {
+      await chrome.alarms.clear(GUEST_EXPIRY_ALARM)
+    }
   }
 })
 
@@ -519,6 +559,8 @@ chrome.runtime.onMessageExternal.addListener(
         const session = await applyExternalSession(message.accessToken, message.refreshToken)
         if (session) {
           await stampLoginTime()
+          // Clear guest mode flag if transitioning from guest to authenticated
+          await clearGuestMode()
           const localUserId = await getLocalUserId()
           const hasData = await hasAnyLocalData()
 

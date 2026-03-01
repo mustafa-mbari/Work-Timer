@@ -16,7 +16,7 @@ export default function StatsView() {
   const { activeProjects } = useProjects()
   const [monthOffset, setMonthOffset] = useState(0)
   const [showUpgrade, setShowUpgrade] = useState(false)
-  const { isPremium } = usePremium()
+  const { isPremium, isGuest } = usePremium()
   const { settings } = useSettings()
   const displayDate = addMonths(new Date(), monthOffset)
   const displayYear = displayDate.getFullYear()
@@ -144,12 +144,13 @@ export default function StatsView() {
             <svg className="w-5 h-5 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
-            <span className="text-xs font-medium text-stone-500 dark:text-stone-400">Advanced analytics available with Premium</span>
+            <span className="text-xs font-medium text-stone-500 dark:text-stone-400">{isGuest ? 'Log in to unlock advanced analytics' : 'Advanced analytics available with Premium'}</span>
           </button>
           <UpgradePrompt
             isOpen={showUpgrade}
-            feature="Monthly heatmap & advanced analytics"
+            feature={isGuest ? 'Advanced analytics' : 'Monthly heatmap & advanced analytics'}
             onClose={() => setShowUpgrade(false)}
+            isGuest={isGuest}
           />
         </div>
       )}

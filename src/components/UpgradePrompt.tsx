@@ -5,9 +5,10 @@ interface UpgradePromptProps {
   isOpen: boolean
   feature: string  // e.g. "CSV & Excel export", "unlimited projects"
   onClose: () => void
+  isGuest?: boolean
 }
 
-export default function UpgradePrompt({ isOpen, feature, onClose }: UpgradePromptProps) {
+export default function UpgradePrompt({ isOpen, feature, onClose, isGuest }: UpgradePromptProps) {
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -19,8 +20,12 @@ export default function UpgradePrompt({ isOpen, feature, onClose }: UpgradePromp
 
   if (!isOpen) return null
 
-  const handleUpgrade = () => {
-    chrome.tabs.create({ url: `${WEBSITE_URL}/billing` })
+  const handleAction = () => {
+    if (isGuest) {
+      chrome.tabs.create({ url: `${WEBSITE_URL}/register` })
+    } else {
+      chrome.tabs.create({ url: `${WEBSITE_URL}/billing` })
+    }
     onClose()
   }
 
@@ -47,14 +52,23 @@ export default function UpgradePrompt({ isOpen, feature, onClose }: UpgradePromp
           id="upgrade-title"
           className="text-base font-semibold text-stone-900 dark:text-stone-100 mb-1.5"
         >
-          Premium feature
+          {isGuest ? 'Create an account' : 'Premium feature'}
         </h2>
         <p
           id="upgrade-message"
           className="text-sm text-stone-600 dark:text-stone-400 mb-4"
         >
-          <span className="font-medium text-stone-700 dark:text-stone-300">{feature}</span> is available on Work Timer Premium.
-          Upgrade for ${PRICING.monthly}/mo, ${PRICING.yearly}/yr, or ${PRICING.lifetime} lifetime.
+          {isGuest ? (
+            <>
+              <span className="font-medium text-stone-700 dark:text-stone-300">{feature}</span> requires a free account.
+              Sign up to unlock more features and keep your data.
+            </>
+          ) : (
+            <>
+              <span className="font-medium text-stone-700 dark:text-stone-300">{feature}</span> is available on Work Timer Premium.
+              Upgrade for ${PRICING.monthly}/mo, ${PRICING.yearly}/yr, or ${PRICING.lifetime} lifetime.
+            </>
+          )}
         </p>
 
         <div className="flex gap-2.5">
@@ -65,10 +79,10 @@ export default function UpgradePrompt({ isOpen, feature, onClose }: UpgradePromp
             Not now
           </button>
           <button
-            onClick={handleUpgrade}
+            onClick={handleAction}
             className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm"
           >
-            Upgrade
+            {isGuest ? 'Sign up free' : 'Upgrade'}
           </button>
         </div>
       </div>

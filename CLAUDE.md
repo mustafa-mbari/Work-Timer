@@ -421,6 +421,60 @@ GroupsView (client orchestrator, AlertDialog for delete group confirmation)
 - **Session expiry check**: `checkFreeSessionExpiry()` in `src/auth/authState.ts` — reads cached subscription, skips premium users, compares `lastLoginAt` against 7-day window
 - Premium users (active/trialing, non-free plan) are never auto-logged out
 
+### Guest Mode (No-Account Trial)
+
+Guest mode lets users try the extension without creating an account. 5-day trial with restricted limits, automatic data expiry, and seamless upgrade path to a free account.
+
+**Constants** (`shared/constants.ts`):
+
+- `GUEST_LIMITS = { maxProjects: 3, maxTags: 3, historyDays: 5, allowExport: false, allowCloudSync: false, allowAdvancedStats: false }`
+- `GUEST_SESSION_MAX_MS = 5 * 24 * 60 * 60 * 1000` (5 days)
+- `GUEST_EXPIRY_WARNING_MS = 3 * 24 * 60 * 60 * 1000` (warning starts day 4)
+
+**Storage** (`src/storage/index.ts`):
+
+- `activateGuestMode()` — stores `guestStartedAt: Date.now()`, creates default "Default" project
+- `clearGuestMode()` — removes `guestStartedAt` key
+- `isGuestMode()` — returns `true` if `guestStartedAt` exists in storage
+- `getGuestStartedAt()` — returns timestamp or `null`
+- `getGuestDaysRemaining()` — computes days left from `guestStartedAt` using `Math.ceil()`
+- `clearAllLocalData()` does NOT remove `guestStartedAt` — guest flag persists through data clears
+
+**Limit enforcement** (`src/premium/featureGate.ts`):
+
+- `getCurrentLimits()` checks `isGuestMode()` first → returns `GUEST_LIMITS` if true
+- Single choke-point: all hooks (`useProjects`, `useTags`, `useEntries`) call `getCurrentLimits()`
+- Guest limits take priority over subscription (even if premium subscription exists)
+
+**Hook** (`src/hooks/useGuest.ts`):
+
+- Reactive state: `isGuest`, `loading`, `daysRemaining`, `isNearExpiry` (day 4-5), `isExpired`
+- Methods: `enterGuestMode()` (calls `activateGuestMode()`), `exitGuestMode()` (calls `clearGuestMode()` + `clearAllLocalData()`)
+- Listens to `chrome.storage.onChanged` for `guestStartedAt` changes
+
+**Background expiry** (`src/background/background.ts`):
+
+- `storage.onChanged` listener: `guestStartedAt` set → creates hourly `guest-expiry-check` alarm; removed → clears alarm
+- Alarm handler: when expired, calls `clearAllLocalData()` + `clearGuestMode()`
+- `AUTH_LOGIN` handler (both `onMessage` + `onMessageExternal`): calls `clearGuestMode()` on sign-in — existing `uploadAllLocalData()` merges guest data into new account
+
+**UI components**:
+
+- `AuthGate.tsx` — "Try as Guest — Limited features" dashed-border button + logo image
+- `GuestBanner.tsx` — persistent thin banner: "X days left — Sign up free to keep your data" (indigo > 2 days, amber <= 2 days)
+- `GuestExpiryAlert.tsx` — modal on popup open when `isNearExpiry` (day 4-5) with free plan benefits
+- `App.tsx` — renders main app when `session || isGuest`; shows `GuestBanner` + `GuestExpiryAlert` for guests; skips `POPUP_OPENED` sync when guest
+- `SettingsView.tsx` — account tab shows guest info card with days remaining, "Create Free Account" + "Visit Website" + "Log out" buttons
+- `StatsView.tsx` — monthly overview shows "Log in to unlock" instead of "Available with Premium" for guests
+- `UpgradePrompt.tsx` — shows "Create a free account to access [feature]" for guests instead of "Upgrade to Premium"
+- `ExportMenu.tsx` — passes `isGuest` through to UpgradePrompt
+
+**`usePremium` hook** (`src/hooks/usePremium.ts`):
+
+- Added `isGuest: boolean` field to `PremiumState`
+- Checks `isGuestMode()` on init; if guest, sets `limits: GUEST_LIMITS, isGuest: true`
+- Listens for `guestStartedAt` storage changes
+
 ### Free Plan Limits
 
 - **Projects**: Max 5 (active + archived combined) — enforced in `useProjects.ts` create function
@@ -546,7 +600,7 @@ GroupsView (client orchestrator, AlertDialog for delete group confirmation)
 - **Framework:** Vitest (config in `vitest.config.ts`)
 - **Setup:** `src/__tests__/setup.ts` — in-memory `chrome.storage.local` mock with `onChanged` listener support, `self` global mock for service worker context
 - **Test files:** Co-located with source (`*.test.ts`), excluded from build via `tsconfig.app.json`
-- **Coverage:** Storage layer (34 tests), sync queue (13 tests), date utils (13 tests), timer utils (5 tests), timer engine integration (18 tests)
+- **Coverage:** Storage layer (45 tests), sync queue (13 tests), date utils (13 tests), timer utils (5 tests), timer engine integration (18 tests), feature gating (14 tests), guest mode (14 tests)
 - **Run:** `pnpm test` (single run) or `pnpm test:watch` (watch mode)
 
 ## Non-Functional Requirements

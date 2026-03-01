@@ -2,12 +2,11 @@ import { useState, useEffect, useCallback } from 'react'
 import type { Project } from '@/types'
 import { getProjects, saveProject, updateProject, archiveProject, deleteProject, setDefaultProject, reorderProjects } from '@/storage'
 import { generateId } from '@/utils/id'
-import { getCachedSubscription } from '@/auth/authState'
-import { getLimits } from '@/premium/featureGate'
+import { getCurrentLimits } from '@/premium/featureGate'
 
 export class ProjectLimitError extends Error {
-  constructor() {
-    super('You have reached the 5-project limit on the free plan.')
+  constructor(limit: number = 5) {
+    super(`You have reached the ${limit}-project limit.`)
     this.name = 'ProjectLimitError'
   }
 }
@@ -49,11 +48,10 @@ export function useProjects() {
   }
 
   const create = useCallback(async (name: string, color: string) => {
-    const sub = await getCachedSubscription()
-    const limits = getLimits(sub)
+    const limits = await getCurrentLimits()
     // Count ALL projects (active + archived) to prevent bypass via archive-then-create
     if (projects.length >= limits.maxProjects) {
-      throw new ProjectLimitError()
+      throw new ProjectLimitError(limits.maxProjects)
     }
     const project: Project = {
       id: generateId(),

@@ -42,6 +42,11 @@ import {
   hasAnyLocalData,
   clearAllLocalData,
   DEFAULT_SETTINGS,
+  activateGuestMode,
+  clearGuestMode,
+  isGuestMode,
+  getGuestStartedAt,
+  getGuestDaysRemaining,
 } from './index'
 
 // --- Fixtures ---
@@ -391,5 +396,85 @@ describe('storageSet retry and quota', () => {
     })
 
     await expect(saveEntry(makeEntry())).rejects.toThrow('QUOTA_BYTES')
+  })
+})
+
+// --- Guest Mode ---
+// Note: These tests use seedStore() to set up guest state directly because
+// the quota test above leaves chrome.storage.local.set mocked. The activateGuestMode()
+// integration is tested separately in featureGate.test.ts and useGuest.test.ts.
+
+describe('Guest Mode', () => {
+  it('isGuestMode returns false when not in guest mode', async () => {
+    expect(await isGuestMode()).toBe(false)
+  })
+
+  it('getGuestStartedAt returns null when not in guest mode', async () => {
+    expect(await getGuestStartedAt()).toBeNull()
+  })
+
+  it('isGuestMode returns true when guestStartedAt is set', async () => {
+    seedStore({ guestStartedAt: Date.now() })
+    expect(await isGuestMode()).toBe(true)
+  })
+
+  it('getGuestStartedAt returns the timestamp', async () => {
+    const now = Date.now()
+    seedStore({ guestStartedAt: now })
+    expect(await getGuestStartedAt()).toBe(now)
+  })
+
+  it('clearGuestMode removes the guest flag', async () => {
+    seedStore({ guestStartedAt: Date.now() })
+    expect(await isGuestMode()).toBe(true)
+
+    await clearGuestMode()
+    expect(await isGuestMode()).toBe(false)
+    expect(await getGuestStartedAt()).toBeNull()
+  })
+
+  it('getGuestDaysRemaining returns 5 for fresh guest', async () => {
+    seedStore({ guestStartedAt: Date.now() })
+    const days = await getGuestDaysRemaining()
+    expect(days).toBe(5)
+  })
+
+  it('getGuestDaysRemaining returns 0 for expired guest', async () => {
+    const sixDaysAgo = Date.now() - 6 * 24 * 60 * 60 * 1000
+    seedStore({ guestStartedAt: sixDaysAgo })
+
+    const days = await getGuestDaysRemaining()
+    expect(days).toBe(0)
+  })
+
+  it('getGuestDaysRemaining returns null when not in guest mode', async () => {
+    expect(await getGuestDaysRemaining()).toBeNull()
+  })
+
+  it('getGuestDaysRemaining returns partial days correctly', async () => {
+    // Started 3.5 days ago → should have 2 days remaining (ceil of 1.5)
+    const threeAndHalfDaysAgo = Date.now() - 3.5 * 24 * 60 * 60 * 1000
+    seedStore({ guestStartedAt: threeAndHalfDaysAgo })
+
+    const days = await getGuestDaysRemaining()
+    expect(days).toBe(2) // Math.ceil(1.5)
+  })
+
+  it('getGuestDaysRemaining returns 4 after 1 day', async () => {
+    const oneDayAgo = Date.now() - 1 * 24 * 60 * 60 * 1000
+    seedStore({ guestStartedAt: oneDayAgo })
+
+    const days = await getGuestDaysRemaining()
+    expect(days).toBe(4)
+  })
+
+  it('clearAllLocalData does NOT remove guestStartedAt', async () => {
+    seedStore({ guestStartedAt: Date.now(), projects: [makeProject()] })
+    await clearAllLocalData()
+
+    // Guest flag should still be present
+    expect(await isGuestMode()).toBe(true)
+    // But projects should be cleared
+    expect(await getProjects()).toEqual([])
   })
 })

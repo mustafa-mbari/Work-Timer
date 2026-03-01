@@ -20,7 +20,20 @@ export const PREMIUM_LIMITS = {
   allowWorkTypeEdit: true,
 } as const
 
-export type Limits = typeof FREE_LIMITS | typeof PREMIUM_LIMITS
+export const GUEST_LIMITS = {
+  maxProjects: 3,
+  maxTags: 3,
+  historyDays: 5,
+  allowExport: false,
+  allowCloudSync: false,
+  allowAdvancedStats: false,
+  allowWorkTypeEdit: false,
+} as const
+
+export const GUEST_SESSION_MAX_MS = 5 * 24 * 60 * 60 * 1000 // 5 days
+export const GUEST_EXPIRY_WARNING_MS = 3 * 24 * 60 * 60 * 1000 // Warning starts on day 4
+
+export type Limits = typeof FREE_LIMITS | typeof PREMIUM_LIMITS | typeof GUEST_LIMITS
 
 export const PLANS = {
   free: 'free',

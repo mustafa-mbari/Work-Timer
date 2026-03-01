@@ -1,7 +1,8 @@
 import type { SubscriptionInfo } from '@/types'
-import { FREE_LIMITS, PREMIUM_LIMITS } from '@shared/constants'
+import { FREE_LIMITS, PREMIUM_LIMITS, GUEST_LIMITS } from '@shared/constants'
 import type { Limits } from '@shared/constants'
 import { getCachedSubscription } from '@/auth/authState'
+import { isGuestMode } from '@/storage'
 
 export function isPremiumSubscription(sub: SubscriptionInfo | null): boolean {
   if (!sub) return false
@@ -21,6 +22,7 @@ export async function isCurrentUserPremium(): Promise<boolean> {
 }
 
 export async function getCurrentLimits(): Promise<Limits> {
+  if (await isGuestMode()) return GUEST_LIMITS
   const sub = await getCachedSubscription()
   return getLimits(sub)
 }

@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import type { TimeEntry } from '@/types'
 import { getEntries, getEntriesByRange, saveEntry, updateEntry, deleteEntry } from '@/storage'
 import { getToday } from '@/utils/date'
-import { getCachedSubscription } from '@/auth/authState'
-import { getLimits } from '@/premium/featureGate'
+import { getCurrentLimits } from '@/premium/featureGate'
 import { subDays, parseISO, max, format } from 'date-fns'
 
 export function useEntries(date?: string) {
@@ -62,9 +61,8 @@ export function useEntriesRange(startDate: string, endDate: string) {
   const [loading, setLoading] = useState(true)
 
   const fetch = useCallback(async () => {
-    // Clamp start date to 30 days ago for free users (local data preserved, just hidden)
-    const sub = await getCachedSubscription()
-    const limits = getLimits(sub)
+    // Clamp start date based on plan limits (local data preserved, just hidden)
+    const limits = await getCurrentLimits()
     let effectiveStart = startDate
     if (isFinite(limits.historyDays)) {
       const earliest = format(subDays(new Date(), limits.historyDays), 'yyyy-MM-dd')

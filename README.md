@@ -2,7 +2,7 @@
 
 A modern, privacy-first time tracking system with Chrome extension and companion website.
 
-Track your work time with stopwatch, manual entry, and Pomodoro modes. Start with local-only tracking (no account needed), or upgrade to Premium for cloud sync, advanced analytics, and multi-device support.
+Track your work time with stopwatch, manual entry, and Pomodoro modes. Try it instantly as a guest -- no account needed. Create a free account to keep your data, or upgrade to Premium for cloud sync, advanced analytics, and multi-device support.
 
 ![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-4285F4?logo=googlechrome&logoColor=white)
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-green)
@@ -58,10 +58,21 @@ Track your work time with stopwatch, manual entry, and Pomodoro modes. Start wit
 - **Export** -- CSV, Excel, and PDF export. PDF reports include user info, summary stats, weekly stacked bar chart, project/tag breakdowns with percentages, daily summary table, and detailed entries with tags column. Branded footer with page numbers.
 - **Browser Integration** -- Floating timer widget, right-click context menu
 
+### Guest Mode
+
+Try Work Timer instantly -- no sign-up required:
+
+- **Instant access** -- Click "Try as Guest" and start tracking immediately
+- **5-day trial** -- All core timer features with limited projects (3), tags (3), and 5-day history
+- **Expiry warnings** -- Banner shows days remaining; modal alert on days 4-5
+- **Seamless upgrade** -- Create a free account anytime to keep all your data
+- **Auto-cleanup** -- Data automatically removed after 5 days if no account created
+
 ### Plans & Pricing
 
 | Plan | Monthly | Yearly | Highlights |
 | ---- | ------- | ------ | ---------- |
+| **Guest** | — | — | 3 projects · 3 tags · 5-day history · 5-day trial · no account needed |
 | **Free** | $0 | — | 5 projects · 5 tags · 14-day history · local only · all timer modes |
 | **Pro** | $1.99 | $17.99 | Unlimited projects & tags · cloud sync · granular sync controls · analytics & earnings · CSV export |
 | **Team (≤10)** | $29 | $260 | Everything in Pro + group workspace · timesheet approval · team reports |
@@ -246,7 +257,8 @@ pnpm run lint
 - **Auth session hardening**: Proactive token refresh every 60 minutes; free users auto-logged out after 7 days of inactivity.
 - **Free plan limit enforcement**: Projects and tags capped at 5 total (active + archived) to prevent archive-then-create bypass.
 - **WCAG AA compliant**: All 6 themes verified for color contrast ratios (4.5:1+ for text).
-- **Test coverage**: 83 tests across storage, sync queue, timer engine, and utility functions via Vitest with chrome.storage.local mock.
+- **Guest mode**: 5-day trial with restricted limits (3 projects, 3 tags, 5-day history), automatic data expiry via `chrome.alarms`, and seamless data merge on signup.
+- **Test coverage**: 122 tests across storage, sync queue, timer engine, feature gating, guest mode, and utility functions via Vitest with chrome.storage.local mock.
 
 ---
 

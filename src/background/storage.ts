@@ -16,6 +16,7 @@ export const REMINDER_ALARM = 'weekly-reminder'
 export const REMINDER_RETRY_ALARM = 'reminder-retry'
 export const STATS_SYNC_ALARM = 'stats-sync'
 export const SYNC_DEBOUNCE_ALARM = 'sync-debounce'
+export const GUEST_EXPIRY_ALARM = 'guest-expiry-check'
 
 // ── Default state objects ──
 
