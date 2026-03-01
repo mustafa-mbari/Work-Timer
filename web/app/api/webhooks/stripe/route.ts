@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
 import { createServiceClient } from '@/lib/supabase/server'
 import { upsertSubscription, updateSubscriptionByStripeId } from '@/lib/repositories/subscriptions'
-import { sendEmail, buildBillingNotificationEmail, buildInvoiceReceiptEmail } from '@/lib/email'
+import { sendEmail, buildBillingNotificationEmail, buildInvoiceReceiptEmail, buildTrialEndingEmail } from '@/lib/email'
 import type Stripe from 'stripe'
 import type { DbSubscription } from '@/lib/shared/types'
 
@@ -198,6 +198,9 @@ export async function POST(request: NextRequest) {
 
       case 'customer.subscription.deleted': {
         const sub = event.data.object as Stripe.Subscription
+        const priceIdDel = sub.items.data[0]?.price.id ?? ''
+        const cancelledPlan = PLAN_MAP[priceIdDel]
+
         const { error } = await updateSubscriptionByStripeId(sub.id, {
           plan: 'free',
           status: 'canceled',
@@ -206,6 +209,43 @@ export async function POST(request: NextRequest) {
         if (error) {
           console.error('[stripe webhook] subscription delete failed:', error)
           return NextResponse.json({ error: 'Database error' }, { status: 500 })
+        }
+
+        // Send cancellation notification email
+        const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id
+        if (customerId) {
+          getStripe().customers.retrieve(customerId).then((customer) => {
+            if (customer.deleted || !('email' in customer) || !customer.email) return
+            const { subject, html } = buildBillingNotificationEmail({
+              event: 'subscription_cancelled',
+              planName: PLAN_DISPLAY_NAMES[cancelledPlan || 'free'] || 'Premium',
+              displayName: customer.name || null,
+            })
+            sendEmail({ to: customer.email, subject, html, type: 'billing_notification', metadata: { plan: cancelledPlan || 'free' } }).catch(() => {})
+          }).catch(() => {})
+        }
+        break
+      }
+
+      case 'customer.subscription.trial_will_end': {
+        const sub = event.data.object as Stripe.Subscription
+        const trialEnd = sub.trial_end
+        if (!trialEnd) break
+
+        const daysRemaining = Math.max(0, Math.ceil((trialEnd * 1000 - Date.now()) / (24 * 60 * 60 * 1000)))
+        const trialEndDate = new Date(trialEnd * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+
+        const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id
+        if (customerId) {
+          getStripe().customers.retrieve(customerId).then((customer) => {
+            if (customer.deleted || !('email' in customer) || !customer.email) return
+            const { subject, html } = buildTrialEndingEmail({
+              displayName: customer.name || null,
+              daysRemaining,
+              trialEndDate,
+            })
+            sendEmail({ to: customer.email, subject, html, type: 'trial_ending' }).catch(() => {})
+          }).catch(() => {})
         }
         break
       }

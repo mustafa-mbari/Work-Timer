@@ -1,11 +1,7 @@
 import nodemailer from 'nodemailer'
 
-let transporter: nodemailer.Transporter | null = null
-
-export function getTransporter() {
-  if (transporter) return transporter
-
-  transporter = nodemailer.createTransport({
+export function getTransporter(): nodemailer.Transporter {
+  return nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.zoho.eu',
     port: Number(process.env.SMTP_PORT) || 465,
     secure: true,
@@ -16,8 +12,6 @@ export function getTransporter() {
     pool: true,
     maxConnections: 3,
   })
-
-  return transporter
 }
 
 export function getFromAddress() {

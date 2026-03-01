@@ -51,6 +51,9 @@ export default function SecurityTab({ userEmail }: Props) {
       const { error: updateError } = await supabase.auth.updateUser({ password: newPassword })
       if (updateError) throw updateError
 
+      // Send password change confirmation email (fire-and-forget)
+      fetch('/api/auth/password-changed', { method: 'POST' }).catch(() => {})
+
       toast.success('Password updated successfully')
       setCurrentPassword('')
       setNewPassword('')
