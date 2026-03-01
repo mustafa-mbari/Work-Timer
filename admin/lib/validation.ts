@@ -59,6 +59,12 @@ export const sendTestEmailSchema = z.object({
   ]),
 })
 
+// --- Spam Check ---
+export const spamCheckSchema = z.object({
+  html: z.string().min(1).max(200_000),
+  options: z.string().optional().default('long'),
+})
+
 // Helper to parse and return a typed result or a 400 response
 export function parseBody<T extends z.ZodType>(schema: T, data: unknown):
   { success: true; data: z.infer<T> } | { success: false; error: string } {
