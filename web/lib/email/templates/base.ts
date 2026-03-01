@@ -52,9 +52,9 @@ export function wrapInBaseLayout(content: string, preheader?: string): string {
               <!-- Accent bar -->
               <div style="height: 4px; background: linear-gradient(90deg, #6366f1, #818cf8);"></div>
               <!-- Body -->
-              <td style="padding: 40px 36px;">
+              <div style="padding: 40px 36px;">
                 ${content}
-              </td>
+              </div>
             </td>
           </tr>
 

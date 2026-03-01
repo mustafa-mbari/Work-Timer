@@ -1,7 +1,6 @@
 import { requireAdmin } from '@/lib/services/auth'
 import { createClient } from '@/lib/supabase/server'
-import { AdminNav } from '@/components/AdminNav'
-import { AdminHeader } from '@/components/AdminHeader'
+import { AdminSidebar, AdminMobileHeader } from '@/components/AdminSidebar'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await requireAdmin()
@@ -13,18 +12,23 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     .eq('id', user.id)
     .single()
 
+  const email = user.email ?? ''
+  const displayName = data?.display_name ?? null
+
   return (
-    <div className="flex flex-col min-h-screen bg-stone-50 dark:bg-[var(--dark)]">
-      <AdminHeader
-        email={user.email ?? ''}
-        displayName={data?.display_name ?? null}
-      />
-      <div className="flex-1 overflow-y-auto">
+    <div className="min-h-screen bg-stone-50 dark:bg-[var(--dark)]">
+      {/* Desktop sidebar */}
+      <AdminSidebar email={email} displayName={displayName} />
+
+      {/* Mobile header with hamburger */}
+      <AdminMobileHeader email={email} displayName={displayName} />
+
+      {/* Main content */}
+      <main className="lg:pl-60">
         <div className="mx-auto w-full max-w-[1280px] px-6 py-8">
-          <AdminNav />
           {children}
         </div>
-      </div>
+      </main>
     </div>
   )
 }
