@@ -613,6 +613,44 @@ interface DbGroupShareUpdate {
   due_date?: string | null
 }
 
+// --- Email log types ---
+export interface DbEmailLog {
+  id: string
+  recipient: string
+  type: string
+  subject: string
+  status: 'sent' | 'failed' | 'bounced'
+  message_id: string | null
+  error: string | null
+  metadata: Record<string, unknown>
+  created_at: string
+  sent_by: string | null
+}
+
+interface DbEmailLogInsert {
+  recipient: string
+  type: string
+  subject: string
+  id?: string
+  status?: string
+  message_id?: string | null
+  error?: string | null
+  metadata?: Record<string, unknown>
+  created_at?: string
+  sent_by?: string | null
+}
+
+interface DbEmailLogUpdate {
+  recipient?: string
+  type?: string
+  subject?: string
+  status?: string
+  message_id?: string | null
+  error?: string | null
+  metadata?: Record<string, unknown>
+  sent_by?: string | null
+}
+
 // Database type map for @supabase/supabase-js typed client
 export type Database = {
   public: {
@@ -633,6 +671,7 @@ export type Database = {
       group_invitations: { Row: DbGroupInvitation; Insert: DbGroupInvitationInsert; Update: DbGroupInvitationUpdate; Relationships: [] }
       group_sharing_settings: { Row: DbGroupSharingSettings; Insert: DbGroupSharingSettingsInsert; Update: DbGroupSharingSettingsUpdate; Relationships: [] }
       group_shares: { Row: DbGroupShare; Insert: DbGroupShareInsert; Update: DbGroupShareUpdate; Relationships: [] }
+      email_logs: { Row: DbEmailLog; Insert: DbEmailLogInsert; Update: DbEmailLogUpdate; Relationships: [] }
     }
     Views: Record<string, never>
     Functions: {

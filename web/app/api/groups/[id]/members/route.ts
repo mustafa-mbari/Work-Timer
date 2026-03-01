@@ -3,6 +3,7 @@ import { requireAuthApi } from '@/lib/services/auth'
 import { getGroupById, removeGroupMember, getGroupMemberCount } from '@/lib/repositories/groups'
 import { createInvitation } from '@/lib/repositories/groupInvitations'
 import { inviteMemberSchema, parseBody } from '@/lib/validation'
+import { sendEmail, buildGroupInvitationEmail } from '@/lib/email'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -26,6 +27,20 @@ export async function POST(request: NextRequest, { params }: Params) {
 
   const { data, error } = await createInvitation(id, parsed.data.email, user.id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Send invitation email (fire-and-forget)
+  const inviterName = user.user_metadata?.full_name || user.user_metadata?.name || user.email || 'A team member'
+  const { subject, html } = buildGroupInvitationEmail({
+    inviterName,
+    groupName: group.name,
+  })
+  sendEmail({
+    to: parsed.data.email,
+    subject,
+    html,
+    type: 'group_invitation',
+    metadata: { group_id: id, group_name: group.name },
+  }).catch(() => {})
 
   return NextResponse.json(data, { status: 201 })
 }

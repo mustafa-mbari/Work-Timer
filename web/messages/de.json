@@ -241,7 +241,13 @@
       "passwordUpdated": "Passwort erfolgreich aktualisiert. Melde dich mit deinem neuen Passwort an.",
       "tooManyAttempts": "Zu viele Anmeldeversuche. Bitte warte einen Moment und versuche es erneut.",
       "tooManyMagicAttempts": "Zu viele Versuche. Bitte warte einen Moment und versuche es erneut.",
-      "magicLinkSent": "Überprüfe deine E-Mail auf den Anmelde-Link!"
+      "magicLinkSent": "Überprüfe deine E-Mail auf den Anmelde-Link!",
+      "heroTitle": "Willkommen zurück",
+      "heroSubtitle": "Melde dich an, um deine Zeiterfassung fortzusetzen",
+      "featureSecureTitle": "Deine Daten sind sicher",
+      "featureSecureDesc": "Verschlüsselte Synchronisierung mit datenschutzorientiertem Design",
+      "featureSyncTitle": "Mach weiter, wo du aufgehört hast",
+      "featureSyncDesc": "Deine Timer und Einträge werden auf allen Geräten synchronisiert"
     },
     "register": {
       "title": "Konto erstellen",
@@ -261,7 +267,19 @@
       "termsLink": "Nutzungsbedingungen",
       "and": "und",
       "privacyLink": "Datenschutzrichtlinien",
-      "tooManyAttempts": "Zu viele Registrierungsversuche. Bitte warte einen Moment und versuche es erneut."
+      "tooManyAttempts": "Zu viele Registrierungsversuche. Bitte warte einen Moment und versuche es erneut.",
+      "displayNameLabel": "Anzeigename",
+      "displayNamePlaceholder": "Wie sollen wir dich nennen?",
+      "displayNameHint": "Optional",
+      "heroTitle": "Starte heute mit der Zeiterfassung",
+      "heroSubtitle": "Tausende Profis vertrauen auf Work Timer",
+      "feature1Title": "Datenschutz zuerst",
+      "feature1Desc": "Deine Daten bleiben in deinem Browser. Kein Tracking, keine Werbung.",
+      "feature2Title": "Drei Timer-Modi",
+      "feature2Desc": "Stoppuhr, manuelle Eingabe oder Pomodoro — jederzeit wechselbar.",
+      "feature3Title": "Cloud-Synchronisierung",
+      "feature3Desc": "Optionale Synchronisierung auf allen Geräten. Funktioniert offline.",
+      "socialProof": "Von Profis weltweit für genaue Zeiterfassung geschätzt"
     },
     "forgotPassword": {
       "title": "Passwort zurücksetzen",

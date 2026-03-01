@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
-  const { email, password, ext } = await request.json()
+  const { email, password, ext, displayName } = await request.json()
   const redirectTo = `${request.nextUrl.origin}/auth/callback${ext ? '?ext=true' : ''}`
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -22,7 +22,10 @@ export async function POST(request: NextRequest) {
   const { error } = await supabase.auth.signUp({
     email,
     password,
-    options: { emailRedirectTo: redirectTo },
+    options: {
+      emailRedirectTo: redirectTo,
+      data: displayName ? { full_name: displayName } : undefined,
+    },
   })
 
   if (error) {

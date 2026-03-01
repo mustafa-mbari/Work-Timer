@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { sendEmail, buildWelcomeEmail } from '@/lib/email'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl
@@ -29,6 +30,17 @@ export async function GET(request: NextRequest) {
       role: 'user',
       created_at: user.created_at,
     }, { onConflict: 'id', ignoreDuplicates: true })
+
+    // Send welcome email for first-time users (profile was just created via ignoreDuplicates)
+    const { count } = await (serviceSupabase.from('email_logs') as any)
+      .select('id', { count: 'exact', head: true })
+      .eq('recipient', user.email)
+      .eq('type', 'welcome')
+    if (count === 0 && user.email) {
+      const displayName = user.user_metadata?.full_name || user.user_metadata?.name || null
+      const { subject, html } = buildWelcomeEmail({ displayName })
+      sendEmail({ to: user.email, subject, html, type: 'welcome' }).catch(() => {})
+    }
   }
 
   // If ext=true, redirect to extension bridge page (client component)

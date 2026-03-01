@@ -33,6 +33,7 @@
     "clsx": "^2.1.1",
     "lucide-react": "^0.574.0",
     "next": "^16.1.6",
+    "nodemailer": "^8.0.1",
     "postcss": "^8.5.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
@@ -46,6 +47,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@types/nodemailer": "^7.0.11",
     "shadcn": "^3.8.5"
   }
 }

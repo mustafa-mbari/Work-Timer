@@ -60,6 +60,8 @@ export default function ResetPasswordForm() {
     try {
       const { error: updateError } = await supabase.auth.updateUser({ password })
       if (updateError) throw updateError
+      // Send password change confirmation email (fire-and-forget)
+      fetch('/api/auth/password-changed', { method: 'POST' }).catch(() => {})
       // Sign out so the user logs in fresh with their new password
       await supabase.auth.signOut()
       router.push('/login?message=password-updated')

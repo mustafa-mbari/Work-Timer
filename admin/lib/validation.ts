@@ -46,6 +46,19 @@ export const adminUpdateGroupSchema = z.object({
   max_members: z.number().int().min(1).max(1000),
 })
 
+// --- Admin Emails ---
+export const sendTestEmailSchema = z.object({
+  to: z.string().email('Valid email is required'),
+  template: z.enum([
+    'welcome',
+    'group_invitation',
+    'password_reset_confirmation',
+    'billing_notification',
+    'invoice_receipt',
+    'trial_ending',
+  ]),
+})
+
 // Helper to parse and return a typed result or a 400 response
 export function parseBody<T extends z.ZodType>(schema: T, data: unknown):
   { success: true; data: z.infer<T> } | { success: false; error: string } {

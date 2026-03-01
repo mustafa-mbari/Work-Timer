@@ -241,7 +241,13 @@
       "passwordUpdated": "Password updated successfully. Sign in with your new password.",
       "tooManyAttempts": "Too many login attempts. Please wait a moment and try again.",
       "tooManyMagicAttempts": "Too many attempts. Please wait a moment and try again.",
-      "magicLinkSent": "Check your email for the login link!"
+      "magicLinkSent": "Check your email for the login link!",
+      "heroTitle": "Welcome back",
+      "heroSubtitle": "Sign in to continue tracking your time",
+      "featureSecureTitle": "Your data is safe",
+      "featureSecureDesc": "End-to-end encrypted sync with privacy-first design",
+      "featureSyncTitle": "Pick up where you left off",
+      "featureSyncDesc": "Your timers and entries sync across all your devices"
     },
     "register": {
       "title": "Create your account",
@@ -261,7 +267,19 @@
       "termsLink": "Terms",
       "and": "and",
       "privacyLink": "Privacy Policy",
-      "tooManyAttempts": "Too many sign-up attempts. Please wait a moment and try again."
+      "tooManyAttempts": "Too many sign-up attempts. Please wait a moment and try again.",
+      "displayNameLabel": "Display name",
+      "displayNamePlaceholder": "How should we call you?",
+      "displayNameHint": "Optional",
+      "heroTitle": "Start tracking your time today",
+      "heroSubtitle": "Join thousands of professionals who trust Work Timer",
+      "feature1Title": "Privacy first",
+      "feature1Desc": "Your data stays in your browser. No tracking, no ads.",
+      "feature2Title": "Three timer modes",
+      "feature2Desc": "Stopwatch, manual entry, or Pomodoro — switch anytime.",
+      "feature3Title": "Cloud sync",
+      "feature3Desc": "Optional sync across all your devices. Works offline.",
+      "socialProof": "Trusted by professionals worldwide for accurate time tracking"
     },
     "forgotPassword": {
       "title": "Reset your password",

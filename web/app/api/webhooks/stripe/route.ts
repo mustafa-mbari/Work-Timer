@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getStripe } from '@/lib/stripe'
 import { createServiceClient } from '@/lib/supabase/server'
 import { upsertSubscription, updateSubscriptionByStripeId } from '@/lib/repositories/subscriptions'
+import { sendEmail, buildBillingNotificationEmail, buildInvoiceReceiptEmail } from '@/lib/email'
 import type Stripe from 'stripe'
 import type { DbSubscription } from '@/lib/shared/types'
 
@@ -38,6 +39,29 @@ const VALID_PLANS = [
   'team_10_monthly', 'team_10_yearly',
   'team_20_monthly', 'team_20_yearly',
 ] as const
+
+const PLAN_DISPLAY_NAMES: Record<string, string> = {
+  premium_monthly: 'Premium Monthly',
+  premium_yearly: 'Premium Yearly',
+  premium_lifetime: 'Premium Lifetime',
+  allin_monthly: 'All-In Monthly',
+  allin_yearly: 'All-In Yearly',
+  team_10_monthly: 'Team 10 Monthly',
+  team_10_yearly: 'Team 10 Yearly',
+  team_20_monthly: 'Team 20 Monthly',
+  team_20_yearly: 'Team 20 Yearly',
+  free: 'Free',
+}
+
+async function getUserEmailAndName(userId: string): Promise<{ email: string | null; displayName: string | null }> {
+  try {
+    const supabase = await createServiceClient()
+    const { data } = await (supabase.from('profiles') as any).select('email, display_name').eq('id', userId).single()
+    return { email: (data as any)?.email || null, displayName: (data as any)?.display_name || null }
+  } catch {
+    return { email: null, displayName: null }
+  }
+}
 
 function resolveCheckoutPlan(metadata: Record<string, string> | null): Plan | null {
   const plan = metadata?.plan
@@ -123,6 +147,17 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: 'Database error' }, { status: 500 })
         }
 
+        // Send billing notification email
+        getUserEmailAndName(userId).then(({ email, displayName }) => {
+          if (!email) return
+          const { subject, html } = buildBillingNotificationEmail({
+            event: 'subscription_created',
+            planName: PLAN_DISPLAY_NAMES[planName] || planName,
+            displayName,
+          })
+          sendEmail({ to: email, subject, html, type: 'billing_notification', metadata: { plan: planName } }).catch(() => {})
+        })
+
         // If this was a lifetime upgrade from an existing subscription, cancel the old sub
         if (isLifetime) {
           const cancelSubId = (session.metadata as Record<string, string> | null)?.cancel_subscription_id
@@ -171,6 +206,26 @@ export async function POST(request: NextRequest) {
         if (error) {
           console.error('[stripe webhook] subscription delete failed:', error)
           return NextResponse.json({ error: 'Database error' }, { status: 500 })
+        }
+        break
+      }
+
+      case 'invoice.paid': {
+        const invoice = event.data.object as Stripe.Invoice
+        const customerEmail = invoice.customer_email
+        if (customerEmail && invoice.amount_paid > 0) {
+          const amount = (invoice.amount_paid / 100).toFixed(2)
+          const currency = invoice.currency || 'usd'
+          const { subject, html } = buildInvoiceReceiptEmail({
+            displayName: invoice.customer_name || null,
+            amount,
+            currency,
+            planName: invoice.lines?.data[0]?.description || 'Work Timer Premium',
+            invoiceDate: new Date((invoice.created || 0) * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+            invoiceNumber: invoice.number || null,
+            invoiceUrl: invoice.hosted_invoice_url || null,
+          })
+          sendEmail({ to: customerEmail, subject, html, type: 'invoice_receipt' }).catch(() => {})
         }
         break
       }
