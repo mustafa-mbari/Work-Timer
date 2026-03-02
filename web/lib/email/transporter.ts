@@ -8,7 +8,7 @@ export function getTransporter(): nodemailer.Transporter {
     port,
     secure: port === 465,
     auth: {
-      user: process.env.SMTP_USER,
+      user: process.env.SMTP_USER || 'resend',
       pass: process.env.SMTP_PASS,
     },
     connectionTimeout: 10_000,
