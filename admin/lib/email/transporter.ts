@@ -8,7 +8,7 @@ export function getTransporter(): nodemailer.Transporter {
     port,
     secure: port === 465,
     auth: {
-      user: process.env.SMTP_USER,
+      user: process.env.SMTP_USER || 'resend',
       pass: process.env.SMTP_PASS,
     },
     connectionTimeout: 10_000,
@@ -21,6 +21,16 @@ export function getFromAddress() {
   const name = process.env.SMTP_FROM_NAME || 'Work Timer'
   const email = process.env.SMTP_FROM_EMAIL || 'info@w-timer.com'
   return `"${name}" <${email}>`
+}
+
+export function getSmtpConfig() {
+  const host = process.env.SMTP_HOST || 'smtp.resend.com'
+  const port = Number(process.env.SMTP_PORT) || 465
+  const from = process.env.SMTP_FROM_EMAIL || 'info@w-timer.com'
+  const secure = port === 465
+  const configured = !!process.env.SMTP_PASS
+
+  return { host, port, from, secure: secure ? 'SSL/TLS' : 'STARTTLS', configured }
 }
 
 export async function verifyConnection(): Promise<{ ok: true } | { ok: false; error: string }> {

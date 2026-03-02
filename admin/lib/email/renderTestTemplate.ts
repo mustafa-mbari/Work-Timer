@@ -1,6 +1,9 @@
 import { buildWelcomeEmail } from './templates/welcome'
 import { buildGroupInvitationEmail } from './templates/groupInvitation'
 import { buildPasswordResetConfirmationEmail } from './templates/passwordResetConfirmation'
+import { buildEmailVerificationEmail } from './templates/emailVerification'
+import { buildPasswordResetEmail } from './templates/passwordReset'
+import { buildMagicLinkEmail } from './templates/magicLink'
 import { buildBillingNotificationEmail } from './templates/billingNotification'
 import { buildInvoiceReceiptEmail } from './templates/invoiceReceipt'
 import { buildTrialEndingEmail } from './templates/trialEnding'
@@ -9,6 +12,21 @@ export function renderTestTemplate(template: string): { subject: string; html: s
   switch (template) {
     case 'welcome':
       return buildWelcomeEmail({ displayName: 'Jane Doe' })
+    case 'email_verification':
+      return buildEmailVerificationEmail({
+        verificationUrl: 'https://w-timer.com/auth/confirm?token_hash=example&type=magiclink',
+        displayName: 'Jane Doe',
+      })
+    case 'password_reset':
+      return buildPasswordResetEmail({
+        resetUrl: 'https://w-timer.com/auth/confirm?token_hash=example&type=recovery',
+        displayName: 'Jane Doe',
+      })
+    case 'magic_link':
+      return buildMagicLinkEmail({
+        magicLinkUrl: 'https://w-timer.com/auth/confirm?token_hash=example&type=magiclink',
+        displayName: 'Jane Doe',
+      })
     case 'group_invitation':
       return buildGroupInvitationEmail({ inviterName: 'John Smith', groupName: 'Design Team' })
     case 'password_reset_confirmation':

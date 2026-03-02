@@ -7,8 +7,11 @@ import { Monitor, Smartphone } from 'lucide-react'
 
 const TEMPLATE_OPTIONS = [
   { value: 'welcome', label: 'Welcome' },
+  { value: 'email_verification', label: 'Verification' },
+  { value: 'password_reset', label: 'Reset Link' },
+  { value: 'magic_link', label: 'Magic Link' },
   { value: 'group_invitation', label: 'Invitation' },
-  { value: 'password_reset_confirmation', label: 'Password Reset' },
+  { value: 'password_reset_confirmation', label: 'Password Changed' },
   { value: 'billing_notification', label: 'Billing' },
   { value: 'invoice_receipt', label: 'Invoice' },
   { value: 'trial_ending', label: 'Trial Ending' },

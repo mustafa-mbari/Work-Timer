@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -8,18 +8,29 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Send, Wifi, WifiOff, Loader2 } from 'lucide-react'
+import { Send, Wifi, WifiOff, Loader2, AlertTriangle } from 'lucide-react'
 
 const TEMPLATE_OPTIONS = [
   { value: 'welcome', label: 'Welcome' },
+  { value: 'email_verification', label: 'Email Verification' },
+  { value: 'password_reset', label: 'Password Reset Link' },
+  { value: 'magic_link', label: 'Magic Link' },
   { value: 'group_invitation', label: 'Group Invitation' },
-  { value: 'password_reset_confirmation', label: 'Password Reset' },
+  { value: 'password_reset_confirmation', label: 'Password Changed' },
   { value: 'billing_notification', label: 'Billing Notification' },
   { value: 'invoice_receipt', label: 'Invoice Receipt' },
   { value: 'trial_ending', label: 'Trial Ending' },
 ]
 
 type ConnStatus = 'idle' | 'testing' | 'ok' | 'error'
+
+interface SmtpConfig {
+  host: string
+  port: number
+  from: string
+  secure: string
+  configured: boolean
+}
 
 export default function SendTestTab() {
   const [testTo, setTestTo] = useState('')
@@ -28,6 +39,15 @@ export default function SendTestTab() {
 
   const [connStatus, setConnStatus] = useState<ConnStatus>('idle')
   const [connError, setConnError] = useState<string | null>(null)
+
+  const [smtpConfig, setSmtpConfig] = useState<SmtpConfig | null>(null)
+
+  useEffect(() => {
+    fetch('/api/emails/config')
+      .then(r => r.json())
+      .then(setSmtpConfig)
+      .catch(() => {})
+  }, [])
 
   async function handleSendTest(e: React.FormEvent) {
     e.preventDefault()
@@ -69,6 +89,12 @@ export default function SendTestTab() {
     }
   }
 
+  const host = smtpConfig?.host ?? 'smtp.resend.com'
+  const port = smtpConfig?.port ?? 465
+  const from = smtpConfig?.from ?? 'info@w-timer.com'
+  const secure = smtpConfig?.secure ?? 'SSL/TLS'
+  const configured = smtpConfig?.configured ?? true
+
   return (
     <div className="grid lg:grid-cols-2 gap-6 mt-6">
       {/* SMTP Connection Test */}
@@ -86,23 +112,33 @@ export default function SendTestTab() {
             {connStatus === 'error' && <Badge variant="destructive">Failed</Badge>}
           </div>
 
+          {!configured && (
+            <div className="flex items-start gap-2 p-3 mb-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+              <div className="text-xs text-amber-800 dark:text-amber-300">
+                <p className="font-medium">SMTP_PASS not configured</p>
+                <p className="mt-0.5">Set the <code className="font-mono">SMTP_PASS</code> environment variable (Resend API key) in Vercel to enable email sending.</p>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-3 mb-4 text-sm text-stone-600 dark:text-stone-400">
             <div className="flex justify-between">
               <span>Host</span>
               <code className="text-xs bg-stone-100 dark:bg-[var(--dark-elevated)] px-1.5 py-0.5 rounded">
-                smtp.resend.com:465
+                {host}:{port}
               </code>
             </div>
             <div className="flex justify-between">
               <span>From</span>
               <code className="text-xs bg-stone-100 dark:bg-[var(--dark-elevated)] px-1.5 py-0.5 rounded">
-                info@w-timer.com
+                {from}
               </code>
             </div>
             <div className="flex justify-between">
               <span>Security</span>
               <code className="text-xs bg-stone-100 dark:bg-[var(--dark-elevated)] px-1.5 py-0.5 rounded">
-                SSL/TLS
+                {secure}
               </code>
             </div>
           </div>

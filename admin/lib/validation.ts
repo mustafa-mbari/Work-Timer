@@ -51,6 +51,9 @@ export const sendTestEmailSchema = z.object({
   to: z.string().email('Valid email is required'),
   template: z.enum([
     'welcome',
+    'email_verification',
+    'password_reset',
+    'magic_link',
     'group_invitation',
     'password_reset_confirmation',
     'billing_notification',
