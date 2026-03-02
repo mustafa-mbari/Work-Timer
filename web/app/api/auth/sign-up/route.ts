@@ -34,6 +34,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 400 })
   }
 
+  // Supabase returns a user with empty identities when the email is already
+  // registered and confirmed — detect this and tell the user to sign in.
+  if (data.user && data.user.identities?.length === 0) {
+    return NextResponse.json(
+      { error: 'An account with this email already exists. Please sign in instead.' },
+      { status: 409 }
+    )
+  }
+
   // Send verification email via our own SMTP (bypasses GoTrue's email which
   // fails silently for signup verification). Fire-and-forget so we don't
   // block the signup response.
