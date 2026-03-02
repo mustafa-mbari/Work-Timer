@@ -1,5 +1,6 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
+import { createServiceClient } from '@/lib/supabase/server'
+import { sendEmail, buildEmailVerificationEmail } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   const { email } = await request.json()
@@ -8,34 +9,74 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Email is required' }, { status: 400 })
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const cookiesToSet: any[] = []
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll: () => request.cookies.getAll(),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setAll: (cookies: any[]) => { cookiesToSet.push(...cookies) },
-      },
+  try {
+    const serviceSupabase = await createServiceClient()
+
+    const { data: linkData, error: linkError } =
+      await serviceSupabase.auth.admin.generateLink({
+        type: 'magiclink',
+        email,
+        options: {
+          redirectTo: `${request.nextUrl.origin}/auth/callback`,
+        },
+      })
+
+    if (linkError || !linkData) {
+      console.error('[resend-verification] generateLink failed:', linkError?.message)
+      return NextResponse.json(
+        { error: linkError?.message ?? 'Failed to generate verification link' },
+        { status: 400 }
+      )
     }
-  )
 
-  const { error } = await supabase.auth.resend({
-    type: 'signup',
-    email,
-    options: {
-      emailRedirectTo: `${request.nextUrl.origin}/auth/callback`,
-    },
-  })
+    const hashedToken = linkData.properties?.hashed_token
+    if (!hashedToken) {
+      console.error('[resend-verification] No hashed_token in generateLink response')
+      return NextResponse.json(
+        { error: 'Failed to generate verification link' },
+        { status: 500 }
+      )
+    }
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 })
+    const verificationUrl =
+      `${request.nextUrl.origin}/auth/confirm?token_hash=${encodeURIComponent(hashedToken)}&type=magiclink&next=${encodeURIComponent('/entries')}`
+
+    // Try to get the user's display name for a personalized email
+    let displayName: string | null = null
+    if (linkData.user) {
+      displayName =
+        linkData.user.user_metadata?.full_name ??
+        linkData.user.user_metadata?.name ??
+        null
+    }
+
+    const { subject, html } = buildEmailVerificationEmail({
+      verificationUrl,
+      displayName,
+    })
+
+    const result = await sendEmail({
+      to: email,
+      subject,
+      html,
+      type: 'email_verification',
+      metadata: { trigger: 'resend' },
+    })
+
+    if (!result.success) {
+      console.error('[resend-verification] sendEmail failed:', result.error)
+      return NextResponse.json(
+        { error: 'Failed to send verification email. Please try again.' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (err) {
+    console.error('[resend-verification] Unexpected error:', err)
+    return NextResponse.json(
+      { error: 'An unexpected error occurred' },
+      { status: 500 }
+    )
   }
-
-  const response = NextResponse.json({ success: true })
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  cookiesToSet.forEach(({ name, value, options }: any) => response.cookies.set(name, value, options))
-  return response
 }
