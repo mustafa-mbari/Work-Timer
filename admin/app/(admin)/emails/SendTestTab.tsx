@@ -90,7 +90,7 @@ export default function SendTestTab() {
             <div className="flex justify-between">
               <span>Host</span>
               <code className="text-xs bg-stone-100 dark:bg-[var(--dark-elevated)] px-1.5 py-0.5 rounded">
-                smtp.zoho.eu:465
+                smtp.resend.com:465
               </code>
             </div>
             <div className="flex justify-between">
