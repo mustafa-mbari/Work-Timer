@@ -76,22 +76,29 @@ export async function getGroupById(groupId: string, userId: string) {
 export async function getGroupMembers(groupId: string) {
   const supabase = await createServiceClient()
   
+  interface MemberWithProfile {
+    user_id: string
+    role: string
+    created_at: string
+    profiles: { email: string; display_name: string | null } | null
+  }
+
   // Join with profiles to get data in one query
   const { data, error } = await supabase
     .from('group_members')
     .select('user_id, role, created_at, profiles(email, display_name)')
     .eq('group_id', groupId)
+    .returns<MemberWithProfile[]>()
 
   if (error || !data?.length) return []
 
   return data.map(m => {
-    const p = m.profiles as unknown as { email: string; display_name: string | null }
     return {
       user_id: m.user_id,
       role: m.role,
       created_at: m.created_at,
-      email: p?.email ?? '',
-      display_name: p?.display_name ?? null,
+      email: m.profiles?.email ?? '',
+      display_name: m.profiles?.display_name ?? null,
     }
   })
 }
