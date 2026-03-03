@@ -15,6 +15,15 @@ import {
 } from '@/components/ui/select'
 import { LifeBuoy, Send, Loader2 } from 'lucide-react'
 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+
 const ISSUE_TYPES = [
   { value: 'bug', label: 'Bug Report' },
   { value: 'account', label: 'Account Issue' },
@@ -255,30 +264,43 @@ export default function SupportPage({ userEmail, userName }: Props) {
             No tickets submitted yet.
           </p>
         ) : (
-          <div className="space-y-3">
-            {tickets.map(ticket => (
-              <div
-                key={ticket.id}
-                className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-3 rounded-xl border border-stone-100 dark:border-[var(--dark-border)] hover:bg-stone-50 dark:hover:bg-[var(--dark-hover)] transition-colors"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-stone-800 dark:text-stone-100 truncate">
-                    {ticket.subject}
-                  </p>
-                  <p className="text-xs text-stone-500 dark:text-stone-400">
-                    {new Date(ticket.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <Badge variant="outline" className={PRIORITY_COLORS[ticket.priority]}>
-                    {PRIORITIES.find(p => p.value === ticket.priority)?.label}
-                  </Badge>
-                  <Badge variant="outline" className={STATUS_COLORS[ticket.status]}>
-                    {STATUS_LABELS[ticket.status]}
-                  </Badge>
-                </div>
-              </div>
-            ))}
+          <div className="border rounded-xl overflow-hidden border-stone-100 dark:border-[var(--dark-border)]">
+            <Table>
+              <TableHeader className="bg-stone-50/50 dark:bg-[var(--dark-hover)]">
+                <TableRow>
+                  <TableHead className="w-[40%]">Subject</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Priority</TableHead>
+                  <TableHead className="text-right">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {tickets.map(ticket => (
+                  <TableRow key={ticket.id} className="hover:bg-stone-50/50 dark:hover:bg-[var(--dark-hover)] transition-colors">
+                    <TableCell className="font-medium text-stone-800 dark:text-stone-100">
+                      {ticket.subject}
+                    </TableCell>
+                    <TableCell className="text-xs text-stone-500 dark:text-stone-400">
+                      {ISSUE_TYPES.find(t => t.value === ticket.issue_type)?.label}
+                    </TableCell>
+                    <TableCell className="text-xs text-stone-500 dark:text-stone-400">
+                      {new Date(ticket.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={`${PRIORITY_COLORS[ticket.priority]} border-none shadow-none`}>
+                        {PRIORITIES.find(p => p.value === ticket.priority)?.label}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Badge variant="outline" className={`${STATUS_COLORS[ticket.status]} border-none shadow-none`}>
+                        {STATUS_LABELS[ticket.status]}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         )}
       </div>

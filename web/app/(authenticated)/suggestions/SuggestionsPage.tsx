@@ -16,6 +16,15 @@ import {
 } from '@/components/ui/select'
 import { Lightbulb, Send, Loader2 } from 'lucide-react'
 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+
 const SUGGESTION_TYPES = [
   { value: 'feature', label: 'New Feature' },
   { value: 'improvement', label: 'Improvement' },
@@ -256,30 +265,43 @@ export default function SuggestionsPage({ userEmail, userName }: Props) {
             No suggestions submitted yet.
           </p>
         ) : (
-          <div className="space-y-3">
-            {suggestions.map(suggestion => (
-              <div
-                key={suggestion.id}
-                className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-3 rounded-xl border border-stone-100 dark:border-[var(--dark-border)] hover:bg-stone-50 dark:hover:bg-[var(--dark-hover)] transition-colors"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-stone-800 dark:text-stone-100 truncate">
-                    {suggestion.title}
-                  </p>
-                  <p className="text-xs text-stone-500 dark:text-stone-400">
-                    {SUGGESTION_TYPES.find(t => t.value === suggestion.suggestion_type)?.label} &middot; {new Date(suggestion.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <Badge variant="outline" className={IMPORTANCE_COLORS[suggestion.importance]}>
-                    {IMPORTANCE_LEVELS.find(i => i.value === suggestion.importance)?.label}
-                  </Badge>
-                  <Badge variant="outline" className={STATUS_COLORS[suggestion.status]}>
-                    {STATUS_LABELS[suggestion.status]}
-                  </Badge>
-                </div>
-              </div>
-            ))}
+          <div className="border rounded-xl overflow-hidden border-stone-100 dark:border-[var(--dark-border)]">
+            <Table>
+              <TableHeader className="bg-stone-50/50 dark:bg-[var(--dark-hover)]">
+                <TableRow>
+                  <TableHead className="w-[40%]">Idea</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Importance</TableHead>
+                  <TableHead className="text-right">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {suggestions.map(suggestion => (
+                  <TableRow key={suggestion.id} className="hover:bg-stone-50/50 dark:hover:bg-[var(--dark-hover)] transition-colors">
+                    <TableCell className="font-medium text-stone-800 dark:text-stone-100">
+                      {suggestion.title}
+                    </TableCell>
+                    <TableCell className="text-xs text-stone-500 dark:text-stone-400">
+                      {SUGGESTION_TYPES.find(t => t.value === suggestion.suggestion_type)?.label}
+                    </TableCell>
+                    <TableCell className="text-xs text-stone-500 dark:text-stone-400">
+                      {new Date(suggestion.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={`${IMPORTANCE_COLORS[suggestion.importance]} border-none shadow-none`}>
+                        {IMPORTANCE_LEVELS.find(i => i.value === suggestion.importance)?.label}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Badge variant="outline" className={`${STATUS_COLORS[suggestion.status]} border-none shadow-none`}>
+                        {STATUS_LABELS[suggestion.status]}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         )}
       </div>
