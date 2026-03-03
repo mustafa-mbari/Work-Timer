@@ -45,43 +45,16 @@ export interface OwnStats {
 
 export async function getUserOwnStats(userId: string): Promise<OwnStats> {
   const supabase = await createServiceClient()
-  const now = new Date()
-  const yyyy = now.getFullYear()
-  const mm = String(now.getMonth() + 1).padStart(2, '0')
-  const dd = String(now.getDate()).padStart(2, '0')
-  const today = `${yyyy}-${mm}-${dd}`
-
-  // Week start (Monday)
-  const mon = new Date(now)
-  mon.setDate(now.getDate() - ((now.getDay() + 6) % 7))
-  const weekStart = `${mon.getFullYear()}-${String(mon.getMonth() + 1).padStart(2, '0')}-${String(mon.getDate()).padStart(2, '0')}`
-
-  // Month start
-  const monthStart = `${yyyy}-${mm}-01`
-
-  // Single query: all entries from month start covers today + week + month
-  type Row = { date: string; duration: number | null }
-  const { data } = await supabase
-    .from('time_entries')
-    .select('date, duration')
-    .eq('user_id', userId)
-    .is('deleted_at', null)
-    .gte('date', monthStart)
-    .returns<Row[]>()
-
-  let todayMs = 0, weekMs = 0, monthMs = 0
-  for (const e of data ?? []) {
-    const d = e.duration ?? 0
-    monthMs += d
-    if (e.date >= weekStart) weekMs += d
-    if (e.date === today) todayMs += d
+  const { data, error } = await (supabase.rpc as Function)('get_user_own_stats', {
+    p_user_id: userId,
+  })
+  
+  if (error) {
+    console.error('Error fetching own stats:', error)
+    return { today_hours: 0, week_hours: 0, month_hours: 0 }
   }
 
-  return {
-    today_hours: Math.round((todayMs / 3_600_000) * 100) / 100,
-    week_hours:  Math.round((weekMs / 3_600_000) * 100) / 100,
-    month_hours: Math.round((monthMs / 3_600_000) * 100) / 100,
-  }
+  return data as OwnStats
 }
 
 // ─── Group Members Summary RPC ───────────────────────────────────────────────

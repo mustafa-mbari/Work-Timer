@@ -872,6 +872,11 @@ export type Database = {
         success: boolean
         error?: string
       }}
+      get_user_own_stats: { Args: { p_user_id: string }; Returns: {
+        today_hours: number
+        week_hours: number
+        month_hours: number
+      }}
       get_group_members_summary: { Args: { p_group_id: string; p_admin_id: string }; Returns: {
         members: Array<{
           user_id: string
