@@ -9,44 +9,44 @@ export type GroupWithMeta = Group & { member_count: number; role: string }
 export async function getUserGroups(userId: string): Promise<GroupWithMeta[]> {
   const supabase = await createServiceClient()
 
-  interface MembershipWithGroup {
-    group_id: string
-    role: string
-    groups: Group | null
-  }
-  
+  // Get memberships first
   const { data: memberships, error: memError } = await supabase
     .from('group_members')
-    .select('group_id, role, groups(*)')
+    .select('group_id, role')
     .eq('user_id', userId)
-    .returns<MembershipWithGroup[]>()
 
   if (memError || !memberships?.length) return []
 
   const groupIds = memberships.map(m => m.group_id)
   
-  // Get counts for these groups in one query
-  const { data: countRows } = await supabase
-    .from('group_members')
-    .select('group_id')
-    .in('group_id', groupIds)
-    .returns<Pick<GroupMember, 'group_id'>[]>()
+  // Fetch groups and member counts in parallel
+  const [{ data: groups }, { data: countRows }] = await Promise.all([
+    supabase
+      .from('groups')
+      .select('*')
+      .in('id', groupIds)
+      .returns<Group[]>(),
+    supabase
+      .from('group_members')
+      .select('group_id')
+      .in('group_id', groupIds)
+      .returns<Pick<GroupMember, 'group_id'>[]>(),
+  ])
+
+  if (!groups?.length) return []
 
   const counts = new Map<string, number>()
   for (const row of countRows ?? []) {
     counts.set(row.group_id, (counts.get(row.group_id) ?? 0) + 1)
   }
 
-  return memberships
-    .filter(m => m.groups)
-    .map(m => {
-      const g = m.groups!
-      return {
-        ...g,
-        role: m.role,
-        member_count: counts.get(m.group_id) ?? 0,
-      }
-    })
+  const roleMap = new Map(memberships.map(m => [m.group_id, m.role]))
+
+  return groups.map(g => ({
+    ...g,
+    role: roleMap.get(g.id) ?? 'member',
+    member_count: counts.get(g.id) ?? 0,
+  }))
 }
 
 export async function getGroupById(groupId: string, userId: string) {
@@ -76,29 +76,31 @@ export async function getGroupById(groupId: string, userId: string) {
 export async function getGroupMembers(groupId: string) {
   const supabase = await createServiceClient()
   
-  interface MemberWithProfile {
-    user_id: string
-    role: string
-    created_at: string
-    profiles: { email: string; display_name: string | null } | null
-  }
-
-  // Join with profiles to get data in one query
-  const { data, error } = await supabase
+  // Get members first
+  const { data: members, error } = await supabase
     .from('group_members')
-    .select('user_id, role, created_at, profiles(email, display_name)')
+    .select('user_id, role, created_at')
     .eq('group_id', groupId)
-    .returns<MemberWithProfile[]>()
 
-  if (error || !data?.length) return []
+  if (error || !members?.length) return []
 
-  return data.map(m => {
+  // Fetch profiles separately - this is more robust than the join if FKs are tricky
+  const userIds = members.map(m => m.user_id)
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, email, display_name')
+    .in('id', userIds)
+
+  const profileMap = new Map(profiles?.map(p => [p.id, p]) ?? [])
+
+  return members.map(m => {
+    const p = profileMap.get(m.user_id)
     return {
       user_id: m.user_id,
       role: m.role,
       created_at: m.created_at,
-      email: m.profiles?.email ?? '',
-      display_name: m.profiles?.display_name ?? null,
+      email: p?.email ?? '',
+      display_name: p?.display_name ?? null,
     }
   })
 }
