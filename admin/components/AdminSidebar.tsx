@@ -31,17 +31,17 @@ import {
 } from 'lucide-react'
 
 const NAV_ITEMS = [
-  { href: '/',               label: 'Overview',       icon: LayoutDashboard, exact: true },
-  { href: '/users',          label: 'Users',          icon: Users },
-  { href: '/stats',          label: 'Statistics',     icon: BarChart3 },
-  { href: '/domains',        label: 'Domains',        icon: Globe },
-  { href: '/promos',         label: 'Promo Codes',    icon: Ticket },
-  { href: '/subscriptions',  label: 'Subscriptions',  icon: CreditCard },
-  { href: '/groups',         label: 'Groups',         icon: UsersRound },
-  { href: '/tickets',        label: 'Tickets',        icon: LifeBuoy },
-  { href: '/suggestions',    label: 'Suggestions',    icon: Lightbulb },
-  { href: '/emails',         label: 'Emails',         icon: Mail },
-  { href: '/ui-test',        label: 'UI Test',        icon: FlaskConical },
+  { href: '/', label: 'Overview', icon: LayoutDashboard, exact: true },
+  { href: '/users', label: 'Users', icon: Users },
+  { href: '/stats', label: 'Statistics', icon: BarChart3 },
+  { href: '/domains', label: 'Domains', icon: Globe },
+  { href: '/promos', label: 'Promo Codes', icon: Ticket },
+  { href: '/subscriptions', label: 'Subscriptions', icon: CreditCard },
+  { href: '/groups', label: 'Groups', icon: UsersRound },
+  { href: '/tickets', label: 'Tickets', icon: LifeBuoy },
+  { href: '/suggestions', label: 'Suggestions', icon: Lightbulb },
+  { href: '/emails', label: 'Emails', icon: Mail },
+  { href: '/ui-test', label: 'UI Test', icon: FlaskConical },
 ]
 
 const MODE_OPTIONS = [
@@ -386,7 +386,7 @@ export function AdminMain({ children }: { children: React.ReactNode }) {
         paddingLeft: undefined,
       }}
     >
-      <div className="w-full px-6 py-8">
+      <div className="mx-auto w-full max-w-[95%] lg:max-w-[85%] px-6 py-8">
         {children}
       </div>
       {/* Dynamic padding synced with sidebar width on desktop */}

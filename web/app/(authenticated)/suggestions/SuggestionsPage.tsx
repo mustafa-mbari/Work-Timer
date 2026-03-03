@@ -139,7 +139,7 @@ export default function SuggestionsPage({ userEmail, userName }: Props) {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
+    <div className="space-y-6 lg:space-y-8 animate-fade-in">
       {/* Submit Suggestion Form */}
       <div className="bg-white dark:bg-[var(--dark-card)] rounded-2xl border border-stone-200 dark:border-[var(--dark-border)] p-6">
         <div className="flex items-center gap-3 mb-6">

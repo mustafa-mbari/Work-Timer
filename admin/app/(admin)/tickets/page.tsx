@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -223,7 +223,7 @@ export default function AdminTicketsPage() {
             </TableHeader>
             <TableBody>
               {tickets.length > 0 ? tickets.map(ticket => (
-                <>
+                <Fragment key={ticket.id}>
                   <TableRow
                     key={ticket.id}
                     className="cursor-pointer hover:bg-stone-50 dark:hover:bg-[var(--dark-hover)]"
@@ -356,7 +356,7 @@ export default function AdminTicketsPage() {
                       </TableCell>
                     </TableRow>
                   )}
-                </>
+                </Fragment>
               )) : (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-stone-500 dark:text-stone-400">
