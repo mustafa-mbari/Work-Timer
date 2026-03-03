@@ -1,12 +1,29 @@
+'use client'
+
+import { useTranslations } from 'next-intl'
+
 interface Props {
   password: string
 }
 
 export default function PasswordStrengthIndicator({ password }: Props) {
+  const t = useTranslations('auth.register')
   if (password.length === 0) return null
 
-  const strength = password.length < 6 ? 1 : password.length < 8 ? 2 : 3
-  const labels = ['', 'Weak', 'Fair', 'Strong']
+  // Calculate strength based on multiple criteria
+  let score = 0
+  if (password.length >= 8) score++
+  if (/[A-Z]/.test(password)) score++
+  if (/[a-z]/.test(password)) score++
+  if (/[0-9]/.test(password)) score++
+  
+  // Map score (0-4) to strength (1-3)
+  // 0-1: Weak (1)
+  // 2-3: Fair (2)
+  // 4: Strong (3)
+  const strength = score <= 1 ? 1 : score <= 3 ? 2 : 3
+  
+  const labels = ['', t('strengthWeak'), t('strengthFair'), t('strengthStrong')]
   const colors = ['', 'bg-rose-500', 'bg-amber-500', 'bg-emerald-500']
 
   return (

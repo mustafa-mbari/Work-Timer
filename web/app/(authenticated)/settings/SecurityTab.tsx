@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import PasswordStrengthIndicator from '@/components/PasswordStrengthIndicator'
 import { createClient } from '@/lib/supabase/client'
+import { Eye, EyeOff } from 'lucide-react'
 
 interface Props {
   userEmail: string
@@ -17,6 +18,7 @@ export default function SecurityTab({ userEmail }: Props) {
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirm, setConfirm] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -32,6 +34,15 @@ export default function SecurityTab({ userEmail }: Props) {
     }
     if (newPassword.length < 8) {
       setError('New password must be at least 8 characters.')
+      return
+    }
+
+    const hasUpper = /[A-Z]/.test(newPassword)
+    const hasLower = /[a-z]/.test(newPassword)
+    const hasNumber = /[0-9]/.test(newPassword)
+
+    if (!hasUpper || !hasLower || !hasNumber) {
+      setError('New password must include uppercase, lowercase and a number.')
       return
     }
 
@@ -78,22 +89,33 @@ export default function SecurityTab({ userEmail }: Props) {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="currentPassword">Current password</Label>
-              <Input
-                id="currentPassword"
-                type="password"
-                value={currentPassword}
-                onChange={e => setCurrentPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-                placeholder="Your current password"
-              />
+              <div className="relative">
+                <Input
+                  id="currentPassword"
+                  type={showPassword ? 'text' : 'password'}
+                  value={currentPassword}
+                  onChange={e => setCurrentPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  placeholder="Your current password"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="newPassword">New password</Label>
               <Input
                 id="newPassword"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
                 required
@@ -108,7 +130,7 @@ export default function SecurityTab({ userEmail }: Props) {
               <Label htmlFor="confirm">Confirm new password</Label>
               <Input
                 id="confirm"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={confirm}
                 onChange={e => setConfirm(e.target.value)}
                 required
