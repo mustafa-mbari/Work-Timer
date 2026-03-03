@@ -38,6 +38,12 @@ const PLAN_LABEL: Record<string, string> = {
   premium_monthly: 'Premium Monthly',
   premium_yearly: 'Premium Yearly',
   premium_lifetime: 'Premium Lifetime',
+  allin_monthly: 'Team Monthly',
+  allin_yearly: 'Team Yearly',
+  team_10_monthly: 'Team (10) Monthly',
+  team_10_yearly: 'Team (10) Yearly',
+  team_20_monthly: 'Team (20) Monthly',
+  team_20_yearly: 'Team (20) Yearly',
 }
 
 function formatHours(h: number): string {
@@ -163,23 +169,15 @@ export default function OverviewTab({ subscription, stats, isPremium, userEmail,
           <p className="text-sm text-stone-500 dark:text-stone-400 mb-1">{userEmail}</p>
           <div className="text-sm text-stone-600 dark:text-stone-400 mb-4">
             {plan === 'free' && <p>{t('plan.freeDesc')}</p>}
-            {plan === 'premium_monthly' && (
-              <p>
-                {t('plan.monthlyDesc')} &middot;{' '}
-                {subscription?.cancel_at_period_end
-                  ? `${t('plan.cancels')} ${subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'N/A'}`
-                  : `${t('plan.renews')} ${subscription?.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'N/A'}`}
-              </p>
-            )}
-            {plan === 'premium_yearly' && (
-              <p>
-                {t('plan.yearlyDesc')} &middot;{' '}
-                {subscription?.cancel_at_period_end
-                  ? `${t('plan.cancels')} ${subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'N/A'}`
-                  : `${t('plan.renews')} ${subscription?.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'N/A'}`}
-              </p>
-            )}
             {plan === 'premium_lifetime' && <p>{t('plan.lifetimeDesc')}</p>}
+            {plan !== 'free' && plan !== 'premium_lifetime' && (
+              <p>
+                {plan.includes('yearly') ? t('plan.yearlyDesc') : t('plan.monthlyDesc')} &middot;{' '}
+                {subscription?.cancel_at_period_end
+                  ? `${t('plan.cancels')} ${subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'N/A'}`
+                  : `${t('plan.renews')} ${subscription?.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'N/A'}`}
+              </p>
+            )}
           </div>
 
           <Button asChild variant="outline" size="sm" className="rounded-xl gap-1.5">
