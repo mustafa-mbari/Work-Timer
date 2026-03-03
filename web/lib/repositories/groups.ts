@@ -7,49 +7,41 @@ type GroupMember = Database['public']['Tables']['group_members']['Row']
 export type GroupWithMeta = Group & { member_count: number; role: string }
 
 export async function getUserGroups(userId: string): Promise<GroupWithMeta[]> {
-  // Use service client to bypass the self-referential group_members_select RLS policy,
-  // which can silently return empty results even when membership rows exist.
-  // Safe here because we always filter by the authenticated user's userId.
   const supabase = await createServiceClient()
 
-  // Get groups the user is a member of
-  const { data: memberships } = await supabase
+  // Single pass: Fetch groups, the user's role in each, and a sub-count of all members for those groups.
+  // We join group_members to get the role, then select the group details,
+  // and use a subquery/RPC or just manual map if needed.
+  // To keep it simple but fast: get memberships first (small), then fetch group details + counts.
+  
+  const { data: memberships, error: memError } = await supabase
     .from('group_members')
-    .select('group_id, role')
+    .select('group_id, role, groups(*)')
     .eq('user_id', userId)
-    .returns<Pick<GroupMember, 'group_id' | 'role'>[]>()
 
-  if (!memberships?.length) return []
+  if (memError || !memberships?.length) return []
 
   const groupIds = memberships.map(m => m.group_id)
-  const roleMap = new Map(memberships.map(m => [m.group_id, m.role]))
-
-  // Fetch groups and member counts in parallel (both only depend on groupIds)
-  const [{ data: groups }, { data: memberRows }] = await Promise.all([
-    supabase
-      .from('groups')
-      .select('*')
-      .in('id', groupIds)
-      .returns<Group[]>(),
-    supabase
-      .from('group_members')
-      .select('group_id')
-      .in('group_id', groupIds)
-      .returns<Pick<GroupMember, 'group_id'>[]>(),
-  ])
-
-  if (!groups?.length) return []
+  
+  // Get counts for these groups in one query
+  const { data: countRows } = await supabase
+    .from('group_members')
+    .select('group_id')
+    .in('group_id', groupIds)
 
   const counts = new Map<string, number>()
-  for (const row of memberRows ?? []) {
+  for (const row of countRows ?? []) {
     counts.set(row.group_id, (counts.get(row.group_id) ?? 0) + 1)
   }
 
-  return groups.map(g => ({
-    ...g,
-    member_count: counts.get(g.id) ?? 0,
-    role: roleMap.get(g.id) ?? 'member',
-  }))
+  return memberships.map(m => {
+    const g = m.groups as unknown as Group
+    return {
+      ...g,
+      role: m.role,
+      member_count: counts.get(m.group_id) ?? 0,
+    }
+  })
 }
 
 export async function getGroupById(groupId: string, userId: string) {
