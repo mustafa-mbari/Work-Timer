@@ -9,15 +9,17 @@ export type GroupWithMeta = Group & { member_count: number; role: string }
 export async function getUserGroups(userId: string): Promise<GroupWithMeta[]> {
   const supabase = await createServiceClient()
 
-  // Single pass: Fetch groups, the user's role in each, and a sub-count of all members for those groups.
-  // We join group_members to get the role, then select the group details,
-  // and use a subquery/RPC or just manual map if needed.
-  // To keep it simple but fast: get memberships first (small), then fetch group details + counts.
+  interface MembershipWithGroup {
+    group_id: string
+    role: string
+    groups: Group | null
+  }
   
   const { data: memberships, error: memError } = await supabase
     .from('group_members')
     .select('group_id, role, groups(*)')
     .eq('user_id', userId)
+    .returns<MembershipWithGroup[]>()
 
   if (memError || !memberships?.length) return []
 
@@ -28,20 +30,23 @@ export async function getUserGroups(userId: string): Promise<GroupWithMeta[]> {
     .from('group_members')
     .select('group_id')
     .in('group_id', groupIds)
+    .returns<Pick<GroupMember, 'group_id'>[]>()
 
   const counts = new Map<string, number>()
   for (const row of countRows ?? []) {
     counts.set(row.group_id, (counts.get(row.group_id) ?? 0) + 1)
   }
 
-  return memberships.map(m => {
-    const g = m.groups as unknown as Group
-    return {
-      ...g,
-      role: m.role,
-      member_count: counts.get(m.group_id) ?? 0,
-    }
-  })
+  return memberships
+    .filter(m => m.groups)
+    .map(m => {
+      const g = m.groups!
+      return {
+        ...g,
+        role: m.role,
+        member_count: counts.get(m.group_id) ?? 0,
+      }
+    })
 }
 
 export async function getGroupById(groupId: string, userId: string) {
