@@ -10,10 +10,15 @@ export async function getUserGroups(userId: string): Promise<GroupWithMeta[]> {
   const supabase = await createServiceClient()
 
   // Get memberships first
+  interface Membership {
+    group_id: string
+    role: string
+  }
   const { data: memberships, error: memError } = await supabase
     .from('group_members')
     .select('group_id, role')
     .eq('user_id', userId)
+    .returns<Membership[]>()
 
   if (memError || !memberships?.length) return []
 
@@ -58,7 +63,7 @@ export async function getGroupById(groupId: string, userId: string) {
     .select('role')
     .eq('group_id', groupId)
     .eq('user_id', userId)
-    .single<Pick<GroupMember, 'role'>>()
+    .single<{ role: string }>()
 
   if (!membership) return null
 
@@ -77,19 +82,31 @@ export async function getGroupMembers(groupId: string) {
   const supabase = await createServiceClient()
   
   // Get members first
+  interface Member {
+    user_id: string
+    role: string
+    created_at: string
+  }
   const { data: members, error } = await supabase
     .from('group_members')
     .select('user_id, role, created_at')
     .eq('group_id', groupId)
+    .returns<Member[]>()
 
   if (error || !members?.length) return []
 
-  // Fetch profiles separately - this is more robust than the join if FKs are tricky
+  // Fetch profiles separately
   const userIds = members.map(m => m.user_id)
+  interface Profile {
+    id: string
+    email: string
+    display_name: string | null
+  }
   const { data: profiles } = await supabase
     .from('profiles')
     .select('id, email, display_name')
     .in('id', userIds)
+    .returns<Profile[]>()
 
   const profileMap = new Map(profiles?.map(p => [p.id, p]) ?? [])
 
