@@ -75,29 +75,25 @@ export async function getGroupById(groupId: string, userId: string) {
 
 export async function getGroupMembers(groupId: string) {
   const supabase = await createServiceClient()
-  const { data } = await supabase
+  
+  // Join with profiles to get data in one query
+  const { data, error } = await supabase
     .from('group_members')
-    .select('user_id, role, created_at')
+    .select('user_id, role, created_at, profiles(email, display_name)')
     .eq('group_id', groupId)
-    .returns<Pick<GroupMember, 'user_id' | 'role' | 'created_at'>[]>()
 
-  if (!data?.length) return []
+  if (error || !data?.length) return []
 
-  // Fetch profiles for display names
-  const userIds = data.map(m => m.user_id)
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, email, display_name')
-    .in('id', userIds)
-    .returns<Array<{ id: string; email: string; display_name: string | null }>>()
-
-  const profileMap = new Map(profiles?.map(p => [p.id, p]) ?? [])
-
-  return data.map(m => ({
-    ...m,
-    email: profileMap.get(m.user_id)?.email ?? '',
-    display_name: profileMap.get(m.user_id)?.display_name ?? null,
-  }))
+  return data.map(m => {
+    const p = m.profiles as unknown as { email: string; display_name: string | null }
+    return {
+      user_id: m.user_id,
+      role: m.role,
+      created_at: m.created_at,
+      email: p?.email ?? '',
+      display_name: p?.display_name ?? null,
+    }
+  })
 }
 
 export async function createGroup(name: string, ownerId: string) {
