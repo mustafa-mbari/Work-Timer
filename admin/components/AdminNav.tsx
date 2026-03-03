@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { LayoutDashboard, Users, UsersRound, BarChart3, Globe, Ticket, CreditCard, Mail, FlaskConical } from 'lucide-react'
+import { LayoutDashboard, Users, UsersRound, BarChart3, Globe, Ticket, CreditCard, Mail, FlaskConical, LifeBuoy, Lightbulb } from 'lucide-react'
 
 const NAV_ITEMS = [
   { href: '/',               label: 'Overview',       icon: LayoutDashboard, exact: true },
@@ -13,6 +13,8 @@ const NAV_ITEMS = [
   { href: '/promos',         label: 'Promo Codes',    icon: Ticket },
   { href: '/subscriptions',  label: 'Subscriptions',  icon: CreditCard },
   { href: '/groups',         label: 'Groups',         icon: UsersRound },
+  { href: '/tickets',        label: 'Tickets',        icon: LifeBuoy },
+  { href: '/suggestions',    label: 'Suggestions',    icon: Lightbulb },
   { href: '/emails',         label: 'Emails',         icon: Mail },
   { href: '/ui-test',        label: 'UI Test',        icon: FlaskConical },
 ]

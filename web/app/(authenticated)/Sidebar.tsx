@@ -12,6 +12,8 @@ import {
   Users,
   CreditCard,
   Settings2,
+  LifeBuoy,
+  Lightbulb,
   Zap,
   PanelLeft,
   Check,
@@ -230,6 +232,8 @@ export default function AppSidebar({ isPremium, isAllIn, userInfo }: Props) {
   const NAV_ACCOUNT = [
     { href: '/billing', label: tn('billing'), icon: CreditCard },
     { href: '/settings', label: tn('settings'), icon: Settings2 },
+    { href: '/support', label: 'Support', icon: LifeBuoy },
+    { href: '/suggestions', label: 'Suggestions', icon: Lightbulb },
   ]
 
   return (

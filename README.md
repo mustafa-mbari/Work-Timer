@@ -87,8 +87,10 @@ See [HowToDoPlan.md](HowToDoPlan.md) for the full Stripe setup guide (creating p
 - **Earnings** -- Tag-based earnings reports with daily charts, groupBy toggle (tag/project), CSV export
 - **Groups** -- Team time management with timesheet approval workflow. Admins configure recurring share schedules, review and approve/deny member submissions, generate CSV reports. Members submit auto-filled timesheets, view own stats, and see team member names (no hours). Shared UI components (StatusBadge, MemberAvatar, EmptyState) with 3-level tab hierarchy (pill segments, underline tabs, filter pills)
 - **Analytics** -- Weekly trends, project breakdowns, peak hours, streaks
+- **Support** -- Submit support tickets (bug reports, account/billing/sync issues) with priority and platform selection; view ticket history and status updates
+- **Suggestions** -- Submit feature ideas and improvements with importance level and target platform; opt-in to release notifications; view suggestion history
 - **Billing** -- Subscription management, promo codes, Stripe checkout
-- **Admin Panel** -- Separate app at `admin/` (port 3001). User management, platform stats, domain whitelisting, promo codes, group management
+- **Admin Panel** -- Separate app at `admin/` (port 3001). User management, platform stats, domain whitelisting, promo codes, group management, support ticket triage, feature suggestion review
 - **UI Test Lab** -- Admin-only page (`/ui-test`) for prototyping alternative UI designs across Entries, Timer, Quick Add, Dashboard, Project Picker, and Daily Goal tabs; each tab has multiple design variants for side-by-side comparison
 
 ---

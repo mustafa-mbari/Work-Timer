@@ -499,6 +499,42 @@ export interface DbGroupShare {
   due_date: string | null
 }
 
+export interface DbSupportTicket {
+  id: string
+  user_id: string
+  user_email: string
+  user_name: string | null
+  issue_type: 'bug' | 'account' | 'billing' | 'sync' | 'performance' | 'other'
+  subject: string
+  description: string
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+  platform: 'chrome_extension' | 'web_app' | 'both'
+  issue_time: string | null
+  status: 'open' | 'in_progress' | 'resolved' | 'closed'
+  admin_notes: string | null
+  resolved_at: string | null
+  resolved_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface DbFeatureSuggestion {
+  id: string
+  user_id: string
+  user_email: string
+  user_name: string | null
+  suggestion_type: 'feature' | 'improvement' | 'integration' | 'ui_ux' | 'other'
+  title: string
+  description: string
+  importance: 'nice_to_have' | 'important' | 'critical'
+  target_platform: 'chrome_extension' | 'web_app' | 'both'
+  notify_on_release: boolean
+  status: 'new' | 'under_review' | 'planned' | 'in_progress' | 'implemented' | 'declined'
+  admin_notes: string | null
+  created_at: string
+  updated_at: string
+}
+
 // --- Group types ---
 interface DbGroupSharingSettingsInsert {
   group_id: string
@@ -613,6 +649,87 @@ interface DbGroupShareUpdate {
   due_date?: string | null
 }
 
+interface DbSupportTicketInsert {
+  user_id: string
+  user_email: string
+  subject: string
+  description: string
+  issue_type: DbSupportTicket['issue_type']
+  id?: string
+  user_name?: string | null
+  priority?: DbSupportTicket['priority']
+  platform?: DbSupportTicket['platform']
+  issue_time?: string | null
+  status?: DbSupportTicket['status']
+  admin_notes?: string | null
+  resolved_at?: string | null
+  resolved_by?: string | null
+  created_at?: string
+  updated_at?: string
+}
+interface DbSupportTicketUpdate {
+  user_id?: string
+  user_email?: string
+  user_name?: string | null
+  issue_type?: DbSupportTicket['issue_type']
+  subject?: string
+  description?: string
+  priority?: DbSupportTicket['priority']
+  platform?: DbSupportTicket['platform']
+  issue_time?: string | null
+  status?: DbSupportTicket['status']
+  admin_notes?: string | null
+  resolved_at?: string | null
+  resolved_by?: string | null
+  created_at?: string
+  updated_at?: string
+}
+
+interface DbFeatureSuggestionInsert {
+  user_id: string
+  user_email: string
+  title: string
+  description: string
+  suggestion_type: DbFeatureSuggestion['suggestion_type']
+  id?: string
+  user_name?: string | null
+  importance?: DbFeatureSuggestion['importance']
+  target_platform?: DbFeatureSuggestion['target_platform']
+  notify_on_release?: boolean
+  status?: DbFeatureSuggestion['status']
+  admin_notes?: string | null
+  created_at?: string
+  updated_at?: string
+}
+interface DbFeatureSuggestionUpdate {
+  user_id?: string
+  user_email?: string
+  user_name?: string | null
+  suggestion_type?: DbFeatureSuggestion['suggestion_type']
+  title?: string
+  description?: string
+  importance?: DbFeatureSuggestion['importance']
+  target_platform?: DbFeatureSuggestion['target_platform']
+  notify_on_release?: boolean
+  status?: DbFeatureSuggestion['status']
+  admin_notes?: string | null
+  created_at?: string
+  updated_at?: string
+}
+
+export interface DbEmailLog {
+  id: string
+  recipient: string
+  type: string
+  subject: string
+  status: string
+  message_id: string | null
+  error: string | null
+  metadata: Record<string, unknown>
+  created_at: string
+  sent_by: string | null
+}
+
 // Database type map for @supabase/supabase-js typed client
 export type Database = {
   public: {
@@ -633,6 +750,9 @@ export type Database = {
       group_invitations: { Row: DbGroupInvitation; Insert: DbGroupInvitationInsert; Update: DbGroupInvitationUpdate; Relationships: [] }
       group_sharing_settings: { Row: DbGroupSharingSettings; Insert: DbGroupSharingSettingsInsert; Update: DbGroupSharingSettingsUpdate; Relationships: [] }
       group_shares: { Row: DbGroupShare; Insert: DbGroupShareInsert; Update: DbGroupShareUpdate; Relationships: [] }
+      support_tickets: { Row: DbSupportTicket; Insert: DbSupportTicketInsert; Update: DbSupportTicketUpdate; Relationships: [] }
+      feature_suggestions: { Row: DbFeatureSuggestion; Insert: DbFeatureSuggestionInsert; Update: DbFeatureSuggestionUpdate; Relationships: [] }
+      email_logs: { Row: DbEmailLog; Insert: Partial<DbEmailLog>; Update: Partial<DbEmailLog>; Relationships: [] }
     }
     Views: Record<string, never>
     Functions: {

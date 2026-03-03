@@ -68,6 +68,20 @@ export const spamCheckSchema = z.object({
   options: z.string().optional().default('long'),
 })
 
+// --- Admin Support Tickets ---
+export const updateTicketStatusSchema = z.object({
+  id: z.string().uuid(),
+  status: z.enum(['open', 'in_progress', 'resolved', 'closed']),
+  admin_notes: z.string().max(5000).nullable().optional(),
+})
+
+// --- Admin Feature Suggestions ---
+export const updateSuggestionStatusSchema = z.object({
+  id: z.string().uuid(),
+  status: z.enum(['new', 'under_review', 'planned', 'in_progress', 'implemented', 'declined']),
+  admin_notes: z.string().max(5000).nullable().optional(),
+})
+
 // Helper to parse and return a typed result or a 400 response
 export function parseBody<T extends z.ZodType>(schema: T, data: unknown):
   { success: true; data: z.infer<T> } | { success: false; error: string } {

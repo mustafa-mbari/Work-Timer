@@ -19,6 +19,8 @@ import {
   CreditCard,
   Mail,
   FlaskConical,
+  LifeBuoy,
+  Lightbulb,
   Shield,
   LogOut,
   Sun,
@@ -36,6 +38,8 @@ const NAV_ITEMS = [
   { href: '/promos',         label: 'Promo Codes',    icon: Ticket },
   { href: '/subscriptions',  label: 'Subscriptions',  icon: CreditCard },
   { href: '/groups',         label: 'Groups',         icon: UsersRound },
+  { href: '/tickets',        label: 'Tickets',        icon: LifeBuoy },
+  { href: '/suggestions',    label: 'Suggestions',    icon: Lightbulb },
   { href: '/emails',         label: 'Emails',         icon: Mail },
   { href: '/ui-test',        label: 'UI Test',        icon: FlaskConical },
 ]

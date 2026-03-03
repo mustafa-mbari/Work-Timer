@@ -17,6 +17,8 @@ const PAGE_META: { match: string; title: string; description?: string }[] = [
   { match: '/groups', title: 'Groups', description: 'Team collaboration' },
   { match: '/billing', title: 'Billing & Plans', description: 'Manage your subscription' },
   { match: '/settings', title: 'Settings', description: 'App and account preferences' },
+  { match: '/support', title: 'Support', description: 'Get help and report issues' },
+  { match: '/suggestions', title: 'Suggestions', description: 'Share feature ideas' },
 ]
 
 interface UserInfo {

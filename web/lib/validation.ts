@@ -203,6 +203,26 @@ export const reviewShareSchema = z.object({
   comment: z.string().max(500).optional(),
 })
 
+// --- Support Tickets ---
+export const createSupportTicketSchema = z.object({
+  issue_type: z.enum(['bug', 'account', 'billing', 'sync', 'performance', 'other']),
+  subject: z.string().min(1, 'Subject is required').max(200),
+  description: z.string().min(1, 'Description is required').max(5000),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']),
+  platform: z.enum(['chrome_extension', 'web_app', 'both']),
+  issue_time: z.string().nullable().optional(),
+})
+
+// --- Feature Suggestions ---
+export const createFeatureSuggestionSchema = z.object({
+  suggestion_type: z.enum(['feature', 'improvement', 'integration', 'ui_ux', 'other']),
+  title: z.string().min(1, 'Title is required').max(200),
+  description: z.string().min(1, 'Description is required').max(5000),
+  importance: z.enum(['nice_to_have', 'important', 'critical']),
+  target_platform: z.enum(['chrome_extension', 'web_app', 'both']),
+  notify_on_release: z.boolean().default(false),
+})
+
 // Helper to parse and return a typed result or a 400 response
 export function parseBody<T extends z.ZodType>(schema: T, data: unknown):
   { success: true; data: z.infer<T> } | { success: false; error: string } {

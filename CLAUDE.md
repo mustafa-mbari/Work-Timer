@@ -111,9 +111,9 @@ src/
 ```
 web/
   app/
-    (authenticated)/    # Route group (dashboard, billing, analytics, entries)
+    (authenticated)/    # Route group (dashboard, billing, analytics, entries, support, suggestions)
                         #   dashboard/ includes WeeklyProjectChart (CSS stacked bars, no Recharts)
-    api/                # API routes (checkout, billing, webhooks, promo)
+    api/                # API routes (checkout, billing, webhooks, promo, support, suggestions)
     auth/               # OAuth callback + extension bridge (postMessage relay)
     api/auth/           # Server-side auth routes (sign-in, sign-up, magic-link, forgot-password, google, session)
     login/, register/   # Auth forms
@@ -123,7 +123,7 @@ web/
     ui/                 # shadcn/ui components
     Navbar.tsx, PricingPlans.tsx, ThemeToggle.tsx
   lib/
-    repositories/       # Typed Supabase query functions (7 modules)
+    repositories/       # Typed Supabase query functions (9 modules)
     services/           # Business logic (auth, analytics, billing)
     validation.ts       # Zod schemas for all API inputs
     stripe.ts           # Stripe singleton + price config
@@ -148,17 +148,19 @@ admin/
       promos/           # Promo code management
       subscriptions/    # Grant/view premium
       groups/           # Group management
+      tickets/          # Support ticket management (list, filter, status update, admin notes)
+      suggestions/      # Feature suggestion management (list, filter, status update, admin notes)
       ui-test/          # UITestLab (admin-only design prototyping)
-    api/                # Admin API routes (domains, promos, subscriptions, groups)
+    api/                # Admin API routes (domains, promos, subscriptions, groups, tickets, suggestions)
     login/              # Admin login (role check: profiles.role === 'admin')
     globals.css         # Design tokens + dark mode
   components/
     ui/                 # shadcn/ui (16 components, only those used)
     AdminHeader.tsx     # Top bar (branding, user email, theme toggle, sign out)
-    AdminNav.tsx        # Horizontal pill nav (7 items)
+    AdminNav.tsx        # Horizontal pill nav (11 items)
     ThemeProvider.tsx   # Cookie-based theme
   lib/
-    repositories/       # Admin-only Supabase queries (admin, domains, promoCodes, subscriptions, profiles)
+    repositories/       # Admin-only Supabase queries (admin, domains, promoCodes, subscriptions, profiles, supportTickets, featureSuggestions)
     services/           # auth.ts (requireAdmin, requireAdminApi), analytics.ts
     validation.ts       # Admin Zod schemas only
     supabase/           # Server + service role clients
@@ -207,7 +209,7 @@ Core types in `src/types/`:
 
 ### Database
 
-Supabase PostgreSQL with RLS. Tables: `profiles`, `subscriptions`, `projects`, `tags`, `time_entries`, `user_settings`, `sync_cursors`, `promo_codes`, `promo_redemptions`, `whitelisted_domains`, `stripe_events`, `groups`, `group_members`, `group_invitations`, `group_sharing_settings`, `group_shares`.
+Supabase PostgreSQL with RLS. Tables: `profiles`, `subscriptions`, `projects`, `tags`, `time_entries`, `user_settings`, `sync_cursors`, `promo_codes`, `promo_redemptions`, `whitelisted_domains`, `stripe_events`, `groups`, `group_members`, `group_invitations`, `group_sharing_settings`, `group_shares`, `support_tickets`, `feature_suggestions`, `email_logs`.
 
 Shared types in `shared/types.ts` define typed interfaces for all tables with a `Database` type map for the Supabase client. SQL migrations in `supabase/migrations/`.
 
@@ -224,6 +226,8 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 - `groupShares.ts` -- Timesheet approval workflow: `getSharesByStatus()`, `autoCreateOpenShare()`, `submitShare()`, `reviewShare()`, snapshot JSONB entries
 - `groupSharing.ts` -- Per-member sharing toggle + `getUserOwnStats()` (today/week/month hours)
 - `groupInvitations.ts` -- Invite by email with 7-day expiry
+- `supportTickets.ts` -- `getUserTickets()`, `createSupportTicket()` (user-facing, RLS-scoped)
+- `featureSuggestions.ts` -- `getUserSuggestions()`, `createFeatureSuggestion()` (user-facing, RLS-scoped)
 
 **Services** (business logic):
 
@@ -412,6 +416,49 @@ GroupsView (client orchestrator, AlertDialog for delete group confirmation)
 **Privacy**: Admin can only see member data AFTER the member submits. Members can see other members' names and roles but NOT their hours or entries.
 
 **Migrations**: `013_groups.sql` (tables), `018_group_sharing.sql` (sharing settings + RPCs), `026_group_shares.sql` (snapshot table), `027_share_approval_workflow.sql` (approval columns + schedule settings)
+
+### Support & Feature Suggestions
+
+Two user-facing pages + admin management pages for collecting support tickets and feature ideas.
+
+**Database tables** (`supabase/migrations/030_support_and_suggestions.sql`):
+
+- `support_tickets` -- user_id, user_email, user_name, issue_type (bug/account/billing/sync/performance/other), subject, description, priority (low/medium/high/urgent), platform (chrome_extension/web_app/both), issue_time, status (open/in_progress/resolved/closed), admin_notes, resolved_at, resolved_by
+- `feature_suggestions` -- user_id, user_email, user_name, suggestion_type (feature/improvement/integration/ui_ux/other), title, description, importance (nice_to_have/important/critical), target_platform (chrome_extension/web_app/both), notify_on_release, status (new/under_review/planned/in_progress/implemented/declined), admin_notes
+- Both tables have RLS enabled with SELECT/INSERT policies for own rows
+
+**Website pages** (`web/app/(authenticated)/`):
+
+- `support/page.tsx` -- server component (requireAuth + getProfile), renders `SupportPage.tsx`
+- `support/SupportPage.tsx` -- ticket form (issue type, subject, description, priority, platform, optional issue time) + "My Tickets" history list with status/priority badges
+- `suggestions/page.tsx` -- server component, renders `SuggestionsPage.tsx`
+- `suggestions/SuggestionsPage.tsx` -- suggestion form (type, title, description, importance, platform, notify checkbox) + "My Suggestions" history list with status/importance badges
+
+**Website API routes**:
+
+- `POST /api/support` -- validates with Zod, creates ticket, sends email notification to `support@w-timer.com`
+- `GET /api/support` -- returns user's own tickets
+- `POST /api/suggestions` -- validates, creates suggestion, sends email notification
+- `GET /api/suggestions` -- returns user's own suggestions
+
+**Email templates** (`web/lib/email/templates/`):
+
+- `supportTicket.ts` -- `buildSupportTicketEmail()` with red-tinted info box, subject: `[Support] ${subject}`
+- `featureSuggestion.ts` -- `buildFeatureSuggestionEmail()` with indigo-tinted info box, subject: `[Suggestion] ${title}`
+
+**Admin pages** (`admin/app/(admin)/`):
+
+- `tickets/page.tsx` -- stats cards (total/open/in_progress/resolved) + filterable table (status/priority) with inline expandable detail panel, admin status update + notes
+- `suggestions/page.tsx` -- stats cards (total/new/under_review/planned/implemented) + filterable table (status/importance) with inline expandable detail panel, admin status update + notes
+
+**Admin API routes**:
+
+- `GET /api/tickets?status=&priority=` -- list all tickets with optional filters
+- `PATCH /api/tickets` -- update ticket status + admin notes (Zod-validated)
+- `GET /api/suggestions?status=&importance=` -- list all suggestions with optional filters
+- `PATCH /api/suggestions` -- update suggestion status + admin notes (Zod-validated)
+
+**Navigation**: Website sidebar has Support (LifeBuoy icon) and Suggestions (Lightbulb icon) in NAV_ACCOUNT section. Admin sidebar and nav bar have Tickets and Suggestions items.
 
 ### Auth Session Hardening
 
