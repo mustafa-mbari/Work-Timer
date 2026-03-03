@@ -11,7 +11,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import { toast } from 'sonner'
-import { Lightbulb, ChevronDown, ChevronUp, X, Save } from 'lucide-react'
+import { Lightbulb, ChevronDown, ChevronUp, X, Save, Mail } from 'lucide-react'
 import type { DbFeatureSuggestion } from '@/lib/shared/types'
 
 const STATUS_OPTIONS = [
@@ -77,6 +77,8 @@ export default function AdminSuggestionsPage() {
   const [editStatus, setEditStatus] = useState<string>('')
   const [editNotes, setEditNotes] = useState<string>('')
   const [saving, setSaving] = useState(false)
+  const [replyMessage, setReplyMessage] = useState('')
+  const [sendingReply, setSendingReply] = useState(false)
 
   async function fetchSuggestions() {
     const params = new URLSearchParams()
@@ -100,6 +102,7 @@ export default function AdminSuggestionsPage() {
     setExpandedId(suggestion.id)
     setEditStatus(suggestion.status)
     setEditNotes(suggestion.admin_notes ?? '')
+    setReplyMessage('')
   }
 
   async function saveSuggestion(id: string) {
@@ -119,6 +122,28 @@ export default function AdminSuggestionsPage() {
       toast.error(data.error || 'Failed to update suggestion')
     }
     setSaving(false)
+  }
+
+  async function sendReply(id: string) {
+    if (!replyMessage.trim()) return
+    setSendingReply(true)
+    try {
+      const res = await fetch('/api/suggestions/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, message: replyMessage.trim() }),
+      })
+      if (res.ok) {
+        toast.success('Reply sent to user')
+        setReplyMessage('')
+      } else {
+        const data = await res.json()
+        toast.error(data.error || 'Failed to send reply')
+      }
+    } catch {
+      toast.error('Failed to send reply')
+    }
+    setSendingReply(false)
   }
 
   const stats = {
@@ -292,6 +317,33 @@ export default function AdminSuggestionsPage() {
                                 rows={2}
                                 className="w-full rounded-lg border border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)] text-sm text-stone-700 dark:text-stone-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                               />
+                            </div>
+                          </div>
+
+                          {/* Reply to User */}
+                          <div className="border-t border-stone-200 dark:border-[var(--dark-border)] pt-4 space-y-2">
+                            <p className="text-xs font-medium text-stone-500 dark:text-stone-400 flex items-center gap-1.5">
+                              <Mail className="h-3.5 w-3.5" />
+                              Reply to User ({suggestion.user_email})
+                            </p>
+                            <textarea
+                              value={replyMessage}
+                              onChange={e => setReplyMessage(e.target.value)}
+                              placeholder="Type your reply to the user..."
+                              rows={3}
+                              className="w-full rounded-lg border border-stone-200 dark:border-[var(--dark-border)] bg-white dark:bg-[var(--dark-card)] text-sm text-stone-700 dark:text-stone-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                            />
+                            <div className="flex justify-end">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={sendingReply || !replyMessage.trim()}
+                                onClick={() => sendReply(suggestion.id)}
+                                className="border-indigo-200 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-900/30"
+                              >
+                                <Mail className="h-3.5 w-3.5 mr-1" />
+                                {sendingReply ? 'Sending…' : 'Send Reply'}
+                              </Button>
                             </div>
                           </div>
 

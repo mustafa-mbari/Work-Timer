@@ -82,6 +82,17 @@ export const updateSuggestionStatusSchema = z.object({
   admin_notes: z.string().max(5000).nullable().optional(),
 })
 
+// --- Admin Ticket/Suggestion Reply ---
+export const replyToTicketSchema = z.object({
+  id: z.string().uuid(),
+  message: z.string().min(1, 'Message is required').max(5000),
+})
+
+export const replyToSuggestionSchema = z.object({
+  id: z.string().uuid(),
+  message: z.string().min(1, 'Message is required').max(5000),
+})
+
 // Helper to parse and return a typed result or a 400 response
 export function parseBody<T extends z.ZodType>(schema: T, data: unknown):
   { success: true; data: z.infer<T> } | { success: false; error: string } {

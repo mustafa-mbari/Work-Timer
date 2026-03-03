@@ -9,6 +9,8 @@ export type EmailType =
   | 'billing_notification'
   | 'invoice_receipt'
   | 'trial_ending'
+  | 'ticket_reply'
+  | 'suggestion_reply'
   | 'test'
 
 interface SendEmailParams {

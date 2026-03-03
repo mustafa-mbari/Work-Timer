@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
   })
 
   sendEmail({
-    to: 'support@w-timer.com',
+    to: process.env.SMTP_FROM_EMAIL || 'info@w-timer.com',
     subject: emailData.subject,
     html: emailData.html,
     type: 'feature_suggestion',
