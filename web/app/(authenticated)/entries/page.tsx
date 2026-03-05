@@ -59,7 +59,7 @@ export default async function EntriesPage({ searchParams }: Props) {
 
   if (!premium) {
     return (
-      <div className="animate-fade-in">
+      <div className="animate-fade-in xl:px-[5%] lg:px-[3%] md:px-[1%] px-0">
         <div className="relative">
           {/* Blurred fake table */}
           <div className="blur-[2px] pointer-events-none select-none opacity-60 w-full">
@@ -194,7 +194,7 @@ export default async function EntriesPage({ searchParams }: Props) {
   })
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in xl:px-[5%] lg:px-[3%] md:px-[1%] px-0">
       <Suspense fallback={<div className="h-64" />}>
         <EntriesView
           entriesPage={entriesPage}

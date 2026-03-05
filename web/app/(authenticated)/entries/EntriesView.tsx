@@ -75,7 +75,7 @@ export default function EntriesView({ entriesPage, projects, tags, filters, pomo
         onToggleColumn={toggleColumn as (id: string) => void}
       />
 
-      <div className="mt-4">
+      <div className="mt-4 w-full overflow-x-auto min-w-0">
         <EntriesTable
           entriesPage={entriesPage}
           projects={projects}

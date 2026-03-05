@@ -357,29 +357,29 @@ export default function EntriesTable({ entriesPage, projects, tags, filters, vis
           />
         </td>
         {col.date && (
-          <td className="px-4 py-3 text-stone-700 dark:text-stone-300 whitespace-nowrap">
+          <td className="px-4 py-3 text-stone-700 dark:text-stone-300">
             {formatDate(entry.date)}
           </td>
         )}
         {col.time && (
-          <td className="px-4 py-3 text-stone-600 dark:text-stone-400 whitespace-nowrap tabular-nums">
+          <td className="px-4 py-3 text-stone-600 dark:text-stone-400 tabular-nums">
             {formatTime(entry.start_time)} – {formatTime(entry.end_time)}
           </td>
         )}
         {col.duration && (
-          <td className="px-4 py-3 text-stone-700 dark:text-stone-300 whitespace-nowrap tabular-nums font-medium">
+          <td className="px-4 py-3 text-stone-700 dark:text-stone-300 tabular-nums font-medium">
             {formatDuration(entry.duration)}
           </td>
         )}
         {col.project && (
           <td className="px-4 py-3">
             {project ? (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 min-w-[80px]">
                 <span
                   className="h-2.5 w-2.5 rounded-full flex-shrink-0"
                   style={{ backgroundColor: project.color }}
                 />
-                <span className="text-stone-700 dark:text-stone-300 truncate max-w-[120px]">
+                <span className="text-stone-700 dark:text-stone-300 truncate">
                   {project.name}
                 </span>
               </div>
@@ -389,9 +389,9 @@ export default function EntriesTable({ entriesPage, projects, tags, filters, vis
           </td>
         )}
         {col.description && (
-          <td className="px-4 py-3 max-w-xs">
+          <td className="px-4 py-3 min-w-[100px]">
             <span
-              className="text-stone-700 dark:text-stone-300 truncate block max-w-[200px]"
+              className="text-stone-700 dark:text-stone-300 truncate block"
               title={entry.description}
             >
               {entry.description || (
@@ -409,7 +409,7 @@ export default function EntriesTable({ entriesPage, projects, tags, filters, vis
                   return (
                     <span
                       key={tagId}
-                      className="text-xs bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 rounded px-1.5 py-0.5 whitespace-nowrap"
+                      className="text-xs bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 rounded px-1.5 py-0.5"
                     >
                       {name}
                     </span>
@@ -572,7 +572,7 @@ export default function EntriesTable({ entriesPage, projects, tags, filters, vis
                   {col.time && <ColHeader id="time" label="Time" />}
                   {col.duration && <ColHeader id="duration" label="Duration" />}
                   {col.project && <ColHeader id="project" label="Project" />}
-                  {col.description && <ColHeader id="description" label="Description" className="max-w-xs" />}
+                  {col.description && <ColHeader id="description" label="Description" />}
                   {col.tags && <ColHeader id="tags" label="Tags" />}
                   {col.link && <ColHeader id="link" label="Link" />}
                   {col.type && <ColHeader id="type" label="Type" />}
