@@ -74,6 +74,9 @@ function formatDateDisplay(dateStr?: string): string {
 }
 
 export default function EarningsExportDialog({ open, onOpenChange, data, groupBy, dateRange }: Props) {
+  // Group by (can differ from the page's current view)
+  const [pdfGroupBy, setPdfGroupBy] = useState<'tag' | 'project'>(groupBy)
+
   // Content toggles
   const [includeSummary, setIncludeSummary] = useState(true)
   const [includeTable, setIncludeTable] = useState(true)
@@ -132,15 +135,15 @@ export default function EarningsExportDialog({ open, onOpenChange, data, groupBy
       const params = new URLSearchParams()
       if (pdfDateRange.from) params.set('dateFrom', pdfDateRange.from)
       if (pdfDateRange.to) params.set('dateTo', pdfDateRange.to)
-      params.set('groupBy', groupBy)
+      params.set('groupBy', pdfGroupBy)
 
       const res = await fetch(`/api/earnings?${params.toString()}`)
       if (!res.ok) throw new Error('Failed to fetch earnings data')
       const freshData: EarningsReport = await res.json()
 
-      // If tag breakdown requested and groupBy is project, fetch tag data too
+      // If tag breakdown requested and pdfGroupBy is project, fetch tag data too
       let tagData: EarningsReport | null = null
-      if (includeTagBreakdown && groupBy === 'project') {
+      if (includeTagBreakdown && pdfGroupBy === 'project') {
         const tagParams = new URLSearchParams()
         if (pdfDateRange.from) tagParams.set('dateFrom', pdfDateRange.from)
         if (pdfDateRange.to) tagParams.set('dateTo', pdfDateRange.to)
@@ -152,7 +155,7 @@ export default function EarningsExportDialog({ open, onOpenChange, data, groupBy
         }
       }
 
-      await generateEarningsPdf(freshData, groupBy, pdfDateRange, options, tagData)
+      await generateEarningsPdf(freshData, pdfGroupBy, pdfDateRange, options, tagData)
       onOpenChange(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate PDF')
@@ -237,6 +240,30 @@ export default function EarningsExportDialog({ open, onOpenChange, data, groupBy
 
           <Separator />
 
+          {/* ── Group By ── */}
+          <div>
+            <span className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
+              Group By
+            </span>
+            <div className="mt-2 flex gap-1.5">
+              {(['tag', 'project'] as const).map(g => (
+                <button
+                  key={g}
+                  onClick={() => { setPdfGroupBy(g); if (g === 'tag') setIncludeTagBreakdown(false) }}
+                  className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors capitalize ${
+                    pdfGroupBy === g
+                      ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300'
+                      : 'border-stone-200 dark:border-[var(--dark-border)] text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-[var(--dark-hover)]'
+                  }`}
+                >
+                  By {g === 'tag' ? 'Tag' : 'Project'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <Separator />
+
           {/* ── Content Sections ── */}
           <div>
             <span className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
@@ -254,7 +281,7 @@ export default function EarningsExportDialog({ open, onOpenChange, data, groupBy
                 <Checkbox checked={includeTable} onCheckedChange={(v) => setIncludeTable(!!v)} />
                 <div>
                   <span className="text-sm text-stone-700 dark:text-stone-300">Earnings Table</span>
-                  <p className="text-xs text-stone-400 dark:text-stone-500">Breakdown by {groupBy}</p>
+                  <p className="text-xs text-stone-400 dark:text-stone-500">Breakdown by {pdfGroupBy}</p>
                 </div>
               </label>
               <label className="flex items-center gap-2.5 cursor-pointer">
@@ -283,7 +310,7 @@ export default function EarningsExportDialog({ open, onOpenChange, data, groupBy
                   <p className="text-xs text-stone-400 dark:text-stone-500">Day-by-day detail table</p>
                 </div>
               </label>
-              {groupBy === 'project' && (
+              {pdfGroupBy === 'project' && (
                 <label className="flex items-center gap-2.5 cursor-pointer">
                   <Checkbox checked={includeTagBreakdown} onCheckedChange={(v) => setIncludeTagBreakdown(!!v)} />
                   <div>
