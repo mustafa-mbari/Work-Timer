@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Download, FileText } from 'lucide-react'
+import { Download, FileText, Table2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/table'
 import type { EarningsReport } from '@/lib/services/earnings'
 import EarningsExportDialog from './EarningsExportDialog'
+import EarningsExcelDialog from './EarningsExcelDialog'
 
 interface Props {
   data: EarningsReport
@@ -24,6 +25,7 @@ interface Props {
 export default function EarningsView({ data, groupBy = 'tag', dateRange }: Props) {
   const [exporting, setExporting] = useState(false)
   const [pdfOpen, setPdfOpen] = useState(false)
+  const [excelOpen, setExcelOpen] = useState(false)
 
   const currencySymbol = { USD: '$', EUR: '\u20AC', GBP: '\u00A3', JPY: '\u00A5', CAD: 'C$', AUD: 'A$', CHF: 'CHF', INR: '\u20B9', BRL: 'R$', SEK: 'kr' }[data.currency] ?? data.currency
 
@@ -67,6 +69,16 @@ export default function EarningsView({ data, groupBy = 'tag', dateRange }: Props
           >
             <Download className="h-4 w-4" />
             Export CSV
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setExcelOpen(true)}
+            disabled={data.items.length === 0}
+            className="gap-2"
+          >
+            <Table2 className="h-4 w-4" />
+            Export Excel
           </Button>
           <Button
             variant="outline"
@@ -123,6 +135,13 @@ export default function EarningsView({ data, groupBy = 'tag', dateRange }: Props
         )}
       </CardContent>
 
+      <EarningsExcelDialog
+        open={excelOpen}
+        onOpenChange={setExcelOpen}
+        data={data}
+        groupBy={groupBy}
+        dateRange={dateRange}
+      />
       <EarningsExportDialog
         open={pdfOpen}
         onOpenChange={setPdfOpen}
