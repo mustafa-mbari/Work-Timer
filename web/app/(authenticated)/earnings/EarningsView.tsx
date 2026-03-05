@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Download } from 'lucide-react'
+import { Download, FileText } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -13,14 +13,17 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import type { EarningsReport } from '@/lib/services/earnings'
+import EarningsExportDialog from './EarningsExportDialog'
 
 interface Props {
   data: EarningsReport
   groupBy?: 'tag' | 'project'
+  dateRange?: { from?: string; to?: string }
 }
 
-export default function EarningsView({ data, groupBy = 'tag' }: Props) {
+export default function EarningsView({ data, groupBy = 'tag', dateRange }: Props) {
   const [exporting, setExporting] = useState(false)
+  const [pdfOpen, setPdfOpen] = useState(false)
 
   const currencySymbol = { USD: '$', EUR: '\u20AC', GBP: '\u00A3', JPY: '\u00A5', CAD: 'C$', AUD: 'A$', CHF: 'CHF', INR: '\u20B9', BRL: 'R$', SEK: 'kr' }[data.currency] ?? data.currency
 
@@ -54,16 +57,28 @@ export default function EarningsView({ data, groupBy = 'tag' }: Props) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Earnings by {label}</CardTitle>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleExportCsv}
-          disabled={exporting || data.items.length === 0}
-          className="gap-2"
-        >
-          <Download className="h-4 w-4" />
-          Export CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCsv}
+            disabled={exporting || data.items.length === 0}
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPdfOpen(true)}
+            disabled={data.items.length === 0}
+            className="gap-2"
+          >
+            <FileText className="h-4 w-4" />
+            Export PDF
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {data.items.length === 0 ? (
@@ -107,6 +122,14 @@ export default function EarningsView({ data, groupBy = 'tag' }: Props) {
           </Table>
         )}
       </CardContent>
+
+      <EarningsExportDialog
+        open={pdfOpen}
+        onOpenChange={setPdfOpen}
+        data={data}
+        groupBy={groupBy}
+        dateRange={dateRange}
+      />
     </Card>
   )
 }

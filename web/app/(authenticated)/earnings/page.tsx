@@ -210,7 +210,7 @@ export default async function EarningsPage({
 
       <div className="flex gap-4 items-start">
         <div className="flex-1 min-w-0" style={{ flexBasis: '75%' }}>
-          <EarningsView data={data} groupBy={groupBy} />
+          <EarningsView data={data} groupBy={groupBy} dateRange={{ from: dateFrom, to: dateTo }} />
         </div>
         <div className="shrink-0" style={{ flexBasis: '25%' }}>
           <EarningsProjectsManager
