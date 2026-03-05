@@ -41,13 +41,15 @@ export default function EarningsView({ data, groupBy = 'tag', dateRange }: Props
   const label = groupBy === 'tag' ? 'Tag' : 'Project'
 
   async function handleExportCsv() {
+    if (exporting) return
+    setExporting(true)
     setExportError(null)
     const allowed = await trackExport('csv')
     if (!allowed) {
       setExportError('csv')
+      setExporting(false)
       return
     }
-    setExporting(true)
     try {
       const rows: string[] = []
       rows.push(`${label},Hours,Rate,Total,Currency`)

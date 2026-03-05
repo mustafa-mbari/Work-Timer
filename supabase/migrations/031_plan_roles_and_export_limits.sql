@@ -91,7 +91,7 @@ BEGIN
   SELECT s.plan INTO v_plan
   FROM subscriptions s
   WHERE s.user_id = p_user_id
-    AND s.status  = 'active';
+    AND s.status IN ('active', 'trialing');
 
   IF v_plan IS NULL THEN
     RETURN 'free';
@@ -221,3 +221,16 @@ BEGIN
   );
 END;
 $$;
+
+
+-- ============================================================
+-- Security hardening: restrict RPC execution to service role.
+-- These functions accept an arbitrary user_id; revoking PUBLIC
+-- EXECUTE prevents callers with the anon/authenticated key from
+-- depleting other users' quotas or reading their usage data.
+-- The Next.js backend calls these via the service role client
+-- which retains EXECUTE automatically.
+-- ============================================================
+REVOKE EXECUTE ON FUNCTION get_user_export_role(uuid)           FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION track_export_usage(uuid, text, text) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION get_user_export_quota(uuid, text)    FROM PUBLIC;
