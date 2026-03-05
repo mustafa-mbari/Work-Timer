@@ -29,11 +29,14 @@ export interface EarningsPdfOptions {
 // ── Constants ──────────────────────────────────────────
 
 const INDIGO: [number, number, number] = [99, 102, 241]
+const INDIGO_50: [number, number, number] = [238, 242, 255]
 const EMERALD: [number, number, number] = [16, 185, 129]
 const STONE_800: [number, number, number] = [41, 37, 36]
+const STONE_600: [number, number, number] = [87, 83, 78]
 const STONE_500: [number, number, number] = [120, 113, 108]
 const STONE_400: [number, number, number] = [168, 162, 158]
 const STONE_200: [number, number, number] = [231, 229, 228]
+const STONE_50: [number, number, number] = [250, 250, 249]
 
 const PAGE_SIZES = {
   a4: { w: 210, h: 297 },
@@ -160,7 +163,7 @@ export async function generateEarningsPdf(
     orientation: options.orientation,
     unit: 'mm',
     format: options.pageSize,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   }) as any
   let y = 14
 
@@ -174,54 +177,68 @@ export async function generateEarningsPdf(
   // ── A. Header (always) ──────────────────────────────
 
   // Title
-  doc.setFontSize(22)
-  doc.setTextColor(...INDIGO)
-  doc.text(L.title, ML, y + 7)
+  doc.setFontSize(28)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...STONE_800)
+  doc.text(L.title, ML, y + 8)
+  doc.setFont('helvetica', 'normal')
 
   // Company name / city / address (left, below title)
-  let leftY = y + 14
+  let leftY = y + 18
   if (options.companyName) {
-    doc.setFontSize(10)
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'bold')
     doc.setTextColor(...STONE_800)
     doc.text(options.companyName, ML, leftY)
+    doc.setFont('helvetica', 'normal')
     leftY += 5
   }
   if (options.city) {
-    doc.setFontSize(8)
-    doc.setTextColor(...STONE_500)
+    doc.setFontSize(9)
+    doc.setTextColor(...STONE_600)
     doc.text(options.city, ML, leftY)
-    leftY += 4
+    leftY += 4.5
   }
   if (options.address) {
-    doc.setFontSize(8)
-    doc.setTextColor(...STONE_500)
+    doc.setFontSize(9)
+    doc.setTextColor(...STONE_600)
     const addressLines = doc.splitTextToSize(options.address, CW / 2 - 10)
     doc.text(addressLines, ML, leftY)
-    leftY += addressLines.length * 3.5
+    leftY += addressLines.length * 4
   }
 
   // Right side: period, report date, report number, currency
-  let rightY = y + 7
-  doc.setFontSize(8)
-  doc.setTextColor(...STONE_500)
+  let rightY = y + 6
+  doc.setFontSize(9)
 
   const periodStr = dateRange.from && dateRange.to
     ? `${formatDateDisplay(dateRange.from)} \u2014 ${formatDateDisplay(dateRange.to)}`
     : L.allTime
-  doc.text(`${L.period}: ${periodStr}`, PAGE_W - MR, rightY, { align: 'right' })
-  rightY += 4
 
-  doc.text(`${L.reportDate}: ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`, PAGE_W - MR, rightY, { align: 'right' })
-  rightY += 4
-
+  // Right aligned grid details
+  const rightColDetails: { label: string; value: string }[] = [
+    { label: L.period, value: periodStr },
+    { label: L.reportDate, value: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) },
+  ]
   if (options.reportNumber) {
-    doc.text(`${L.reportNo} ${options.reportNumber}`, PAGE_W - MR, rightY, { align: 'right' })
-    rightY += 4
+    rightColDetails.push({ label: L.reportNo, value: options.reportNumber })
   }
+  rightColDetails.push({ label: L.currency, value: data.currency })
 
-  doc.text(`${L.currency}: ${data.currency}`, PAGE_W - MR, rightY, { align: 'right' })
+  rightColDetails.forEach((detail) => {
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(...STONE_800)
+    const valWidth = doc.getTextWidth(detail.value)
+    doc.text(detail.value, PAGE_W - MR, rightY, { align: 'right' })
 
-  y = Math.max(leftY, rightY) + 4
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(...STONE_500)
+    doc.text(`${detail.label}: `, PAGE_W - MR - valWidth - 2, rightY, { align: 'right' })
+
+    rightY += 5
+  })
+
+  y = Math.max(leftY, rightY) + 6
 
   // Horizontal rule
   doc.setDrawColor(...STONE_200)
@@ -232,17 +249,20 @@ export async function generateEarningsPdf(
   // ── B. Summary Box ──────────────────────────────────
 
   if (options.includeSummary) {
-    checkPage(26)
+    checkPage(30)
 
-    doc.setFontSize(10)
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'bold')
     doc.setTextColor(...STONE_800)
     doc.text(L.summary, ML, y)
+    doc.setFont('helvetica', 'normal')
     y += 5
 
-    const boxH = 20
-    doc.setDrawColor(...STONE_200)
-    doc.setLineWidth(0.3)
-    doc.rect(ML, y, CW, boxH)
+    const boxH = 22
+    doc.setFillColor(...INDIGO_50)
+    doc.setDrawColor(...INDIGO)
+    doc.setLineWidth(0.4)
+    doc.roundedRect(ML, y, CW, boxH, 2, 2, 'FD')
 
     const avgRate = data.items.length > 0
       ? data.items.reduce((s, item) => s + item.rate, 0) / data.items.length
@@ -259,15 +279,19 @@ export async function generateEarningsPdf(
     for (let i = 0; i < metrics.length; i++) {
       const cx = ML + colW * i + colW / 2
       if (i > 0) {
-        doc.setDrawColor(...STONE_200)
-        doc.line(ML + colW * i, y + 3, ML + colW * i, y + boxH - 3)
+        doc.setDrawColor(210, 215, 235) // Soft inner border color
+        doc.setLineWidth(0.3)
+        doc.line(ML + colW * i, y + 4, ML + colW * i, y + boxH - 4)
       }
-      doc.setFontSize(12)
+      doc.setFontSize(14)
+      doc.setFont('helvetica', 'bold')
       doc.setTextColor(...INDIGO)
-      doc.text(metrics[i].value, cx, y + 9, { align: 'center' })
-      doc.setFontSize(7)
-      doc.setTextColor(...STONE_400)
-      doc.text(metrics[i].label, cx, y + 14, { align: 'center' })
+      doc.text(metrics[i].value, cx, y + 10, { align: 'center' })
+
+      doc.setFontSize(8)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(...STONE_500)
+      doc.text(metrics[i].label, cx, y + 16, { align: 'center' })
     }
 
     y += boxH + 10
@@ -278,10 +302,12 @@ export async function generateEarningsPdf(
   if (options.includeTable && data.items.length > 0) {
     checkPage(30)
 
-    doc.setFontSize(10)
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'bold')
     doc.setTextColor(...STONE_800)
     doc.text(L.earningsBy(groupBy), ML, y)
-    y += 3
+    doc.setFont('helvetica', 'normal')
+    y += 4
 
     const itemLabel = groupBy === 'tag' ? L.tag : L.project
 
@@ -314,34 +340,35 @@ export async function generateEarningsPdf(
       startY: y,
       head: [head],
       body: tableBody,
-      styles: { fontSize: 8, cellPadding: 2 },
+      styles: { fontSize: 9, cellPadding: 3 },
       headStyles: {
         fillColor: INDIGO as [number, number, number],
         textColor: 255,
-        fontSize: 8,
+        fontSize: 9,
         fontStyle: 'bold',
       },
-      alternateRowStyles: { fillColor: [250, 250, 249] as [number, number, number] },
+      alternateRowStyles: { fillColor: STONE_50 as [number, number, number] },
       margin: { left: ML, right: MR },
       columnStyles: options.showColors
         ? {
-            0: { cellWidth: colorColWidth, halign: 'center' },
-            1: { cellWidth: 'auto' },
-            2: { cellWidth: 22, halign: 'right' },
-            3: { cellWidth: 30, halign: 'right' },
-            4: { cellWidth: 32, halign: 'right' },
-          }
+          0: { cellWidth: colorColWidth, halign: 'center' },
+          1: { cellWidth: 'auto' },
+          2: { cellWidth: 24, halign: 'right' },
+          3: { cellWidth: 32, halign: 'right' },
+          4: { cellWidth: 34, halign: 'right' },
+        }
         : {
-            0: { cellWidth: 'auto' },
-            1: { cellWidth: 22, halign: 'right' },
-            2: { cellWidth: 30, halign: 'right' },
-            3: { cellWidth: 32, halign: 'right' },
-          },
+          0: { cellWidth: 'auto' },
+          1: { cellWidth: 24, halign: 'right' },
+          2: { cellWidth: 32, halign: 'right' },
+          3: { cellWidth: 34, halign: 'right' },
+        },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       didParseCell(cellData: any) {
         // Bold the grand total row
         if (cellData.row.index === tableBody.length - 1) {
           cellData.cell.styles.fontStyle = 'bold'
+          cellData.cell.styles.fillColor = INDIGO_50 as unknown as number[]
         }
         // Emerald for grand total amount
         const totalColIdx = options.showColors ? 4 : 3
@@ -361,7 +388,7 @@ export async function generateEarningsPdf(
             doc.circle(
               cellData.cell.x + cellData.cell.width / 2,
               cellData.cell.y + cellData.cell.height / 2,
-              1.5,
+              1.8,
               'F',
             )
           }
@@ -383,9 +410,11 @@ export async function generateEarningsPdf(
   if (options.includeDailyChart && filteredDailyEarnings && filteredDailyEarnings.length > 0) {
     checkPage(75)
 
-    doc.setFontSize(10)
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'bold')
     doc.setTextColor(...STONE_800)
     doc.text(L.dailyChart, ML, y)
+    doc.setFont('helvetica', 'normal')
     y += 6
 
     // Pivot daily_earnings to per-day per-item structure
@@ -426,7 +455,7 @@ export async function generateEarningsPdf(
     for (let i = 0; i <= yTicks; i++) {
       const tickY = chartBottom - (i / yTicks) * chartH
       const tickVal = formatMoney((i / yTicks) * maxLabel, cs)
-      doc.setFontSize(6)
+      doc.setFontSize(7)
       doc.setTextColor(...STONE_400)
       doc.text(tickVal, ML, tickY + 1)
       doc.setDrawColor(...STONE_200)
@@ -462,7 +491,7 @@ export async function generateEarningsPdf(
 
       // Amount label above bar
       if (dayTotal > 0) {
-        doc.setFontSize(5)
+        doc.setFontSize(6)
         doc.setTextColor(...STONE_500)
         doc.text(formatMoney(dayTotal, cs), barCx, stackY - 1.5, { align: 'center' })
       }
@@ -470,31 +499,31 @@ export async function generateEarningsPdf(
       // Date label below (show selectively if many days)
       const showLabel = dayCount <= 14 || di % Math.ceil(dayCount / 14) === 0
       if (showLabel) {
-        doc.setFontSize(5)
+        doc.setFontSize(6)
         doc.setTextColor(...STONE_400)
         const d = new Date(dateKey + 'T00:00:00')
         const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-        doc.text(label, barCx, chartBottom + 3.5, { align: 'center' })
+        doc.text(label, barCx, chartBottom + 4, { align: 'center' })
       }
     }
 
-    y = chartBottom + 7
+    y = chartBottom + 8
 
     // Legend
     if (itemIds.length > 0) {
       let lx = ML
-      doc.setFontSize(7)
+      doc.setFontSize(8)
       for (const itemId of itemIds) {
         const name = itemNames.get(itemId) ?? itemId
         const color = itemColors.get(itemId) ?? '#6366F1'
         const [r, g, b] = hexToRgb(color)
         doc.setFillColor(r, g, b)
-        doc.circle(lx + 1.5, y - 0.5, 1.2, 'F')
-        doc.setTextColor(...STONE_500)
+        doc.circle(lx + 1.5, y - 0.5, 1.5, 'F')
+        doc.setTextColor(...STONE_600)
         const textW = doc.getTextWidth(name)
         doc.text(name, lx + 4, y)
-        lx += textW + 8
-        if (lx > PAGE_W - MR - 20) { lx = ML; y += 4 }
+        lx += textW + 10
+        if (lx > PAGE_W - MR - 20) { lx = ML; y += 5 }
       }
       y += 8
     }
@@ -505,10 +534,12 @@ export async function generateEarningsPdf(
   if (options.includeDailyBreakdown && filteredDailyEarnings && filteredDailyEarnings.length > 0) {
     checkPage(30)
 
-    doc.setFontSize(10)
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'bold')
     doc.setTextColor(...STONE_800)
     doc.text(L.dailyBreakdown, ML, y)
-    y += 3
+    doc.setFont('helvetica', 'normal')
+    y += 4
 
     // Group daily_earnings by date
     const byDate = new Map<string, Array<{ name: string; color: string; total: number; hours: number; rate: number }>>()
@@ -562,11 +593,11 @@ export async function generateEarningsPdf(
       startY: y,
       head: [[L.date, groupBy === 'tag' ? L.tag : L.project, L.hours, L.rate, L.total]],
       body: breakdownBody,
-      styles: { fontSize: 7, cellPadding: 1.5 },
+      styles: { fontSize: 8, cellPadding: 2.5 },
       headStyles: {
         fillColor: INDIGO as [number, number, number],
         textColor: 255,
-        fontSize: 7,
+        fontSize: 8,
         fontStyle: 'bold',
       },
       alternateRowStyles: {},
@@ -582,10 +613,13 @@ export async function generateEarningsPdf(
       didParseCell(cellData: any) {
         if (dateHeaderRows.has(cellData.row.index)) {
           cellData.cell.styles.fontStyle = 'bold'
-          cellData.cell.styles.fillColor = [245, 245, 244] // stone-100
+          cellData.cell.styles.fillColor = INDIGO_50 as unknown as number[]
+          cellData.cell.styles.textColor = INDIGO as unknown as number[]
         }
         if (dayTotalRows.has(cellData.row.index)) {
           cellData.cell.styles.fontStyle = 'bold'
+          // A light gray for daily totals to separate days nicely
+          cellData.cell.styles.fillColor = STONE_50 as unknown as number[]
         }
       },
     })
@@ -599,10 +633,12 @@ export async function generateEarningsPdf(
   if (options.includeTagBreakdown && tagData && tagData.items.length > 0) {
     checkPage(30)
 
-    doc.setFontSize(10)
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'bold')
     doc.setTextColor(...STONE_800)
     doc.text(L.tagBreakdown, ML, y)
-    y += 3
+    doc.setFont('helvetica', 'normal')
+    y += 4
 
     const tagCs = getCurrencySymbol(tagData.currency)
 
@@ -634,33 +670,34 @@ export async function generateEarningsPdf(
       startY: y,
       head: [tagHead],
       body: tagBody,
-      styles: { fontSize: 8, cellPadding: 2 },
+      styles: { fontSize: 9, cellPadding: 3 },
       headStyles: {
         fillColor: INDIGO as [number, number, number],
         textColor: 255,
-        fontSize: 8,
+        fontSize: 9,
         fontStyle: 'bold',
       },
-      alternateRowStyles: { fillColor: [250, 250, 249] as [number, number, number] },
+      alternateRowStyles: { fillColor: STONE_50 as [number, number, number] },
       margin: { left: ML, right: MR },
       columnStyles: options.showColors
         ? {
-            0: { cellWidth: colorColWidth, halign: 'center' },
-            1: { cellWidth: 'auto' },
-            2: { cellWidth: 22, halign: 'right' },
-            3: { cellWidth: 30, halign: 'right' },
-            4: { cellWidth: 32, halign: 'right' },
-          }
+          0: { cellWidth: colorColWidth, halign: 'center' },
+          1: { cellWidth: 'auto' },
+          2: { cellWidth: 24, halign: 'right' },
+          3: { cellWidth: 32, halign: 'right' },
+          4: { cellWidth: 34, halign: 'right' },
+        }
         : {
-            0: { cellWidth: 'auto' },
-            1: { cellWidth: 22, halign: 'right' },
-            2: { cellWidth: 30, halign: 'right' },
-            3: { cellWidth: 32, halign: 'right' },
-          },
+          0: { cellWidth: 'auto' },
+          1: { cellWidth: 24, halign: 'right' },
+          2: { cellWidth: 32, halign: 'right' },
+          3: { cellWidth: 34, halign: 'right' },
+        },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       didParseCell(cellData: any) {
         if (cellData.row.index === tagBody.length - 1) {
           cellData.cell.styles.fontStyle = 'bold'
+          cellData.cell.styles.fillColor = INDIGO_50 as unknown as number[]
         }
         const totalColIdx = options.showColors ? 4 : 3
         if (cellData.row.index === tagBody.length - 1 && cellData.column.index === totalColIdx) {
@@ -678,7 +715,7 @@ export async function generateEarningsPdf(
             doc.circle(
               cellData.cell.x + cellData.cell.width / 2,
               cellData.cell.y + cellData.cell.height / 2,
-              1.5,
+              1.8,
               'F',
             )
           }
@@ -695,16 +732,18 @@ export async function generateEarningsPdf(
   if (options.notes) {
     checkPage(20)
 
-    doc.setFontSize(10)
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'bold')
     doc.setTextColor(...STONE_800)
     doc.text(L.notes, ML, y)
+    doc.setFont('helvetica', 'normal')
     y += 5
 
-    doc.setFontSize(8)
-    doc.setTextColor(...STONE_500)
+    doc.setFontSize(9)
+    doc.setTextColor(...STONE_600)
     const noteLines = doc.splitTextToSize(options.notes, CW)
     doc.text(noteLines, ML, y)
-    y += noteLines.length * 3.5 + 6
+    y += noteLines.length * 4.5 + 6
   }
 
   // ── G. Footer (all pages) ──────────────────────────
@@ -714,22 +753,24 @@ export async function generateEarningsPdf(
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i)
     doc.setDrawColor(...STONE_200)
-    doc.setLineWidth(0.2)
+    doc.setLineWidth(0.3)
     doc.line(ML, PAGE_H - 14, PAGE_W - MR, PAGE_H - 14)
     // Left: branding
-    doc.setFontSize(7)
+    doc.setFontSize(8)
+    doc.setFont('helvetica', 'bold')
     doc.setTextColor(...INDIGO)
-    doc.text('w-timer.com', ML, PAGE_H - 10)
-    doc.setTextColor(...STONE_400)
-    doc.text('info@w-timer.com', ML, PAGE_H - 6.5)
+    doc.text('w-timer.com', ML, PAGE_H - 9.5)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(...STONE_500)
+    doc.text('info@w-timer.com', ML, PAGE_H - 5.5)
     // Center: generated timestamp
-    doc.setFontSize(6)
-    doc.setTextColor(...STONE_400)
-    doc.text(`${L.generated}: ${generatedAt}`, PAGE_W / 2, PAGE_H - 8, { align: 'center' })
-    // Right: page number
     doc.setFontSize(7)
     doc.setTextColor(...STONE_400)
-    doc.text(`${L.page} ${i} ${L.of} ${pageCount}`, PAGE_W - MR, PAGE_H - 8, { align: 'right' })
+    doc.text(`${L.generated}: ${generatedAt}`, PAGE_W / 2, PAGE_H - 7.5, { align: 'center' })
+    // Right: page number
+    doc.setFontSize(8)
+    doc.setTextColor(...STONE_500)
+    doc.text(`${L.page} ${i} ${L.of} ${pageCount}`, PAGE_W - MR, PAGE_H - 7.5, { align: 'right' })
   }
 
   // ── Save ────────────────────────────────────────────

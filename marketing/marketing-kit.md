@@ -121,7 +121,7 @@ freelancers, developers, designers, agencies, remote workers, digital nomads, st
 
 ### Long-Form Marketing Copy
 
-**"Why We Built Work Timer"**
+#### "Why We Built Work Timer"
 
 We built Work Timer because every time tracker we tried asked for too much. An email. A workspace name. A team size. Three onboarding screens. A Chrome extension that phoned home every 30 seconds.
 
