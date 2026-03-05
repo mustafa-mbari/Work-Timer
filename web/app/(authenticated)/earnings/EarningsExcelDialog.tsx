@@ -16,6 +16,8 @@ import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import type { EarningsReport } from '@/lib/services/earnings'
 import { generateEarningsExcel, type EarningsExcelOptions } from '@/lib/excel/earningsReport'
+import type { ExportQuotaItem } from '@/lib/shared/types'
+import ExportQuotaBadge from './ExportQuotaBadge'
 
 interface Props {
   open: boolean
@@ -23,6 +25,8 @@ interface Props {
   data: EarningsReport
   groupBy: 'tag' | 'project'
   dateRange?: { from?: string; to?: string }
+  onTrackExport: () => Promise<boolean>
+  quotaItem?: ExportQuotaItem
 }
 
 type Language = 'en' | 'de'
@@ -70,7 +74,7 @@ function formatDateDisplay(dateStr?: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export default function EarningsExcelDialog({ open, onOpenChange, data, groupBy, dateRange }: Props) {
+export default function EarningsExcelDialog({ open, onOpenChange, data, groupBy, dateRange, onTrackExport, quotaItem }: Props) {
   // Group by (independent from the page's current view)
   const [excelGroupBy, setExcelGroupBy] = useState<'tag' | 'project'>(groupBy)
 
@@ -94,6 +98,14 @@ export default function EarningsExcelDialog({ open, onOpenChange, data, groupBy,
   async function handleGenerate() {
     setGenerating(true)
     setError(null)
+
+    // Check quota before the expensive fetch+generate
+    const allowed = await onTrackExport()
+    if (!allowed) {
+      setError('Monthly Excel export limit reached. Resets on the 1st of next month.')
+      setGenerating(false)
+      return
+    }
 
     try {
       const options: EarningsExcelOptions = {
@@ -290,13 +302,20 @@ export default function EarningsExcelDialog({ open, onOpenChange, data, groupBy,
           <p className="text-sm text-rose-500 dark:text-rose-400 mt-2">{error}</p>
         )}
 
+        {quotaItem && (
+          <div className="flex items-center justify-between text-xs text-stone-400 dark:text-stone-500 px-1 mt-3">
+            <span>Excel exports this month</span>
+            <ExportQuotaBadge item={quotaItem} loading={false} />
+          </div>
+        )}
+
         <DialogFooter className="gap-2 sm:gap-0 mt-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={generating}>
             Cancel
           </Button>
           <Button
             onClick={handleGenerate}
-            disabled={generating || nothingSelected}
+            disabled={generating || nothingSelected || quotaItem?.remaining === 0}
             className="bg-emerald-600 hover:bg-emerald-700 text-white"
           >
             {generating ? (

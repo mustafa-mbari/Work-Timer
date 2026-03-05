@@ -17,6 +17,8 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import type { EarningsReport } from '@/lib/services/earnings'
 import { generateEarningsPdf, type EarningsPdfOptions } from '@/lib/pdf/earningsReport'
+import type { ExportQuotaItem } from '@/lib/shared/types'
+import ExportQuotaBadge from './ExportQuotaBadge'
 
 interface Props {
   open: boolean
@@ -24,6 +26,8 @@ interface Props {
   data: EarningsReport
   groupBy: 'tag' | 'project'
   dateRange?: { from?: string; to?: string }
+  onTrackExport: () => Promise<boolean>
+  quotaItem?: ExportQuotaItem
 }
 
 type PageSize = 'a4' | 'letter'
@@ -73,7 +77,7 @@ function formatDateDisplay(dateStr?: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export default function EarningsExportDialog({ open, onOpenChange, data, groupBy, dateRange }: Props) {
+export default function EarningsExportDialog({ open, onOpenChange, data, groupBy, dateRange, onTrackExport, quotaItem }: Props) {
   // Group by (can differ from the page's current view)
   const [pdfGroupBy, setPdfGroupBy] = useState<'tag' | 'project'>(groupBy)
 
@@ -111,6 +115,14 @@ export default function EarningsExportDialog({ open, onOpenChange, data, groupBy
   async function handleGenerate() {
     setGenerating(true)
     setError(null)
+
+    // Check quota before the expensive fetch+generate
+    const allowed = await onTrackExport()
+    if (!allowed) {
+      setError('Monthly PDF export limit reached. Resets on the 1st of next month.')
+      setGenerating(false)
+      return
+    }
 
     try {
       const options: EarningsPdfOptions = {
@@ -502,13 +514,20 @@ export default function EarningsExportDialog({ open, onOpenChange, data, groupBy
           <p className="text-sm text-rose-500 dark:text-rose-400 mt-2">{error}</p>
         )}
 
+        {quotaItem && (
+          <div className="flex items-center justify-between text-xs text-stone-400 dark:text-stone-500 px-1 mt-3">
+            <span>PDF exports this month</span>
+            <ExportQuotaBadge item={quotaItem} loading={false} />
+          </div>
+        )}
+
         <DialogFooter className="gap-2 sm:gap-0 mt-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={generating}>
             Cancel
           </Button>
           <Button
             onClick={handleGenerate}
-            disabled={generating || (!includeSummary && !includeTable && !includeDailyChart && !includeDailyBreakdown && !includeTagBreakdown)}
+            disabled={generating || (!includeSummary && !includeTable && !includeDailyChart && !includeDailyBreakdown && !includeTagBreakdown) || quotaItem?.remaining === 0}
             className="bg-indigo-500 hover:bg-indigo-600 text-white"
           >
             {generating ? (

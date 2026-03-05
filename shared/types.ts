@@ -717,6 +717,50 @@ interface DbFeatureSuggestionUpdate {
   updated_at?: string
 }
 
+// --- Export Quota System ---
+
+export type ExportRole = 'free' | 'pro' | 'team'
+
+export type ExportType = 'pdf' | 'excel' | 'csv'
+
+export interface ExportQuotaItem {
+  export_type: ExportType
+  limit: number
+  used: number
+  remaining: number
+}
+
+export interface ExportQuota {
+  role: ExportRole
+  year_month: string  // 'YYYY-MM' UTC
+  items: ExportQuotaItem[]
+}
+
+export interface TrackExportResult {
+  allowed: boolean
+  used: number
+  limit: number
+  error?: string
+}
+
+export interface DbPlanRole {
+  plan: DbSubscription['plan']
+  role_name: ExportRole
+}
+
+export interface DbRoleExportLimit {
+  role_name: ExportRole
+  export_type: ExportType
+  monthly_limit: number
+}
+
+export interface DbExportUsage {
+  user_id: string
+  export_type: ExportType
+  year_month: string
+  count: number
+}
+
 export interface DbEmailLog {
   id: string
   recipient: string
@@ -753,6 +797,9 @@ export type Database = {
       support_tickets: { Row: DbSupportTicket; Insert: DbSupportTicketInsert; Update: DbSupportTicketUpdate; Relationships: [] }
       feature_suggestions: { Row: DbFeatureSuggestion; Insert: DbFeatureSuggestionInsert; Update: DbFeatureSuggestionUpdate; Relationships: [] }
       email_logs: { Row: DbEmailLog; Insert: Partial<DbEmailLog>; Update: Partial<DbEmailLog>; Relationships: [] }
+      plan_roles: { Row: DbPlanRole; Insert: DbPlanRole; Update: Partial<DbPlanRole>; Relationships: [] }
+      role_export_limits: { Row: DbRoleExportLimit; Insert: DbRoleExportLimit; Update: Partial<DbRoleExportLimit>; Relationships: [] }
+      export_usage: { Row: DbExportUsage; Insert: Omit<DbExportUsage, 'count'> & { count?: number }; Update: Partial<DbExportUsage>; Relationships: [] }
     }
     Views: Record<string, never>
     Functions: {
@@ -900,6 +947,9 @@ export type Database = {
         }>
         error?: string
       }}
+      get_user_export_role: { Args: { p_user_id: string }; Returns: string }
+      get_user_export_quota: { Args: { p_user_id: string; p_year_month: string }; Returns: ExportQuotaItem[] }
+      track_export_usage: { Args: { p_user_id: string; p_export_type: string; p_year_month: string }; Returns: TrackExportResult }
     }
     Enums: Record<string, never>
   }

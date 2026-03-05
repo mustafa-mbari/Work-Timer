@@ -125,7 +125,7 @@ web/
     ui/                 # shadcn/ui components
     Navbar.tsx, PricingPlans.tsx, ThemeToggle.tsx
   lib/
-    repositories/       # Typed Supabase query functions (10 modules)
+    repositories/       # Typed Supabase query functions (11 modules)
     services/           # Business logic (auth, analytics, billing, earnings)
     validation.ts       # Zod schemas for all API inputs
     stripe.ts           # Stripe singleton + price config
@@ -233,6 +233,7 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 - `groupInvitations.ts` -- Invite by email with 7-day expiry
 - `supportTickets.ts` -- `getUserTickets()`, `createSupportTicket()` (user-facing, RLS-scoped)
 - `featureSuggestions.ts` -- `getUserSuggestions()`, `createFeatureSuggestion()` (user-facing, RLS-scoped)
+- `exportUsage.ts` -- `getUserExportRole()`, `getUserExportQuota()`, `trackExport()` (atomic server-side export quota tracking)
 
 **Services** (business logic):
 
@@ -362,6 +363,62 @@ Earnings are **tag-based** (not project-based). Each tag can have:
 - Both export generators are separate from the extension's `src/utils/export.ts` (extension exports all time entries; web earnings exports aggregate earnings by tag/project)
 
 **Migration**: `supabase/migrations/024_earnings_to_tags.sql` -- adds tag columns, project `default_tag_id`, replaces RPC
+
+### Export Quota System
+
+Monthly export limits enforced per plan role. Free users remain blocked from the earnings page entirely (existing `isPremiumUser` gate). Pro and Team users have per-type monthly limits tracked server-side.
+
+**Quota limits:**
+
+| Role | PDF | Excel | CSV |
+|------|-----|-------|-----|
+| free | 1 | 1 | 1 |
+| pro | 10 | 20 | 30 |
+| team | 20 | 30 | 30 |
+
+**Plan → Role mapping** (`plan_roles` table):
+
+- `premium_monthly/yearly/lifetime` → `pro`
+- `allin_*/team_10_*/team_20_*` → `team`
+- everything else → `free`
+
+**DB tables** (`supabase/migrations/031_plan_roles_and_export_limits.sql`):
+
+- `plan_roles` -- plan name → role (`free/pro/team`), public SELECT, no client mutations
+- `role_export_limits` -- (role, export_type) → monthly_limit, public SELECT, no client mutations
+- `export_usage` -- (user_id, export_type, year_month) monthly counter. SELECT for own rows; all writes via SECURITY DEFINER functions only.
+
+**DB functions** (all `SECURITY DEFINER`):
+
+- `get_user_export_role(p_user_id)` → `text` -- joins `subscriptions` → `plan_roles`, returns `'free'` as default
+- `track_export_usage(p_user_id, p_export_type, p_year_month)` → `json` -- atomic check-and-increment using `FOR UPDATE` row lock (same pattern as `004_atomic_promo.sql`): INSERT ON CONFLICT DO NOTHING → SELECT FOR UPDATE → if count >= limit return `{allowed:false}` → UPDATE count+1 → return `{allowed:true, used, limit}`
+- `get_user_export_quota(p_user_id, p_year_month)` → `json[]` -- read-only LEFT JOIN, returns `{export_type, limit, used, remaining}` per type
+
+**Repository** (`web/lib/repositories/exportUsage.ts`):
+
+- `getUserExportRole(userId)` → `ExportRole`
+- `getUserExportQuota(userId)` → `ExportQuota` (parallel role + quota RPC calls)
+- `trackExport(userId, type)` → `TrackExportResult` — **fails open** on DB error (logs + returns `allowed:true`)
+- `currentYearMonth()` helper: UTC `'YYYY-MM'` string
+
+**API routes:**
+
+- `GET /api/export/usage` → `getUserExportQuota(user.id)` → JSON
+- `POST /api/export/track` → `trackExportSchema` parse → `trackExport(user.id, type)` → 429 if `!allowed`, 200 with `{allowed, used, limit, remaining}` if allowed
+
+**Frontend (`web/app/(authenticated)/earnings/`):**
+
+- `useExportQuota.ts` -- `'use client'` hook; fetches `/api/export/usage` on mount; `trackExport(type)` calls `POST /api/export/track`, updates quota optimistically, returns `false` on 429, `true` otherwise (fails open on network errors)
+- `ExportQuotaBadge.tsx` -- `{used}/{limit} this month`; stone-400 normal, amber warning (≤2 remaining), rose-500 exhausted
+- `EarningsView.tsx` -- integrates `useExportQuota`; derives `csvItem/pdfItem/excelItem` from `quota.items`; CSV button disabled when `remaining===0`; passes `onTrackExport` + `quotaItem` props to both dialogs
+- `EarningsExportDialog.tsx` / `EarningsExcelDialog.tsx` -- call `onTrackExport()` before fetch+generation; show error if denied; generate button disabled when `remaining===0`; quota badge shown above footer
+
+**Key design decisions:**
+
+- Quota charged **before** generation (not after) — simpler; a failed client-side render does not decrement the count
+- **Fail open** on DB/network errors — export limits are a soft business rule, not a security boundary
+- UTC `year_month` computed server-side for timezone consistency
+- No toast library — inline error messages matching existing dialog error pattern
 
 ### Groups & Timesheet Approval System
 

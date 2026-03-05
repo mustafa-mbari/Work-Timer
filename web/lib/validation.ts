@@ -223,6 +223,11 @@ export const createFeatureSuggestionSchema = z.object({
   notify_on_release: z.boolean().default(false),
 })
 
+// --- Export Quota ---
+export const trackExportSchema = z.object({
+  type: z.enum(['pdf', 'excel', 'csv']),
+})
+
 // Helper to parse and return a typed result or a 400 response
 export function parseBody<T extends z.ZodType>(schema: T, data: unknown):
   { success: true; data: z.infer<T> } | { success: false; error: string } {
