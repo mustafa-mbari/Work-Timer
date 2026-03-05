@@ -111,9 +111,11 @@ src/
 ```
 web/
   app/
-    (authenticated)/    # Route group (dashboard, billing, analytics, entries, support, suggestions)
+    (authenticated)/    # Route group (dashboard, billing, analytics, entries, earnings, groups, support, suggestions)
                         #   dashboard/ includes WeeklyProjectChart (CSS stacked bars, no Recharts)
-    api/                # API routes (checkout, billing, webhooks, promo, support, suggestions)
+                        #   entries/ — premium time entries table with pagination, filters, column visibility, TimerWidget
+                        #   earnings/ — premium earnings report with tag/project grouping, PDF/Excel/CSV export
+    api/                # API routes (checkout, billing, webhooks, promo, support, suggestions, earnings)
     auth/               # OAuth callback + extension bridge (postMessage relay)
     api/auth/           # Server-side auth routes (sign-in, sign-up, magic-link, forgot-password, google, session)
     login/, register/   # Auth forms
@@ -123,11 +125,13 @@ web/
     ui/                 # shadcn/ui components
     Navbar.tsx, PricingPlans.tsx, ThemeToggle.tsx
   lib/
-    repositories/       # Typed Supabase query functions (9 modules)
-    services/           # Business logic (auth, analytics, billing)
+    repositories/       # Typed Supabase query functions (10 modules)
+    services/           # Business logic (auth, analytics, billing, earnings)
     validation.ts       # Zod schemas for all API inputs
     stripe.ts           # Stripe singleton + price config
     supabase/           # Server + service role Supabase clients
+    pdf/                # PDF generation library (earningsReport.ts — jsPDF + autotable)
+    excel/              # Excel generation library (earningsReport.ts — xlsx + file-saver)
     utils.ts            # cn() helper
     theme.ts            # Cookie-based theme provider
   middleware.ts         # Auth guards (skips public routes for performance) — deprecated name, will become proxy.ts
@@ -220,6 +224,7 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 - `profiles.ts`, `subscriptions.ts`, `promoCodes.ts`, `domains.ts`, `syncCursors.ts` -- CRUD operations
 - `projects.ts` -- CRUD + reorder + default tag linking (`default_tag_id`)
 - `tags.ts` -- CRUD + reorder + color + hourly rate + earnings toggle
+- `timeEntries.ts` -- `getUserTimeEntries(userId, filters)` returns `TimeEntryPage { data, total, page, pageSize, totalPages }` (25/page); `getTodayTotalDuration()` for daily goal; `getUserTimeEntryById()` for edit
 - `earnings.ts` -- `get_earnings_report` RPC with `groupBy` parameter ('tag' | 'project')
 - `analytics.ts` -- `get_user_analytics` RPC
 - `groups.ts` -- CRUD + member management + join code + `GroupWithMeta` type (includes `role`, `member_count`, `share_frequency`, `share_deadline_day`)
@@ -346,6 +351,15 @@ Earnings are **tag-based** (not project-based). Each tag can have:
 - Project mode: Joins via `time_entries.project_id` (backward compatible)
 - Returns unified shape: `items[]`, `grand_total`, `total_hours`, `total_items`, `daily_earnings[]` with generic keys (`item_id`, `item_name`, `item_color`)
 - Website earnings page has a "By Tag" / "By Project" toggle (`GroupByToggle` component, `?groupBy=project` search param)
+- `GET /api/earnings?dateFrom=&dateTo=&groupBy=tag|project` -- returns fresh `EarningsReport`; used by export dialogs
+
+**Web Earnings Export** (`web/app/(authenticated)/earnings/`):
+
+- `EarningsExportDialog.tsx` -- PDF export dialog with date range pickers, quick buttons (This Week/Month/etc.), group by toggle, content checkboxes (summary, table, chart, daily breakdown, tag breakdown), formatting options (A4/letter, portrait/landscape, EN/DE, show colors), and optional business fields (company, address, report number, notes). Fetches fresh data via `/api/earnings` on generate.
+- `EarningsExcelDialog.tsx` -- Excel export dialog with sheet toggles (Summary, Earnings Table, Daily Breakdown) and language/date range options
+- `web/lib/pdf/earningsReport.ts` -- `generateEarningsPdf(report, options)` using jsPDF + autotable (dynamically imported). Multi-language (EN/DE), A4/letter, portrait/landscape. Renders header, summary box, daily stacked bar chart, earnings table, optional tag breakdown and daily breakdown.
+- `web/lib/excel/earningsReport.ts` -- `generateEarningsExcel(report, options)` using xlsx + file-saver (dynamically imported). Creates separate sheets per selected option. Multi-language (EN/DE).
+- Both export generators are separate from the extension's `src/utils/export.ts` (extension exports all time entries; web earnings exports aggregate earnings by tag/project)
 
 **Migration**: `supabase/migrations/024_earnings_to_tags.sql` -- adds tag columns, project `default_tag_id`, replaces RPC
 
