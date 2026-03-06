@@ -53,9 +53,18 @@ const PLAN_DISPLAY_NAMES: Record<string, string> = {
 async function getUserEmailAndName(userId: string): Promise<{ email: string | null; displayName: string | null }> {
   try {
     const supabase = await createServiceClient()
-    const { data } = await supabase.from('profiles').select('email, display_name').eq('id', userId).single()
-    return { email: data?.email || null, displayName: data?.display_name || null }
-  } catch {
+    const { data } = await supabase
+      .from('profiles')
+      .select('email, display_name')
+      .eq('id', userId)
+      .single<{ email: string; display_name: string | null }>()
+    
+    return { 
+      email: data?.email || null, 
+      displayName: data?.display_name || null 
+    }
+  } catch (err) {
+    console.error('[stripe webhook] Error fetching user profile:', err)
     return { email: null, displayName: null }
   }
 }
