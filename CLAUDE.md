@@ -156,13 +156,14 @@ admin/
       groups/           # Group management
       tickets/          # Support ticket management (list, filter, status update, admin notes)
       suggestions/      # Feature suggestion management (list, filter, status update, admin notes)
+      quotas/           # API quota management (editable limits per role x resource type)
       ui-test/          # UITestLab (admin-only design prototyping)
-    api/                # Admin API routes (domains, promos, subscriptions, webhooks, groups, tickets, suggestions)
+    api/                # Admin API routes (domains, promos, subscriptions, webhooks, groups, tickets, suggestions, quotas)
     login/              # Admin login (role check: profiles.role === 'admin')
     globals.css         # Design tokens + dark mode
   components/
     ui/                 # shadcn/ui (16 components, only those used)
-    AdminSidebar.tsx    # Collapsible sidebar nav (12 items, 3 modes: expanded/collapsed/hover)
+    AdminSidebar.tsx    # Collapsible sidebar nav (13 items, 3 modes: expanded/collapsed/hover)
     ThemeProvider.tsx   # Cookie-based theme
   lib/
     repositories/       # Admin-only Supabase queries (admin, domains, promoCodes, subscriptions, profiles, webhookLogs, supportTickets, featureSuggestions)
@@ -214,7 +215,7 @@ Core types in `src/types/`:
 
 ### Database
 
-Supabase PostgreSQL with RLS. Tables: `profiles`, `subscriptions`, `projects`, `tags`, `time_entries`, `user_settings`, `sync_cursors`, `promo_codes`, `promo_redemptions`, `whitelisted_domains`, `stripe_events`, `webhook_logs`, `groups`, `group_members`, `group_invitations`, `group_sharing_settings`, `group_shares`, `support_tickets`, `feature_suggestions`, `email_logs`.
+Supabase PostgreSQL with RLS. Tables: `profiles`, `subscriptions`, `projects`, `tags`, `time_entries`, `user_settings`, `sync_cursors`, `promo_codes`, `promo_redemptions`, `whitelisted_domains`, `stripe_events`, `webhook_logs`, `groups`, `group_members`, `group_invitations`, `group_sharing_settings`, `group_shares`, `support_tickets`, `feature_suggestions`, `email_logs`, `api_quota_limits`, `api_quota_usage`.
 
 Shared types in `shared/types.ts` define typed interfaces for all tables with a `Database` type map for the Supabase client. SQL migrations in `supabase/migrations/`.
 
@@ -237,6 +238,7 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 - `supportTickets.ts` -- `getUserTickets()`, `createSupportTicket()` (user-facing, RLS-scoped)
 - `featureSuggestions.ts` -- `getUserSuggestions()`, `createFeatureSuggestion()` (user-facing, RLS-scoped)
 - `exportUsage.ts` -- `getUserExportRole()`, `getUserExportQuota()`, `trackExport()` (atomic server-side export quota tracking)
+- `apiQuota.ts` -- `checkApiQuota()`, `getUserApiQuotas()`, `getAllApiQuotaLimits()`, `upsertApiQuotaLimit()` (monthly API mutation quotas per resource type)
 
 **Services** (business logic):
 
@@ -613,6 +615,7 @@ Guest mode lets users try the extension without creating an account. 5-day trial
 - Stripe webhook signature verification + insert-first idempotency via `stripe_events` table (claim event via INSERT before processing; unique constraint prevents concurrent duplicates — failed processing releases claim for Stripe retries)
 - RLS on all tables including `subscriptions` (SELECT own rows only; all writes via service role); admin operations use service role client
 - API rate limiting on promo endpoints (`web/lib/rateLimit.ts`) — in-memory, 10 req/min per authenticated user ID (not IP)
+- Monthly API quotas per resource type (`web/lib/apiQuota.ts`) — database-tracked, plan-based limits on all mutation endpoints
 - Checkout duplicate guard blocks `active`, `trialing`, `past_due`, `unpaid` subscriptions (not just `active`)
 - Admin grant resets Stripe fields (`stripe_subscription_id`, `stripe_customer_id`, `cancel_at_period_end`) to prevent stale data
 - `redeem_promo` RPC clears Stripe fields on 100% discount grants
@@ -768,6 +771,45 @@ Guest mode lets users try the extension without creating an account. 5-day trial
 - **Fail-open**: Returns `null` (allowed) if Redis is unavailable or env vars missing
 - **Applied to**: `/api/entries` (GET, POST, DELETE)
 - **Env vars**: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
+
+## API Monthly Quotas
+
+Per-resource-type monthly mutation limits enforced at the API layer.
+
+**Tables** (`supabase/migrations/039_api_monthly_quotas.sql`):
+
+- `api_quota_limits` — (role_name, resource_type) → monthly_limit. Configurable per role per resource.
+- `api_quota_usage` — (user_id, resource_type, year_month) → count. Per-user monthly tracking.
+
+**RPCs** (all `SECURITY DEFINER`, `REVOKE EXECUTE FROM PUBLIC`):
+
+- `check_api_quota(user_id, resource_type, year_month)` → `{allowed, used, limit, remaining}` — atomic check-and-increment with `FOR UPDATE` row lock
+- `get_user_api_quotas(user_id, year_month)` → `[{resource_type, limit, used, remaining}]` — read-only
+- `get_all_api_quota_limits()` → all limits (admin)
+- `upsert_api_quota_limit(role_name, resource_type, monthly_limit)` → insert or update (admin)
+
+**Default limits**:
+
+| Resource | Free | Pro | Team |
+|----------|------|-----|------|
+| entries | 100 | 1500 | 2000 |
+| projects | 30 | 150 | 200 |
+| tags | 30 | 150 | 200 |
+| settings | 20 | 100 | 100 |
+| groups | 10 | 50 | 100 |
+| support | 5 | 20 | 30 |
+| suggestions | 5 | 20 | 30 |
+
+**Architecture**:
+
+- Repository: `web/lib/repositories/apiQuota.ts` — `checkApiQuota()`, `getUserApiQuotas()`
+- Middleware: `web/lib/apiQuota.ts` — `withApiQuota(userId, resourceType)` returns `NextResponse(429)` or `null`
+- **Fail-open**: DB errors return `allowed:true` — quotas are a soft business rule
+- **Applied to**: All mutation routes (POST/PUT/PATCH/DELETE) for entries, projects, tags, settings, groups, support, suggestions
+- **Admin management**: `admin/app/(admin)/quotas/page.tsx` — editable table, add/remove resource types
+- **Admin API**: `GET /api/quotas` (list limits), `PATCH /api/quotas` (update a limit)
+
+**Interaction with per-minute rate limiting**: Both systems coexist. Per-minute (Redis) stops bursts; monthly (DB) caps total usage.
 
 ## Error Tracking (Sentry)
 

@@ -3,6 +3,7 @@ import { requireAuthApi } from '@/lib/services/auth'
 import { getUserGroups, createGroup } from '@/lib/repositories/groups'
 import { canCreateGroup } from '@/lib/services/groups'
 import { createGroupSchema, parseBody } from '@/lib/validation'
+import { withApiQuota } from '@/lib/apiQuota'
 
 export async function GET() {
   const user = await requireAuthApi()
@@ -15,6 +16,9 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const user = await requireAuthApi()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const quotaBlocked = await withApiQuota(user.id, 'groups')
+  if (quotaBlocked) return quotaBlocked
 
   const canCreate = await canCreateGroup(user.id)
   if (!canCreate) {

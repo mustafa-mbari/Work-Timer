@@ -5,6 +5,7 @@ import { createSupportTicketSchema, parseBody } from '@/lib/validation'
 import { sendEmail } from '@/lib/email/send'
 import { buildSupportTicketEmail } from '@/lib/email/templates/supportTicket'
 import { getProfile } from '@/lib/repositories/profiles'
+import { withApiQuota } from '@/lib/apiQuota'
 
 export async function GET() {
   const user = await requireAuthApi()
@@ -17,6 +18,9 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const user = await requireAuthApi()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const quotaBlocked = await withApiQuota(user.id, 'support')
+  if (quotaBlocked) return quotaBlocked
 
   const body = await request.json()
   const parsed = parseBody(createSupportTicketSchema, body)

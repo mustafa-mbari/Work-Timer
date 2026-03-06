@@ -761,6 +761,37 @@ export interface DbExportUsage {
   count: number
 }
 
+// --- API Quota System ---
+
+export type ApiResourceType = 'entries' | 'projects' | 'tags' | 'settings' | 'groups' | 'support' | 'suggestions'
+
+export interface ApiQuotaItem {
+  resource_type: ApiResourceType
+  limit: number
+  used: number
+  remaining: number
+}
+
+export interface ApiQuotaResult {
+  allowed: boolean
+  used: number
+  limit: number
+  remaining: number
+}
+
+export interface DbApiQuotaLimit {
+  role_name: ExportRole
+  resource_type: string
+  monthly_limit: number
+}
+
+export interface DbApiQuotaUsage {
+  user_id: string
+  resource_type: string
+  year_month: string
+  count: number
+}
+
 export interface DbEmailLog {
   id: string
   recipient: string
@@ -800,6 +831,8 @@ export type Database = {
       plan_roles: { Row: DbPlanRole; Insert: DbPlanRole; Update: Partial<DbPlanRole>; Relationships: [] }
       role_export_limits: { Row: DbRoleExportLimit; Insert: DbRoleExportLimit; Update: Partial<DbRoleExportLimit>; Relationships: [] }
       export_usage: { Row: DbExportUsage; Insert: Omit<DbExportUsage, 'count'> & { count?: number }; Update: Partial<DbExportUsage>; Relationships: [] }
+      api_quota_limits: { Row: DbApiQuotaLimit; Insert: DbApiQuotaLimit; Update: Partial<DbApiQuotaLimit>; Relationships: [] }
+      api_quota_usage: { Row: DbApiQuotaUsage; Insert: Omit<DbApiQuotaUsage, 'count'> & { count?: number }; Update: Partial<DbApiQuotaUsage>; Relationships: [] }
     }
     Views: Record<string, never>
     Functions: {
@@ -955,6 +988,10 @@ export type Database = {
       get_user_export_role: { Args: { p_user_id: string }; Returns: string }
       get_user_export_quota: { Args: { p_user_id: string; p_year_month: string }; Returns: ExportQuotaItem[] }
       track_export_usage: { Args: { p_user_id: string; p_export_type: string; p_year_month: string }; Returns: TrackExportResult }
+      check_api_quota: { Args: { p_user_id: string; p_resource_type: string; p_year_month: string }; Returns: ApiQuotaResult }
+      get_user_api_quotas: { Args: { p_user_id: string; p_year_month: string }; Returns: ApiQuotaItem[] }
+      get_all_api_quota_limits: { Args: Record<string, never>; Returns: DbApiQuotaLimit[] }
+      upsert_api_quota_limit: { Args: { p_role_name: string; p_resource_type: string; p_monthly_limit: number }; Returns: void }
     }
     Enums: Record<string, never>
   }

@@ -3,6 +3,7 @@ import { requireAuthApi } from '@/lib/services/auth'
 import { isPremiumUser } from '@/lib/services/billing'
 import { getUserTags, countUserTags, createTag, reorderTags } from '@/lib/repositories/tags'
 import { createTagSchema, reorderSchema, parseBody } from '@/lib/validation'
+import { withApiQuota } from '@/lib/apiQuota'
 
 const FREE_TAG_LIMIT = 5
 
@@ -17,6 +18,9 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const user = await requireAuthApi()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const quotaBlocked = await withApiQuota(user.id, 'tags')
+  if (quotaBlocked) return quotaBlocked
 
   const body = await request.json()
   const parsed = parseBody(createTagSchema, body)
@@ -43,6 +47,9 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   const user = await requireAuthApi()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const quotaBlocked = await withApiQuota(user.id, 'tags')
+  if (quotaBlocked) return quotaBlocked
 
   const action = request.nextUrl.searchParams.get('action')
   if (action === 'reorder') {

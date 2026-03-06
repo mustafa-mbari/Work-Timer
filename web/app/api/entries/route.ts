@@ -8,6 +8,7 @@ import {
 } from '@/lib/repositories/timeEntries'
 import { createTimeEntrySchema, bulkDeleteEntriesSchema, parseBody } from '@/lib/validation'
 import { withRateLimit, getUserTier } from '@/lib/rateLimitRedis'
+import { withApiQuota } from '@/lib/apiQuota'
 
 export async function GET(request: NextRequest) {
   const user = await requireAuthApi()
@@ -43,6 +44,9 @@ export async function POST(request: NextRequest) {
   const rateLimited = await withRateLimit(user.id, await getUserTier(user.id))
   if (rateLimited) return rateLimited
 
+  const quotaBlocked = await withApiQuota(user.id, 'entries')
+  if (quotaBlocked) return quotaBlocked
+
   const body = await request.json()
   // If no id provided, generate one server-side
   if (!body.id) body.id = crypto.randomUUID()
@@ -64,6 +68,9 @@ export async function DELETE(request: NextRequest) {
 
   const rateLimited = await withRateLimit(user.id, await getUserTier(user.id))
   if (rateLimited) return rateLimited
+
+  const quotaBlocked = await withApiQuota(user.id, 'entries')
+  if (quotaBlocked) return quotaBlocked
 
   const parsed = parseBody(bulkDeleteEntriesSchema, await request.json())
   if (!parsed.success) return NextResponse.json({ error: parsed.error }, { status: 400 })

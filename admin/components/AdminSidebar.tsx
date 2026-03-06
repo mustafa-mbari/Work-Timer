@@ -22,6 +22,7 @@ import {
   FlaskConical,
   LifeBuoy,
   Lightbulb,
+  Gauge,
   Shield,
   LogOut,
   Sun,
@@ -42,6 +43,7 @@ const NAV_ITEMS = [
   { href: '/groups', label: 'Groups', icon: UsersRound },
   { href: '/tickets', label: 'Tickets', icon: LifeBuoy },
   { href: '/suggestions', label: 'Suggestions', icon: Lightbulb },
+  { href: '/quotas', label: 'Quotas', icon: Gauge },
   { href: '/emails', label: 'Emails', icon: Mail },
   { href: '/ui-test', label: 'UI Test', icon: FlaskConical },
 ]

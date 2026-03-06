@@ -93,6 +93,13 @@ export const replyToSuggestionSchema = z.object({
   message: z.string().min(1, 'Message is required').max(5000),
 })
 
+// --- Admin API Quotas ---
+export const updateQuotaLimitSchema = z.object({
+  role_name: z.enum(['free', 'pro', 'team']),
+  resource_type: z.string().min(1).max(50),
+  monthly_limit: z.number().int().min(0).max(1_000_000),
+})
+
 // Helper to parse and return a typed result or a 400 response
 export function parseBody<T extends z.ZodType>(schema: T, data: unknown):
   { success: true; data: z.infer<T> } | { success: false; error: string } {
