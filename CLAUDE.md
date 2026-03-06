@@ -563,6 +563,7 @@ Guest mode lets users try the extension without creating an account. 5-day trial
 
 **Limit enforcement** (`src/premium/featureGate.ts`):
 
+- `isPremiumSubscription()` checks plan, status, AND `currentPeriodEnd` expiry (prevents indefinite access from expired admin grants/promos)
 - `getCurrentLimits()` checks `isGuestMode()` first → returns `GUEST_LIMITS` if true
 - Single choke-point: all hooks (`useProjects`, `useTags`, `useEntries`) call `getCurrentLimits()`
 - Guest limits take priority over subscription (even if premium subscription exists)
@@ -609,9 +610,9 @@ Guest mode lets users try the extension without creating an account. 5-day trial
 ### Security
 
 - All API inputs validated with Zod schemas (`web/lib/validation.ts`)
-- Stripe webhook signature verification + two-phase idempotency via `stripe_events` table (check before processing, record after success — failed processing allows Stripe retries)
+- Stripe webhook signature verification + insert-first idempotency via `stripe_events` table (claim event via INSERT before processing; unique constraint prevents concurrent duplicates — failed processing releases claim for Stripe retries)
 - RLS on all tables including `subscriptions` (SELECT own rows only; all writes via service role); admin operations use service role client
-- API rate limiting on promo endpoints (`web/lib/rateLimit.ts`) — in-memory, 10 req/min/IP
+- API rate limiting on promo endpoints (`web/lib/rateLimit.ts`) — in-memory, 10 req/min per authenticated user ID (not IP)
 - Checkout duplicate guard blocks `active`, `trialing`, `past_due`, `unpaid` subscriptions (not just `active`)
 - Admin grant resets Stripe fields (`stripe_subscription_id`, `stripe_customer_id`, `cancel_at_period_end`) to prevent stale data
 - `redeem_promo` RPC clears Stripe fields on 100% discount grants
@@ -727,7 +728,7 @@ Guest mode lets users try the extension without creating an account. 5-day trial
 - **Framework:** Vitest (config in `vitest.config.ts`)
 - **Setup:** `src/__tests__/setup.ts` — in-memory `chrome.storage.local` mock with `onChanged` listener support, `self` global mock for service worker context
 - **Test files:** Co-located with source (`*.test.ts`), excluded from build via `tsconfig.app.json`
-- **Coverage:** Storage layer (45 tests), sync queue (13 tests), date utils (13 tests), timer utils (5 tests), timer engine integration (18 tests), feature gating (14 tests), guest mode (14 tests) — 175 total
+- **Coverage:** Storage layer (45 tests), sync queue (13 tests), date utils (13 tests), timer utils (5 tests), timer engine integration (18 tests), feature gating (16 tests), guest mode (14 tests), email templates (53 tests) — 177 total
 - **Run:** `pnpm test` (single run) or `pnpm test:watch` (watch mode)
 
 ## Non-Functional Requirements

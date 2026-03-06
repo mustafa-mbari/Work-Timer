@@ -4,12 +4,16 @@ import { getAllSubscriptionsWithEmail, upsertSubscription } from '@/lib/reposito
 import { findAuthUserByEmail } from '@/lib/repositories/admin'
 import { grantPremiumSchema, parseBody } from '@/lib/validation'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const admin = await requireAdminApi()
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const subscriptions = await getAllSubscriptionsWithEmail()
-  return NextResponse.json({ subscriptions })
+  const { searchParams } = new URL(request.url)
+  const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10))
+  const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '50', 10)))
+
+  const result = await getAllSubscriptionsWithEmail(page, pageSize)
+  return NextResponse.json({ subscriptions: result.data, total: result.total, page: result.page, pageSize: result.pageSize })
 }
 
 export async function POST(request: NextRequest) {

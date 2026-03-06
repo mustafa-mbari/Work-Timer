@@ -13,7 +13,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import { toast } from 'sonner'
-import { Crown, UserPlus } from 'lucide-react'
+import { Crown, UserPlus, ChevronLeft, ChevronRight } from 'lucide-react'
 
 const PLAN_LABELS: Record<string, string> = {
   free: 'Free',
@@ -42,17 +42,23 @@ export default function AdminSubscriptionsPage() {
   const [email, setEmail] = useState('')
   const [plan, setPlan] = useState('premium_monthly')
   const [endDate, setEndDate] = useState('')
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
+  const pageSize = 50
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
-  async function fetchSubscriptions() {
-    const res = await fetch('/api/subscriptions')
+  async function fetchSubscriptions(p = page) {
+    setLoading(true)
+    const res = await fetch(`/api/subscriptions?page=${p}&pageSize=${pageSize}`)
     const data = await res.json()
     setSubscriptions(data.subscriptions ?? [])
+    setTotal(data.total ?? 0)
     setLoading(false)
   }
 
   useEffect(() => {
-    fetchSubscriptions() // eslint-disable-line react-hooks/set-state-in-effect
-  }, [])
+    fetchSubscriptions(page) // eslint-disable-line react-hooks/set-state-in-effect
+  }, [page]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function grantPremium(e: React.FormEvent) {
     e.preventDefault()
@@ -85,7 +91,8 @@ export default function AdminSubscriptionsPage() {
     }
 
     setSubmitting(false)
-    await fetchSubscriptions()
+    setPage(1)
+    await fetchSubscriptions(1)
   }
 
   if (loading) {
@@ -162,7 +169,7 @@ export default function AdminSubscriptionsPage() {
           <div className="px-6 py-4 border-b border-stone-100 dark:border-[var(--dark-border)]">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-stone-900 dark:text-stone-100">Subscriptions</h2>
-              <Badge variant="secondary">{subscriptions.length} total</Badge>
+              <Badge variant="secondary">{total} total</Badge>
             </div>
           </div>
           <Table>
@@ -212,6 +219,33 @@ export default function AdminSubscriptionsPage() {
               )}
             </TableBody>
           </Table>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-6 py-3 border-t border-stone-100 dark:border-[var(--dark-border)]">
+              <p className="text-sm text-stone-500 dark:text-stone-400">
+                Page {page} of {totalPages}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page <= 1 || loading}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages || loading}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

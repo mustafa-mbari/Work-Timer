@@ -53,6 +53,22 @@ describe('isPremiumSubscription', () => {
   it('returns false for canceled premium subscription', () => {
     expect(isPremiumSubscription({ ...premiumSub, status: 'canceled' })).toBe(false)
   })
+
+  it('returns false for expired premium subscription', () => {
+    const expired: SubscriptionInfo = {
+      ...premiumSub,
+      currentPeriodEnd: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // yesterday
+    }
+    expect(isPremiumSubscription(expired)).toBe(false)
+  })
+
+  it('returns true for premium with null expiry (Stripe-managed)', () => {
+    const stripeSub: SubscriptionInfo = {
+      ...premiumSub,
+      currentPeriodEnd: null,
+    }
+    expect(isPremiumSubscription(stripeSub)).toBe(true)
+  })
 })
 
 describe('getLimits', () => {

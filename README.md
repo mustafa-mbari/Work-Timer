@@ -252,7 +252,7 @@ pnpm run lint
 - **Selective sync controls**: Premium users can disable cloud sync per category (entries, statistics, projects, tags) via Settings. Preferences stored locally, never synced.
 - **Sync conflict resolution**: Queue-based -- local changes win over remote when pending in sync queue.
 - **Optimized sync**: Conditional pull via `has_changes_since()` RPC, single multiplexed Realtime channel (1 connection per user), 15-minute periodic sync with debounced entry saves (~150-300 queries/user/day, ~97 KB egress/day).
-- **Webhook idempotency**: Two-phase Stripe event deduplication — check `stripe_events` before processing, record after success. Failed processing leaves no idempotency record, allowing Stripe retries.
+- **Webhook idempotency**: Insert-first Stripe event deduplication — claim event via INSERT before processing; unique constraint prevents concurrent duplicates. Failed processing releases the claim, allowing Stripe retries.
 - **Input validation**: All API routes validated with Zod schemas.
 - **Export quota enforcement**: Monthly limits per plan role (`free/pro/team`) tracked atomically server-side via PostgreSQL `FOR UPDATE` row locks. Quota charged before generation begins; fails open on DB errors to avoid blocking paying users.
 - **Corporate proxy safe**: Static assets served from trusted CDN domain via `assetPrefix`; all auth flows use server-side API routes (no browser-to-Supabase calls); extension bridge uses content script relay (no extension ID dependency).
@@ -262,9 +262,9 @@ pnpm run lint
 - **Free plan limit enforcement**: Projects and tags capped at 5 total (active + archived) to prevent archive-then-create bypass.
 - **WCAG AA compliant**: All 6 themes verified for color contrast ratios (4.5:1+ for text).
 - **Guest mode**: 5-day trial with restricted limits (3 projects, 3 tags, 5-day history), automatic data expiry via `chrome.alarms`, and seamless data merge on signup.
-- **Subscription security**: RLS on `subscriptions` table, trialing status consistency across extension/website, checkout duplicate guard blocks active+trialing+past_due+unpaid, admin grants clear Stripe fields, default free subscription on signup via trigger.
-- **API rate limiting**: In-memory rate limiter (`web/lib/rateLimit.ts`) protects promo validate/redeem endpoints (10 req/min/IP). Best-effort per-instance protection with periodic cleanup.
-- **Test coverage**: 175 tests across storage, sync queue, timer engine, feature gating, guest mode, and utility functions via Vitest with chrome.storage.local mock.
+- **Subscription security**: RLS on `subscriptions` table, trialing status consistency across extension/website, checkout duplicate guard blocks active+trialing+past_due+unpaid, admin grants clear Stripe fields, default free subscription on signup via trigger. Premium check validates `currentPeriodEnd` expiry (prevents indefinite access from admin grants/promos).
+- **API rate limiting**: In-memory rate limiter (`web/lib/rateLimit.ts`) protects promo validate/redeem endpoints (10 req/min/user). Keyed by authenticated user ID (not IP) to prevent header spoofing bypass. Best-effort per-instance protection with periodic cleanup.
+- **Test coverage**: 177 tests across storage, sync queue, timer engine, feature gating, guest mode, and utility functions via Vitest with chrome.storage.local mock.
 
 ---
 

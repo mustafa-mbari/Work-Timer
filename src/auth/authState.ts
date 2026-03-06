@@ -70,8 +70,9 @@ export async function checkFreeSessionExpiry(): Promise<boolean> {
   if (!session) return false
 
   const sub = await getCachedSubscription()
-  const isPremium = sub && ['active', 'trialing'].includes(sub.status) && sub.plan !== 'free'
-  if (isPremium) return false
+  const isActive = sub && (sub.status === 'active' || sub.status === 'trialing') && sub.plan !== 'free'
+  const isUnexpired = !sub?.currentPeriodEnd || new Date(sub.currentPeriodEnd) > new Date()
+  if (isActive && isUnexpired) return false
 
   const result = await chrome.storage.local.get(LAST_LOGIN_KEY)
   const loginAt = result[LAST_LOGIN_KEY] as number | undefined

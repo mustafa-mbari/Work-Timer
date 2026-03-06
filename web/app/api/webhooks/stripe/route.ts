@@ -84,30 +84,36 @@ function resolveCheckoutPlan(metadata: Record<string, string> | null): Plan | nu
   return null
 }
 
-/** Check if this event was already processed (SELECT only — no INSERT yet). */
-async function isEventDuplicate(eventId: string): Promise<boolean> {
+/** Try to claim an event for processing via INSERT.
+ *  Returns true if claimed (we should process it), false if duplicate. */
+async function claimEvent(eventId: string, eventType: string): Promise<boolean> {
   try {
     const supabase = await createServiceClient()
-    const { data } = await supabase
-      .from('stripe_events')
-      .select('event_id')
-      .eq('event_id', eventId)
-      .single()
-    return !!data
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from('stripe_events') as any)
+      .insert({ event_id: eventId, event_type: eventType })
+    if (error) {
+      // Unique constraint violation = already claimed by another request
+      if (error.code === '23505') return false
+      console.warn('[stripe webhook] idempotency claim error:', error)
+      return true // fail open
+    }
+    return true
   } catch {
-    return false
+    return true // fail open
   }
 }
 
-/** Record event as processed AFTER successful handling. */
-async function markEventProcessed(eventId: string, eventType: string): Promise<void> {
+/** Release a claimed event so Stripe can retry delivery on processing failure. */
+async function releaseEvent(eventId: string): Promise<void> {
   try {
     const supabase = await createServiceClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase.from('stripe_events') as any)
-      .insert({ event_id: eventId, event_type: eventType })
+      .delete()
+      .eq('event_id', eventId)
   } catch (err) {
-    console.warn('[stripe webhook] failed to record idempotency:', err)
+    console.warn('[stripe webhook] failed to release event:', err)
   }
 }
 
@@ -127,8 +133,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
-  // Idempotency: check if already processed (SELECT only — don't INSERT yet)
-  if (await isEventDuplicate(event.id)) {
+  // Idempotency: claim event via INSERT (atomic — prevents race conditions)
+  if (!await claimEvent(event.id, event.type)) {
     return NextResponse.json({ received: true, duplicate: true })
   }
 
@@ -165,15 +171,19 @@ export async function POST(request: NextRequest) {
         }
 
         // Send billing notification email
-        getUserEmailAndName(userId).then(({ email, displayName }) => {
-          if (!email) return
-          const { subject, html } = buildBillingNotificationEmail({
-            event: 'subscription_created',
-            planName: PLAN_DISPLAY_NAMES[planName] || planName,
-            displayName,
-          })
-          sendEmail({ to: email, subject, html, type: 'billing_notification', metadata: { plan: planName } }).catch(() => {})
-        })
+        try {
+          const { email, displayName } = await getUserEmailAndName(userId)
+          if (email) {
+            const { subject, html } = buildBillingNotificationEmail({
+              event: 'subscription_created',
+              planName: PLAN_DISPLAY_NAMES[planName] || planName,
+              displayName,
+            })
+            await sendEmail({ to: email, subject, html, type: 'billing_notification', metadata: { plan: planName } })
+          }
+        } catch (emailErr) {
+          console.error('[stripe webhook] checkout email failed:', emailErr)
+        }
         break
       }
 
@@ -221,15 +231,19 @@ export async function POST(request: NextRequest) {
         // Send cancellation notification email
         const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id
         if (customerId) {
-          getStripe().customers.retrieve(customerId).then((customer) => {
-            if (customer.deleted || !('email' in customer) || !customer.email) return
-            const { subject, html } = buildBillingNotificationEmail({
-              event: 'subscription_cancelled',
-              planName: PLAN_DISPLAY_NAMES[cancelledPlan || 'free'] || 'Premium',
-              displayName: customer.name || null,
-            })
-            sendEmail({ to: customer.email, subject, html, type: 'billing_notification', metadata: { plan: cancelledPlan || 'free' } }).catch(() => {})
-          }).catch(() => {})
+          try {
+            const customer = await getStripe().customers.retrieve(customerId)
+            if (!customer.deleted && 'email' in customer && customer.email) {
+              const { subject, html } = buildBillingNotificationEmail({
+                event: 'subscription_cancelled',
+                planName: PLAN_DISPLAY_NAMES[cancelledPlan || 'free'] || 'Premium',
+                displayName: customer.name || null,
+              })
+              await sendEmail({ to: customer.email, subject, html, type: 'billing_notification', metadata: { plan: cancelledPlan || 'free' } })
+            }
+          } catch (emailErr) {
+            console.error('[stripe webhook] cancellation email failed:', emailErr)
+          }
         }
         break
       }
@@ -244,15 +258,19 @@ export async function POST(request: NextRequest) {
 
         const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id
         if (customerId) {
-          getStripe().customers.retrieve(customerId).then((customer) => {
-            if (customer.deleted || !('email' in customer) || !customer.email) return
-            const { subject, html } = buildTrialEndingEmail({
-              displayName: customer.name || null,
-              daysRemaining,
-              trialEndDate,
-            })
-            sendEmail({ to: customer.email, subject, html, type: 'trial_ending' }).catch(() => {})
-          }).catch(() => {})
+          try {
+            const customer = await getStripe().customers.retrieve(customerId)
+            if (!customer.deleted && 'email' in customer && customer.email) {
+              const { subject, html } = buildTrialEndingEmail({
+                displayName: customer.name || null,
+                daysRemaining,
+                trialEndDate,
+              })
+              await sendEmail({ to: customer.email, subject, html, type: 'trial_ending' })
+            }
+          } catch (emailErr) {
+            console.error('[stripe webhook] trial ending email failed:', emailErr)
+          }
         }
         break
       }
@@ -272,7 +290,11 @@ export async function POST(request: NextRequest) {
             invoiceNumber: invoice.number || null,
             invoiceUrl: invoice.hosted_invoice_url || null,
           })
-          sendEmail({ to: customerEmail, subject, html, type: 'invoice_receipt' }).catch(() => {})
+          try {
+            await sendEmail({ to: customerEmail, subject, html, type: 'invoice_receipt' })
+          } catch (emailErr) {
+            console.error('[stripe webhook] invoice receipt email failed:', emailErr)
+          }
         }
         break
       }
@@ -298,11 +320,10 @@ export async function POST(request: NextRequest) {
     }
   } catch (err) {
     console.error('[stripe webhook] handler error:', err)
+    // Release the idempotency claim so Stripe can retry
+    await releaseEvent(event.id)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
-
-  // Record idempotency AFTER successful processing
-  await markEventProcessed(event.id, event.type)
 
   return NextResponse.json({ received: true })
 }

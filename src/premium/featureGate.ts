@@ -6,10 +6,9 @@ import { isGuestMode } from '@/storage'
 
 export function isPremiumSubscription(sub: SubscriptionInfo | null): boolean {
   if (!sub) return false
-  return (
-    sub.plan !== 'free' &&
-    (sub.status === 'active' || sub.status === 'trialing')
-  )
+  const isActive = sub.status === 'active' || sub.status === 'trialing'
+  const isUnexpired = !sub.currentPeriodEnd || new Date(sub.currentPeriodEnd) > new Date()
+  return sub.plan !== 'free' && isActive && isUnexpired
 }
 
 export function getLimits(sub: SubscriptionInfo | null): Limits {

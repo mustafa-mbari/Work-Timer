@@ -14,31 +14,43 @@ export async function getAllSubscriptions() {
   return data ?? []
 }
 
-export async function getAllSubscriptionsWithEmail() {
+export async function getAllSubscriptionsWithEmail(page = 1, pageSize = 50) {
   const supabase = await createServiceClient()
-  const [{ data: subscriptions }, { data: profiles }] = await Promise.all([
-    supabase
-      .from('subscriptions')
-      .select('id, user_id, plan, status, stripe_customer_id, stripe_subscription_id, current_period_end, cancel_at_period_end, granted_by, promo_code_id, created_at, updated_at')
-      .order('updated_at', { ascending: false })
-      .returns<Subscription[]>(),
-    supabase
-      .from('profiles')
-      .select('id, email, display_name')
-      .range(0, 49999)
-      .returns<Array<{ id: string; email: string; display_name: string | null }>>(),
-  ])
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
+
+  const { data: subscriptions, count } = await supabase
+    .from('subscriptions')
+    .select('id, user_id, plan, status, stripe_customer_id, stripe_subscription_id, current_period_end, cancel_at_period_end, granted_by, promo_code_id, created_at, updated_at', { count: 'exact' })
+    .order('updated_at', { ascending: false })
+    .range(from, to)
+    .returns<Subscription[]>()
+
+  // Only fetch profiles for user IDs in this page (not all profiles)
+  const userIds = (subscriptions ?? []).map(s => s.user_id)
+  const { data: profiles } = userIds.length > 0
+    ? await supabase
+        .from('profiles')
+        .select('id, email, display_name')
+        .in('id', userIds)
+        .returns<Array<{ id: string; email: string; display_name: string | null }>>()
+    : { data: [] as Array<{ id: string; email: string; display_name: string | null }> }
 
   const profileMap = new Map<string, { email: string; display_name: string | null }>()
   for (const p of profiles ?? []) {
     profileMap.set(p.id, { email: p.email, display_name: p.display_name })
   }
 
-  return (subscriptions ?? []).map(s => ({
-    ...s,
-    email: profileMap.get(s.user_id)?.email ?? null,
-    display_name: profileMap.get(s.user_id)?.display_name ?? null,
-  }))
+  return {
+    data: (subscriptions ?? []).map(s => ({
+      ...s,
+      email: profileMap.get(s.user_id)?.email ?? null,
+      display_name: profileMap.get(s.user_id)?.display_name ?? null,
+    })),
+    total: count ?? 0,
+    page,
+    pageSize,
+  }
 }
 
 export async function upsertSubscription(sub: SubscriptionInsert) {

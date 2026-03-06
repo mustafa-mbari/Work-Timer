@@ -6,15 +6,14 @@ import { promoRedeemSchema, parseBody } from '@/lib/validation'
 import { checkRateLimit } from '@/lib/rateLimit'
 
 export async function POST(request: NextRequest) {
-  // Rate limit: 10 requests per minute per IP
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-  if (!checkRateLimit(`promo-redeem:${ip}`, 10)) {
-    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
-  }
-
   const user = await requireAuthApi()
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  // Rate limit: 10 requests per minute per authenticated user
+  if (!checkRateLimit(`promo-redeem:${user.id}`, 10)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 
   const parsed = parseBody(promoRedeemSchema, await request.json())
