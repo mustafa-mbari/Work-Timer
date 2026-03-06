@@ -140,7 +140,6 @@ export default async function AdminStatsPage() {
               <div className="space-y-3">
                 <BreakdownRow label="Monthly" value={stats.premiumByType.monthly} total={stats.premiumCount} />
                 <BreakdownRow label="Yearly" value={stats.premiumByType.yearly} total={stats.premiumCount} />
-                <BreakdownRow label="Lifetime" value={stats.premiumByType.lifetime} total={stats.premiumCount} />
               </div>
             </CardContent>
           </Card>

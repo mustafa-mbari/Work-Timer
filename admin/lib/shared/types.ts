@@ -16,7 +16,7 @@ export interface DbSubscription {
   user_id: string
   stripe_customer_id: string | null
   stripe_subscription_id: string | null
-  plan: 'free' | 'premium_monthly' | 'premium_yearly' | 'premium_lifetime' | 'allin_monthly' | 'allin_yearly' | 'team_10_monthly' | 'team_10_yearly' | 'team_20_monthly' | 'team_20_yearly'
+  plan: 'free' | 'premium_monthly' | 'premium_yearly' | 'allin_monthly' | 'allin_yearly' | 'team_10_monthly' | 'team_10_yearly' | 'team_20_monthly' | 'team_20_yearly'
   status: 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete'
   current_period_start: string | null
   current_period_end: string | null
@@ -120,7 +120,7 @@ export interface DbPromoCode {
   id: string
   code: string
   discount_pct: number
-  plan: 'premium_monthly' | 'premium_yearly' | 'premium_lifetime' | 'allin_monthly' | 'allin_yearly' | 'team_10_monthly' | 'team_10_yearly' | 'team_20_monthly' | 'team_20_yearly'
+  plan: 'premium_monthly' | 'premium_yearly' | 'allin_monthly' | 'allin_yearly' | 'team_10_monthly' | 'team_10_yearly' | 'team_20_monthly' | 'team_20_yearly'
   max_uses: number | null
   current_uses: number
   valid_from: string
@@ -150,7 +150,7 @@ export interface DbUserStats {
 export interface DbWhitelistedDomain {
   id: string
   domain: string
-  plan: 'premium_monthly' | 'premium_yearly' | 'premium_lifetime' | 'allin_monthly' | 'allin_yearly' | 'team_10_monthly' | 'team_10_yearly' | 'team_20_monthly' | 'team_20_yearly'
+  plan: 'premium_monthly' | 'premium_yearly' | 'allin_monthly' | 'allin_yearly' | 'team_10_monthly' | 'team_10_yearly' | 'team_20_monthly' | 'team_20_yearly'
   notes: string | null
   active: boolean
   created_at: string
@@ -406,7 +406,7 @@ interface DbPromoCodeInsert {
 interface DbPromoCodeUpdate {
   code?: string
   discount_pct?: number
-  plan?: 'premium_monthly' | 'premium_yearly' | 'premium_lifetime' | 'allin_monthly' | 'allin_yearly' | 'team_10_monthly' | 'team_10_yearly' | 'team_20_monthly' | 'team_20_yearly'
+  plan?: 'premium_monthly' | 'premium_yearly' | 'allin_monthly' | 'allin_yearly' | 'team_10_monthly' | 'team_10_yearly' | 'team_20_monthly' | 'team_20_yearly'
   id?: string
   max_uses?: number | null
   current_uses?: number
@@ -460,7 +460,7 @@ interface DbWhitelistedDomainInsert {
 }
 interface DbWhitelistedDomainUpdate {
   domain?: string
-  plan?: 'premium_monthly' | 'premium_yearly' | 'premium_lifetime' | 'allin_monthly' | 'allin_yearly' | 'team_10_monthly' | 'team_10_yearly' | 'team_20_monthly' | 'team_20_yearly'
+  plan?: 'premium_monthly' | 'premium_yearly' | 'allin_monthly' | 'allin_yearly' | 'team_10_monthly' | 'team_10_yearly' | 'team_20_monthly' | 'team_20_yearly'
   id?: string
   notes?: string | null
   active?: boolean

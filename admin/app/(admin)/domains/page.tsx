@@ -23,7 +23,6 @@ import { Globe, Plus, Power, PowerOff } from 'lucide-react'
 const PLAN_LABELS: Record<string, string> = {
   premium_monthly: 'Premium Monthly',
   premium_yearly: 'Premium Yearly',
-  premium_lifetime: 'Premium Lifetime',
   allin_monthly: 'Team Monthly (Legacy)',
   allin_yearly: 'Team Yearly (Legacy)',
   team_10_monthly: 'Team (10) Monthly',

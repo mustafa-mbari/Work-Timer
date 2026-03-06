@@ -95,7 +95,6 @@ export default async function BillingPage() {
     free: t('freePlan.name'),
     premium_monthly: `${t('plans.monthly.name')} Pro`,
     premium_yearly: `${t('plans.yearly.name')} Pro`,
-    premium_lifetime: 'Lifetime Premium',
     allin_monthly: 'Team Monthly (Legacy)',
     allin_yearly: 'Team Yearly (Legacy)',
     team_10_monthly: 'Team (10) Monthly',
@@ -120,13 +119,13 @@ export default async function BillingPage() {
                   <h2 className="text-2xl font-bold">{planDisplayName[currentPlan] ?? currentPlan}</h2>
                 </div>
                 <Badge variant="outline" className="bg-white/10 text-white border-white/20 px-3 py-1">
-                  {subscription?.status === 'active' || currentPlan === 'premium_lifetime' || currentPlan === 'free' ? 'Active' : subscription?.status}
+                  {subscription?.status === 'active' || currentPlan === 'free' ? 'Active' : subscription?.status}
                 </Badge>
               </div>
               
               <div className="flex items-center gap-2 text-indigo-100 text-sm">
                 <Calendar className="h-4 w-4" />
-                <span>{renewalInfo || (currentPlan === 'premium_lifetime' ? t('lifetimeAccess') : t('freePlan.noCreditCard'))}</span>
+                <span>{renewalInfo || t('freePlan.noCreditCard')}</span>
               </div>
             </div>
             
@@ -147,7 +146,7 @@ export default async function BillingPage() {
                 </div>
               </div>
               
-              {!subscription?.cancel_at_period_end && isPremium && currentPlan !== 'premium_lifetime' && (
+              {!subscription?.cancel_at_period_end && isPremium && (
                 <div className="pt-2">
                   <PortalButton />
                 </div>

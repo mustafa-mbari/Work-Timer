@@ -39,7 +39,6 @@ export const PLANS = {
   free: 'free',
   premiumMonthly: 'premium_monthly',
   premiumYearly: 'premium_yearly',
-  premiumLifetime: 'premium_lifetime',
 } as const
 
 export type Plan = (typeof PLANS)[keyof typeof PLANS]

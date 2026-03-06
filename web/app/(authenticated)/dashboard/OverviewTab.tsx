@@ -37,7 +37,6 @@ const PLAN_LABEL: Record<string, string> = {
   free: 'Free',
   premium_monthly: 'Premium Monthly',
   premium_yearly: 'Premium Yearly',
-  premium_lifetime: 'Premium Lifetime',
   allin_monthly: 'Team Monthly',
   allin_yearly: 'Team Yearly',
   team_10_monthly: 'Team (10) Monthly',
@@ -169,8 +168,7 @@ export default function OverviewTab({ subscription, stats, isPremium, userEmail,
           <p className="text-sm text-stone-500 dark:text-stone-400 mb-1">{userEmail}</p>
           <div className="text-sm text-stone-600 dark:text-stone-400 mb-4">
             {plan === 'free' && <p>{t('plan.freeDesc')}</p>}
-            {plan === 'premium_lifetime' && <p>{t('plan.lifetimeDesc')}</p>}
-            {plan !== 'free' && plan !== 'premium_lifetime' && (
+            {plan !== 'free' && (
               <p>
                 {plan.includes('yearly') ? t('plan.yearlyDesc') : t('plan.monthlyDesc')} &middot;{' '}
                 {subscription?.cancel_at_period_end

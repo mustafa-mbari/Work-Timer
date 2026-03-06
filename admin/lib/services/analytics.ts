@@ -71,7 +71,6 @@ export async function getAdminStats() {
     premiumByType: {
       monthly: premiumBreakdown.by_plan?.['premium_monthly'] ?? 0,
       yearly: premiumBreakdown.by_plan?.['premium_yearly'] ?? 0,
-      lifetime: premiumBreakdown.by_plan?.['premium_lifetime'] ?? 0,
     },
     premiumBySource: {
       stripe: premiumBreakdown.by_source?.['stripe'] ?? 0,

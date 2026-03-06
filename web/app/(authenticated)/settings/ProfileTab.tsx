@@ -29,7 +29,6 @@ const PLAN_LABELS: Record<string, string> = {
   free: 'Free',
   premium_monthly: 'Premium Monthly',
   premium_yearly: 'Premium Yearly',
-  premium_lifetime: 'Premium Lifetime',
 }
 
 function getInitials(name: string | null, email: string) {

@@ -100,7 +100,7 @@ export default function BillingCards({ currentPlan, isPremium, isAllIn, currency
     ? Math.round((1 - teamPriceYearly / (teamPriceMonthly * 12)) * 100)
     : 0
 
-  const isProActive = currentPlan === proPlanKey || (currentPlan.startsWith('premium_') && currentPlan !== 'premium_lifetime')
+  const isProActive = currentPlan === proPlanKey
   const isAllinActive = isAllIn || currentPlan === teamPlanKey
 
   return (

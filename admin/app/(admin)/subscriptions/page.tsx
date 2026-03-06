@@ -19,7 +19,6 @@ const PLAN_LABELS: Record<string, string> = {
   free: 'Free',
   premium_monthly: 'Premium Monthly',
   premium_yearly: 'Premium Yearly',
-  premium_lifetime: 'Premium Lifetime',
   allin_monthly: 'Team Monthly (Legacy)',
   allin_yearly: 'Team Yearly (Legacy)',
   team_10_monthly: 'Team (10) Monthly',

@@ -120,7 +120,7 @@ export interface AuthSession {
 }
 
 export interface SubscriptionInfo {
-  plan: 'free' | 'premium_monthly' | 'premium_yearly' | 'premium_lifetime'
+  plan: 'free' | 'premium_monthly' | 'premium_yearly' | 'allin_monthly' | 'allin_yearly' | 'team_10_monthly' | 'team_10_yearly' | 'team_20_monthly' | 'team_20_yearly'
   status: 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete'
   currentPeriodEnd: string | null // ISO datetime
   cancelAtPeriodEnd: boolean
