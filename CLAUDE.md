@@ -217,9 +217,9 @@ Core types in `src/types/`:
 
 Supabase PostgreSQL with RLS. Tables: `profiles`, `subscriptions`, `projects`, `tags`, `time_entries`, `user_settings`, `sync_cursors`, `promo_codes`, `promo_redemptions`, `whitelisted_domains`, `stripe_events`, `webhook_logs`, `groups`, `group_members`, `group_invitations`, `group_sharing_settings`, `group_shares`, `support_tickets`, `feature_suggestions`, `email_logs`, `api_quota_limits`, `api_quota_usage`.
 
-Shared types in `shared/types.ts` define typed interfaces for all tables with a `Database` type map for the Supabase client. SQL migrations in `supabase/migrations/`.
+Shared types in `shared/types.ts` define typed interfaces for all tables with a `Database` type map for the Supabase client. SQL migrations in `supabase/migrations/` — `040_consolidated_schema.sql` is the full fresh-DB schema; original incremental migrations 001–039 are in `supabase/migrations/archive/`. Live DB export at `supabase/schema.sql` (generated via pg_dump).
 
-**Subscription security migration** (`supabase/migrations/033_subscription_security_fixes.sql`): Enables RLS on `subscriptions`, fixes `redeem_promo` to clear Stripe fields on 100% grants, auto-creates free subscription on user signup.
+**Subscription security migration** (`supabase/migrations/archive/033_subscription_security_fixes.sql`): Enables RLS on `subscriptions`, fixes `redeem_promo` to clear Stripe fields on 100% grants, auto-creates free subscription on user signup.
 
 ### Repository & Service Layer (`web/lib/`)
 
@@ -367,7 +367,7 @@ Earnings are **tag-based** (not project-based). Each tag can have:
 - `web/lib/excel/earningsReport.ts` -- `generateEarningsExcel(report, options)` using xlsx + file-saver (dynamically imported). Creates separate sheets per selected option. Multi-language (EN/DE).
 - Both export generators are separate from the extension's `src/utils/export.ts` (extension exports all time entries; web earnings exports aggregate earnings by tag/project)
 
-**Migration**: `supabase/migrations/024_earnings_to_tags.sql` -- adds tag columns, project `default_tag_id`, replaces RPC
+**Migration**: `supabase/migrations/archive/024_earnings_to_tags.sql` -- adds tag columns, project `default_tag_id`, replaces RPC
 
 ### Export Quota System
 
@@ -387,7 +387,7 @@ Monthly export limits enforced per plan role. Free users remain blocked from the
 - `allin_*/team_10_*/team_20_*` → `team`
 - everything else → `free`
 
-**DB tables** (`supabase/migrations/031_plan_roles_and_export_limits.sql`):
+**DB tables** (`supabase/migrations/archive/031_plan_roles_and_export_limits.sql`):
 
 - `plan_roles` -- plan name → role (`free/pro/team`), public SELECT, no client mutations
 - `role_export_limits` -- (role, export_type) → monthly_limit, public SELECT, no client mutations
@@ -491,13 +491,13 @@ GroupsView (client orchestrator, AlertDialog for delete group confirmation)
 
 **Privacy**: Admin can only see member data AFTER the member submits. Members can see other members' names and roles but NOT their hours or entries.
 
-**Migrations**: `013_groups.sql` (tables), `018_group_sharing.sql` (sharing settings + RPCs), `026_group_shares.sql` (snapshot table), `027_share_approval_workflow.sql` (approval columns + schedule settings)
+**Migrations**: `archive/013_groups.sql` (tables), `archive/018_group_sharing.sql` (sharing settings + RPCs), `archive/026_group_shares.sql` (snapshot table), `archive/027_share_approval_workflow.sql` (approval columns + schedule settings)
 
 ### Support & Feature Suggestions
 
 Two user-facing pages + admin management pages for collecting support tickets and feature ideas.
 
-**Database tables** (`supabase/migrations/030_support_and_suggestions.sql`):
+**Database tables** (`supabase/migrations/archive/030_support_and_suggestions.sql`):
 
 - `support_tickets` -- user_id, user_email, user_name, issue_type (bug/account/billing/sync/performance/other), subject, description, priority (low/medium/high/urgent), platform (chrome_extension/web_app/both), issue_time, status (open/in_progress/resolved/closed), admin_notes, resolved_at, resolved_by
 - `feature_suggestions` -- user_id, user_email, user_name, suggestion_type (feature/improvement/integration/ui_ux/other), title, description, importance (nice_to_have/important/critical), target_platform (chrome_extension/web_app/both), notify_on_release, status (new/under_review/planned/in_progress/implemented/declined), admin_notes
@@ -745,14 +745,14 @@ Guest mode lets users try the extension without creating an account. 5-day trial
 
 ## Auto-Timestamp Triggers
 
-- **Migration**: `supabase/migrations/037_auto_timestamps.sql` — `set_updated_at()` trigger on `time_entries`, `projects`, `tags`, `user_settings`, `subscriptions`, `profiles`
+- **Migration**: `supabase/migrations/archive/037_auto_timestamps.sql` — `set_updated_at()` trigger on `time_entries`, `projects`, `tags`, `user_settings`, `subscriptions`, `profiles`
 - **Effect**: `updated_at` is set to `now()` server-side on every INSERT/UPDATE — no more manual JS timestamp setting
 - **Removed from**: All `web/lib/repositories/` files (`timeEntries`, `projects`, `tags`, `userSettings`, `profiles`, `subscriptions`, `groupSharing`)
 - **Extension sync**: Still sets `updated_at` client-side as belt-and-suspenders; trigger overrides with server time
 
 ## Server-Side Aggregation
 
-- **Migration**: `supabase/migrations/038_today_total_duration_rpc.sql` — `get_today_total_duration(p_user_id, p_date)` returns `BIGINT`
+- **Migration**: `supabase/migrations/archive/038_today_total_duration_rpc.sql` — `get_today_total_duration(p_user_id, p_date)` returns `BIGINT`
 - **Used by**: `getTodayTotalDuration()` in `web/lib/repositories/timeEntries.ts` — single RPC call instead of fetch-all + reduce
 - **Also fixed**: UTC date bug (`toISOString().slice(0,10)` replaced with local date construction)
 
@@ -776,7 +776,7 @@ Guest mode lets users try the extension without creating an account. 5-day trial
 
 Per-resource-type monthly mutation limits enforced at the API layer.
 
-**Tables** (`supabase/migrations/039_api_monthly_quotas.sql`):
+**Tables** (`supabase/migrations/archive/039_api_monthly_quotas.sql`):
 
 - `api_quota_limits` — (role_name, resource_type) → monthly_limit. Configurable per role per resource.
 - `api_quota_usage` — (user_id, resource_type, year_month) → count. Per-user monthly tracking.

@@ -206,7 +206,9 @@ Work-Timer/
       validation.ts     # Admin Zod schemas
       supabase/         # Server + service role clients
   supabase/
-    migrations/         # SQL migrations (indexes, RPCs, promo, stripe_events)
+    schema.sql          # Live database export (pg_dump); reflects current Supabase state
+    migrations/         # 040_consolidated_schema.sql (full fresh-DB schema) + incremental fix migrations
+      archive/          # Original incremental migrations 001–039 (historical reference)
   public/               # Extension assets + manifest.json
 ```
 
