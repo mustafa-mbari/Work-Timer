@@ -1,4 +1,5 @@
 const createNextIntlPlugin = require('next-intl/plugin')
+const { withSentryConfig } = require('@sentry/nextjs')
 
 const withNextIntl = createNextIntlPlugin('./i18n/request.ts')
 
@@ -15,4 +16,12 @@ const nextConfig = {
   },
 }
 
-module.exports = withNextIntl(nextConfig)
+module.exports = withSentryConfig(withNextIntl(nextConfig), {
+  // Suppress source map upload warnings when SENTRY_AUTH_TOKEN is not set (local dev)
+  silent: !process.env.SENTRY_AUTH_TOKEN,
+  // Upload source maps to Sentry for readable stack traces
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  // Automatically tree-shake Sentry logger statements
+  disableLogger: true,
+})

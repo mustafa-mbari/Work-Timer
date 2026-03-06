@@ -138,6 +138,14 @@ Key environment variables required on the **web app** Vercel project:
 | Variable | Where | Purpose |
 | -------- | ----- | ------- |
 | `CRON_SECRET` | Vercel → web app → Env Vars | Authenticates the daily cron job that expires admin-granted and promo subscriptions. Generate with `openssl rand -hex 32`. Vercel sends it automatically as `Authorization: Bearer <secret>` when triggering cron jobs defined in `vercel.json`. |
+| `UPSTASH_REDIS_REST_URL` | Vercel → web app → Env Vars | Upstash Redis URL for distributed API rate limiting. Rate limiter fails open if not set. |
+| `UPSTASH_REDIS_REST_TOKEN` | Vercel → web app → Env Vars | Upstash Redis auth token for rate limiting. |
+| `NEXT_PUBLIC_SENTRY_DSN` | Vercel → web app → Env Vars | Sentry DSN for client-side error tracking (browser). |
+| `SENTRY_DSN` | Vercel → web app → Env Vars | Sentry DSN for server-side error tracking. |
+| `SENTRY_AUTH_TOKEN` | Vercel → web app → Env Vars | Sentry auth token for source map upload during builds. |
+| `SENTRY_ORG` | Vercel → web app → Env Vars | Sentry organization slug. |
+| `SENTRY_PROJECT` | Vercel → web app → Env Vars | Sentry project slug for the web app. |
+| `VITE_SENTRY_DSN` | Extension `.env` | Sentry DSN for the Chrome extension error tracking. |
 
 **Test the cron manually:**
 
@@ -283,8 +291,13 @@ pnpm run lint
 - **Subscription security**: RLS on `subscriptions` table, trialing status consistency across extension/website, checkout duplicate guard blocks active+trialing+past_due+unpaid, admin grants clear Stripe fields, default free subscription on signup via trigger. Premium check validates `currentPeriodEnd` expiry (prevents indefinite access from admin grants/promos).
 - **Subscription expiry cron**: Daily Vercel cron job (`/api/cron/expire-subscriptions`) expires non-Stripe subscriptions (admin grants, promo codes) where `current_period_end` has passed. Stripe-managed subscriptions are excluded (Stripe handles its own lifecycle via webhooks).
 - **Webhook monitoring**: All Stripe webhook events logged to `webhook_logs` table with event type, status, duration, and error details. Admin Webhooks page shows 24h/7d stats, success rate, and filterable paginated log viewer with expandable error details.
-- **API rate limiting**: In-memory rate limiter (`web/lib/rateLimit.ts`) protects promo validate/redeem endpoints (10 req/min/user). Keyed by authenticated user ID (not IP) to prevent header spoofing bypass. Best-effort per-instance protection with periodic cleanup.
-- **Test coverage**: 177 tests across storage, sync queue, timer engine, feature gating, guest mode, and utility functions via Vitest with chrome.storage.local mock.
+- **API rate limiting**: Distributed rate limiting via Upstash Redis (`web/lib/rateLimitRedis.ts`) with plan-based sliding window tiers (free: 20/min, pro: 60/min, team: 100/min). Fails open if Redis is unavailable. Applied to `/api/entries`. Legacy in-memory limiter (`web/lib/rateLimit.ts`) still protects promo endpoints.
+- **Storage atomicity**: Per-key async mutex (`src/utils/storageLock.ts`) serializes `chrome.storage.local` read-modify-write operations, preventing concurrent write loss on rapid timer stops or sync queue updates.
+- **Auto-timestamp triggers**: PostgreSQL `BEFORE INSERT OR UPDATE` triggers on all synced tables (`time_entries`, `projects`, `tags`, `user_settings`, `subscriptions`, `profiles`) ensure `updated_at` is always set server-side.
+- **Error tracking**: Sentry integration for both extension (`@sentry/browser`) and website (`@sentry/nextjs`). Logger auto-reports errors; sync failures captured with component tags.
+- **Chunked sync pull**: Delta pull fetches in 1000-row chunks instead of single 50K-row requests, preventing timeouts on large datasets.
+- **Pomodoro resilience**: `phaseTargetEndTime` absolute timestamp enables accurate phase remaining calculation after service worker restarts, with backward compatibility for old state format.
+- **Test coverage**: 182 tests across storage, sync queue, timer engine, feature gating, guest mode, storage lock, and utility functions via Vitest with chrome.storage.local mock.
 
 ---
 

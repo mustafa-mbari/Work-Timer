@@ -30,7 +30,6 @@ export async function upsertSharingSettings(
       user_id: userId,
       sharing_enabled: settings.sharing_enabled,
       shared_project_ids: settings.shared_project_ids,
-      updated_at: new Date().toISOString(),
     }, { onConflict: 'group_id,user_id' })
   return { error }
 }

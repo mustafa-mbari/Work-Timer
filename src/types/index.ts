@@ -103,6 +103,7 @@ export interface PomodoroState {
   phase: PomodoroPhase
   phaseStartedAt: number | null // Unix timestamp when current phase started
   phaseDuration: number // Total duration of current phase in ms
+  phaseTargetEndTime?: number | null // Absolute timestamp when current phase should end
   sessionsCompleted: number
   totalWorkTime: number // ms
   remainingWork: number // ms remaining from a manually-skipped work phase; 0 = fresh session

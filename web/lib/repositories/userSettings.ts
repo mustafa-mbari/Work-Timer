@@ -32,7 +32,7 @@ export async function upsertUserSettings(userId: string, update: SettingsUpdate)
   const supabase = await createClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (supabase.from('user_settings') as any).upsert(
-    { user_id: userId, ...update, updated_at: new Date().toISOString() },
+    { user_id: userId, ...update },
     { onConflict: 'user_id' }
   )
 }

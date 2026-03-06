@@ -65,20 +65,17 @@ export async function getSubscriptionPlanStatus(userId: string) {
 export async function upsertSubscription(sub: Partial<SubscriptionInsert> & { user_id: string }) {
   const supabase = await createServiceClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (supabase.from('subscriptions') as any).upsert({
-    ...sub,
-    updated_at: new Date().toISOString(),
-  }, { onConflict: 'user_id' })
+  return (supabase.from('subscriptions') as any).upsert(
+    sub,
+    { onConflict: 'user_id' }
+  )
 }
 
 export async function updateSubscriptionByStripeId(stripeSubscriptionId: string, updates: Partial<Subscription>) {
   const supabase = await createServiceClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result = await (supabase.from('subscriptions') as any)
-    .update({
-      ...updates,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updates)
     .eq('stripe_subscription_id', stripeSubscriptionId)
     .select('id')
   if (!result.error && (!result.data || result.data.length === 0)) {
@@ -95,7 +92,7 @@ export async function updateSubscriptionByStripeId(stripeSubscriptionId: string,
 export async function expireOverdueSubscriptions() {
   const supabase = await createServiceClient()
   const { data, error } = await (supabase.from('subscriptions') as any)
-    .update({ status: 'expired', plan: 'free', updated_at: new Date().toISOString() })
+    .update({ status: 'expired', plan: 'free' })
     .in('status', ['active', 'trialing'])
     .not('current_period_end', 'is', null)
     .lt('current_period_end', new Date().toISOString())

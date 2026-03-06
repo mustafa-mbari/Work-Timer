@@ -59,15 +59,20 @@ export async function getUserTimeEntries(
 
 export async function getTodayTotalDuration(userId: string): Promise<number> {
   const supabase = await createClient()
-  const today = new Date().toISOString().slice(0, 10)
-  const { data } = await supabase
-    .from('time_entries')
-    .select('duration')
-    .eq('user_id', userId)
-    .eq('date', today)
-    .is('deleted_at', null)
-    .returns<{ duration: number }[]>()
-  return (data ?? []).reduce((sum, e) => sum + e.duration, 0)
+  const now = new Date()
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+
+  const { data, error } = await (supabase.rpc as Function)(
+    'get_today_total_duration',
+    { p_user_id: userId, p_date: today }
+  )
+
+  if (error) {
+    console.error('[timeEntries] get_today_total_duration RPC failed:', error.message)
+    return 0
+  }
+
+  return Number(data) || 0
 }
 
 export async function getUserTimeEntryById(userId: string, entryId: string) {
@@ -104,8 +109,6 @@ export async function createTimeEntry(
     user_id: userId,
     description: entry.description ?? '',
     tags: entry.tags ?? [],
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
   })
 }
 
@@ -128,7 +131,7 @@ export async function updateTimeEntry(
   const supabase = await createClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (supabase.from('time_entries') as any)
-    .update({ ...updates, updated_at: new Date().toISOString() })
+    .update(updates)
     .eq('id', entryId)
     .eq('user_id', userId)
     .is('deleted_at', null)
@@ -140,7 +143,6 @@ export async function deleteTimeEntries(userId: string, ids: string[]) {
   return (supabase.from('time_entries') as any)
     .update({
       deleted_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     })
     .in('id', ids)
     .eq('user_id', userId)

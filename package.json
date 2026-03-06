@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
+    "@sentry/browser": "^10.42.0",
     "@supabase/supabase-js": "^2.48.1",
     "date-fns": "^4.1.0",
     "file-saver": "^2.0.5",

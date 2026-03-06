@@ -7,12 +7,16 @@ import {
   deleteTimeEntries,
 } from '@/lib/repositories/timeEntries'
 import { createTimeEntrySchema, bulkDeleteEntriesSchema, parseBody } from '@/lib/validation'
+import { withRateLimit, getUserTier } from '@/lib/rateLimitRedis'
 
 export async function GET(request: NextRequest) {
   const user = await requireAuthApi()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!(await isPremiumUser(user.id)))
     return NextResponse.json({ error: 'Premium required' }, { status: 403 })
+
+  const rateLimited = await withRateLimit(user.id, await getUserTier(user.id))
+  if (rateLimited) return rateLimited
 
   const sp = request.nextUrl.searchParams
   const page = Math.max(1, parseInt(sp.get('page') ?? '1', 10) || 1)
@@ -36,6 +40,9 @@ export async function POST(request: NextRequest) {
   if (!(await isPremiumUser(user.id)))
     return NextResponse.json({ error: 'Premium required' }, { status: 403 })
 
+  const rateLimited = await withRateLimit(user.id, await getUserTier(user.id))
+  if (rateLimited) return rateLimited
+
   const body = await request.json()
   // If no id provided, generate one server-side
   if (!body.id) body.id = crypto.randomUUID()
@@ -54,6 +61,9 @@ export async function DELETE(request: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!(await isPremiumUser(user.id)))
     return NextResponse.json({ error: 'Premium required' }, { status: 403 })
+
+  const rateLimited = await withRateLimit(user.id, await getUserTier(user.id))
+  if (rateLimited) return rateLimited
 
   const parsed = parseBody(bulkDeleteEntriesSchema, await request.json())
   if (!parsed.success) return NextResponse.json({ error: parsed.error }, { status: 400 })

@@ -1,6 +1,7 @@
 /**
  * Structured logging utility for better error tracking and debugging
  */
+import { Sentry } from './sentry'
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
@@ -44,6 +45,13 @@ class Logger {
       this.formatMessage('error', message, context),
       { ...context, error: errorDetails }
     )
+
+    // Report to Sentry for production observability
+    if (error instanceof Error) {
+      Sentry.captureException(error, { extra: context })
+    } else {
+      Sentry.captureMessage(message, { level: 'error', extra: { ...context, error } })
+    }
   }
 
   /**

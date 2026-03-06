@@ -3,6 +3,9 @@
  * All business logic lives in dedicated modules; this file handles message routing,
  * alarm dispatch, lifecycle events, and cross-cutting listener registration.
  */
+import { initSentry } from '../utils/sentry'
+initSentry()
+
 import type { TimerMessage, TimerResponse } from '../types'
 import { WEBSITE_URL, GUEST_SESSION_MAX_MS } from '@shared/constants'
 import { generateId } from '../utils/id'

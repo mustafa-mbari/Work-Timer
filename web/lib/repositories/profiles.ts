@@ -27,7 +27,7 @@ export async function updateProfileDisplayName(userId: string, displayName: stri
   const supabase = await createServiceClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (supabase.from('profiles') as any)
-    .update({ display_name: displayName, updated_at: new Date().toISOString() })
+    .update({ display_name: displayName })
     .eq('id', userId)
 }
 

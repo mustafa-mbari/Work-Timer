@@ -730,8 +730,61 @@ Guest mode lets users try the extension without creating an account. 5-day trial
 - **Framework:** Vitest (config in `vitest.config.ts`)
 - **Setup:** `src/__tests__/setup.ts` — in-memory `chrome.storage.local` mock with `onChanged` listener support, `self` global mock for service worker context
 - **Test files:** Co-located with source (`*.test.ts`), excluded from build via `tsconfig.app.json`
-- **Coverage:** Storage layer (45 tests), sync queue (13 tests), date utils (13 tests), timer utils (5 tests), timer engine integration (18 tests), feature gating (16 tests), guest mode (14 tests), email templates (53 tests) — 177 total
+- **Coverage:** Storage layer (45 tests), sync queue (13 tests), date utils (13 tests), timer utils (5 tests), timer engine integration (18 tests), feature gating (16 tests), guest mode (14 tests), email templates (53 tests), storage lock (5 tests) — 182 total
 - **Run:** `pnpm test` (single run) or `pnpm test:watch` (watch mode)
+
+## Storage Atomicity
+
+- **Problem**: `chrome.storage.local` read-modify-write is not atomic; concurrent calls can lose writes
+- **Solution**: Per-key async mutex in `src/utils/storageLock.ts` — `withStorageLock(key, fn)` serializes access per key
+- **Applied to**: `saveTimeEntry`, `updateTimeEntry` in `src/background/storage.ts`; `enqueue`, `dequeue` in `src/sync/syncQueue.ts`
+- **Pattern**: Different keys run in parallel; same key operations are queued. Lock auto-releases on error.
+
+## Auto-Timestamp Triggers
+
+- **Migration**: `supabase/migrations/037_auto_timestamps.sql` — `set_updated_at()` trigger on `time_entries`, `projects`, `tags`, `user_settings`, `subscriptions`, `profiles`
+- **Effect**: `updated_at` is set to `now()` server-side on every INSERT/UPDATE — no more manual JS timestamp setting
+- **Removed from**: All `web/lib/repositories/` files (`timeEntries`, `projects`, `tags`, `userSettings`, `profiles`, `subscriptions`, `groupSharing`)
+- **Extension sync**: Still sets `updated_at` client-side as belt-and-suspenders; trigger overrides with server time
+
+## Server-Side Aggregation
+
+- **Migration**: `supabase/migrations/038_today_total_duration_rpc.sql` — `get_today_total_duration(p_user_id, p_date)` returns `BIGINT`
+- **Used by**: `getTodayTotalDuration()` in `web/lib/repositories/timeEntries.ts` — single RPC call instead of fetch-all + reduce
+- **Also fixed**: UTC date bug (`toISOString().slice(0,10)` replaced with local date construction)
+
+## Chunked Sync Pull
+
+- `pullDelta()` in `src/sync/syncEngine.ts` uses `fetchAllSince()` helper — fetches in 1000-row chunks instead of `.range(0, 49999)`
+- Applies to `time_entries`, `projects`, `tags` tables; `user_settings` is single-row (unchanged)
+- Prevents timeout on large datasets; transparent to callers
+
+## API Rate Limiting (Upstash Redis)
+
+- **Library**: `@upstash/ratelimit` + `@upstash/redis` in `web/`
+- **Config**: `web/lib/rateLimitRedis.ts` — sliding window per user ID
+- **Tiers**: free (20/min), pro (60/min), team (100/min)
+- **Helper**: `withRateLimit(userId, tier)` returns `NextResponse(429)` or `null`; `getUserTier(userId)` maps subscription plan to tier
+- **Fail-open**: Returns `null` (allowed) if Redis is unavailable or env vars missing
+- **Applied to**: `/api/entries` (GET, POST, DELETE)
+- **Env vars**: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
+
+## Error Tracking (Sentry)
+
+- **Extension**: `@sentry/browser` — initialized in `src/utils/sentry.ts`, called from `src/background/background.ts` and `src/popup/index.tsx`
+- **Website**: `@sentry/nextjs` — `web/sentry.client.config.ts`, `web/sentry.server.config.ts`, `web/sentry.edge.config.ts`; `next.config.js` wrapped with `withSentryConfig()`
+- **Logger integration**: `src/utils/logger.ts` `error()` method auto-reports to Sentry
+- **Sync errors**: `src/sync/syncEngine.ts` catch blocks report via dynamic `import('@/utils/sentry')`
+- **Env vars (extension)**: `VITE_SENTRY_DSN`
+- **Env vars (web)**: `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_DSN`, `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`
+- **Sample rate**: 10% of transactions, 10% of error replays
+
+## Pomodoro Phase Target End Time
+
+- `PomodoroState.phaseTargetEndTime` (optional) — absolute timestamp when current phase should end
+- Set in `startPomodoro()` and all `setPomodoroState()` calls in `advancePomodoroPhase()`
+- Used for `remaining` calculation: `Math.max(0, phaseTargetEndTime - now)` — more accurate after SW restarts than `phaseDuration - elapsed`
+- **Backward compat**: If `phaseTargetEndTime` is missing (old state), derives from `phaseStartedAt + phaseDuration`
 
 ## Non-Functional Requirements
 

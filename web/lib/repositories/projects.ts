@@ -49,7 +49,6 @@ export async function createProject(
     is_default: false,
     sort_order: null,
     created_at: Date.now(),
-    updated_at: new Date().toISOString(),
   })
   return { error }
 }
@@ -61,7 +60,7 @@ export async function updateProject(
 ): Promise<{ error: { message: string } | null }> {
   const supabase = await createClient()
   const { error } = await (supabase.from('projects') as any)
-    .update({ ...data, updated_at: new Date().toISOString() })
+    .update(data)
     .eq('id', id)
     .eq('user_id', userId)
   return { error }
@@ -72,9 +71,8 @@ export async function deleteProject(
   id: string,
 ): Promise<{ error: { message: string } | null }> {
   const supabase = await createClient()
-  const now = new Date().toISOString()
   const { error } = await (supabase.from('projects') as any)
-    .update({ deleted_at: now, updated_at: now })
+    .update({ deleted_at: new Date().toISOString() })
     .eq('id', id)
     .eq('user_id', userId)
   return { error }
@@ -85,16 +83,15 @@ export async function setDefaultProject(
   id: string,
 ): Promise<{ error: { message: string } | null }> {
   const supabase = await createClient()
-  const now = new Date().toISOString()
   // Clear all defaults for user
   const { error: clearError } = await (supabase.from('projects') as any)
-    .update({ is_default: false, updated_at: now })
+    .update({ is_default: false })
     .eq('user_id', userId)
     .is('deleted_at', null)
   if (clearError) return { error: clearError }
   // Set the selected one
   const { error } = await (supabase.from('projects') as any)
-    .update({ is_default: true, updated_at: now })
+    .update({ is_default: true })
     .eq('id', id)
     .eq('user_id', userId)
   return { error }
@@ -105,10 +102,9 @@ export async function reorderProjects(
   orderedIds: string[],
 ): Promise<{ error: { message: string } | null }> {
   const supabase = await createClient()
-  const now = new Date().toISOString()
   for (let i = 0; i < orderedIds.length; i++) {
     const { error } = await (supabase.from('projects') as any)
-      .update({ sort_order: i, updated_at: now })
+      .update({ sort_order: i })
       .eq('id', orderedIds[i])
       .eq('user_id', userId)
     if (error) return { error }

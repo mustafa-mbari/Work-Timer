@@ -42,7 +42,6 @@ export async function createTag(
     color: data.color ?? '#6366F1',
     is_default: false,
     sort_order: null,
-    updated_at: new Date().toISOString(),
   })
   return { error }
 }
@@ -54,7 +53,7 @@ export async function updateTag(
 ): Promise<{ error: { message: string } | null }> {
   const supabase = await createClient()
   const { error } = await (supabase.from('tags') as any)
-    .update({ ...data, updated_at: new Date().toISOString() })
+    .update(data)
     .eq('id', id)
     .eq('user_id', userId)
   return { error }
@@ -65,9 +64,8 @@ export async function deleteTag(
   id: string,
 ): Promise<{ error: { message: string } | null }> {
   const supabase = await createClient()
-  const now = new Date().toISOString()
   const { error } = await (supabase.from('tags') as any)
-    .update({ deleted_at: now, updated_at: now })
+    .update({ deleted_at: new Date().toISOString() })
     .eq('id', id)
     .eq('user_id', userId)
   return { error }
@@ -78,16 +76,15 @@ export async function setDefaultTag(
   id: string,
 ): Promise<{ error: { message: string } | null }> {
   const supabase = await createClient()
-  const now = new Date().toISOString()
   // Clear all defaults
   const { error: clearError } = await (supabase.from('tags') as any)
-    .update({ is_default: false, updated_at: now })
+    .update({ is_default: false })
     .eq('user_id', userId)
     .is('deleted_at', null)
   if (clearError) return { error: clearError }
   // Set the selected one
   const { error } = await (supabase.from('tags') as any)
-    .update({ is_default: true, updated_at: now })
+    .update({ is_default: true })
     .eq('id', id)
     .eq('user_id', userId)
   return { error }
@@ -98,10 +95,9 @@ export async function reorderTags(
   orderedIds: string[],
 ): Promise<{ error: { message: string } | null }> {
   const supabase = await createClient()
-  const now = new Date().toISOString()
   for (let i = 0; i < orderedIds.length; i++) {
     const { error } = await (supabase.from('tags') as any)
-      .update({ sort_order: i, updated_at: now })
+      .update({ sort_order: i })
       .eq('id', orderedIds[i])
       .eq('user_id', userId)
     if (error) return { error }

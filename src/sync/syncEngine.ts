@@ -24,6 +24,32 @@ const DEVICE_ID_KEY = 'deviceId'
 const SYNC_STATE_KEY = 'syncState'
 
 const BATCH_SIZE = 500
+const PULL_CHUNK_SIZE = 1000
+
+/** Paginated fetch for pull operations — fetches in 1000-row chunks instead of one 50K request */
+async function fetchAllSince<T>(
+  table: string,
+  userId: string,
+  since: string,
+  selectColumns: string
+): Promise<T[]> {
+  const results: T[] = []
+  let offset = 0
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const { data } = await supabase
+      .from(table)
+      .select(selectColumns)
+      .eq('user_id', userId)
+      .gt('updated_at', since)
+      .range(offset, offset + PULL_CHUNK_SIZE - 1)
+    if (!data || data.length === 0) break
+    results.push(...(data as T[]))
+    if (data.length < PULL_CHUNK_SIZE) break
+    offset += PULL_CHUNK_SIZE
+  }
+  return results
+}
 
 // Detect RLS "USING expression" errors caused by a user_id mismatch.
 // This happens when a row already exists in Supabase under a different user_id
@@ -237,12 +263,10 @@ export async function pullDelta(): Promise<void> {
 
   // Pull time entries (only columns needed by dbEntryToLocal + deleted_at for soft-delete check)
   const remoteEntries = syncPrefs.entries
-    ? (await supabase
-        .from('time_entries')
-        .select('id, date, start_time, end_time, duration, project_id, task_id, description, type, tags, link, deleted_at')
-        .eq('user_id', session.userId)
-        .gt('updated_at', since)
-        .range(0, 49999)).data
+    ? await fetchAllSince<DbTimeEntry>(
+        'time_entries', session.userId, since,
+        'id, date, start_time, end_time, duration, project_id, task_id, description, type, tags, link, deleted_at'
+      )
     : null
 
   // Build set of record IDs with pending local changes — skip overwriting these
@@ -310,12 +334,10 @@ export async function pullDelta(): Promise<void> {
 
     // Pull projects (only columns needed by dbProjectToLocal + deleted_at)
     const remoteProjects = syncPrefs.projects
-      ? (await supabase
-          .from('projects')
-          .select('id, name, color, target_hours, archived, created_at, is_default, default_tag_id, sort_order, deleted_at')
-          .eq('user_id', session.userId)
-          .gt('updated_at', since)
-          .range(0, 49999)).data
+      ? await fetchAllSince<DbProject>(
+          'projects', session.userId, since,
+          'id, name, color, target_hours, archived, created_at, is_default, default_tag_id, sort_order, deleted_at'
+        )
       : null
 
     if (remoteProjects) {
@@ -344,12 +366,10 @@ export async function pullDelta(): Promise<void> {
 
     // Pull tags (only columns needed by dbTagToLocal + deleted_at)
     const remoteTags = syncPrefs.tags
-      ? (await supabase
-          .from('tags')
-          .select('id, name, color, is_default, sort_order, deleted_at')
-          .eq('user_id', session.userId)
-          .gt('updated_at', since)
-          .range(0, 49999)).data
+      ? await fetchAllSince<DbTag>(
+          'tags', session.userId, since,
+          'id, name, color, is_default, sort_order, deleted_at'
+        )
       : null
 
     if (remoteTags) {
@@ -424,6 +444,11 @@ export async function syncAll(): Promise<void> {
     const message = err instanceof Error ? err.message : 'Sync failed'
     await setSyncState({ status: 'error', errorMessage: message })
     console.error('[work-timer] Sync error:', err)
+    // Report to Sentry
+    try {
+      const { Sentry } = await import('@/utils/sentry')
+      Sentry.captureException(err, { tags: { component: 'sync' } })
+    } catch { /* Sentry not initialized */ }
   }
 }
 
@@ -543,6 +568,11 @@ export async function uploadAllLocalData(): Promise<void> {
 
   if (errors.length > 0) {
     console.error('[work-timer] Upload errors:', errors)
-    throw new Error(`Upload partially failed: ${errors.join('; ')}`)
+    const uploadError = new Error(`Upload partially failed: ${errors.join('; ')}`)
+    try {
+      const { Sentry } = await import('@/utils/sentry')
+      Sentry.captureException(uploadError, { tags: { component: 'sync' }, extra: { errors } })
+    } catch { /* Sentry not initialized */ }
+    throw uploadError
   }
 }

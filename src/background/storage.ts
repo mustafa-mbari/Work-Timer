@@ -5,6 +5,7 @@ import type { TimerState, IdleInfo, PomodoroState, Settings, TimeEntry } from '.
 import { DEFAULT_SETTINGS } from '../storage'
 import { POMODORO_WORK_MS } from '../constants/timers'
 import { DEFAULT_TIMER_STATE } from '../utils/timer'
+import { withStorageLock } from '../utils/storageLock'
 
 // ── Alarm name constants (shared across all background modules) ──
 
@@ -31,6 +32,7 @@ export const DEFAULT_POMODORO_STATE: PomodoroState = {
   phase: 'work',
   phaseStartedAt: null,
   phaseDuration: POMODORO_WORK_MS,
+  phaseTargetEndTime: null,
   sessionsCompleted: 0,
   totalWorkTime: 0,
   remainingWork: 0,
@@ -88,23 +90,27 @@ export async function getSettings(): Promise<Settings> {
 
 // ── Time Entries ──
 
-export async function saveTimeEntry(entry: TimeEntry): Promise<void> {
+export function saveTimeEntry(entry: TimeEntry): Promise<void> {
   const key = STORAGE_KEYS.entries(entry.date)
-  const result = await chrome.storage.local.get(key)
-  const entries: TimeEntry[] = (result[key] as TimeEntry[] | undefined) ?? []
-  entries.push(entry)
-  await chrome.storage.local.set({ [key]: entries })
+  return withStorageLock(key, async () => {
+    const result = await chrome.storage.local.get(key)
+    const entries: TimeEntry[] = (result[key] as TimeEntry[] | undefined) ?? []
+    entries.push(entry)
+    await chrome.storage.local.set({ [key]: entries })
+  })
 }
 
-export async function updateTimeEntry(entryId: string, date: string, updates: Partial<TimeEntry>): Promise<void> {
+export function updateTimeEntry(entryId: string, date: string, updates: Partial<TimeEntry>): Promise<void> {
   const key = STORAGE_KEYS.entries(date)
-  const result = await chrome.storage.local.get(key)
-  const entries: TimeEntry[] = (result[key] as TimeEntry[] | undefined) ?? []
-  const index = entries.findIndex(e => e.id === entryId)
-  if (index !== -1) {
-    entries[index] = { ...entries[index], ...updates }
-    await chrome.storage.local.set({ [key]: entries })
-  }
+  return withStorageLock(key, async () => {
+    const result = await chrome.storage.local.get(key)
+    const entries: TimeEntry[] = (result[key] as TimeEntry[] | undefined) ?? []
+    const index = entries.findIndex(e => e.id === entryId)
+    if (index !== -1) {
+      entries[index] = { ...entries[index], ...updates }
+      await chrome.storage.local.set({ [key]: entries })
+    }
+  })
 }
 
 export async function getTimeEntry(entryId: string, date: string): Promise<TimeEntry | null> {

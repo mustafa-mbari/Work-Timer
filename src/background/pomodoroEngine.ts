@@ -18,6 +18,7 @@ export async function startPomodoro(projectId: string | null, description: strin
     phase: 'work',
     phaseStartedAt: now,
     phaseDuration,
+    phaseTargetEndTime: now + phaseDuration,
     sessionsCompleted: 0,
     totalWorkTime: 0,
     remainingWork: 0,
@@ -129,10 +130,18 @@ export async function advancePomodoroPhase(pomState: PomodoroState): Promise<voi
   const now = Date.now()
   const phaseThresholdMs = Math.max(5, Math.min(240, settings.entrySaveTime ?? 10)) * 1000
 
+  // Backward compat: derive phaseTargetEndTime if missing (old state format)
+  if (!pomState.phaseTargetEndTime && pomState.phaseStartedAt) {
+    pomState.phaseTargetEndTime = pomState.phaseStartedAt + pomState.phaseDuration
+  }
+
   if (pomState.phase === 'work') {
     // Work phase ended (naturally or manually skipped to break)
     const elapsed = getElapsed(timerState)
-    const remaining = Math.max(0, pomState.phaseDuration - elapsed)
+    // Use phaseTargetEndTime for accurate remaining calculation (survives SW restarts)
+    const remaining = pomState.phaseTargetEndTime
+      ? Math.max(0, pomState.phaseTargetEndTime - now)
+      : Math.max(0, pomState.phaseDuration - elapsed)
     const totalAccum = (pomState.accumWork ?? 0) + elapsed
 
     if (remaining <= 1000) {
@@ -165,6 +174,7 @@ export async function advancePomodoroPhase(pomState: PomodoroState): Promise<voi
         phase: nextPhase,
         phaseStartedAt: now,
         phaseDuration: breakDuration,
+        phaseTargetEndTime: now + breakDuration,
         sessionsCompleted: newSessions,
         totalWorkTime: pomState.totalWorkTime + elapsed,
         remainingWork: 0,
@@ -189,6 +199,7 @@ export async function advancePomodoroPhase(pomState: PomodoroState): Promise<voi
         phase: 'shortBreak',
         phaseStartedAt: now,
         phaseDuration: breakDuration,
+        phaseTargetEndTime: now + breakDuration,
         sessionsCompleted: pomState.sessionsCompleted,
         totalWorkTime: pomState.totalWorkTime + elapsed,
         remainingWork: remaining,
@@ -217,6 +228,7 @@ export async function advancePomodoroPhase(pomState: PomodoroState): Promise<voi
       phase: 'work',
       phaseStartedAt: now,
       phaseDuration: workDuration,
+      phaseTargetEndTime: now + workDuration,
       remainingWork: 0,
     })
 
