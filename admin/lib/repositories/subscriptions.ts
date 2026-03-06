@@ -4,12 +4,13 @@ import type { Database } from '@/lib/shared/types'
 type Subscription = Database['public']['Tables']['subscriptions']['Row']
 type SubscriptionInsert = Database['public']['Tables']['subscriptions']['Insert']
 
-export async function getAllSubscriptions() {
+export async function getSubscriptionsForUserIds(userIds: string[]) {
+  if (userIds.length === 0) return []
   const supabase = await createServiceClient()
   const { data } = await supabase
     .from('subscriptions')
     .select('user_id, plan, status, granted_by, created_at')
-    .range(0, 49999)
+    .in('user_id', userIds)
     .returns<Pick<Subscription, 'user_id' | 'plan' | 'status' | 'granted_by' | 'created_at'>[]>()
   return data ?? []
 }
@@ -55,7 +56,8 @@ export async function getAllSubscriptionsWithEmail(page = 1, pageSize = 50) {
 
 export async function upsertSubscription(sub: SubscriptionInsert) {
   const supabase = await createServiceClient()
-  return supabase.from('subscriptions').upsert({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (supabase.from('subscriptions') as any).upsert({
     ...sub,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'user_id' })

@@ -13,12 +13,13 @@ export async function getProfileRole(userId: string): Promise<string | null> {
   return data?.role ?? null
 }
 
-export async function getAllProfiles(): Promise<Pick<Profile, 'id' | 'display_name' | 'role'>[]> {
+export async function getProfilesForUserIds(userIds: string[]): Promise<Pick<Profile, 'id' | 'display_name' | 'role'>[]> {
+  if (userIds.length === 0) return []
   const supabase = await createServiceClient()
   const { data } = await supabase
     .from('profiles')
     .select('id, display_name, role')
-    .range(0, 49999)
+    .in('id', userIds)
     .returns<Pick<Profile, 'id' | 'display_name' | 'role'>[]>()
   return data ?? []
 }

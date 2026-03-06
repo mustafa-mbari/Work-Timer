@@ -17,7 +17,7 @@ export interface DbSubscription {
   stripe_customer_id: string | null
   stripe_subscription_id: string | null
   plan: 'free' | 'premium_monthly' | 'premium_yearly' | 'allin_monthly' | 'allin_yearly' | 'team_10_monthly' | 'team_10_yearly' | 'team_20_monthly' | 'team_20_yearly'
-  status: 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete'
+  status: 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete' | 'expired'
   current_period_start: string | null
   current_period_end: string | null
   cancel_at_period_end: boolean

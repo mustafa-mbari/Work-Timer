@@ -59,24 +59,15 @@ export async function getDailyEmailCounts(
   days = 30
 ): Promise<Array<{ date: string; sent: number; failed: number }>> {
   const supabase = await createServiceClient()
-  const since = new Date()
-  since.setDate(since.getDate() - days)
 
-  const { data, error } = await (supabase.from('email_logs') as any)
-    .select('created_at, status')
-    .gte('created_at', since.toISOString())
-    .range(0, 49999)
+  const { data, error } = await (supabase.rpc as Function)('get_daily_email_counts', { p_days: days })
 
   if (error || !data) return []
 
   const map = new Map<string, { sent: number; failed: number }>()
-  for (const row of data as Array<{ created_at: string; status: string }>) {
-    const d = new Date(row.created_at)
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-    if (!map.has(key)) map.set(key, { sent: 0, failed: 0 })
-    const bucket = map.get(key)!
-    if (row.status === 'sent') bucket.sent++
-    else bucket.failed++
+  for (const row of data as Array<{ day: string; sent: number; failed: number }>) {
+    // RPC returns DATE type as 'YYYY-MM-DD' string
+    map.set(row.day, { sent: Number(row.sent), failed: Number(row.failed) })
   }
 
   // Fill all days (including zero-count) for a continuous chart
@@ -94,19 +85,14 @@ export async function getDailyEmailCounts(
 export async function getEmailCountByType(): Promise<Array<{ type: string; count: number }>> {
   const supabase = await createServiceClient()
 
-  const { data, error } = await (supabase.from('email_logs') as any)
-    .select('type')
-    .range(0, 49999)
+  const { data, error } = await (supabase.rpc as Function)('get_email_count_by_type')
 
   if (error || !data) return []
 
-  const map = new Map<string, number>()
-  for (const row of data as Array<{ type: string }>) {
-    map.set(row.type, (map.get(row.type) || 0) + 1)
-  }
-  return Array.from(map.entries())
-    .map(([type, count]) => ({ type, count }))
-    .sort((a, b) => b.count - a.count)
+  return (data as Array<{ type: string; count: number }>).map(row => ({
+    type: row.type,
+    count: Number(row.count),
+  }))
 }
 
 export async function getRecentFailures(limit = 5): Promise<DbEmailLog[]> {

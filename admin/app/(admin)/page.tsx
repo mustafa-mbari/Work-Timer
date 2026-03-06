@@ -5,21 +5,18 @@ import {
 } from '@/components/ui/table'
 import { Users, Crown, UserPlus, Clock, CreditCard, Tag, Globe, ShieldCheck } from 'lucide-react'
 import { getAllAuthUsers, getPlatformStats, getPremiumBreakdown } from '@/lib/repositories/admin'
-import { getAllSubscriptions } from '@/lib/repositories/subscriptions'
 
 export const revalidate = 60
 
 export default async function AdminOverviewPage() {
-  const [authUsers, subscriptions, platformStats, premiumBreakdown] = await Promise.all([
+  const [authUsers, platformStats, premiumBreakdown] = await Promise.all([
     getAllAuthUsers(),
-    getAllSubscriptions(),
     getPlatformStats(),
     getPremiumBreakdown(),
   ])
 
   const total = authUsers.length
-  const premiumSubs = subscriptions.filter(s => s.plan !== 'free' && s.status === 'active')
-  const premium = premiumSubs.length
+  const premium = premiumBreakdown.total_premium
   const free = total - premium
   const totalHours = platformStats.total_hours
 

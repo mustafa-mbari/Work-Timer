@@ -152,20 +152,21 @@ admin/
       domains/          # Whitelist domain management
       promos/           # Promo code management
       subscriptions/    # Grant/view premium
+      webhooks/         # Webhook monitoring (stats cards, filterable log table)
       groups/           # Group management
       tickets/          # Support ticket management (list, filter, status update, admin notes)
       suggestions/      # Feature suggestion management (list, filter, status update, admin notes)
       ui-test/          # UITestLab (admin-only design prototyping)
-    api/                # Admin API routes (domains, promos, subscriptions, groups, tickets, suggestions)
+    api/                # Admin API routes (domains, promos, subscriptions, webhooks, groups, tickets, suggestions)
     login/              # Admin login (role check: profiles.role === 'admin')
     globals.css         # Design tokens + dark mode
   components/
     ui/                 # shadcn/ui (16 components, only those used)
     AdminHeader.tsx     # Top bar (branding, user email, theme toggle, sign out)
-    AdminNav.tsx        # Horizontal pill nav (11 items)
+    AdminNav.tsx        # Horizontal pill nav (12 items)
     ThemeProvider.tsx   # Cookie-based theme
   lib/
-    repositories/       # Admin-only Supabase queries (admin, domains, promoCodes, subscriptions, profiles, supportTickets, featureSuggestions)
+    repositories/       # Admin-only Supabase queries (admin, domains, promoCodes, subscriptions, profiles, webhookLogs, supportTickets, featureSuggestions)
     services/           # auth.ts (requireAdmin, requireAdminApi), analytics.ts
     validation.ts       # Admin Zod schemas only
     supabase/           # Server + service role clients
@@ -214,7 +215,7 @@ Core types in `src/types/`:
 
 ### Database
 
-Supabase PostgreSQL with RLS. Tables: `profiles`, `subscriptions`, `projects`, `tags`, `time_entries`, `user_settings`, `sync_cursors`, `promo_codes`, `promo_redemptions`, `whitelisted_domains`, `stripe_events`, `groups`, `group_members`, `group_invitations`, `group_sharing_settings`, `group_shares`, `support_tickets`, `feature_suggestions`, `email_logs`.
+Supabase PostgreSQL with RLS. Tables: `profiles`, `subscriptions`, `projects`, `tags`, `time_entries`, `user_settings`, `sync_cursors`, `promo_codes`, `promo_redemptions`, `whitelisted_domains`, `stripe_events`, `webhook_logs`, `groups`, `group_members`, `group_invitations`, `group_sharing_settings`, `group_shares`, `support_tickets`, `feature_suggestions`, `email_logs`.
 
 Shared types in `shared/types.ts` define typed interfaces for all tables with a `Database` type map for the Supabase client. SQL migrations in `supabase/migrations/`.
 
@@ -622,6 +623,8 @@ Guest mode lets users try the extension without creating an account. 5-day trial
 - `externally_connectable` restricts extension messaging to allowed origins
 - All auth flows use server-side API routes (no browser-to-Supabase calls that corporate proxies block)
 - Static assets served from trusted CDN domain via `assetPrefix` to bypass corporate proxy site-reputation blocks
+- Webhook event logging to `webhook_logs` table (event type, status, duration, error details) — admin Webhooks page for monitoring
+- Daily Vercel cron job (`/api/cron/expire-subscriptions`) expires non-Stripe admin grant and promo subscriptions past `current_period_end`
 
 ## Theme System (6 themes)
 

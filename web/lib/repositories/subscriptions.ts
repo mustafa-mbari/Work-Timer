@@ -86,3 +86,20 @@ export async function updateSubscriptionByStripeId(stripeSubscriptionId: string,
   }
   return result
 }
+
+/**
+ * Expire non-Stripe subscriptions where current_period_end has passed.
+ * Used by the daily cron job. Only targets admin grants and promo subs
+ * (Stripe manages its own lifecycle via webhooks).
+ */
+export async function expireOverdueSubscriptions() {
+  const supabase = await createServiceClient()
+  const { data, error } = await (supabase.from('subscriptions') as any)
+    .update({ status: 'expired', plan: 'free', updated_at: new Date().toISOString() })
+    .in('status', ['active', 'trialing'])
+    .not('current_period_end', 'is', null)
+    .lt('current_period_end', new Date().toISOString())
+    .neq('granted_by', 'stripe')
+    .select('user_id, plan, granted_by')
+  return { expired: data ?? [], error }
+}

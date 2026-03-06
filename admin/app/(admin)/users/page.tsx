@@ -1,6 +1,6 @@
 import { getAllAuthUsers } from '@/lib/repositories/admin'
-import { getAllSubscriptions } from '@/lib/repositories/subscriptions'
-import { getAllProfiles } from '@/lib/repositories/profiles'
+import { getSubscriptionsForUserIds } from '@/lib/repositories/subscriptions'
+import { getProfilesForUserIds } from '@/lib/repositories/profiles'
 import UsersTable from './UsersTable'
 
 export const revalidate = 60
@@ -16,10 +16,27 @@ export default async function AdminUsersPage({
   const page = Math.max(1, parseInt(params.page || '1', 10) || 1)
   const search = (params.search || '').toLowerCase()
 
-  const [authUsers, subscriptions, profiles] = await Promise.all([
-    getAllAuthUsers(),
-    getAllSubscriptions(),
-    getAllProfiles(),
+  // Auth users are the source of truth — always fetch all for search + pagination
+  const authUsers = await getAllAuthUsers()
+
+  // Sort and filter first (lightweight — only email/metadata)
+  let sortedUsers = [...authUsers].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  )
+
+  if (search) {
+    sortedUsers = sortedUsers.filter(u => (u.email || '').toLowerCase().includes(search))
+  }
+
+  const totalCount = sortedUsers.length
+  const from = (page - 1) * PAGE_SIZE
+  const pagedAuthUsers = sortedUsers.slice(from, from + PAGE_SIZE)
+
+  // Only fetch subscriptions + profiles for the current page's user IDs
+  const pageUserIds = pagedAuthUsers.map(u => u.id)
+  const [subscriptions, profiles] = await Promise.all([
+    getSubscriptionsForUserIds(pageUserIds),
+    getProfilesForUserIds(pageUserIds),
   ])
 
   const subMap = new Map<string, { plan: string; status: string }>()
@@ -27,7 +44,7 @@ export default async function AdminUsersPage({
   const profileMap = new Map<string, { display_name: string | null; role: string }>()
   profiles.forEach(p => { profileMap.set(p.id, p) })
 
-  let mergedUsers = authUsers.map(u => {
+  const pagedUsers = pagedAuthUsers.map(u => {
     const profile = profileMap.get(u.id)
     const sub = subMap.get(u.id)
     return {
@@ -39,16 +56,6 @@ export default async function AdminUsersPage({
       subscriptions: sub || { plan: 'free', status: 'active' },
     }
   })
-
-  mergedUsers.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-
-  if (search) {
-    mergedUsers = mergedUsers.filter(u => u.email.toLowerCase().includes(search))
-  }
-
-  const totalCount = mergedUsers.length
-  const from = (page - 1) * PAGE_SIZE
-  const pagedUsers = mergedUsers.slice(from, from + PAGE_SIZE)
 
   return (
     <UsersTable

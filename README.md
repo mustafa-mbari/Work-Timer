@@ -263,6 +263,8 @@ pnpm run lint
 - **WCAG AA compliant**: All 6 themes verified for color contrast ratios (4.5:1+ for text).
 - **Guest mode**: 5-day trial with restricted limits (3 projects, 3 tags, 5-day history), automatic data expiry via `chrome.alarms`, and seamless data merge on signup.
 - **Subscription security**: RLS on `subscriptions` table, trialing status consistency across extension/website, checkout duplicate guard blocks active+trialing+past_due+unpaid, admin grants clear Stripe fields, default free subscription on signup via trigger. Premium check validates `currentPeriodEnd` expiry (prevents indefinite access from admin grants/promos).
+- **Subscription expiry cron**: Daily Vercel cron job (`/api/cron/expire-subscriptions`) expires non-Stripe subscriptions (admin grants, promo codes) where `current_period_end` has passed. Stripe-managed subscriptions are excluded (Stripe handles its own lifecycle via webhooks).
+- **Webhook monitoring**: All Stripe webhook events logged to `webhook_logs` table with event type, status, duration, and error details. Admin Webhooks page shows 24h/7d stats, success rate, and filterable paginated log viewer with expandable error details.
 - **API rate limiting**: In-memory rate limiter (`web/lib/rateLimit.ts`) protects promo validate/redeem endpoints (10 req/min/user). Keyed by authenticated user ID (not IP) to prevent header spoofing bypass. Best-effort per-instance protection with periodic cleanup.
 - **Test coverage**: 177 tests across storage, sync queue, timer engine, feature gating, guest mode, and utility functions via Vitest with chrome.storage.local mock.
 

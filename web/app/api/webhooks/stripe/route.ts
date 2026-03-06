@@ -84,6 +84,30 @@ function resolveCheckoutPlan(metadata: Record<string, string> | null): Plan | nu
   return null
 }
 
+async function logWebhookEvent(
+  eventId: string,
+  eventType: string,
+  status: 'success' | 'error' | 'signature_failed',
+  errorMessage?: string,
+  userId?: string,
+  durationMs?: number
+): Promise<void> {
+  try {
+    const supabase = await createServiceClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('webhook_logs') as any).insert({
+      event_id: eventId,
+      event_type: eventType,
+      status,
+      error_message: errorMessage ?? null,
+      user_id: userId ?? null,
+      duration_ms: durationMs ?? null,
+    })
+  } catch (err) {
+    console.error('[stripe webhook] failed to log event:', err)
+  }
+}
+
 /** Try to claim an event for processing via INSERT.
  *  Returns true if claimed (we should process it), false if duplicate. */
 async function claimEvent(eventId: string, eventType: string): Promise<boolean> {
@@ -125,11 +149,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'No signature' }, { status: 400 })
   }
 
+  const startTime = Date.now()
+
   let event: Stripe.Event
   try {
     event = getStripe().webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET!)
   } catch (err) {
     console.error('[stripe webhook] signature verification failed:', err)
+    await logWebhookEvent('unknown', 'unknown', 'signature_failed', String(err))
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
@@ -138,6 +165,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true, duplicate: true })
   }
 
+  let handledUserId: string | undefined
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
@@ -147,6 +175,7 @@ export async function POST(request: NextRequest) {
           console.error('[stripe webhook] checkout.session.completed: no client_reference_id')
           break
         }
+        handledUserId = userId
 
         const planName = resolveCheckoutPlan(session.metadata as Record<string, string> | null)
         if (!planName) {
@@ -320,10 +349,12 @@ export async function POST(request: NextRequest) {
     }
   } catch (err) {
     console.error('[stripe webhook] handler error:', err)
+    await logWebhookEvent(event.id, event.type, 'error', String(err), handledUserId, Date.now() - startTime)
     // Release the idempotency claim so Stripe can retry
     await releaseEvent(event.id)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 
+  await logWebhookEvent(event.id, event.type, 'success', undefined, handledUserId, Date.now() - startTime)
   return NextResponse.json({ received: true })
 }
