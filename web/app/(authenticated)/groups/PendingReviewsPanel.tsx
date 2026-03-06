@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { ClipboardCheck, FileText } from 'lucide-react'
-import type { GroupShareWithMeta } from '@/lib/repositories/groupShares'
+import type { GroupShareListItemWithMeta } from '@/lib/repositories/groupShares'
 import { Button } from '@/components/ui/button'
 import ReviewDialog from './ReviewDialog'
 import { formatPeriod, formatHours, formatIsoDate } from './utils'
@@ -16,10 +16,10 @@ interface Props {
 type FilterTab = 'all' | 'submitted' | 'approved' | 'denied'
 
 export default function PendingReviewsPanel({ groupId }: Props) {
-  const [allShares, setAllShares] = useState<GroupShareWithMeta[]>([])
+  const [allShares, setAllShares] = useState<GroupShareListItemWithMeta[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<FilterTab>('all')
-  const [reviewShare, setReviewShare] = useState<GroupShareWithMeta | null>(null)
+  const [reviewShare, setReviewShare] = useState<GroupShareListItemWithMeta | null>(null)
 
   const fetchShares = useCallback(async () => {
     setLoading(true)
@@ -27,7 +27,7 @@ export default function PendingReviewsPanel({ groupId }: Props) {
       // Fetch all shares (admin gets all without mine=true and without status filter)
       const res = await fetch(`/api/groups/${groupId}/shares`)
       if (res.ok) {
-        const data: GroupShareWithMeta[] = await res.json()
+        const data: GroupShareListItemWithMeta[] = await res.json()
         // Exclude open shares — those live in the Schedule tab
         setAllShares(data.filter(s => s.status !== 'open'))
       }

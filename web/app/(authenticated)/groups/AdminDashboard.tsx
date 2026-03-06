@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Users, ClipboardCheck, FileBarChart, Calendar, Eye, Plus, ListChecks, Clock } from 'lucide-react'
 import type { GroupWithMeta } from '@/lib/repositories/groups'
-import type { GroupShareWithMeta } from '@/lib/repositories/groupShares'
+import type { GroupShareListItemWithMeta } from '@/lib/repositories/groupShares'
 import AdminTeamTable, { type MergedMember } from './AdminTeamTable'
 import PendingReviewsPanel from './PendingReviewsPanel'
 import ReportDialog from './ReportDialog'
@@ -49,12 +49,12 @@ export default function AdminDashboard({ group, projects, tags, onDeleteGroup }:
   const [subTab, setSubTab] = useState<SubTab>('team')
   const [memberSummaries, setMemberSummaries] = useState<MemberSummary[]>([])
   const [fullMembers, setFullMembers] = useState<FullMemberInfo[]>([])
-  const [submittedShares, setSubmittedShares] = useState<GroupShareWithMeta[]>([])
-  const [openShares, setOpenShares] = useState<GroupShareWithMeta[]>([])
+  const [submittedShares, setSubmittedShares] = useState<GroupShareListItemWithMeta[]>([])
+  const [openShares, setOpenShares] = useState<GroupShareListItemWithMeta[]>([])
   const [loading, setLoading] = useState(true)
   const [showReport, setShowReport] = useState(false)
   const [showCreateShare, setShowCreateShare] = useState(false)
-  const [reviewShare, setReviewShare] = useState<GroupShareWithMeta | null>(null)
+  const [reviewShare, setReviewShare] = useState<GroupShareListItemWithMeta | null>(null)
   const [viewMember, setViewMember] = useState<MemberSummary | null>(null)
 
   const fetchData = useCallback(async () => {

@@ -3,8 +3,7 @@ import { requireAuthApi } from '@/lib/services/auth'
 import { getGroupById } from '@/lib/repositories/groups'
 import {
   getGroupShares, getMemberShares, createGroupShare,
-  getSharesByStatus, autoCreateOpenShare,
-  type ShareStatus,
+  getSharesByStatus, autoCreateOpenShare, type ShareStatus,
 } from '@/lib/repositories/groupShares'
 import { getSharingSettings } from '@/lib/repositories/groupSharing'
 import { createShareSchema, parseBody } from '@/lib/validation'
@@ -63,27 +62,13 @@ export async function GET(request: NextRequest, { params }: Params) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
     }
 
-    // Auto-create open share for member if schedule is configured
+    // Auto-create open share for member if schedule is configured.
+    // DB unique partial index prevents duplicates — no pre-check queries needed.
     if (statusParam === 'open' && mine && group.share_frequency) {
       const sharing = await getSharingSettings(id, user.id)
       if (sharing.sharing_enabled) {
         const period = getCurrentPeriodDates(group.share_frequency, group.share_deadline_day)
-        // Single check: any non-denied share for this period already exists?
-        const [existing, submitted] = await Promise.all([
-          getSharesByStatus(id, 'open', user.id),
-          getSharesByStatus(id, 'submitted', user.id),
-        ])
-        const hasPeriod = [...existing, ...submitted].some(
-          s => s.date_from === period.dateFrom && s.date_to === period.dateTo,
-        )
-        if (!hasPeriod) {
-          // Wrap in try/catch to handle race condition (concurrent requests)
-          try {
-            await autoCreateOpenShare(id, user.id, period.periodType, period.dateFrom, period.dateTo, period.dueDate)
-          } catch {
-            // Duplicate insert — safe to ignore, share already exists
-          }
-        }
+        await autoCreateOpenShare(id, user.id, period.periodType, period.dateFrom, period.dateTo, period.dueDate)
       }
     }
 

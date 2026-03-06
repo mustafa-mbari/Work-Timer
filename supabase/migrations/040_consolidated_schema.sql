@@ -358,11 +358,14 @@ CREATE INDEX IF NOT EXISTS idx_group_invitations_group      ON group_invitations
 -- group_sharing_settings (018)
 CREATE INDEX IF NOT EXISTS idx_group_sharing_user           ON group_sharing_settings(user_id);
 
--- group_shares (026, 027)
+-- group_shares (026, 027, 042)
 CREATE INDEX IF NOT EXISTS idx_group_shares_group           ON group_shares(group_id);
 CREATE INDEX IF NOT EXISTS idx_group_shares_user            ON group_shares(user_id);
 CREATE INDEX IF NOT EXISTS idx_group_shares_created         ON group_shares(group_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_group_shares_status          ON group_shares(group_id, status);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_group_shares_unique_active_period
+  ON group_shares(group_id, user_id, date_from, date_to)
+  WHERE status IN ('open', 'submitted');
 
 -- email_logs (029)
 CREATE INDEX IF NOT EXISTS idx_email_logs_created_at        ON email_logs(created_at DESC);
@@ -534,22 +537,34 @@ CREATE POLICY IF NOT EXISTS "sharing_admin_read" ON group_sharing_settings FOR S
   )
 );
 
--- group_shares (026 + admin update from 027)
+-- group_shares (026 + 027 + 042 refined policies)
 ALTER TABLE group_shares ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "group_shares_own" ON group_shares
-  FOR ALL USING (user_id = auth.uid());
+CREATE POLICY IF NOT EXISTS "group_shares_select_own" ON group_shares
+  FOR SELECT USING (user_id = auth.uid());
 CREATE POLICY IF NOT EXISTS "group_shares_admin_read" ON group_shares FOR SELECT USING (
   EXISTS (
     SELECT 1 FROM group_members gm
     WHERE gm.group_id = group_shares.group_id AND gm.user_id = auth.uid() AND gm.role = 'admin'
   )
 );
+CREATE POLICY IF NOT EXISTS "group_shares_insert_member" ON group_shares
+  FOR INSERT WITH CHECK (
+    user_id = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM group_members gm
+      WHERE gm.group_id = group_shares.group_id AND gm.user_id = auth.uid()
+    )
+  );
+CREATE POLICY IF NOT EXISTS "group_shares_update_own_open" ON group_shares
+  FOR UPDATE USING (user_id = auth.uid() AND status = 'open');
 CREATE POLICY IF NOT EXISTS "group_shares_admin_update" ON group_shares FOR UPDATE USING (
   EXISTS (
     SELECT 1 FROM group_members gm
     WHERE gm.group_id = group_shares.group_id AND gm.user_id = auth.uid() AND gm.role = 'admin'
   )
 );
+CREATE POLICY IF NOT EXISTS "group_shares_delete_own_open" ON group_shares
+  FOR DELETE USING (user_id = auth.uid() AND status = 'open');
 
 -- email_logs (029): RLS on, no client policies — service role only
 ALTER TABLE email_logs ENABLE ROW LEVEL SECURITY;
@@ -1107,6 +1122,42 @@ BEGIN
 END;
 $$;
 
+
+-- --------------------------------------------------------
+-- Atomic group creation (042)
+-- --------------------------------------------------------
+CREATE OR REPLACE FUNCTION create_group_atomic(
+  p_name     TEXT,
+  p_owner_id UUID
+)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_row groups%ROWTYPE;
+BEGIN
+  INSERT INTO groups (name, owner_id)
+  VALUES (p_name, p_owner_id)
+  RETURNING * INTO v_row;
+
+  INSERT INTO group_members (group_id, user_id, role)
+  VALUES (v_row.id, p_owner_id, 'admin');
+
+  RETURN json_build_object(
+    'id',                 v_row.id,
+    'name',               v_row.name,
+    'owner_id',           v_row.owner_id,
+    'join_code',          v_row.join_code,
+    'max_members',        v_row.max_members,
+    'share_frequency',    v_row.share_frequency,
+    'share_deadline_day', v_row.share_deadline_day,
+    'created_at',         v_row.created_at
+  );
+END;
+$$;
+REVOKE EXECUTE ON FUNCTION create_group_atomic FROM PUBLIC;
 
 -- --------------------------------------------------------
 -- Group member entries (018)

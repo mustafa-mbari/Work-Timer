@@ -5,7 +5,7 @@ import { BarChart3, Clock, Users, Eye, EyeOff } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import type { GroupWithMeta } from '@/lib/repositories/groups'
-import type { GroupShare } from '@/lib/repositories/groupShares'
+import type { GroupShareListItem } from '@/lib/repositories/groupShares'
 import MemberStatsCard from './MemberStatsCard'
 import CurrentSharePanel from './CurrentSharePanel'
 import { formatPeriod } from './utils'
@@ -32,7 +32,7 @@ export default function MemberView({ group, projects, tags, userId, ownStats }: 
   const [sharingEnabled, setSharingEnabled] = useState<boolean | null>(null)
   const [sharingError, setSharingError] = useState<string | null>(null)
   const [sharingToggling, setSharingToggling] = useState(false)
-  const [history, setHistory] = useState<GroupShare[]>([])
+  const [history, setHistory] = useState<GroupShareListItem[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
   const [historyLoaded, setHistoryLoaded] = useState(false)
 
@@ -46,8 +46,8 @@ export default function MemberView({ group, projects, tags, userId, ownStats }: 
       fetch(`/api/groups/${group.id}/shares?status=open&mine=true`),
       fetch(`/api/groups/${group.id}/shares?status=submitted&mine=true`),
     ]).then(async ([openRes, subRes]) => {
-      const open: GroupShare[] = openRes.ok ? await openRes.json() : []
-      const submitted: GroupShare[] = subRes.ok ? await subRes.json() : []
+      const open: GroupShareListItem[] = openRes.ok ? await openRes.json() : []
+      const submitted: GroupShareListItem[] = subRes.ok ? await subRes.json() : []
       setOpenShareCount(open.length)
       setSubmittedShareCount(submitted.length)
     }).catch(() => {}).finally(() => setSharesLoading(false))
@@ -101,7 +101,7 @@ export default function MemberView({ group, projects, tags, userId, ownStats }: 
     try {
       const res = await fetch(`/api/groups/${group.id}/shares?mine=true`)
       if (res.ok) {
-        const data: GroupShare[] = await res.json()
+        const data: GroupShareListItem[] = await res.json()
         setHistory(data.filter(s => s.status === 'approved' || s.status === 'denied'))
         setHistoryLoaded(true)
       }

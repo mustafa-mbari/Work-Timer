@@ -38,9 +38,9 @@ Track your work time with stopwatch, manual entry, and Pomodoro modes. Try it in
 ### Groups & Team Management
 
 - **Create & Join Groups** -- Create groups with join codes, invite members by email
-- **Timesheet Approval Workflow** -- Admin configures recurring share schedules (daily/weekly/monthly), system auto-creates open shares for members
-- **Member Submission** -- Members review auto-filled time entries, filter by project, and submit for review
-- **Admin Review** -- Approve or deny submissions with required comment on denial; denied shares return to member for editing and resubmission
+- **Timesheet Approval Workflow** -- Admin configures recurring share schedules (daily/weekly/monthly), system auto-creates open shares for members. Race-condition-safe via DB unique partial index
+- **Member Submission** -- Members review auto-filled time entries, filter by project, and submit for review. Membership verified server-side before submit
+- **Admin Review** -- Approve or deny submissions with required comment on denial; denied shares return to member for editing and resubmission. Admin role verified server-side
 - **Admin & Member Views** -- Admins switch between admin dashboard and personal timesheets; members see their own stats, shares, and team list
 - **Team Reports** -- Generate reports for any date range across all members, export as CSV
 - **Safety Confirmations** -- Destructive actions (delete group, remove member) require explicit confirmation with danger zone styling
@@ -86,7 +86,7 @@ See [HowToDoPlan.md](HowToDoPlan.md) for the full Stripe setup guide (creating p
 
 - **Dashboard** -- Account overview, weekly stacked bar chart (CSS, per-project colors, hours per day), project/tag management with inline editing, default tag linking
 - **Earnings** -- Tag-based earnings reports with daily charts, groupBy toggle (tag/project), CSV/Excel/PDF export with configurable date range, sheets, and language. Role-based monthly export quotas (Pro/Team) with inline quota badge and atomic server-side tracking.
-- **Groups** -- Team time management with timesheet approval workflow. Admins configure recurring share schedules, review and approve/deny member submissions, generate CSV reports. Members submit auto-filled timesheets, view own stats, and see team member names (no hours). Shared UI components (StatusBadge, MemberAvatar, EmptyState) with 3-level tab hierarchy (pill segments, underline tabs, filter pills)
+- **Groups** -- Team time management with timesheet approval workflow. Atomic group creation (single transaction), race-condition-safe share auto-creation (unique partial index), granular RLS policies (per-operation), optimized list queries (entries JSONB excluded from lists, fetched on-demand). Admins configure recurring share schedules, review and approve/deny member submissions, generate CSV reports. Members submit auto-filled timesheets, view own stats, and see team member names (no hours). Shared UI components (StatusBadge, MemberAvatar, EmptyState) with 3-level tab hierarchy (pill segments, underline tabs, filter pills)
 - **Analytics** -- Weekly trends, project breakdowns, peak hours, streaks
 - **Support** -- Submit support tickets (bug reports, account/billing/sync issues) with priority and platform selection; view ticket history and status updates
 - **Suggestions** -- Submit feature ideas and improvements with importance level and target platform; opt-in to release notifications; view suggestion history
@@ -284,7 +284,8 @@ pnpm run lint
 - **Input validation**: All API routes validated with Zod schemas.
 - **Export quota enforcement**: Monthly limits per plan role (`free/pro/team`) tracked atomically server-side via PostgreSQL `FOR UPDATE` row locks. Quota charged before generation begins; fails open on DB errors to avoid blocking paying users.
 - **Corporate proxy safe**: Static assets served from trusted CDN domain via `assetPrefix`; all auth flows use server-side API routes (no browser-to-Supabase calls); extension bridge uses content script relay (no extension ID dependency).
-- **Groups performance**: Batch member count queries (no N+1), parallel data fetching, debounced preview requests, granular refresh (member-only vs full).
+- **Groups performance**: Batch member count queries (no N+1), parallel data fetching, debounced preview requests, granular refresh (member-only vs full). List API excludes entries JSONB (fetched on-demand via detail endpoint).
+- **Groups security**: Atomic group creation via `SECURITY DEFINER` RPC (prevents orphan groups), unique partial index on active shares (prevents race condition duplicates), granular RLS policies per operation (select/insert/update/delete), defense-in-depth membership and admin role checks in repository layer, `.range(0, 4999)` caps on entry fetches.
 - **Modular service worker**: Background split into 7 focused modules (timer, pomodoro, idle, context menus, reminders, storage, UI) instead of a single monolithic file.
 - **Auth session hardening**: Proactive token refresh every 60 minutes; free users auto-logged out after 7 days of inactivity.
 - **Free plan limit enforcement**: Projects and tags capped at 5 total (active + archived) to prevent archive-then-create bypass.

@@ -125,22 +125,14 @@ export async function getGroupMembers(groupId: string) {
 export async function createGroup(name: string, ownerId: string) {
   const supabase = await createServiceClient()
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: group, error: groupError } = await (supabase.from('groups') as any)
-    .insert({ name, owner_id: ownerId })
-    .select('*')
-    .single()
+  // Atomic: both group insert + owner-as-admin member insert in a single transaction
+  const { data, error } = await (supabase.rpc as Function)('create_group_atomic', {
+    p_name: name,
+    p_owner_id: ownerId,
+  })
 
-  if (groupError) return { data: null, error: groupError }
-
-  // Add owner as admin member
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: memberError } = await (supabase.from('group_members') as any)
-    .insert({ group_id: group.id, user_id: ownerId, role: 'admin' })
-
-  if (memberError) return { data: null, error: memberError }
-
-  return { data: group as Group, error: null }
+  if (error) return { data: null, error }
+  return { data: data as Group, error: null }
 }
 
 export async function updateGroup(groupId: string, userId: string, data: {

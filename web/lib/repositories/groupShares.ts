@@ -39,10 +39,16 @@ export interface GroupShare {
   due_date: string | null
 }
 
+/** Share without the heavy `entries` JSONB — used in list views. */
+export type GroupShareListItem = Omit<GroupShare, 'entries'>
+
 export interface GroupShareWithMeta extends GroupShare {
   sharer_email: string
   sharer_name: string | null
 }
+
+/** List-view share with sharer info (no entries). */
+export type GroupShareListItemWithMeta = Omit<GroupShareWithMeta, 'entries'>
 
 export interface CreateShareParams {
   period_type: 'day' | 'week' | 'month'
@@ -52,6 +58,9 @@ export interface CreateShareParams {
   tag_ids: string[] | null
   note?: string
 }
+
+// Columns to select for list views (excludes heavy 'entries' JSONB)
+const SHARE_LIST_COLUMNS = 'id, group_id, user_id, period_type, date_from, date_to, project_ids, tag_ids, entry_count, total_hours, note, status, admin_comment, submitted_at, reviewed_at, reviewed_by, due_date, created_at'
 
 // ─── Repository Functions ─────────────────────────────────────────────────────
 
@@ -77,6 +86,7 @@ export async function getSharePreview(
   }
 
   const { data: entries } = await query
+    .range(0, 4999)
     .returns<Array<{ duration: number | null; tags: string[] | null; project_id: string | null }>>()
 
   if (!entries?.length) return { entry_count: 0, total_hours: 0 }
@@ -117,7 +127,7 @@ export async function createGroupShare(
   }
 
   type RawEntry = { id: string; date: string; duration: number | null; description: string | null; project_id: string | null; tags: string[] | null }
-  const { data: rawEntries } = await query.returns<RawEntry[]>()
+  const { data: rawEntries } = await query.range(0, 4999).returns<RawEntry[]>()
   if (!rawEntries) return { data: null, error: { message: 'Failed to fetch entries' } }
 
   // Tag filter (client-side)
@@ -186,16 +196,17 @@ export async function createGroupShare(
 
 /**
  * Get all shares in a group — enriched with sharer info (admin use).
+ * Excludes the heavy `entries` JSONB for list performance.
  */
-export async function getGroupShares(groupId: string): Promise<GroupShareWithMeta[]> {
+export async function getGroupShares(groupId: string): Promise<GroupShareListItemWithMeta[]> {
   const supabase = await createServiceClient()
 
   const { data: shares } = await supabase
     .from('group_shares')
-    .select('*')
+    .select(SHARE_LIST_COLUMNS)
     .eq('group_id', groupId)
     .order('created_at', { ascending: false })
-    .returns<GroupShare[]>()
+    .returns<GroupShareListItem[]>()
 
   if (!shares?.length) return []
 
@@ -218,49 +229,60 @@ export async function getGroupShares(groupId: string): Promise<GroupShareWithMet
 
 /**
  * Get a member's own shares in a group.
+ * Excludes the heavy `entries` JSONB for list performance.
  */
-export async function getMemberShares(groupId: string, userId: string): Promise<GroupShare[]> {
+export async function getMemberShares(groupId: string, userId: string): Promise<GroupShareListItem[]> {
   const supabase = await createServiceClient()
 
   const { data } = await supabase
     .from('group_shares')
-    .select('*')
+    .select(SHARE_LIST_COLUMNS)
     .eq('group_id', groupId)
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
-    .returns<GroupShare[]>()
+    .returns<GroupShareListItem[]>()
 
   return data ?? []
 }
 
 /**
- * Delete a share — only the owner can delete.
+ * Delete a share — only the owner can delete, and only when open.
  */
-export async function deleteGroupShare(shareId: string, userId: string) {
+export async function deleteGroupShare(shareId: string, userId: string): Promise<{ error: { message: string } | null }> {
   const supabase = await createServiceClient()
+
+  // Verify ownership and status before deleting
+  const share = await getShareById(shareId)
+  if (!share) return { error: { message: 'Share not found' } }
+  if (share.user_id !== userId) return { error: { message: 'Not your share' } }
+  if (share.status !== 'open') return { error: { message: 'Cannot delete a share that is not open' } }
+
   const { error } = await supabase
     .from('group_shares')
     .delete()
     .eq('id', shareId)
     .eq('user_id', userId)
-  return { error }
+
+  if (error) return { error: { message: error.message } }
+  return { error: null }
 }
 
 // ─── Approval Workflow Functions ─────────────────────────────────────────────
 
 /**
  * Get shares filtered by status. Optionally filter by user.
+ * Excludes the heavy `entries` JSONB for list performance.
  */
 export async function getSharesByStatus(
   groupId: string,
   status: ShareStatus,
   userId?: string,
-): Promise<GroupShareWithMeta[]> {
+): Promise<GroupShareListItemWithMeta[]> {
   const supabase = await createServiceClient()
 
   let query = supabase
     .from('group_shares')
-    .select('*')
+    .select(SHARE_LIST_COLUMNS)
     .eq('group_id', groupId)
     .eq('status', status)
     .order('created_at', { ascending: false })
@@ -269,7 +291,7 @@ export async function getSharesByStatus(
     query = query.eq('user_id', userId)
   }
 
-  const { data: shares } = await query.returns<GroupShare[]>()
+  const { data: shares } = await query.returns<GroupShareListItem[]>()
   if (!shares?.length) return []
 
   const userIds = [...new Set(shares.map(s => s.user_id))]
@@ -290,7 +312,7 @@ export async function getSharesByStatus(
 }
 
 /**
- * Get a specific share by ID.
+ * Get a specific share by ID (includes full entries for detail view).
  */
 export async function getShareById(shareId: string): Promise<GroupShare | null> {
   const supabase = await createServiceClient()
@@ -304,6 +326,7 @@ export async function getShareById(shareId: string): Promise<GroupShare | null> 
 
 /**
  * Auto-create an open share request for a member (used by schedule system).
+ * Handles unique constraint violations gracefully (share already exists).
  */
 export async function autoCreateOpenShare(
   groupId: string,
@@ -312,7 +335,7 @@ export async function autoCreateOpenShare(
   dateFrom: string,
   dateTo: string,
   dueDate: string | null,
-): Promise<{ data: GroupShare | null; error: { message: string } | null }> {
+): Promise<{ data: GroupShareListItem | null; error: { message: string } | null }> {
   const supabase = await createServiceClient()
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -332,11 +355,15 @@ export async function autoCreateOpenShare(
       status:      'open',
       due_date:    dueDate,
     })
-    .select('*')
+    .select(SHARE_LIST_COLUMNS)
     .single()
 
-  if (error) return { data: null, error: { message: error.message } }
-  return { data: data as GroupShare, error: null }
+  if (error) {
+    // Unique constraint violation — share already exists, not an error
+    if (error.code === '23505') return { data: null, error: null }
+    return { data: null, error: { message: error.message } }
+  }
+  return { data: data as GroupShareListItem, error: null }
 }
 
 /**
@@ -407,7 +434,11 @@ export async function adminBulkCreateOpenShares(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase.from('group_shares') as any).insert(rows)
 
-  if (error) return { created: 0, skipped, error: { message: error.message } }
+  if (error) {
+    // Unique constraint violation — some/all shares already exist
+    if (error.code === '23505') return { created: 0, skipped: toCreate.length + skipped, error: null }
+    return { created: 0, skipped, error: { message: error.message } }
+  }
   return { created: toCreate.length, skipped, error: null }
 }
 
@@ -428,6 +459,15 @@ export async function submitShare(
   if (share.user_id !== userId) return { error: { message: 'Not your share' } }
   if (share.status !== 'open') return { error: { message: 'Share is not open' } }
 
+  // 1b. Verify user is still a member of the group
+  const { data: membership } = await supabase
+    .from('group_members')
+    .select('role')
+    .eq('group_id', share.group_id)
+    .eq('user_id', userId)
+    .single<{ role: string }>()
+  if (!membership) return { error: { message: 'Not a member of this group' } }
+
   // 2. Fetch entries for the period
   let query = supabase
     .from('time_entries')
@@ -442,7 +482,7 @@ export async function submitShare(
   }
 
   type RawEntry = { id: string; date: string; duration: number | null; description: string | null; project_id: string | null; tags: string[] | null }
-  const { data: rawEntries } = await query.returns<RawEntry[]>()
+  const { data: rawEntries } = await query.range(0, 4999).returns<RawEntry[]>()
   if (!rawEntries) return { error: { message: 'Failed to fetch entries' } }
 
   // Tag filter (client-side)
@@ -520,6 +560,17 @@ export async function reviewShare(
   const share = await getShareById(shareId)
   if (!share) return { error: { message: 'Share not found' } }
   if (share.status !== 'submitted') return { error: { message: 'Share is not submitted' } }
+
+  // Verify admin role in the group
+  const { data: membership } = await supabase
+    .from('group_members')
+    .select('role')
+    .eq('group_id', share.group_id)
+    .eq('user_id', adminId)
+    .single<{ role: string }>()
+  if (!membership || membership.role !== 'admin') {
+    return { error: { message: 'Not authorized to review shares in this group' } }
+  }
 
   if (action === 'approve') {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

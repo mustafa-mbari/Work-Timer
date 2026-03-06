@@ -1,10 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuthApi } from '@/lib/services/auth'
 import { deleteGroupShare, getShareById } from '@/lib/repositories/groupShares'
+import { getGroupById } from '@/lib/repositories/groups'
 import { createServiceClient } from '@/lib/supabase/server'
 import { updateShareDraftSchema, parseBody } from '@/lib/validation'
 
 type Params = { params: Promise<{ id: string; shareId: string }> }
+
+export async function GET(_request: NextRequest, { params }: Params) {
+  const user = await requireAuthApi()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { id, shareId } = await params
+  const group = await getGroupById(id, user.id)
+  if (!group) return NextResponse.json({ error: 'Group not found' }, { status: 404 })
+
+  const share = await getShareById(shareId)
+  if (!share) return NextResponse.json({ error: 'Share not found' }, { status: 404 })
+
+  // Only the share owner or group admin can view full share details
+  if (share.user_id !== user.id && group.userRole !== 'admin') {
+    return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
+  }
+
+  return NextResponse.json(share)
+}
 
 export async function DELETE(_request: NextRequest, { params }: Params) {
   const user = await requireAuthApi()
@@ -12,7 +32,11 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
 
   const { shareId } = await params
   const { error } = await deleteGroupShare(shareId, user.id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    const msg = error.message
+    const status = msg.includes('not open') || msg.includes('Not your') ? 400 : 500
+    return NextResponse.json({ error: msg }, { status })
+  }
 
   return NextResponse.json({ ok: true })
 }

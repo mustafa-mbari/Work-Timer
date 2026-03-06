@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Check, XCircle } from 'lucide-react'
+import { useState, useMemo, useEffect } from 'react'
+import { Check, XCircle, Loader2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -10,13 +10,13 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import type { GroupShareWithMeta, SnapshotEntry } from '@/lib/repositories/groupShares'
+import type { GroupShareListItemWithMeta, SnapshotEntry } from '@/lib/repositories/groupShares'
 import { formatHours, formatPeriod } from './utils'
 
 interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
-  share: GroupShareWithMeta
+  share: GroupShareListItemWithMeta
   groupId: string
   onReviewed: () => void
 }
@@ -25,8 +25,19 @@ export default function ReviewDialog({ open, onOpenChange, share, groupId, onRev
   const [showDenyForm, setShowDenyForm] = useState(false)
   const [comment, setComment] = useState('')
   const [processing, setProcessing] = useState(false)
+  const [entries, setEntries] = useState<SnapshotEntry[]>([])
+  const [loadingEntries, setLoadingEntries] = useState(false)
 
-  const entries = (share.entries || []) as SnapshotEntry[]
+  // Fetch full share (with entries) when dialog opens
+  useEffect(() => {
+    if (!open || !share.id) return
+    setLoadingEntries(true)
+    fetch(`/api/groups/${groupId}/shares/${share.id}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => setEntries((data?.entries || []) as SnapshotEntry[]))
+      .catch(() => setEntries([]))
+      .finally(() => setLoadingEntries(false))
+  }, [open, share.id, groupId])
 
   // Project breakdown
   const projectBreakdown = useMemo(() => {
@@ -123,7 +134,13 @@ export default function ReviewDialog({ open, onOpenChange, share, groupId, onRev
           )}
 
           {/* Entry table */}
-          {entries.length > 0 && (
+          {loadingEntries && (
+            <div className="flex items-center justify-center py-6 text-stone-400">
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              <span className="text-sm">Loading entries...</span>
+            </div>
+          )}
+          {!loadingEntries && entries.length > 0 && (
             <div>
               <h3 className="text-xs font-semibold text-stone-600 dark:text-stone-400 uppercase tracking-wider mb-2">Entries</h3>
               <div className="rounded-xl border border-stone-100 dark:border-[var(--dark-border)] overflow-hidden">

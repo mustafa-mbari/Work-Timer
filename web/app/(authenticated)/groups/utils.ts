@@ -1,4 +1,4 @@
-import type { GroupShare } from '@/lib/repositories/groupShares'
+import type { GroupShareListItem } from '@/lib/repositories/groupShares'
 
 // ─── Shared Types ──────────────────────────────────────────────────────────────
 
@@ -43,7 +43,7 @@ export function formatIsoDate(iso: string | null): string {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export function formatPeriod(share: Pick<GroupShare, 'date_from' | 'date_to' | 'period_type'>): string {
+export function formatPeriod(share: Pick<GroupShareListItem, 'date_from' | 'date_to' | 'period_type'>): string {
   const from = new Date(share.date_from + 'T00:00:00')
   const to = new Date(share.date_to + 'T00:00:00')
   const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' }

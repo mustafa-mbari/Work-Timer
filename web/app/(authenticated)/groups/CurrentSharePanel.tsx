@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Send, AlertCircle, CheckCircle2, Clock, Loader2, CalendarRange, FolderOpen } from 'lucide-react'
-import type { GroupShare, SnapshotEntry } from '@/lib/repositories/groupShares'
+import type { GroupShareListItem } from '@/lib/repositories/groupShares'
 import { formatPeriod, formatHours, periodLabel } from './utils'
 import type { ProjectItem, TagItem } from './utils'
 import { StatusBadge } from './StatusBadge'
@@ -45,7 +45,7 @@ export function SubmitDialog({
   onSubmitted,
 }: {
   open: boolean
-  share: GroupShare
+  share: GroupShareListItem
   groupId: string
   projects: ProjectItem[]
   onClose: () => void
@@ -255,7 +255,7 @@ export function SubmitDialog({
 // ─── Open Share Row ───────────────────────────────────────────────────────────
 
 function OpenShareRow({ share, groupId, projects, onSubmitted, variant }: {
-  share: GroupShare
+  share: GroupShareListItem
   groupId: string
   projects: ProjectItem[]
   onSubmitted: () => void
@@ -340,8 +340,7 @@ function OpenShareRow({ share, groupId, projects, onSubmitted, variant }: {
 
 // ─── Submitted Share Card ────────────────────────────────────────────────────
 
-function SubmittedShareCard({ share }: { share: GroupShare }) {
-  const entries = (share.entries || []) as SnapshotEntry[]
+function SubmittedShareCard({ share }: { share: GroupShareListItem }) {
   return (
     <div className="rounded-xl bg-white dark:bg-[var(--dark-card)] border border-stone-100 dark:border-[var(--dark-border)] shadow-sm p-4">
       <div className="flex items-start justify-between gap-3">
@@ -361,7 +360,7 @@ function SubmittedShareCard({ share }: { share: GroupShare }) {
           <p className="text-xs text-stone-400">Hours</p>
         </div>
         <div className="flex-1 rounded-lg bg-stone-50 dark:bg-[var(--dark-elevated)] p-3 text-center">
-          <p className="text-base font-bold text-stone-800 dark:text-stone-100">{entries.length || share.entry_count}</p>
+          <p className="text-base font-bold text-stone-800 dark:text-stone-100">{share.entry_count}</p>
           <p className="text-xs text-stone-400">Entries</p>
         </div>
       </div>
@@ -375,7 +374,7 @@ function SubmittedShareCard({ share }: { share: GroupShare }) {
 // ─── Main Panel ─────────────────────────────────────────────────────────────
 
 export default function CurrentSharePanel({ groupId, projects, tags, hasSchedule }: Props) {
-  const [shares, setShares] = useState<GroupShare[]>([])
+  const [shares, setShares] = useState<GroupShareListItem[]>([])
   const [loading, setLoading] = useState(true)
 
   const fetchShares = useCallback(async () => {
@@ -385,8 +384,8 @@ export default function CurrentSharePanel({ groupId, projects, tags, hasSchedule
         fetch(`/api/groups/${groupId}/shares?status=open&mine=true`),
         fetch(`/api/groups/${groupId}/shares?status=submitted&mine=true`),
       ])
-      const open: GroupShare[] = openRes.ok ? await openRes.json() : []
-      const submitted: GroupShare[] = subRes.ok ? await subRes.json() : []
+      const open: GroupShareListItem[] = openRes.ok ? await openRes.json() : []
+      const submitted: GroupShareListItem[] = subRes.ok ? await subRes.json() : []
       setShares([...open, ...submitted])
     } finally {
       setLoading(false)

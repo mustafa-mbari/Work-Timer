@@ -231,8 +231,8 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 - `timeEntries.ts` -- `getUserTimeEntries(userId, filters)` returns `TimeEntryPage { data, total, page, pageSize, totalPages }` (25/page); `getTodayTotalDuration()` for daily goal; `getUserTimeEntryById()` for edit
 - `earnings.ts` -- `get_earnings_report` RPC with `groupBy` parameter ('tag' | 'project')
 - `analytics.ts` -- `get_user_analytics` RPC
-- `groups.ts` -- CRUD + member management + join code + `GroupWithMeta` type (includes `role`, `member_count`, `share_frequency`, `share_deadline_day`)
-- `groupShares.ts` -- Timesheet approval workflow: `getSharesByStatus()`, `autoCreateOpenShare()`, `submitShare()`, `reviewShare()`, snapshot JSONB entries
+- `groups.ts` -- CRUD + member management + join code + `GroupWithMeta` type (includes `role`, `member_count`, `share_frequency`, `share_deadline_day`). `createGroup()` uses `create_group_atomic` RPC for transactional group + member insert
+- `groupShares.ts` -- Timesheet approval workflow: `getSharesByStatus()`, `autoCreateOpenShare()`, `submitShare()`, `reviewShare()`, snapshot JSONB entries. List queries use `SHARE_LIST_COLUMNS` (excludes `entries` JSONB); `getShareById()` returns full share with entries for detail views. Types: `GroupShareListItem` (no entries), `GroupShareListItemWithMeta` (with sharer info, no entries). Defense-in-depth: `submitShare` verifies membership, `reviewShare` verifies admin role, `deleteGroupShare` checks `status === 'open'`. `autoCreateOpenShare` handles unique constraint (`23505`) gracefully. Entry fetches use `.range(0, 4999)` for memory safety
 - `groupSharing.ts` -- Per-member sharing toggle + `getUserOwnStats()` (today/week/month hours)
 - `groupInvitations.ts` -- Invite by email with 7-day expiry
 - `supportTickets.ts` -- `getUserTickets()`, `createSupportTicket()` (user-facing, RLS-scoped)
@@ -441,7 +441,16 @@ Groups enable team time management with an admin-controlled **timesheet approval
 - `group_sharing_settings` -- per-member sharing_enabled toggle + shared_project_ids filter
 - `group_shares` -- timesheet records with `status` (open/submitted/approved/denied), `entries` (JSONB snapshot), `admin_comment`, `submitted_at`, `reviewed_at`, `reviewed_by`, `due_date`
 
-**Auto-creation logic**: When member fetches `GET /api/groups/{id}/shares?status=open&mine=true` and group has `share_frequency` set, computes current period dates and auto-creates an open share if none exists. Entries are populated at **submit time** (fresh snapshot from `time_entries`), not at creation.
+**Auto-creation logic**: When member fetches `GET /api/groups/{id}/shares?status=open&mine=true` and group has `share_frequency` set, computes current period dates and calls `autoCreateOpenShare()` directly. A unique partial index (`idx_group_shares_unique_active_period`) on `(group_id, user_id, date_from, date_to) WHERE status IN ('open', 'submitted')` prevents race condition duplicates at the DB level; `autoCreateOpenShare()` handles `23505` (unique violation) gracefully. Entries are populated at **submit time** (fresh snapshot from `time_entries`), not at creation.
+
+**Atomic group creation**: `create_group_atomic` PL/pgSQL `SECURITY DEFINER` function wraps `INSERT INTO groups` + `INSERT INTO group_members` in a single transaction, preventing orphan groups if the member insert fails.
+
+**Granular RLS on `group_shares`**: Per-operation policies replace the single overly permissive `FOR ALL` policy:
+- `group_shares_select_own` — SELECT own rows
+- `group_shares_insert_member` — INSERT only if member of the group
+- `group_shares_update_own_open` — UPDATE own rows only when `status = 'open'`
+- `group_shares_delete_own_open` — DELETE own rows only when `status = 'open'`
+- `group_shares_admin_read` / `group_shares_admin_update` — admin access (unchanged)
 
 **Schedule settings**: `share_frequency` = `daily|weekly|monthly`, `share_deadline_day` = day of week (0=Mon..6=Sun for weekly) or day of month (1-31 for monthly). Stored on `groups` table.
 
@@ -483,7 +492,8 @@ GroupsView (client orchestrator, AlertDialog for delete group confirmation)
 
 **API routes**:
 
-- `GET /api/groups/{id}/shares?status=&mine=true` -- list shares with status filter + auto-creation
+- `GET /api/groups/{id}/shares?status=&mine=true` -- list shares (without entries JSONB) with status filter + auto-creation
+- `GET /api/groups/{id}/shares/{shareId}` -- full share with entries (used by ReviewDialog for on-demand entry loading)
 - `POST /api/groups/{id}/shares/{shareId}/submit` -- member submits (auto-fills entries snapshot)
 - `POST /api/groups/{id}/shares/{shareId}/review` -- admin approves/denies (comment required on deny)
 - `GET /api/groups/{id}/shares/preview` -- preview entry count/hours before submit
@@ -491,7 +501,7 @@ GroupsView (client orchestrator, AlertDialog for delete group confirmation)
 
 **Privacy**: Admin can only see member data AFTER the member submits. Members can see other members' names and roles but NOT their hours or entries.
 
-**Migrations**: `archive/013_groups.sql` (tables), `archive/018_group_sharing.sql` (sharing settings + RPCs), `archive/026_group_shares.sql` (snapshot table), `archive/027_share_approval_workflow.sql` (approval columns + schedule settings)
+**Migrations**: `archive/013_groups.sql` (tables), `archive/018_group_sharing.sql` (sharing settings + RPCs), `archive/026_group_shares.sql` (snapshot table), `archive/027_share_approval_workflow.sql` (approval columns + schedule settings), `042_group_shares_fixes.sql` (unique partial index, `create_group_atomic` RPC, granular RLS policies)
 
 ### Support & Feature Suggestions
 
