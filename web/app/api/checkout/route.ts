@@ -22,9 +22,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
   }
 
-  // Check if user already has an active subscription
+  // Check if user already has an active/trialing/past_due subscription
   const existing = await getSubscriptionPlanStatus(user.id)
-  if (existing && existing.plan !== 'free' && existing.status === 'active') {
+  if (existing && existing.plan !== 'free' && ['active', 'trialing', 'past_due', 'unpaid'].includes(existing.status)) {
     return NextResponse.json({ error: 'You already have an active subscription' }, { status: 400 })
   }
 

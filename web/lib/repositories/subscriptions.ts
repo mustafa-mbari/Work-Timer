@@ -74,10 +74,15 @@ export async function upsertSubscription(sub: Partial<SubscriptionInsert> & { us
 export async function updateSubscriptionByStripeId(stripeSubscriptionId: string, updates: Partial<Subscription>) {
   const supabase = await createServiceClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (supabase.from('subscriptions') as any)
+  const result = await (supabase.from('subscriptions') as any)
     .update({
       ...updates,
       updated_at: new Date().toISOString(),
     })
     .eq('stripe_subscription_id', stripeSubscriptionId)
+    .select('id')
+  if (!result.error && (!result.data || result.data.length === 0)) {
+    console.warn('[subscriptions] updateByStripeId matched 0 rows for:', stripeSubscriptionId)
+  }
+  return result
 }

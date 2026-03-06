@@ -129,6 +129,7 @@ web/
     services/           # Business logic (auth, analytics, billing, earnings)
     validation.ts       # Zod schemas for all API inputs
     stripe.ts           # Stripe singleton + price config
+    rateLimit.ts        # In-memory rate limiter (IP-based, 10 req/min)
     supabase/           # Server + service role Supabase clients
     pdf/                # PDF generation library (earningsReport.ts — jsPDF + autotable)
     excel/              # Excel generation library (earningsReport.ts — xlsx + file-saver)
@@ -217,6 +218,8 @@ Supabase PostgreSQL with RLS. Tables: `profiles`, `subscriptions`, `projects`, `
 
 Shared types in `shared/types.ts` define typed interfaces for all tables with a `Database` type map for the Supabase client. SQL migrations in `supabase/migrations/`.
 
+**Subscription security migration** (`supabase/migrations/033_subscription_security_fixes.sql`): Enables RLS on `subscriptions`, fixes `redeem_promo` to clear Stripe fields on 100% grants, auto-creates free subscription on user signup.
+
 ### Repository & Service Layer (`web/lib/`)
 
 **Repositories** (typed Supabase queries, no `as any` on selects):
@@ -239,7 +242,7 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 
 - `auth.ts` -- `requireAuth()`, `getUser()` (React `cache()` wrapped), `requireAdminApi()`, `requireAuthApi()`
 - `analytics.ts` -- `getUserAnalytics()` (wraps `get_user_analytics` RPC)
-- `billing.ts` -- checkout/portal helpers
+- `billing.ts` -- checkout/portal helpers; `isActiveStatus()` checks both `'active'` and `'trialing'`; `getSubscriptionFlags()`, `isPremiumUser()`, `isAllInUser()` all use it
 - `earnings.ts` -- `getEarningsReport()` with groupBy passthrough, `formatEarningsCsv()`
 
 ### Performance Optimizations
@@ -378,7 +381,7 @@ Monthly export limits enforced per plan role. Free users remain blocked from the
 
 **Plan → Role mapping** (`plan_roles` table):
 
-- `premium_monthly/yearly/lifetime` → `pro`
+- `premium_monthly/yearly` → `pro`
 - `allin_*/team_10_*/team_20_*` → `team`
 - everything else → `free`
 
@@ -606,8 +609,14 @@ Guest mode lets users try the extension without creating an account. 5-day trial
 ### Security
 
 - All API inputs validated with Zod schemas (`web/lib/validation.ts`)
-- Stripe webhook signature verification + idempotency via `stripe_events` table
-- RLS on all tables; admin operations use service role client
+- Stripe webhook signature verification + two-phase idempotency via `stripe_events` table (check before processing, record after success — failed processing allows Stripe retries)
+- RLS on all tables including `subscriptions` (SELECT own rows only; all writes via service role); admin operations use service role client
+- API rate limiting on promo endpoints (`web/lib/rateLimit.ts`) — in-memory, 10 req/min/IP
+- Checkout duplicate guard blocks `active`, `trialing`, `past_due`, `unpaid` subscriptions (not just `active`)
+- Admin grant resets Stripe fields (`stripe_subscription_id`, `stripe_customer_id`, `cancel_at_period_end`) to prevent stale data
+- `redeem_promo` RPC clears Stripe fields on 100% discount grants
+- Default free subscription auto-created on user signup via `handle_new_user_subscription` trigger
+- Upgrade route returns generic error messages (no Stripe internals leaked to client)
 - Service role client uses `createClient` from `@supabase/supabase-js` (NOT `createServerClient` from `@supabase/ssr`) to properly bypass RLS
 - `externally_connectable` restricts extension messaging to allowed origins
 - All auth flows use server-side API routes (no browser-to-Supabase calls that corporate proxies block)
@@ -718,7 +727,7 @@ Guest mode lets users try the extension without creating an account. 5-day trial
 - **Framework:** Vitest (config in `vitest.config.ts`)
 - **Setup:** `src/__tests__/setup.ts` — in-memory `chrome.storage.local` mock with `onChanged` listener support, `self` global mock for service worker context
 - **Test files:** Co-located with source (`*.test.ts`), excluded from build via `tsconfig.app.json`
-- **Coverage:** Storage layer (45 tests), sync queue (13 tests), date utils (13 tests), timer utils (5 tests), timer engine integration (18 tests), feature gating (14 tests), guest mode (14 tests)
+- **Coverage:** Storage layer (45 tests), sync queue (13 tests), date utils (13 tests), timer utils (5 tests), timer engine integration (18 tests), feature gating (14 tests), guest mode (14 tests) — 175 total
 - **Run:** `pnpm test` (single run) or `pnpm test:watch` (watch mode)
 
 ## Non-Functional Requirements

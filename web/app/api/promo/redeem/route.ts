@@ -3,8 +3,15 @@ import { requireAuthApi } from '@/lib/services/auth'
 import { createServiceClient } from '@/lib/supabase/server'
 import { getStripe, STRIPE_PRICES } from '@/lib/stripe'
 import { promoRedeemSchema, parseBody } from '@/lib/validation'
+import { checkRateLimit } from '@/lib/rateLimit'
 
 export async function POST(request: NextRequest) {
+  // Rate limit: 10 requests per minute per IP
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  if (!checkRateLimit(`promo-redeem:${ip}`, 10)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  }
+
   const user = await requireAuthApi()
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -49,10 +56,17 @@ export async function POST(request: NextRequest) {
       name: `Promo ${code.toUpperCase()}`,
     })
 
-    const planKey = result.plan === 'premium_yearly' ? 'yearly'
-      : result.plan === 'allin_monthly' ? 'allin_monthly'
-      : result.plan === 'allin_yearly' ? 'allin_yearly'
-      : 'monthly'
+    const PLAN_KEY_MAP: Record<string, string> = {
+      premium_monthly:  'monthly',
+      premium_yearly:   'yearly',
+      allin_monthly:    'allin_monthly',
+      allin_yearly:     'allin_yearly',
+      team_10_monthly:  'team_10_monthly',
+      team_10_yearly:   'team_10_yearly',
+      team_20_monthly:  'team_20_monthly',
+      team_20_yearly:   'team_20_yearly',
+    }
+    const planKey = PLAN_KEY_MAP[result.plan ?? ''] ?? 'monthly'
     const priceId = STRIPE_PRICES[planKey as keyof typeof STRIPE_PRICES]
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL!
 

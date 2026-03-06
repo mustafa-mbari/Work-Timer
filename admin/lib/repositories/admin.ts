@@ -68,7 +68,7 @@ export async function getDomainStats() {
 export async function getAuthUserCount(): Promise<number> {
   const supabase = await createServiceClient()
   const { data } = await supabase.auth.admin.listUsers({ perPage: 1 })
-  return data?.users?.length ?? 0
+  return (data as any)?.total ?? data?.users?.length ?? 0
 }
 
 export async function getAuthUsers(page: number = 1, perPage: number = 15) {
@@ -80,13 +80,33 @@ export async function getAuthUsers(page: number = 1, perPage: number = 15) {
 
 export async function getAllAuthUsers() {
   const supabase = await createServiceClient()
-  const { data, error } = await supabase.auth.admin.listUsers({ perPage: 10000 })
-  if (error) throw new Error(`listUsers failed: ${error.message}`)
-  return data?.users ?? []
+  const allUsers: any[] = []
+  let page = 1
+  const perPage = 1000
+  while (true) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage })
+    if (error) throw new Error(`listUsers failed: ${error.message}`)
+    const users = data?.users ?? []
+    allUsers.push(...users)
+    if (users.length < perPage) break
+    page++
+  }
+  return allUsers
 }
 
 export async function findAuthUserByEmail(email: string) {
   const supabase = await createServiceClient()
+  // Query profiles table first (has email index), then fetch the auth user by ID
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('email', email)
+    .single<{ id: string }>()
+  if (profile) {
+    const { data: userData } = await supabase.auth.admin.getUserById(profile.id)
+    return userData?.user ?? null
+  }
+  // Fallback: search auth users directly (handles cases where profile doesn't exist yet)
   const { data } = await supabase.auth.admin.listUsers({ perPage: 1000 })
   return data?.users?.find(u => u.email === email) ?? null
 }

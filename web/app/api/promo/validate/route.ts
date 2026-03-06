@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAuthApi } from '@/lib/services/auth'
 import { getPromoByCode, checkUserRedemption } from '@/lib/repositories/promoCodes'
 import { promoValidateSchema, parseBody } from '@/lib/validation'
+import { checkRateLimit } from '@/lib/rateLimit'
 
 export async function POST(request: NextRequest) {
+  // Rate limit: 10 requests per minute per IP
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  if (!checkRateLimit(`promo-validate:${ip}`, 10)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  }
+
   const user = await requireAuthApi()
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

@@ -12,7 +12,6 @@ function buildPlanMap(): Record<string, Plan> {
   const map: Record<string, Plan> = {}
   const monthly = process.env.STRIPE_PRICE_MONTHLY
   const yearly = process.env.STRIPE_PRICE_YEARLY
-  const lifetime = process.env.STRIPE_PRICE_LIFETIME
   const allinMonthly = process.env.STRIPE_PRICE_ALLIN_MONTHLY
   const allinYearly = process.env.STRIPE_PRICE_ALLIN_YEARLY
   const team10Monthly = process.env.STRIPE_PRICE_TEAM_10_MONTHLY
@@ -21,7 +20,6 @@ function buildPlanMap(): Record<string, Plan> {
   const team20Yearly = process.env.STRIPE_PRICE_TEAM_20_YEARLY
   if (monthly) map[monthly] = 'premium_monthly'
   if (yearly) map[yearly] = 'premium_yearly'
-  if (lifetime) map[lifetime] = 'premium_lifetime'
   if (allinMonthly) map[allinMonthly] = 'allin_monthly'
   if (allinYearly) map[allinYearly] = 'allin_yearly'
   if (team10Monthly) map[team10Monthly] = 'team_10_monthly'
@@ -34,7 +32,7 @@ function buildPlanMap(): Record<string, Plan> {
 const PLAN_MAP = buildPlanMap()
 
 const VALID_PLANS = [
-  'premium_monthly', 'premium_yearly', 'premium_lifetime',
+  'premium_monthly', 'premium_yearly',
   'allin_monthly', 'allin_yearly',
   'team_10_monthly', 'team_10_yearly',
   'team_20_monthly', 'team_20_yearly',
@@ -43,7 +41,6 @@ const VALID_PLANS = [
 const PLAN_DISPLAY_NAMES: Record<string, string> = {
   premium_monthly: 'Premium Monthly',
   premium_yearly: 'Premium Yearly',
-  premium_lifetime: 'Premium Lifetime',
   allin_monthly: 'All-In Monthly',
   allin_yearly: 'All-In Yearly',
   team_10_monthly: 'Team 10 Monthly',
@@ -66,7 +63,6 @@ async function getUserEmailAndName(userId: string): Promise<{ email: string | nu
 function resolveCheckoutPlan(metadata: Record<string, string> | null): Plan | null {
   const plan = metadata?.plan
   if (!plan) return null
-  if (plan === 'lifetime') return 'premium_lifetime'
   if (plan === 'yearly') return 'premium_yearly'
   if (plan === 'monthly') return 'premium_monthly'
   if (plan === 'allin_monthly') return 'allin_monthly'
@@ -77,6 +73,33 @@ function resolveCheckoutPlan(metadata: Record<string, string> | null): Plan | nu
   if (plan === 'team_20_yearly') return 'team_20_yearly'
   if (VALID_PLANS.includes(plan as typeof VALID_PLANS[number])) return plan as Plan
   return null
+}
+
+/** Check if this event was already processed (SELECT only — no INSERT yet). */
+async function isEventDuplicate(eventId: string): Promise<boolean> {
+  try {
+    const supabase = await createServiceClient()
+    const { data } = await supabase
+      .from('stripe_events')
+      .select('event_id')
+      .eq('event_id', eventId)
+      .single()
+    return !!data
+  } catch {
+    return false
+  }
+}
+
+/** Record event as processed AFTER successful handling. */
+async function markEventProcessed(eventId: string, eventType: string): Promise<void> {
+  try {
+    const supabase = await createServiceClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase.from('stripe_events') as any)
+      .insert({ event_id: eventId, event_type: eventType })
+  } catch (err) {
+    console.warn('[stripe webhook] failed to record idempotency:', err)
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -95,22 +118,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
-  // Idempotency check: attempt insert first (unique constraint on event_id)
-  try {
-    const supabase = await createServiceClient()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: insertError } = await (supabase.from('stripe_events') as any)
-      .insert({ event_id: event.id, event_type: event.type })
-    if (insertError) {
-      // Unique constraint violation = duplicate event, skip processing
-      if (insertError.code === '23505') {
-        return NextResponse.json({ received: true, duplicate: true })
-      }
-      console.warn('[stripe webhook] idempotency insert failed:', insertError)
-    }
-  } catch (err) {
-    // Log but don't fail — idempotency is best-effort until table exists
-    console.warn('[stripe webhook] idempotency check failed:', err)
+  // Idempotency: check if already processed (SELECT only — don't INSERT yet)
+  if (await isEventDuplicate(event.id)) {
+    return NextResponse.json({ received: true, duplicate: true })
   }
 
   try {
@@ -129,14 +139,12 @@ export async function POST(request: NextRequest) {
           break
         }
 
-        const isLifetime = planName === 'premium_lifetime'
-
         const { error } = await upsertSubscription({
           user_id: userId,
           plan: planName,
           status: 'active',
           stripe_customer_id: session.customer as string | null,
-          stripe_subscription_id: isLifetime ? null : session.subscription as string | null,
+          stripe_subscription_id: session.subscription as string | null,
           current_period_end: null,
           cancel_at_period_end: false,
           granted_by: 'stripe',
@@ -157,16 +165,6 @@ export async function POST(request: NextRequest) {
           })
           sendEmail({ to: email, subject, html, type: 'billing_notification', metadata: { plan: planName } }).catch(() => {})
         })
-
-        // If this was a lifetime upgrade from an existing subscription, cancel the old sub
-        if (isLifetime) {
-          const cancelSubId = (session.metadata as Record<string, string> | null)?.cancel_subscription_id
-          if (cancelSubId) {
-            await getStripe().subscriptions.cancel(cancelSubId).catch(e => {
-              console.warn('[stripe webhook] failed to cancel old sub during lifetime upgrade:', e)
-            })
-          }
-        }
         break
       }
 
@@ -293,6 +291,9 @@ export async function POST(request: NextRequest) {
     console.error('[stripe webhook] handler error:', err)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
+
+  // Record idempotency AFTER successful processing
+  await markEventProcessed(event.id, event.type)
 
   return NextResponse.json({ received: true })
 }

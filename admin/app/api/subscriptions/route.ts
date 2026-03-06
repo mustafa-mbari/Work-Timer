@@ -34,7 +34,10 @@ export async function POST(request: NextRequest) {
     plan: plan,
     status: 'active',
     granted_by: 'admin_manual',
-    ...(current_period_end ? { current_period_end } : {}),
+    stripe_subscription_id: null,
+    stripe_customer_id: null,
+    cancel_at_period_end: false,
+    current_period_end: current_period_end ?? null,
   })
 
   if (error) {
