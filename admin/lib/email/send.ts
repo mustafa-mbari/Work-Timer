@@ -78,7 +78,7 @@ async function logEmailToDb(params: {
 }) {
   try {
     const supabase = await createServiceClient()
-    await (supabase.from('email_logs') as any).insert({
+    await supabase.from('email_logs').insert({
       recipient: params.recipient,
       type: params.type,
       subject: params.subject,
