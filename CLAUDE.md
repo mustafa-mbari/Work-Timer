@@ -145,7 +145,7 @@ Standalone Next.js 16 app on port 3001. No next-intl. All strings hardcoded Engl
 ```
 admin/
   app/
-    (admin)/            # Route group (layout with AdminHeader + AdminNav)
+    (admin)/            # Route group (layout with AdminSidebar)
       page.tsx          # Overview (user counts, premium breakdown, recent sign-ups)
       users/            # User table with search + pagination
       stats/            # Full platform stats
@@ -162,8 +162,7 @@ admin/
     globals.css         # Design tokens + dark mode
   components/
     ui/                 # shadcn/ui (16 components, only those used)
-    AdminHeader.tsx     # Top bar (branding, user email, theme toggle, sign out)
-    AdminNav.tsx        # Horizontal pill nav (12 items)
+    AdminSidebar.tsx    # Collapsible sidebar nav (12 items, 3 modes: expanded/collapsed/hover)
     ThemeProvider.tsx   # Cookie-based theme
   lib/
     repositories/       # Admin-only Supabase queries (admin, domains, promoCodes, subscriptions, profiles, webhookLogs, supportTickets, featureSuggestions)
