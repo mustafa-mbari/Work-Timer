@@ -60,6 +60,7 @@ Database exhaustion, increased Supabase costs, and potential denial of service f
 
 **Recommended Fix**
 Implement global, distributed rate limiting in `middleware.ts` using a service like **Upstash Redis** or **Vercel KV**.
+Also we needd to add rate limiting based on the plan type (free, pro, etc.), like free users can only make 200 requests per month. pro users can make 2000 requests per month. and premium users can make 2500 requests per month.
 
 ---
 
