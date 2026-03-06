@@ -623,7 +623,7 @@ Guest mode lets users try the extension without creating an account. 5-day trial
 - All auth flows use server-side API routes (no browser-to-Supabase calls that corporate proxies block)
 - Static assets served from trusted CDN domain via `assetPrefix` to bypass corporate proxy site-reputation blocks
 - Webhook event logging to `webhook_logs` table (event type, status, duration, error details) — admin Webhooks page for monitoring
-- Daily Vercel cron job (`/api/cron/expire-subscriptions`) expires non-Stripe admin grant and promo subscriptions past `current_period_end`
+- Daily Vercel cron job (`/api/cron/expire-subscriptions`) expires non-Stripe admin grant and promo subscriptions past `current_period_end`. Sets `status → expired`, `plan → free`. Stripe-managed subscriptions excluded (Stripe handles its own lifecycle). Requires `CRON_SECRET` env var on the **web app** Vercel project (generate: `openssl rand -hex 32`); Vercel sends it automatically as `Authorization: Bearer <secret>`. Test: `curl -H "Authorization: Bearer <secret>" https://w-timer.com/api/cron/expire-subscriptions` → `{"expired": N, "details": [...]}`
 
 ## Theme System (6 themes)
 

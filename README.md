@@ -131,6 +131,24 @@ cd web && pnpm install && pnpm run dev
 cd admin && pnpm install && pnpm run dev
 ```
 
+### Environment Variables (Production)
+
+Key environment variables required on the **web app** Vercel project:
+
+| Variable | Where | Purpose |
+| -------- | ----- | ------- |
+| `CRON_SECRET` | Vercel → web app → Env Vars | Authenticates the daily cron job that expires admin-granted and promo subscriptions. Generate with `openssl rand -hex 32`. Vercel sends it automatically as `Authorization: Bearer <secret>` when triggering cron jobs defined in `vercel.json`. |
+
+**Test the cron manually:**
+
+```bash
+curl -H "Authorization: Bearer <your-secret>" \
+  https://w-timer.com/api/cron/expire-subscriptions
+# Returns: {"expired": 0, "details": []} when nothing needs expiring
+```
+
+The cron runs daily at **3 AM UTC** and downgrades any non-Stripe subscription (admin grants, promo codes) whose `current_period_end` has passed — setting `status → expired` and `plan → free`. Stripe-managed subscriptions are excluded (Stripe handles its own lifecycle via webhooks).
+
 ---
 
 ## Project Structure
