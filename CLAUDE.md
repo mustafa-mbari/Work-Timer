@@ -694,6 +694,15 @@ Guest mode lets users try the extension without creating an account. 5-day trial
 - `Invoice.subscription` moved to `invoice.parent?.subscription_details?.subscription`
 - API version pinned in `web/lib/stripe.ts`
 
+### Vercel Deployment (web app)
+
+- **Corepack required**: `ENABLE_EXPERIMENTAL_COREPACK=1` env var must be set in Vercel project settings (all environments). Without it, Vercel ignores the `packageManager` field and uses its own pnpm/npm, causing `ERR_INVALID_THIS` registry fetch failures.
+- **`packageManager` field**: Must be in `web/package.json` (not just root), because Vercel's root directory is `web/`
+- **Node.js pinned to 22.x**: `engines.node: "22.x"` in both root and `web/package.json`. Using `>=20` lets Vercel auto-upgrade to unstable Node versions (24.x). Always match the local dev Node version.
+- **`serverExternalPackages`**: `['jspdf', 'jspdf-autotable', 'fflate']` in `next.config.js` — prevents Turbopack from bundling these during Client Component SSR (fflate uses Node.js `Worker` which Turbopack can't resolve)
+- **Install Command override**: Should be OFF in Vercel Build Settings — Corepack handles pnpm detection automatically
+- **No `.npmrc` files**: `legacy-peer-deps` is npm-only; pnpm ignores it. Deleted to avoid confusion.
+
 ### Tailwind v4
 
 - `@theme {}` block defines CSS custom properties for colors

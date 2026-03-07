@@ -100,7 +100,7 @@ See [HowToDoPlan.md](HowToDoPlan.md) for the full Stripe setup guide (creating p
 
 ### Prerequisites
 
-- Node.js 18+ and pnpm
+- Node.js 22.x (LTS) and pnpm 9.x
 - Google Chrome browser
 
 ### Installation
@@ -145,6 +145,7 @@ Key environment variables required on the **web app** Vercel project:
 | `SENTRY_AUTH_TOKEN` | Vercel → web app → Env Vars | Sentry auth token for source map upload during builds. |
 | `SENTRY_ORG` | Vercel → web app → Env Vars | Sentry organization slug. |
 | `SENTRY_PROJECT` | Vercel → web app → Env Vars | Sentry project slug for the web app. |
+| `ENABLE_EXPERIMENTAL_COREPACK` | Vercel → web app → Env Vars | Set to `1`. Required for Vercel to use the `packageManager` field in `package.json` and install the correct pnpm version via Corepack. |
 | `VITE_SENTRY_DSN` | Extension `.env` | Sentry DSN for the Chrome extension error tracking. |
 
 **Test the cron manually:**
