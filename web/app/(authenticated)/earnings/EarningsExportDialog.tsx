@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import type { EarningsReport } from '@/lib/services/earnings'
-import { generateEarningsPdf, type EarningsPdfOptions } from '@/lib/pdf/earningsReport'
+import type { EarningsPdfOptions } from '@/lib/pdf/earningsReport'
 import type { ExportQuotaItem } from '@/lib/shared/types'
 import ExportQuotaBadge from './ExportQuotaBadge'
 
@@ -167,6 +167,7 @@ export default function EarningsExportDialog({ open, onOpenChange, data, groupBy
         }
       }
 
+      const { generateEarningsPdf } = await import('@/lib/pdf/earningsReport')
       await generateEarningsPdf(freshData, pdfGroupBy, pdfDateRange, options, tagData)
       onOpenChange(false)
     } catch (err) {

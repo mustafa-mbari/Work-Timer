@@ -15,7 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import type { EarningsReport } from '@/lib/services/earnings'
-import { generateEarningsExcel, type EarningsExcelOptions } from '@/lib/excel/earningsReport'
+import type { EarningsExcelOptions } from '@/lib/excel/earningsReport'
 import type { ExportQuotaItem } from '@/lib/shared/types'
 import ExportQuotaBadge from './ExportQuotaBadge'
 
@@ -125,6 +125,7 @@ export default function EarningsExcelDialog({ open, onOpenChange, data, groupBy,
       if (!res.ok) throw new Error('Failed to fetch earnings data')
       const freshData: EarningsReport = await res.json()
 
+      const { generateEarningsExcel } = await import('@/lib/excel/earningsReport')
       await generateEarningsExcel(freshData, excelGroupBy, excelDateRange, options)
       onOpenChange(false)
     } catch (err) {
