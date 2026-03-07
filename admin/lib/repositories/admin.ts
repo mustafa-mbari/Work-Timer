@@ -104,6 +104,30 @@ export async function getAllAuthUsers() {
   return allUsers
 }
 
+export async function getAdminUsersPaged(page: number, perPage: number, search?: string) {
+  const supabase = await createServiceClient()
+  const from = (page - 1) * perPage
+  const to = from + perPage - 1
+
+  let query = supabase
+    .from('profiles')
+    .select('*', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range(from, to)
+
+  if (search) {
+    query = query.or(`email.ilike.%${search}%,display_name.ilike.%${search}%`)
+  }
+
+  const { data, count, error } = await query
+  if (error) throw new Error(`getAdminUsersPaged failed: ${error.message}`)
+
+  return {
+    users: data || [],
+    totalCount: count || 0,
+  }
+}
+
 export async function findAuthUserByEmail(email: string) {
   const supabase = await createServiceClient()
   // Query profiles table first (has email index), then fetch the auth user by ID

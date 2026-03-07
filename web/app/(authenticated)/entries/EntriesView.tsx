@@ -42,8 +42,7 @@ export default function EntriesView({ entriesPage, projects, tags, filters, pomo
   const [showAddDialog, setShowAddDialog] = useState(false)
 
   // Column visibility (lifted from EntriesTable so EntryFilters can render the Columns button)
-  const [visibleCols, setVisibleCols] = useState<Record<ColumnId, boolean>>(DEFAULT_VISIBLE)
-  useEffect(() => { setVisibleCols(loadColumnPrefs()) }, [])
+  const [visibleCols, setVisibleCols] = useState<Record<ColumnId, boolean>>(() => loadColumnPrefs())
 
   function toggleColumn(id: ColumnId) {
     setVisibleCols(prev => {
