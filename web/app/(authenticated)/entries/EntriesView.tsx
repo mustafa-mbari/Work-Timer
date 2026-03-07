@@ -1,13 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import EntryFilters from './EntryFilters'
 import EntriesTable, {
   type ColumnId,
   ALL_COLUMNS,
   COLUMNS_STORAGE_KEY,
-  DEFAULT_VISIBLE,
   loadColumnPrefs,
 } from './EntriesTable'
 import EntryFormDialog from './EntryFormDialog'

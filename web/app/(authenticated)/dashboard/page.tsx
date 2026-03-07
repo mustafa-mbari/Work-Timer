@@ -6,13 +6,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('dashboard')
   return { title: t('title') }
 }
-import { getUserSubscription } from '@/lib/repositories/subscriptions'
-import { getUserSyncCursors } from '@/lib/repositories/syncCursors'
-import { getUserTimeEntries } from '@/lib/repositories/timeEntries'
-import { getUserProjects } from '@/lib/repositories/projects'
-import { getUserTags } from '@/lib/repositories/tags'
-import { getUserStats } from '@/lib/repositories/userStats'
-import { getUserSettings } from '@/lib/repositories/userSettings'
+import { getDashboardBootstrapData } from '@/lib/repositories/dashboard'
 import DashboardTabs from './DashboardTabs'
 
 function getWeekRange(weekStartDay: 0 | 1): { dateFrom: string; dateTo: string } {
@@ -34,8 +28,7 @@ export default async function DashboardPage() {
   const user = await requireAuth()
 
   // Pre-compute a wide date range that covers any weekStartDay (0=Sun or 1=Mon)
-  // plus 1 extra day for midnight-crossing entries. This eliminates the sequential
-  // waterfall that previously waited for settings before fetching week entries.
+  // plus 1 extra day for midnight-crossing entries.
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const wideFrom = new Date(today)
@@ -43,32 +36,29 @@ export default async function DashboardPage() {
   const fmt = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
-  // Single parallel fetch — no sequential waterfall
-  const [{ data: subscription }, cursors, entriesPage, projects, tags, stats, settings, weekEntriesPage] =
-    await Promise.all([
-      getUserSubscription(user.id),
-      getUserSyncCursors(user.id),
-      getUserTimeEntries(user.id, { pageSize: 10 }),
-      getUserProjects(user.id),
-      getUserTags(user.id),
-      getUserStats(user.id),
-      getUserSettings(user.id),
-      getUserTimeEntries(user.id, {
-        dateFrom: fmt(wideFrom),
-        dateTo: fmt(today),
-        pageSize: 200,
-      }),
-    ])
+  // Optimized single RPC call replacing 8 separate calls
+  const data = await getDashboardBootstrapData(user.id, fmt(wideFrom), fmt(today))
+
+  const {
+    subscription,
+    cursors,
+    recent_entries,
+    projects,
+    tags,
+    stats,
+    settings,
+    week_entries
+  } = data
 
   const weekStartDay = settings?.week_start_day ?? 1
-  const workingDays = settings?.working_days ?? 5 // Mon-Fri default (count, not bitmask)
+  const workingDays = settings?.working_days ?? 5
   const { dateFrom, dateTo } = getWeekRange(weekStartDay)
 
   // Filter pre-fetched wide range to the exact week range (including midnight buffer)
   const fetchFrom = new Date(dateFrom + 'T00:00:00')
   fetchFrom.setDate(fetchFrom.getDate() - 1)
   const weekFromStr = fmt(fetchFrom)
-  const weekEntries = weekEntriesPage.data.filter(
+  const weekEntries = week_entries.filter(
     e => e.date >= weekFromStr && e.date <= dateTo
   )
 
@@ -78,7 +68,7 @@ export default async function DashboardPage() {
     <DashboardTabs
       subscription={subscription}
       cursors={cursors ?? []}
-      recentEntries={entriesPage.data}
+      recentEntries={recent_entries}
       weekEntries={weekEntries}
       projects={projects}
       tags={tags}

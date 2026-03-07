@@ -112,11 +112,18 @@ export async function getGroupMembers(groupId: string) {
 
   return members.map(m => {
     const p = profileMap.get(m.user_id)
+    const email = p?.email ?? ''
+    
+    // Mask email: j***@company.com
+    const maskedEmail = email 
+      ? email.split('@')[0]![0] + '***@' + email.split('@')[1]
+      : ''
+
     return {
       user_id: m.user_id,
       role: m.role,
       created_at: m.created_at,
-      email: p?.email ?? '',
+      email: maskedEmail,
       display_name: p?.display_name ?? null,
     }
   })
