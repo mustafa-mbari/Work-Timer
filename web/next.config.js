@@ -14,6 +14,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  serverExternalPackages: ['jspdf', 'jspdf-autotable', 'fflate'],
 }
 
 module.exports = withSentryConfig(withNextIntl(nextConfig), {
