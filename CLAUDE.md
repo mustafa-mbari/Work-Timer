@@ -230,7 +230,7 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 - `tags.ts` -- CRUD + reorder + color + hourly rate + earnings toggle
 - `timeEntries.ts` -- `getUserTimeEntries(userId, filters)` returns `TimeEntryPage { data, total, page, pageSize, totalPages }` (25/page); `getTodayTotalDuration()` for daily goal; `getUserTimeEntryById()` for edit
 - `earnings.ts` -- `get_earnings_report` RPC with `groupBy` parameter ('tag' | 'project')
-- `analytics.ts` -- `get_user_analytics` RPC
+- `analytics.ts` -- `get_user_analytics` RPC (uses user client for `auth.uid()` enforcement, supports `timezone` param)
 - `groups.ts` -- CRUD + member management + join code + `GroupWithMeta` type (includes `role`, `member_count`, `share_frequency`, `share_deadline_day`). `createGroup()` uses `create_group_atomic` RPC for transactional group + member insert
 - `groupShares.ts` -- Timesheet approval workflow: `getSharesByStatus()`, `autoCreateOpenShare()`, `submitShare()`, `reviewShare()`, snapshot JSONB entries. List queries use `SHARE_LIST_COLUMNS` (excludes `entries` JSONB); `getShareById()` returns full share with entries for detail views. Types: `GroupShareListItem` (no entries), `GroupShareListItemWithMeta` (with sharer info, no entries). Defense-in-depth: `submitShare` verifies membership, `reviewShare` verifies admin role, `deleteGroupShare` checks `status === 'open'`. `autoCreateOpenShare` handles unique constraint (`23505`) gracefully. Entry fetches use `.range(0, 4999)` for memory safety
 - `groupSharing.ts` -- Per-member sharing toggle + `getUserOwnStats()` (today/week/month hours)
@@ -243,7 +243,7 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 **Services** (business logic):
 
 - `auth.ts` -- `requireAuth()`, `getUser()` (React `cache()` wrapped), `requireAdminApi()`, `requireAuthApi()`
-- `analytics.ts` -- `getUserAnalytics()` (wraps `get_user_analytics` RPC)
+- `analytics.ts` -- `getUserAnalytics()` (wraps `get_user_analytics` RPC, passes optional `timezone` param)
 - `billing.ts` -- checkout/portal helpers; `isActiveStatus()` checks both `'active'` and `'trialing'`; `getSubscriptionFlags()`, `isPremiumUser()`, `isAllInUser()` all use it
 - `earnings.ts` -- `getEarningsReport()` with groupBy passthrough, `formatEarningsCsv()`
 
@@ -269,7 +269,8 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 - Server-side SQL aggregation via RPC functions (replaces client-side JS)
 - Error boundaries for `(authenticated)/` and `admin/` route groups
 - `getSubscriptionFlags()` deduplicates premium + allIn checks in layout (1 query instead of 2)
-- Dashboard `page.tsx` fetches week entries with 1 extra day before week start (handles entries crossing midnight into the week)
+- Dashboard `page.tsx` uses single `Promise.all` with wide date range (today-8 to today) to avoid sequential waterfall; filters client-side after settings resolve. `pageSize: 200` for week entries (reduced from 500)
+- Analytics `page.tsx` rate-limited via `isRateLimited()` before executing expensive RPC
 
 ### Dashboard Weekly Chart (`WeeklyProjectChart.tsx`)
 
@@ -626,6 +627,8 @@ Guest mode lets users try the extension without creating an account. 5-day trial
 - RLS on all tables including `subscriptions` (SELECT own rows only; all writes via service role); admin operations use service role client
 - API rate limiting on promo endpoints (`web/lib/rateLimit.ts`) — in-memory, 10 req/min per authenticated user ID (not IP)
 - Monthly API quotas per resource type (`web/lib/apiQuota.ts`) — database-tracked, plan-based limits on all mutation endpoints
+- `get_user_analytics()` SQL function validates `auth.uid() = p_user_id` (prevents cross-user data access); analytics repository uses user client (not service role)
+- `get_group_analytics()` uses `plan_roles` table JOIN (not hardcoded `LIKE 'allin_%'`) and masks member emails (`j***@domain.com`)
 - Checkout duplicate guard blocks `active`, `trialing`, `past_due`, `unpaid` subscriptions (not just `active`)
 - Admin grant resets Stripe fields (`stripe_subscription_id`, `stripe_customer_id`, `cancel_at_period_end`) to prevent stale data
 - `redeem_promo` RPC clears Stripe fields on 100% discount grants
@@ -677,7 +680,9 @@ Guest mode lets users try the extension without creating an account. 5-day trial
 
 ### Admin User Queries
 
-- Use `auth.admin.listUsers()` for user counts (profiles table may be incomplete)
+- Admin overview page uses `get_admin_overview()` RPC (queries `profiles` table directly — no more `getAllAuthUsers()` pagination)
+- `auth.admin.listUsers()` still available in `admin/lib/repositories/admin.ts` for user search/detail pages
+- `get_admin_overview()` returns `total_users`, `new_users_this_week`, `recent_users` (top 10 by `created_at DESC`)
 
 ### Promo Codes
 
@@ -777,9 +782,9 @@ Guest mode lets users try the extension without creating an account. 5-day trial
 - **Library**: `@upstash/ratelimit` + `@upstash/redis` in `web/`
 - **Config**: `web/lib/rateLimitRedis.ts` — sliding window per user ID
 - **Tiers**: free (20/min), pro (60/min), team (100/min)
-- **Helper**: `withRateLimit(userId, tier)` returns `NextResponse(429)` or `null`; `getUserTier(userId)` maps subscription plan to tier
-- **Fail-open**: Returns `null` (allowed) if Redis is unavailable or env vars missing
-- **Applied to**: `/api/entries` (GET, POST, DELETE)
+- **Helpers**: `withRateLimit(userId, tier)` returns `NextResponse(429)` or `null` (for API routes); `isRateLimited(userId, tier)` returns `boolean` (for server components); `getUserTier(userId)` maps subscription plan to tier
+- **Fail-open**: Returns `null`/`false` (allowed) if Redis is unavailable or env vars missing
+- **Applied to**: `/api/entries` (GET, POST, DELETE), analytics page (server component via `isRateLimited()`)
 - **Env vars**: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
 
 ## API Monthly Quotas

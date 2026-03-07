@@ -53,6 +53,22 @@ export async function getUserTier(userId: string): Promise<PlanTier> {
 }
 
 /**
+ * Check if a user is rate-limited. Returns true if limited, false if allowed.
+ * Use this in server components where you can't return a NextResponse.
+ * Fails open if Redis is unavailable (rate limiting is a soft business rule).
+ */
+export async function isRateLimited(userId: string, tier: PlanTier): Promise<boolean> {
+  try {
+    const limiter = getLimiter(tier)
+    if (!limiter) return false
+    const result = await limiter.limit(userId)
+    return !result.success
+  } catch {
+    return false // fail open
+  }
+}
+
+/**
  * Check rate limit for a user. Returns null if allowed, or a 429 response if limited.
  * Fails open if Redis is unavailable (rate limiting is a soft business rule).
  */

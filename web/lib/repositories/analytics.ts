@@ -1,13 +1,15 @@
-import { createServiceClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 
 // Calls the RPC function created in migration 003_user_analytics_rpc.sql
 // Updated in migration 010 to accept optional date-range parameters.
+// Switched from service role to user client (043) so auth.uid() is populated.
 
-export async function getUserAnalytics(userId: string, dateFrom?: string, dateTo?: string) {
-  const supabase = await createServiceClient()
+export async function getUserAnalytics(userId: string, dateFrom?: string, dateTo?: string, timezone?: string) {
+  const supabase = await createClient()
   const args: Record<string, string> = { p_user_id: userId }
-  if (dateFrom) args.p_date_from = dateFrom
-  if (dateTo)   args.p_date_to   = dateTo
+  if (dateFrom)  args.p_date_from = dateFrom
+  if (dateTo)    args.p_date_to   = dateTo
+  if (timezone)  args.p_timezone  = timezone
   // supabase-js v2.95 cannot resolve RPC arg types from manual Database definition
   // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   const { data, error } = await (supabase.rpc as Function)('get_user_analytics', args)

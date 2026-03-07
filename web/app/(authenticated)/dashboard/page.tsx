@@ -33,31 +33,44 @@ function getWeekRange(weekStartDay: 0 | 1): { dateFrom: string; dateTo: string }
 export default async function DashboardPage() {
   const user = await requireAuth()
 
-  const [{ data: subscription }, cursors, entriesPage, projects, tags, stats, settings] = await Promise.all([
-    getUserSubscription(user.id),
-    getUserSyncCursors(user.id),
-    getUserTimeEntries(user.id, { pageSize: 10 }),
-    getUserProjects(user.id),
-    getUserTags(user.id),
-    getUserStats(user.id),
-    getUserSettings(user.id),
-  ])
+  // Pre-compute a wide date range that covers any weekStartDay (0=Sun or 1=Mon)
+  // plus 1 extra day for midnight-crossing entries. This eliminates the sequential
+  // waterfall that previously waited for settings before fetching week entries.
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const wideFrom = new Date(today)
+  wideFrom.setDate(today.getDate() - 8) // 7 days + 1 midnight buffer
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+  // Single parallel fetch — no sequential waterfall
+  const [{ data: subscription }, cursors, entriesPage, projects, tags, stats, settings, weekEntriesPage] =
+    await Promise.all([
+      getUserSubscription(user.id),
+      getUserSyncCursors(user.id),
+      getUserTimeEntries(user.id, { pageSize: 10 }),
+      getUserProjects(user.id),
+      getUserTags(user.id),
+      getUserStats(user.id),
+      getUserSettings(user.id),
+      getUserTimeEntries(user.id, {
+        dateFrom: fmt(wideFrom),
+        dateTo: fmt(today),
+        pageSize: 200,
+      }),
+    ])
 
   const weekStartDay = settings?.week_start_day ?? 1
   const workingDays = settings?.working_days ?? 5 // Mon-Fri default (count, not bitmask)
   const { dateFrom, dateTo } = getWeekRange(weekStartDay)
 
-  // Fetch 1 day before week start to catch entries that cross midnight into the week
+  // Filter pre-fetched wide range to the exact week range (including midnight buffer)
   const fetchFrom = new Date(dateFrom + 'T00:00:00')
   fetchFrom.setDate(fetchFrom.getDate() - 1)
-  const fmt = (d: Date) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-
-  const weekEntriesPage = await getUserTimeEntries(user.id, {
-    dateFrom: fmt(fetchFrom),
-    dateTo,
-    pageSize: 500,
-  })
+  const weekFromStr = fmt(fetchFrom)
+  const weekEntries = weekEntriesPage.data.filter(
+    e => e.date >= weekFromStr && e.date <= dateTo
+  )
 
   const isPremium = subscription?.plan !== 'free' && subscription?.status === 'active'
 
@@ -66,7 +79,7 @@ export default async function DashboardPage() {
       subscription={subscription}
       cursors={cursors ?? []}
       recentEntries={entriesPage.data}
-      weekEntries={weekEntriesPage.data}
+      weekEntries={weekEntries}
       projects={projects}
       tags={tags}
       stats={stats}

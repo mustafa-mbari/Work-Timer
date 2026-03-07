@@ -7,7 +7,7 @@ import {
   getPremiumBreakdown,
   getPromoStats,
   getDomainStats,
-  getAllAuthUsers,
+  getAdminOverview,
 } from '@/lib/repositories/admin'
 
 export async function getAdminStats() {
@@ -22,7 +22,7 @@ export async function getAdminStats() {
     premiumBreakdown,
     promoStats,
     domainStats,
-    authUsers,
+    overview,
   ] = await Promise.all([
     getPlatformStatsRpc(),
     getActiveUsers('1 day'),
@@ -34,14 +34,11 @@ export async function getAdminStats() {
     getPremiumBreakdown(),
     getPromoStats(),
     getDomainStats(),
-    getAllAuthUsers(),
+    getAdminOverview(),
   ])
 
-  const userCount = authUsers.length
-  const newUsersThisWeek = authUsers.filter(u => {
-    const created = new Date(u.created_at)
-    return created >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-  }).length
+  const userCount = overview.total_users
+  const newUsersThisWeek = overview.new_users_this_week
 
   return {
     userCount,

@@ -4,30 +4,27 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import { Users, Crown, UserPlus, Clock, CreditCard, Tag, Globe, ShieldCheck } from 'lucide-react'
-import { getAllAuthUsers, getPlatformStats, getPremiumBreakdown } from '@/lib/repositories/admin'
+import { getAdminOverview, getPlatformStats, getPremiumBreakdown } from '@/lib/repositories/admin'
 
 export const revalidate = 60
 
 export default async function AdminOverviewPage() {
-  const [authUsers, platformStats, premiumBreakdown] = await Promise.all([
-    getAllAuthUsers(),
+  const [overview, platformStats, premiumBreakdown] = await Promise.all([
+    getAdminOverview(),
     getPlatformStats(),
     getPremiumBreakdown(),
   ])
 
-  const total = authUsers.length
+  const total = overview.total_users
   const premium = premiumBreakdown.total_premium
   const free = total - premium
   const totalHours = platformStats.total_hours
 
-  const recentUsers = [...authUsers]
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 10)
-    .map(u => ({
-      email: u.email || 'Unknown',
-      display_name: u.user_metadata?.full_name || u.user_metadata?.name || null,
-      created_at: u.created_at,
-    }))
+  const recentUsers = overview.recent_users.map(u => ({
+    email: u.email || 'Unknown',
+    display_name: u.display_name,
+    created_at: u.created_at,
+  }))
 
   const stats = [
     {

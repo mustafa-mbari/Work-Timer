@@ -626,19 +626,65 @@ $$ LANGUAGE plpgsql;
 
 
 -- --------------------------------------------------------
--- Admin: platform stats (002)
+-- Index for admin overview recent users query (043)
+-- --------------------------------------------------------
+CREATE INDEX IF NOT EXISTS idx_profiles_created_at_desc ON profiles(created_at DESC);
+
+
+-- --------------------------------------------------------
+-- Admin: overview stats (043 — replaces getAllAuthUsers pagination)
+-- --------------------------------------------------------
+CREATE OR REPLACE FUNCTION get_admin_overview()
+RETURNS json LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE result json;
+BEGIN
+  SELECT json_build_object(
+    'total_users', (SELECT count(*)::integer FROM profiles),
+    'new_users_this_week', (
+      SELECT count(*)::integer FROM profiles
+      WHERE created_at >= (now() - interval '7 days')
+    ),
+    'recent_users', (
+      SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)
+      FROM (
+        SELECT email, display_name, created_at
+        FROM profiles
+        ORDER BY created_at DESC
+        LIMIT 10
+      ) t
+    )
+  ) INTO result;
+  RETURN result;
+END;
+$$;
+
+
+-- --------------------------------------------------------
+-- Admin: platform stats (002, optimized in 043)
 -- --------------------------------------------------------
 CREATE OR REPLACE FUNCTION get_platform_stats()
 RETURNS json LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE result json;
 BEGIN
   SELECT json_build_object(
-    'total_entries',    (SELECT count(*) FROM time_entries WHERE deleted_at IS NULL),
-    'total_hours',      (SELECT COALESCE(sum(duration) / 3600000.0, 0) FROM time_entries WHERE deleted_at IS NULL),
-    'entry_count_30d',  (SELECT count(*) FROM time_entries WHERE deleted_at IS NULL AND date >= (current_date - interval '30 days')::text),
-    'project_count',    (SELECT count(*) FROM projects WHERE deleted_at IS NULL),
-    'avg_session_ms',   (SELECT COALESCE(avg(duration), 0) FROM time_entries WHERE deleted_at IS NULL)
-  ) INTO result;
+    'total_entries',   COALESCE(te.total_entries, 0),
+    'total_hours',     COALESCE(te.total_hours, 0),
+    'entry_count_30d', COALESCE(te.entry_count_30d, 0),
+    'project_count',   COALESCE(pc.cnt, 0),
+    'avg_session_ms',  COALESCE(te.avg_session_ms, 0)
+  ) INTO result
+  FROM (
+    SELECT
+      count(*)            AS total_entries,
+      sum(duration) / 3600000.0 AS total_hours,
+      count(*) FILTER (WHERE date >= (current_date - interval '30 days')::text) AS entry_count_30d,
+      avg(duration)       AS avg_session_ms
+    FROM time_entries
+    WHERE deleted_at IS NULL
+  ) te
+  CROSS JOIN (
+    SELECT count(*) AS cnt FROM projects WHERE deleted_at IS NULL
+  ) pc;
   RETURN result;
 END;
 $$;
@@ -735,12 +781,13 @@ $$;
 
 
 -- --------------------------------------------------------
--- User analytics with date-range filtering (021 — final)
+-- User analytics with date-range filtering (021, hardened in 043)
 -- --------------------------------------------------------
 CREATE OR REPLACE FUNCTION get_user_analytics(
   p_user_id   uuid,
   p_date_from TEXT DEFAULT NULL,
-  p_date_to   TEXT DEFAULT NULL
+  p_date_to   TEXT DEFAULT NULL,
+  p_timezone  TEXT DEFAULT 'UTC'
 )
 RETURNS json LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
@@ -752,7 +799,16 @@ DECLARE
   v_streak         integer;
   v_from_date      date;
   v_to_date        date;
+  v_today          date;
 BEGIN
+  -- Security: only allow users to query their own analytics
+  IF auth.uid() IS NULL OR auth.uid() != p_user_id THEN
+    RAISE EXCEPTION 'Unauthorized: cannot access another user''s analytics';
+  END IF;
+
+  -- Timezone-aware "today"
+  v_today := (current_timestamp AT TIME ZONE p_timezone)::date;
+
   v_from_date := CASE WHEN p_date_from IS NOT NULL THEN p_date_from::date ELSE NULL END;
   v_to_date   := CASE WHEN p_date_to   IS NOT NULL THEN p_date_to::date   ELSE NULL END;
 
@@ -767,19 +823,20 @@ BEGIN
     AND (v_from_date IS NULL OR date::date >= v_from_date)
     AND (v_to_date   IS NULL OR date::date <= v_to_date);
 
+  -- Streak calculation (timezone-aware)
   WITH daily AS (
     SELECT DISTINCT date::date AS d FROM time_entries
     WHERE user_id = p_user_id AND deleted_at IS NULL ORDER BY d DESC
   ),
   streak_calc AS (
     SELECT d, d - (row_number() OVER (ORDER BY d DESC))::integer AS grp
-    FROM daily WHERE d >= current_date - interval '365 days'
+    FROM daily WHERE d >= v_today - interval '365 days'
   )
   SELECT count(*)::integer INTO v_streak
   FROM streak_calc
   WHERE grp = (
     SELECT grp FROM streak_calc
-    WHERE d = current_date OR d = current_date - 1
+    WHERE d = v_today OR d = v_today - 1
     ORDER BY d DESC LIMIT 1
   );
 
@@ -797,8 +854,8 @@ BEGIN
       FROM (
         WITH week_series AS (
           SELECT generate_series(
-            date_trunc('week', COALESCE(v_from_date, current_date - interval '11 weeks')),
-            date_trunc('week', COALESCE(v_to_date,   current_date)),
+            date_trunc('week', COALESCE(v_from_date, v_today - interval '11 weeks')),
+            date_trunc('week', COALESCE(v_to_date,   v_today)),
             interval '1 week'
           )::date AS week_start
         )
@@ -850,8 +907,8 @@ BEGIN
       FROM (
         WITH day_series AS (
           SELECT generate_series(
-            COALESCE(v_from_date, current_date - 29),
-            COALESCE(v_to_date,   current_date),
+            COALESCE(v_from_date, v_today - 29),
+            COALESCE(v_to_date,   v_today),
             interval '1 day'
           )::date AS d
         )
@@ -979,7 +1036,7 @@ $$;
 
 
 -- --------------------------------------------------------
--- Group analytics (015)
+-- Group analytics (015, fixed in 043: plan_roles join + email masking)
 -- --------------------------------------------------------
 CREATE OR REPLACE FUNCTION get_group_analytics(
   p_group_id  TEXT,
@@ -993,16 +1050,19 @@ DECLARE
   v_from_date date;
   v_to_date   date;
   v_is_member boolean;
-  v_is_allin  boolean;
+  v_is_team   boolean;
 BEGIN
   SELECT EXISTS (SELECT 1 FROM group_members gm WHERE gm.group_id = p_group_id AND gm.user_id = p_user_id)
   INTO v_is_member;
   IF NOT v_is_member THEN RETURN json_build_object('error', 'Not a member of this group'); END IF;
 
+  -- Use plan_roles table instead of hardcoded LIKE 'allin_%'
   SELECT EXISTS (
-    SELECT 1 FROM subscriptions s WHERE s.user_id = p_user_id AND s.status = 'active' AND s.plan LIKE 'allin_%'
-  ) INTO v_is_allin;
-  IF NOT v_is_allin THEN RETURN json_build_object('error', 'All-In subscription required'); END IF;
+    SELECT 1 FROM subscriptions s
+    JOIN plan_roles pr_role ON pr_role.plan = s.plan
+    WHERE s.user_id = p_user_id AND s.status = 'active' AND pr_role.role_name = 'team'
+  ) INTO v_is_team;
+  IF NOT v_is_team THEN RETURN json_build_object('error', 'Team subscription required'); END IF;
 
   v_from_date := CASE WHEN p_date_from IS NOT NULL THEN p_date_from::date ELSE NULL END;
   v_to_date   := CASE WHEN p_date_to   IS NOT NULL THEN p_date_to::date   ELSE NULL END;
@@ -1027,11 +1087,13 @@ BEGIN
     'member_count', (SELECT count(*)::integer FROM group_members WHERE group_id = p_group_id),
     'member_stats', (
       SELECT COALESCE(json_agg(json_build_object(
-        'user_id', sub.user_id, 'display_name', sub.display_name, 'email', sub.email,
+        'user_id', sub.user_id, 'display_name', sub.display_name, 'email', sub.masked_email,
         'hours', sub.hours, 'entries', sub.entries
       ) ORDER BY sub.hours DESC NULLS LAST), '[]'::json)
       FROM (
-        SELECT gm.user_id, COALESCE(pr.display_name, pr.email) AS display_name, pr.email,
+        SELECT gm.user_id,
+          COALESCE(pr.display_name, LEFT(pr.email, 1) || '***@' || SPLIT_PART(pr.email, '@', 2)) AS display_name,
+          LEFT(pr.email, 1) || '***@' || SPLIT_PART(pr.email, '@', 2) AS masked_email,
           COALESCE(round(sum(te.duration) / 3600000.0, 2), 0) AS hours,
           count(te.id)::integer AS entries
         FROM group_members gm

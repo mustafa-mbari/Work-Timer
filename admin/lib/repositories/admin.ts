@@ -7,6 +7,16 @@ async function callRpc(name: string, args?: Record<string, unknown>) {
   return (supabase.rpc as Function)(name, args)
 }
 
+export async function getAdminOverview() {
+  const { data, error } = await callRpc('get_admin_overview')
+  if (error) throw new Error(`get_admin_overview failed: ${(error as any).message}`)
+  return data as {
+    total_users: number
+    new_users_this_week: number
+    recent_users: Array<{ email: string; display_name: string | null; created_at: string }>
+  }
+}
+
 export async function getPlatformStats() {
   const { data, error } = await callRpc('get_platform_stats')
   if (error) throw new Error(`get_platform_stats failed: ${(error as any).message}`)

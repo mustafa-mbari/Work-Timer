@@ -21,6 +21,7 @@ import TimeChart from './TimeChart'
 import { requireAuth } from '@/lib/services/auth'
 import { isPremiumUser } from '@/lib/services/billing'
 import { getUserAnalytics } from '@/lib/services/analytics'
+import { isRateLimited, getUserTier } from '@/lib/rateLimitRedis'
 
 // Static preview data shown (blurred) to free users
 const PREVIEW_DATA = {
@@ -130,6 +131,23 @@ export default async function AnalyticsPage({
 
           {/* Fade-out gradient at the bottom so the page doesn't look cut off */}
           <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-white dark:from-[var(--dark)] to-transparent pointer-events-none" />
+        </div>
+      </div>
+    )
+  }
+
+  // Rate limit analytics queries (expensive RPC)
+  if (await isRateLimited(user.id, await getUserTier(user.id))) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
+          <AlertTriangle className="h-12 w-12 text-amber-400" />
+          <div>
+            <p className="text-base font-medium text-stone-700 dark:text-stone-300">{t('error.title')}</p>
+            <p className="text-sm text-stone-400 dark:text-stone-500 mt-1">
+              Too many requests. Please wait a moment before refreshing.
+            </p>
+          </div>
         </div>
       </div>
     )
