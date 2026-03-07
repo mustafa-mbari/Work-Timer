@@ -56,7 +56,8 @@ Track your work time with stopwatch, manual entry, and Pomodoro modes. Try it in
 - **Entry Links** -- Attach URLs to time entries (opens in new tab)
 - **Idle Detection** -- Prompt to keep or discard idle time
 - **Export** -- CSV, Excel, and PDF export. PDF reports include user info, summary stats, weekly stacked bar chart, project/tag breakdowns with percentages, daily summary table, and detailed entries with tags column. Branded footer with page numbers.
-- **Role-Based Export Quotas** -- Monthly export limits enforced per plan role (Pro: 10 PDF / 20 Excel / 30 CSV; Team: 20 PDF / 30 Excel / 30 CSV). Tracked server-side with atomic PostgreSQL counters. Quota badge shown inline next to each export button; resets on the 1st of each month.
+- **Role-Based Export Quotas** -- Monthly export limits enforced per plan role (Pro: 10 PDF / 20 Excel / 30 CSV; Team: 20 PDF / 30 Excel / 30 CSV). Tracked server-side with atomic PostgreSQL counters. Single "Export" dropdown menu with CSV/Excel/PDF options; quota limits hidden until exhausted, then surfaced via header notification bell.
+- **Notification Bell** -- In-app notification system in the authenticated header. Session-scoped alerts for quota exhaustion and other warnings. Red dot badge for unread notifications, dropdown with colored status dots, relative timestamps, and clear all.
 - **Browser Integration** -- Floating timer widget, right-click context menu
 
 ### Guest Mode
@@ -85,7 +86,7 @@ See [HowToDoPlan.md](HowToDoPlan.md) for the full Stripe setup guide (creating p
 ### Companion Website
 
 - **Dashboard** -- Account overview, weekly stacked bar chart (CSS, per-project colors, hours per day), project/tag management with inline editing, default tag linking
-- **Earnings** -- Tag-based earnings reports with daily charts, groupBy toggle (tag/project), CSV/Excel/PDF export with configurable date range, sheets, and language. Role-based monthly export quotas (Pro/Team) with inline quota badge and atomic server-side tracking.
+- **Earnings** -- Tag-based earnings reports with daily charts, groupBy toggle (tag/project), single "Export" dropdown (CSV/Excel/PDF) with configurable date range, sheets, and language. Role-based monthly export quotas (Pro/Team) tracked atomically server-side; quota exhaustion routed to header notification bell.
 - **Groups** -- Team time management with timesheet approval workflow. Atomic group creation (single transaction), race-condition-safe share auto-creation (unique partial index), granular RLS policies (per-operation), optimized list queries (entries JSONB excluded from lists, fetched on-demand). Admins configure recurring share schedules, review and approve/deny member submissions, generate CSV reports. Members submit auto-filled timesheets, view own stats, and see team member names (no hours). Shared UI components (StatusBadge, MemberAvatar, EmptyState) with 3-level tab hierarchy (pill segments, underline tabs, filter pills)
 - **Analytics** -- Weekly trends, project breakdowns, peak hours, streaks
 - **Support** -- Submit support tickets (bug reports, account/billing/sync issues) with priority and platform selection; view ticket history and status updates
@@ -283,7 +284,7 @@ pnpm run lint
 - **Optimized sync**: Conditional pull via `has_changes_since()` RPC, single multiplexed Realtime channel (1 connection per user), 15-minute periodic sync with debounced entry saves (~150-300 queries/user/day, ~97 KB egress/day).
 - **Webhook idempotency**: Insert-first Stripe event deduplication — claim event via INSERT before processing; unique constraint prevents concurrent duplicates. Failed processing releases the claim, allowing Stripe retries.
 - **Input validation**: All API routes validated with Zod schemas.
-- **Export quota enforcement**: Monthly limits per plan role (`free/pro/team`) tracked atomically server-side via PostgreSQL `FOR UPDATE` row locks. Quota charged before generation begins; fails open on DB errors to avoid blocking paying users.
+- **Export quota enforcement**: Monthly limits per plan role (`free/pro/team`) tracked atomically server-side via PostgreSQL `FOR UPDATE` row locks. Quota charged before generation begins; fails open on DB errors to avoid blocking paying users. Quota exhaustion surfaces as header notification (no inline badges).
 - **Corporate proxy safe**: Static assets served from trusted CDN domain via `assetPrefix`; all auth flows use server-side API routes (no browser-to-Supabase calls); extension bridge uses content script relay (no extension ID dependency).
 - **Groups performance**: Batch member count queries (no N+1), parallel data fetching, debounced preview requests, granular refresh (member-only vs full). List API excludes entries JSONB (fetched on-demand via detail endpoint).
 - **Groups security**: Atomic group creation via `SECURITY DEFINER` RPC (prevents orphan groups), unique partial index on active shares (prevents race condition duplicates), granular RLS policies per operation (select/insert/update/delete), defense-in-depth membership and admin role checks in repository layer, `.range(0, 4999)` caps on entry fetches.

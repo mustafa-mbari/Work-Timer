@@ -121,9 +121,11 @@ web/
     login/, register/   # Auth forms
     page.tsx            # Landing page
     globals.css         # Tailwind imports + dark mode variables
+  contexts/
+    NotificationContext.tsx  # Session-scoped notification context + useNotifications() hook
   components/
     ui/                 # shadcn/ui components
-    Navbar.tsx, PricingPlans.tsx, ThemeToggle.tsx
+    Navbar.tsx, PricingPlans.tsx, ThemeToggle.tsx, NotificationBell.tsx
   lib/
     repositories/       # Typed Supabase query functions (11 modules)
     services/           # Business logic (auth, analytics, billing, earnings)
@@ -415,16 +417,25 @@ Monthly export limits enforced per plan role. Free users remain blocked from the
 **Frontend (`web/app/(authenticated)/earnings/`):**
 
 - `useExportQuota.ts` -- `'use client'` hook; fetches `/api/export/usage` on mount; `trackExport(type)` calls `POST /api/export/track`, updates quota optimistically, returns `false` on 429, `true` otherwise (fails open on network errors)
-- `ExportQuotaBadge.tsx` -- `{used}/{limit} this month`; stone-400 normal, amber warning (≤2 remaining), rose-500 exhausted
-- `EarningsView.tsx` -- integrates `useExportQuota`; derives `csvItem/pdfItem/excelItem` from `quota.items`; CSV button disabled when `remaining===0`; passes `onTrackExport` + `quotaItem` props to both dialogs
-- `EarningsExportDialog.tsx` / `EarningsExcelDialog.tsx` -- call `onTrackExport()` before fetch+generation; show error if denied; generate button disabled when `remaining===0`; quota badge shown above footer
+- `EarningsView.tsx` -- single "Export" `DropdownMenu` with CSV/Excel/PDF items (replaces 3 separate buttons); integrates `useExportQuota` + `useNotifications`; on quota exhaustion sends notification to header bell instead of inline error
+- `EarningsExportDialog.tsx` / `EarningsExcelDialog.tsx` -- call `onTrackExport()` before fetch+generation; on quota denial close dialog and send notification via `useNotifications()`; no inline quota badges
+
+**Notification system (`web/contexts/NotificationContext.tsx` + `web/components/NotificationBell.tsx`):**
+
+- `NotificationProvider` wraps `(authenticated)/layout.tsx`; session-scoped (React state, not persisted)
+- `useNotifications()` hook: `addNotification()`, `markRead()`, `markAllRead()`, `clearAll()`, `unreadCount`
+- `Notification` type: `{ id, type: 'warning'|'error'|'info', title, message, timestamp, read }`
+- Deduplicates unread notifications with same title; caps at 50 (drops oldest)
+- `NotificationBell` in `AppHeader` between ExtensionStatusButton and ThemeToggle
+- Red dot badge when `unreadCount > 0`; DropdownMenu (`w-80`, `align="end"`) with colored status dots (amber/rose/indigo), relative timestamps, mark all read on open, clear all button
 
 **Key design decisions:**
 
 - Quota charged **before** generation (not after) — simpler; a failed client-side render does not decrement the count
 - **Fail open** on DB/network errors — export limits are a soft business rule, not a security boundary
 - UTC `year_month` computed server-side for timezone consistency
-- No toast library — inline error messages matching existing dialog error pattern
+- Quota limits **hidden** from user until exhausted — then surfaced via header notification bell (not inline badges)
+- `ExportQuotaBadge.tsx` removed — no longer used anywhere
 
 ### Groups & Timesheet Approval System
 

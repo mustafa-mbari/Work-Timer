@@ -1,9 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { Download, FileText, Table2 } from 'lucide-react'
+import { Download, FileText, Table2, ChevronDown } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   Table,
   TableBody,
@@ -15,8 +21,8 @@ import {
 import type { EarningsReport } from '@/lib/services/earnings'
 import EarningsExportDialog from './EarningsExportDialog'
 import EarningsExcelDialog from './EarningsExcelDialog'
-import ExportQuotaBadge from './ExportQuotaBadge'
 import { useExportQuota } from './useExportQuota'
+import { useNotifications } from '@/contexts/NotificationContext'
 
 interface Props {
   data: EarningsReport
@@ -26,15 +32,11 @@ interface Props {
 
 export default function EarningsView({ data, groupBy = 'tag', dateRange }: Props) {
   const [exporting, setExporting] = useState(false)
-  const [exportError, setExportError] = useState<string | null>(null)
   const [pdfOpen, setPdfOpen] = useState(false)
   const [excelOpen, setExcelOpen] = useState(false)
 
-  const { quota, loading: quotaLoading, trackExport } = useExportQuota()
-
-  const csvItem  = quota?.items.find(i => i.export_type === 'csv')
-  const pdfItem  = quota?.items.find(i => i.export_type === 'pdf')
-  const excelItem = quota?.items.find(i => i.export_type === 'excel')
+  const { trackExport } = useExportQuota()
+  const { addNotification } = useNotifications()
 
   const currencySymbol = { USD: '$', EUR: '\u20AC', GBP: '\u00A3', JPY: '\u00A5', CAD: 'C$', AUD: 'A$', CHF: 'CHF', INR: '\u20B9', BRL: 'R$', SEK: 'kr' }[data.currency] ?? data.currency
 
@@ -43,10 +45,13 @@ export default function EarningsView({ data, groupBy = 'tag', dateRange }: Props
   async function handleExportCsv() {
     if (exporting) return
     setExporting(true)
-    setExportError(null)
     const allowed = await trackExport('csv')
     if (!allowed) {
-      setExportError('csv')
+      addNotification({
+        type: 'warning',
+        title: 'CSV export limit reached',
+        message: 'Monthly CSV export limit reached. Resets on the 1st of next month.',
+      })
       setExporting(false)
       return
     }
@@ -76,53 +81,34 @@ export default function EarningsView({ data, groupBy = 'tag', dateRange }: Props
     <Card>
       <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-3">
         <CardTitle>Earnings by {label}</CardTitle>
-        <div className="flex flex-wrap gap-3 items-end">
-          {/* CSV */}
-          <div className="flex flex-col items-end gap-0.5">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
             <Button
               variant="outline"
               size="sm"
-              onClick={handleExportCsv}
-              disabled={exporting || data.items.length === 0 || csvItem?.remaining === 0}
+              disabled={data.items.length === 0}
               className="gap-2"
             >
               <Download className="h-4 w-4" />
+              Export
+              <ChevronDown className="h-3 w-3 opacity-50" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={handleExportCsv} disabled={exporting}>
+              <Download className="mr-2 h-4 w-4" />
               Export CSV
-            </Button>
-            <ExportQuotaBadge item={csvItem} loading={quotaLoading} />
-            {exportError === 'csv' && (
-              <span className="text-xs text-rose-500 dark:text-rose-400">Monthly limit reached</span>
-            )}
-          </div>
-          {/* Excel */}
-          <div className="flex flex-col items-end gap-0.5">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => { setExportError(null); setExcelOpen(true) }}
-              disabled={data.items.length === 0 || excelItem?.remaining === 0}
-              className="gap-2"
-            >
-              <Table2 className="h-4 w-4" />
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setExcelOpen(true)}>
+              <Table2 className="mr-2 h-4 w-4" />
               Export Excel
-            </Button>
-            <ExportQuotaBadge item={excelItem} loading={quotaLoading} />
-          </div>
-          {/* PDF */}
-          <div className="flex flex-col items-end gap-0.5">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => { setExportError(null); setPdfOpen(true) }}
-              disabled={data.items.length === 0 || pdfItem?.remaining === 0}
-              className="gap-2"
-            >
-              <FileText className="h-4 w-4" />
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setPdfOpen(true)}>
+              <FileText className="mr-2 h-4 w-4" />
               Export PDF
-            </Button>
-            <ExportQuotaBadge item={pdfItem} loading={quotaLoading} />
-          </div>
-        </div>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </CardHeader>
       <CardContent>
         {data.items.length === 0 ? (
@@ -174,7 +160,6 @@ export default function EarningsView({ data, groupBy = 'tag', dateRange }: Props
         groupBy={groupBy}
         dateRange={dateRange}
         onTrackExport={() => trackExport('excel')}
-        quotaItem={excelItem}
       />
       <EarningsExportDialog
         open={pdfOpen}
@@ -183,7 +168,6 @@ export default function EarningsView({ data, groupBy = 'tag', dateRange }: Props
         groupBy={groupBy}
         dateRange={dateRange}
         onTrackExport={() => trackExport('pdf')}
-        quotaItem={pdfItem}
       />
     </Card>
   )

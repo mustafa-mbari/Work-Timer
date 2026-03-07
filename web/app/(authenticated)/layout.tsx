@@ -9,6 +9,7 @@ import AppHeader from './AppHeader'
 import { ExtensionBanner } from '@/components/ExtensionBanner'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { SidebarLockProvider } from '@/hooks/use-sidebar-lock'
+import { NotificationProvider } from '@/contexts/NotificationContext'
 
 export default async function AuthenticatedLayout({
   children,
@@ -55,18 +56,20 @@ export default async function AuthenticatedLayout({
   return (
     <SidebarProvider defaultOpen={sidebarOpen}>
       <SidebarLockProvider defaultMode={sidebarMode}>
-        <AppSidebar isPremium={premium} isAllIn={allIn} userInfo={userInfo} />
-        <SidebarInset className="bg-stone-50 dark:bg-[var(--dark)]">
-          <AppHeader userInfo={userInfo} />
-          <ExtensionBanner />
-          <div className="flex-1 overflow-y-auto">
-            <div className="mx-auto w-full max-w-[85%] px-8 py-8">
-              <LastPageTracker />
-              <TabTitleTimer />
-              {children}
+        <NotificationProvider>
+          <AppSidebar isPremium={premium} isAllIn={allIn} userInfo={userInfo} />
+          <SidebarInset className="bg-stone-50 dark:bg-[var(--dark)]">
+            <AppHeader userInfo={userInfo} />
+            <ExtensionBanner />
+            <div className="flex-1 overflow-y-auto">
+              <div className="mx-auto w-full max-w-[85%] px-8 py-8">
+                <LastPageTracker />
+                <TabTitleTimer />
+                {children}
+              </div>
             </div>
-          </div>
-        </SidebarInset>
+          </SidebarInset>
+        </NotificationProvider>
       </SidebarLockProvider>
     </SidebarProvider>
   )

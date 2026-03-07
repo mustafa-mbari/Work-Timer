@@ -7,6 +7,7 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import { UserMenu } from '@/components/UserMenu'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { ExtensionStatusButton } from '@/components/ExtensionStatusButton'
+import { NotificationBell } from '@/components/NotificationBell'
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar'
 
 const PAGE_META: { match: string; title: string; description?: string }[] = [
@@ -87,6 +88,9 @@ export default function AppHeader({ userInfo }: Props) {
 
           {/* Extension reconnect */}
           <ExtensionStatusButton />
+
+          {/* Notifications */}
+          <NotificationBell />
 
           {/* Theme toggle */}
           <ThemeToggle />
