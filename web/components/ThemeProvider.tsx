@@ -35,7 +35,7 @@ export function ThemeProvider({ children, initialTheme = "system" }: ThemeProvid
   // Resolve actual theme after mount (handles "system" preference detection)
   useEffect(() => {
     const resolved = theme === "system" ? getSystemTheme() : theme
-    setResolvedTheme(resolved) // eslint-disable-line react-hooks/set-state-in-effect
+    setResolvedTheme(prev => prev !== resolved ? resolved : prev)
     applyTheme(resolved)
 
     const mq = window.matchMedia("(prefers-color-scheme: dark)")

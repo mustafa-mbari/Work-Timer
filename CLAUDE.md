@@ -254,6 +254,8 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 **Extension:**
 
 - `useTimer` uses event-driven `TIMER_SYNC` messages (no 5s polling)
+- Render-pure timer hooks: `useElapsed` and `usePomodoroRemaining` in `useTimerTick.ts` use `useRef(Date.now())` updated in `setInterval` callbacks (no `Date.now()` in render phase)
+- `PomodoroMode.tsx` derives `currentWorkElapsed` from `phaseDuration - pomodoroTimeRemaining` (no `Date.now()` in JSX)
 - Premium status cached in module-level variable with `chrome.storage.onChanged` invalidation
 - `React.lazy()` for WeekView, StatsView, SettingsView with `<Suspense>`
 - Dynamic `import('xlsx')` and `import('jspdf')` inside export functions (not top-level)
@@ -273,6 +275,10 @@ Shared types in `shared/types.ts` define typed interfaces for all tables with a 
 - `getSubscriptionFlags()` deduplicates premium + allIn checks in layout (1 query instead of 2)
 - Dashboard `page.tsx` uses single `Promise.all` with wide date range (today-8 to today) to avoid sequential waterfall; filters client-side after settings resolve. `pageSize: 200` for week entries (reduced from 500)
 - Analytics `page.tsx` rate-limited via `isRateLimited()` before executing expensive RPC
+- `TimerWidget.tsx` uses `swNowRef`/`pomNowRef` refs updated in tick intervals (no `Date.now()` in render phase; gauge and stopwatch always agree within same render)
+- `ThemeProvider.tsx` uses functional updater to skip no-op re-renders on mount
+- Landing page (`web/app/(public)/page.tsx`) is static — no server-side auth check (passes `isLoggedIn={false}`)
+- Webhook payload size guard: rejects requests > 1MB before reading body (`web/app/api/webhooks/stripe/route.ts`)
 
 ### Dashboard Weekly Chart (`WeeklyProjectChart.tsx`)
 

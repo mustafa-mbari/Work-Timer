@@ -276,6 +276,7 @@ pnpm run lint
 
 - **Offline-first**: Extension works 100% without internet. Cloud sync is additive.
 - **Event-driven timer**: Popup receives `TIMER_SYNC` broadcasts from background (no polling).
+- **Render-pure timer hooks**: All timer display hooks use `useRef` for `Date.now()` captures inside `setInterval` callbacks — no impure `Date.now()` calls during React render phase. Timer, pomodoro countdown, and daily goal gauge all read from the same ref within a render for consistency.
 - **Code splitting**: Heavy libraries (recharts, xlsx, supabase) in separate chunks, lazy loaded.
 - **Repository pattern**: All database queries centralized in `web/lib/repositories/` with typed Supabase calls.
 - **Server-side aggregation**: Admin stats and user analytics computed via PostgreSQL RPC functions (not client-side JS). Admin overview uses `get_admin_overview()` RPC (no more loading all auth users into memory). `get_platform_stats()` uses single-scan `FILTER` optimization.

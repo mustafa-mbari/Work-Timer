@@ -142,8 +142,9 @@ export default memo(function PomodoroMode({
 
         {/* Session dots */}
         {(() => {
-          const currentWorkElapsed = pomodoroState.active && pomodoroState.phase === 'work' && pomodoroState.phaseStartedAt
-            ? Date.now() - pomodoroState.phaseStartedAt
+          // Derive elapsed from remaining (already tick-driven via usePomodoroRemaining)
+          const currentWorkElapsed = pomodoroState.active && pomodoroState.phase === 'work'
+            ? pomodoroState.phaseDuration - pomodoroTimeRemaining
             : 0
           const totalFocused = pomodoroState.totalWorkTime + currentWorkElapsed
           const isWorkPhaseActive = pomodoroState.active && pomodoroState.phase === 'work'

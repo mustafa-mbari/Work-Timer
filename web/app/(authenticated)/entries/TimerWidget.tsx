@@ -439,6 +439,7 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTarge
   const [swElapsed, setSwElapsed] = useState(saved?.swElapsed ?? 0)
   const [swTick, setSwTick] = useState(0)
   const swTickRef = useRef<ReturnType<typeof setInterval>>(null)
+  const swNowRef = useRef(Date.now())
   const swRealStartRef = useRef<number | null>(saved?.swRealStart ?? null)
 
   // ── Manual state ──
@@ -458,6 +459,7 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTarge
   const [pomTotalWork, setPomTotalWork] = useState(saved?.pomTotalWork ?? 0)
   const [pomTick, setPomTick] = useState(0)
   const pomTickRef = useRef<ReturnType<typeof setInterval>>(null)
+  const pomNowRef = useRef(Date.now())
   const pomWorkStartRef = useRef<number | null>(saved?.pomWorkStart ?? null)
   // Remaining work time (ms) when user manually skips to break early; 0 = next session is fresh
   const [pomRemainingWork, setPomRemainingWork] = useState(saved?.pomRemainingWork ?? 0)
@@ -495,13 +497,13 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTarge
     }
   }, [mode, projectId, description, selectedTagId, link, swStatus, swStartTime, swElapsed, pomActive, pomPhase, pomPhaseStart, pomPhaseDuration, pomSessions, pomTotalWork, pomRemainingWork, pomAccumWork])
 
-  // ── Computed values (NO useMemo — must recalculate on every tick render) ──
+  // ── Computed values (recalculated on every tick render via nowRef) ──
   const swCurrentElapsed = (swStatus === 'running' && swStartTime)
-    ? swElapsed + (Date.now() - swStartTime)
+    ? swElapsed + (swNowRef.current - swStartTime)
     : swElapsed
 
   const pomTimeRemaining = (pomActive && pomPhaseStart)
-    ? Math.max(0, pomPhaseDuration - (Date.now() - pomPhaseStart))
+    ? Math.max(0, pomPhaseDuration - (pomNowRef.current - pomPhaseStart))
     : pomPhaseDuration
 
   const pomProgress = pomActive && pomPhaseDuration > 0
@@ -532,7 +534,10 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTarge
   // ── Tick effects ──
   useEffect(() => {
     if (swStatus === 'running') {
-      swTickRef.current = setInterval(() => setSwTick(t => t + 1), 1000)
+      swTickRef.current = setInterval(() => {
+        swNowRef.current = Date.now()
+        setSwTick(t => t + 1)
+      }, 1000)
     } else {
       if (swTickRef.current) clearInterval(swTickRef.current)
     }
@@ -542,8 +547,9 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTarge
   useEffect(() => {
     if (pomActive) {
       pomTickRef.current = setInterval(() => {
+        pomNowRef.current = Date.now()
         setPomTick(t => t + 1)
-        if (pomPhaseStart && Date.now() - pomPhaseStart >= pomPhaseDuration) {
+        if (pomPhaseStart && pomNowRef.current - pomPhaseStart >= pomPhaseDuration) {
           advancePomPhase()
         }
       }, 500)
@@ -865,7 +871,7 @@ export default function TimerWidget({ projects, tags, pomodoroConfig, dailyTarge
   if (mode === 'stopwatch' && swStatus !== 'idle') {
     activeDurationMs = swCurrentElapsed
   } else if (mode === 'pomodoro' && pomActive && pomPhase === 'work' && pomPhaseStart) {
-    activeDurationMs = Date.now() - pomPhaseStart
+    activeDurationMs = pomNowRef.current - pomPhaseStart
   }
   const totalTodayMs = todayTotalMs + activeDurationMs
   const goalPct = dailyTargetHours > 0

@@ -265,9 +265,6 @@ importers:
       '@sentry/nextjs':
         specifier: ^10.42.0
         version: 10.42.0(@opentelemetry/context-async-hooks@2.6.0(@opentelemetry/api@1.9.0))(@opentelemetry/core@2.6.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.6.0(@opentelemetry/api@1.9.0))(next@16.2.0-canary.84(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)(webpack@5.105.4)
-      '@stripe/stripe-js':
-        specifier: ^8.9.0
-        version: 8.9.0
       '@supabase/ssr':
         specifier: ^0.9.0
         version: 0.9.0(@supabase/supabase-js@2.98.0)
@@ -2184,10 +2181,6 @@ packages:
 
   '@standard-schema/utils@0.3.0':
     resolution: {integrity: sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g==}
-
-  '@stripe/stripe-js@8.9.0':
-    resolution: {integrity: sha512-OJkXvUI5GAc56QdiSRimQDvWYEqn475J+oj8RzRtFTCPtkJNO2TWW619oDY+nn1ExR+2tCVTQuRQBbR4dRugww==}
-    engines: {node: '>=12.16'}
 
   '@supabase/auth-js@2.98.0':
     resolution: {integrity: sha512-GBH361T0peHU91AQNzOlIrjUZw9TZbB9YDRiyFgk/3Kvr3/Z1NWUZ2athWTfHhwNNi8IrW00foyFxQD9IO/Trg==}
@@ -6721,8 +6714,6 @@ snapshots:
   '@standard-schema/spec@1.1.0': {}
 
   '@standard-schema/utils@0.3.0': {}
-
-  '@stripe/stripe-js@8.9.0': {}
 
   '@supabase/auth-js@2.98.0':
     dependencies:

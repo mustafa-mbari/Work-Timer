@@ -142,6 +142,12 @@ async function releaseEvent(eventId: string): Promise<void> {
 }
 
 export async function POST(request: NextRequest) {
+  // Guard against oversized payloads (Stripe webhooks are always < 100KB)
+  const contentLength = request.headers.get('content-length')
+  if (contentLength && parseInt(contentLength, 10) > 1_000_000) {
+    return NextResponse.json({ error: 'Payload too large' }, { status: 413 })
+  }
+
   const body = await request.text()
   const signature = request.headers.get('stripe-signature')
 

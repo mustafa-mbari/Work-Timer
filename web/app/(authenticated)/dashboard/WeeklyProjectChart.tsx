@@ -11,11 +11,10 @@ interface Props {
   entries: TimeEntry[]
   projects: ProjectFull[]
   weekStartDay: 0 | 1        // 0 = Sunday, 1 = Monday
-  workingDays: number         // bitmask: bit 0 = Sun, bit 1 = Mon, ...
+  workingDays: number         // count: 5 = Mon–Fri, 6 = Mon–Sat, 7 = all
 }
 
 const FALLBACK_COLOR = '#a8a29e'     // stone-400 for "No project"
-const NO_PROJECT_KEY = '__none__'
 const BAR_H          = 156           // px, fixed height of the bar area
 
 function getWeekStart(weekStartDay: 0 | 1): Date {
