@@ -14,7 +14,7 @@ export async function checkApiQuota(
   const supabase = await createServiceClient()
   const ym = currentYearMonth()
 
-  const { data, error } = await (supabase.rpc as Function)('check_api_quota', {
+  const { data, error } = await supabase.rpc('check_api_quota', {
     p_user_id: userId,
     p_resource_type: resourceType,
     p_year_month: ym,
@@ -36,7 +36,7 @@ export async function getUserApiQuotas(userId: string): Promise<ApiQuotaItem[]> 
   const supabase = await createServiceClient()
   const ym = currentYearMonth()
 
-  const { data, error } = await (supabase.rpc as Function)('get_user_api_quotas', {
+  const { data, error } = await supabase.rpc('get_user_api_quotas', {
     p_user_id: userId,
     p_year_month: ym,
   })
@@ -55,7 +55,7 @@ export async function getUserApiQuotas(userId: string): Promise<ApiQuotaItem[]> 
 export async function getAllApiQuotaLimits(): Promise<DbApiQuotaLimit[]> {
   const supabase = await createServiceClient()
 
-  const { data, error } = await (supabase.rpc as Function)('get_all_api_quota_limits')
+  const { data, error } = await supabase.rpc('get_all_api_quota_limits')
 
   if (error) {
     console.error('[apiQuota] get_all_api_quota_limits RPC error:', error)
@@ -75,7 +75,7 @@ export async function upsertApiQuotaLimit(
 ): Promise<{ error?: string }> {
   const supabase = await createServiceClient()
 
-  const { error } = await (supabase.rpc as Function)('upsert_api_quota_limit', {
+  const { error } = await supabase.rpc('upsert_api_quota_limit', {
     p_role_name: roleName,
     p_resource_type: resourceType,
     p_monthly_limit: monthlyLimit,

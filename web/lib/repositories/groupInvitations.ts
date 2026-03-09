@@ -7,8 +7,8 @@ export type InvitationWithGroup = GroupInvitation & { group_name: string }
 
 export async function createInvitation(groupId: string, email: string, invitedBy: string) {
   const supabase = await createServiceClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase.from('group_invitations') as any)
+
+  const { data, error } = await supabase.from('group_invitations')
     .insert({
       group_id: groupId,
       email: email.toLowerCase(),
@@ -74,14 +74,13 @@ export async function acceptInvitation(invitationId: string, userId: string, use
   if (!invitation) return { error: { message: 'Invitation not found or already processed' } }
 
   // Mark invitation as accepted
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase.from('group_invitations') as any)
+
+  await supabase.from('group_invitations')
     .update({ status: 'accepted' })
     .eq('id', invitationId)
 
   // Add user to group
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('group_members') as any)
+  const { error } = await supabase.from('group_members')
     .insert({ group_id: invitation.group_id, user_id: userId, role: 'member' })
 
   return { error }
@@ -89,8 +88,8 @@ export async function acceptInvitation(invitationId: string, userId: string, use
 
 export async function declineInvitation(invitationId: string, userEmail: string) {
   const supabase = await createServiceClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('group_invitations') as any)
+
+  const { error } = await supabase.from('group_invitations')
     .update({ status: 'declined' })
     .eq('id', invitationId)
     .eq('email', userEmail.toLowerCase())

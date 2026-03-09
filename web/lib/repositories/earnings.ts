@@ -29,9 +29,7 @@ export async function getEarningsReport(
   if (dateFrom) args.p_date_from = dateFrom
   if (dateTo) args.p_date_to = dateTo
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
-  const { data, error } = await (supabase.rpc as Function)('get_earnings_report', args)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if (error) throw new Error(`get_earnings_report failed: ${(error as any).message}`)
+  const { data, error } = await supabase.rpc('get_earnings_report', args)
+  if (error) throw new Error(`get_earnings_report failed: ${error.message}`)
   return data as EarningsReport
 }

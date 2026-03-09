@@ -1,15 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- Supabase v2.95 type workaround for RPC calls */
 import { createServiceClient } from '@/lib/supabase/server'
 
 async function callRpc(name: string, args?: Record<string, unknown>) {
   const supabase = await createServiceClient()
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
-  return (supabase.rpc as Function)(name, args)
+  return supabase.rpc(name as never, args as never)
 }
 
 export async function getAdminOverview() {
   const { data, error } = await callRpc('get_admin_overview')
-  if (error) throw new Error(`get_admin_overview failed: ${(error as any).message}`)
+  if (error) throw new Error(`get_admin_overview failed: ${error.message}`)
   return data as {
     total_users: number
     new_users_this_week: number
@@ -19,7 +17,7 @@ export async function getAdminOverview() {
 
 export async function getPlatformStats() {
   const { data, error } = await callRpc('get_platform_stats')
-  if (error) throw new Error(`get_platform_stats failed: ${(error as any).message}`)
+  if (error) throw new Error(`get_platform_stats failed: ${error.message}`)
   return data as {
     total_entries: number
     total_hours: number
@@ -31,31 +29,31 @@ export async function getPlatformStats() {
 
 export async function getActiveUsers(period: string): Promise<number> {
   const { data, error } = await callRpc('get_active_users', { period })
-  if (error) throw new Error(`get_active_users failed: ${(error as any).message}`)
+  if (error) throw new Error(`get_active_users failed: ${error.message}`)
   return (data as number) ?? 0
 }
 
 export async function getUserGrowth(weeks: number = 8) {
   const { data, error } = await callRpc('get_user_growth', { weeks })
-  if (error) throw new Error(`get_user_growth failed: ${(error as any).message}`)
+  if (error) throw new Error(`get_user_growth failed: ${error.message}`)
   return (data ?? []) as Array<{ week_start: string; signup_count: number }>
 }
 
 export async function getTopUsers(lim: number = 5) {
   const { data, error } = await callRpc('get_top_users', { lim })
-  if (error) throw new Error(`get_top_users failed: ${(error as any).message}`)
+  if (error) throw new Error(`get_top_users failed: ${error.message}`)
   return (data ?? []) as Array<{ user_id: string; email: string; total_hours: number }>
 }
 
 export async function getEntryTypeBreakdown() {
   const { data, error } = await callRpc('get_entry_type_breakdown')
-  if (error) throw new Error(`get_entry_type_breakdown failed: ${(error as any).message}`)
+  if (error) throw new Error(`get_entry_type_breakdown failed: ${error.message}`)
   return (data ?? []) as Array<{ entry_type: string; entry_count: number; total_hours: number }>
 }
 
 export async function getPremiumBreakdown() {
   const { data, error } = await callRpc('get_premium_breakdown')
-  if (error) throw new Error(`get_premium_breakdown failed: ${(error as any).message}`)
+  if (error) throw new Error(`get_premium_breakdown failed: ${error.message}`)
   return data as {
     total_premium: number
     by_plan: Record<string, number> | null
@@ -65,13 +63,13 @@ export async function getPremiumBreakdown() {
 
 export async function getPromoStats() {
   const { data, error } = await callRpc('get_promo_stats')
-  if (error) throw new Error(`get_promo_stats failed: ${(error as any).message}`)
+  if (error) throw new Error(`get_promo_stats failed: ${error.message}`)
   return data as { active_promos: number; total_uses: number }
 }
 
 export async function getDomainStats() {
   const { data, error } = await callRpc('get_domain_stats')
-  if (error) throw new Error(`get_domain_stats failed: ${(error as any).message}`)
+  if (error) throw new Error(`get_domain_stats failed: ${error.message}`)
   return data as { active_domains: number }
 }
 
@@ -149,7 +147,7 @@ export async function findAuthUserByEmail(email: string) {
 
 export async function getAdminGroups() {
   const { data, error } = await callRpc('admin_get_groups')
-  if (error) throw new Error(`admin_get_groups failed: ${(error as any).message}`)
+  if (error) throw new Error(`admin_get_groups failed: ${error.message}`)
   return (data ?? []) as Array<{
     id: string
     name: string
@@ -167,5 +165,5 @@ export async function updateGroupMaxMembers(groupId: string, maxMembers: number)
     p_group_id: groupId,
     p_max_members: maxMembers,
   })
-  if (error) throw new Error(`admin_update_group failed: ${(error as any).message}`)
+  if (error) throw new Error(`admin_update_group failed: ${error.message}`)
 }

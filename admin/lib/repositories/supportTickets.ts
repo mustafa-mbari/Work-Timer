@@ -5,8 +5,7 @@ type SupportTicket = Database['public']['Tables']['support_tickets']['Row']
 
 export async function getAllTickets(filters?: { status?: string; priority?: string }) {
   const supabase = await createServiceClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- supabase-js v2.97+ type narrowing issue with chained .eq() after .returns()
-  let query: any = supabase
+  let query = supabase
     .from('support_tickets')
     .select('id, user_id, user_email, user_name, issue_type, subject, description, priority, platform, issue_time, status, admin_notes, resolved_at, resolved_by, created_at, updated_at')
     .order('created_at', { ascending: false })
@@ -44,8 +43,7 @@ export async function updateTicketStatus(id: string, status: string, adminNotes?
   if (status === 'resolved' || status === 'closed') {
     update.resolved_at = new Date().toISOString()
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- supabase-js v2.95 resolves Update type to `never`
-  return (supabase.from('support_tickets') as any).update(update).eq('id', id)
+  return supabase.from('support_tickets').update(update).eq('id', id)
 }
 
 export async function getTicketStats() {

@@ -58,14 +58,9 @@ export async function getSubscriptionPlanStatus(userId: string) {
   return data
 }
 
-// supabase-js v2.95 resolves Insert/Update types to `never` for hand-crafted Database types.
-// We use `as any` on .from() for mutation operations only; data types are still validated
-// via the SubscriptionInsert/Subscription types on the input parameters.
-
 export async function upsertSubscription(sub: Partial<SubscriptionInsert> & { user_id: string }) {
   const supabase = await createServiceClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (supabase.from('subscriptions') as any).upsert(
+  return supabase.from('subscriptions').upsert(
     sub,
     { onConflict: 'user_id' }
   )
@@ -73,8 +68,7 @@ export async function upsertSubscription(sub: Partial<SubscriptionInsert> & { us
 
 export async function updateSubscriptionByStripeId(stripeSubscriptionId: string, updates: Partial<Subscription>) {
   const supabase = await createServiceClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const result = await (supabase.from('subscriptions') as any)
+  const result = await supabase.from('subscriptions')
     .update(updates)
     .eq('stripe_subscription_id', stripeSubscriptionId)
     .select('id')
@@ -91,7 +85,7 @@ export async function updateSubscriptionByStripeId(stripeSubscriptionId: string,
  */
 export async function expireOverdueSubscriptions() {
   const supabase = await createServiceClient()
-  const { data, error } = await (supabase.from('subscriptions') as any)
+  const { data, error } = await supabase.from('subscriptions')
     .update({ status: 'expired', plan: 'free' })
     .in('status', ['active', 'trialing'])
     .not('current_period_end', 'is', null)

@@ -28,7 +28,7 @@ const PULL_CHUNK_SIZE = 1000
 
 /** Paginated fetch for pull operations — fetches in 1000-row chunks instead of one 50K request */
 async function fetchAllSince<T>(
-  table: string,
+  table: 'time_entries' | 'projects' | 'tags',
   userId: string,
   since: string,
   selectColumns: string

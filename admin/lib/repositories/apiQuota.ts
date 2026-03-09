@@ -12,7 +12,7 @@ export interface ApiQuotaLimit {
 export async function getAllApiQuotaLimits(): Promise<ApiQuotaLimit[]> {
   const supabase = await createServiceClient()
 
-  const { data, error } = await (supabase.rpc as Function)('get_all_api_quota_limits')
+  const { data, error } = await supabase.rpc('get_all_api_quota_limits')
 
   if (error) {
     console.error('[admin/apiQuota] get_all_api_quota_limits RPC error:', error)
@@ -32,7 +32,7 @@ export async function upsertApiQuotaLimit(
 ): Promise<{ error?: string }> {
   const supabase = await createServiceClient()
 
-  const { error } = await (supabase.rpc as Function)('upsert_api_quota_limit', {
+  const { error } = await supabase.rpc('upsert_api_quota_limit', {
     p_role_name: roleName,
     p_resource_type: resourceType,
     p_monthly_limit: monthlyLimit,

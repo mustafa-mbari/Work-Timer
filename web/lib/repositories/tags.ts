@@ -35,7 +35,7 @@ export async function createTag(
   data: { id: string; name: string; color?: string },
 ): Promise<{ error: { message: string } | null }> {
   const supabase = await createClient()
-  const { error } = await (supabase.from('tags') as any).insert({
+  const { error } = await supabase.from('tags').insert({
     id: data.id,
     user_id: userId,
     name: data.name,
@@ -52,7 +52,7 @@ export async function updateTag(
   data: { name?: string; color?: string; hourly_rate?: number | null; earnings_enabled?: boolean },
 ): Promise<{ error: { message: string } | null }> {
   const supabase = await createClient()
-  const { error } = await (supabase.from('tags') as any)
+  const { error } = await supabase.from('tags')
     .update(data)
     .eq('id', id)
     .eq('user_id', userId)
@@ -64,7 +64,7 @@ export async function deleteTag(
   id: string,
 ): Promise<{ error: { message: string } | null }> {
   const supabase = await createClient()
-  const { error } = await (supabase.from('tags') as any)
+  const { error } = await supabase.from('tags')
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', id)
     .eq('user_id', userId)
@@ -77,13 +77,13 @@ export async function setDefaultTag(
 ): Promise<{ error: { message: string } | null }> {
   const supabase = await createClient()
   // Clear all defaults
-  const { error: clearError } = await (supabase.from('tags') as any)
+  const { error: clearError } = await supabase.from('tags')
     .update({ is_default: false })
     .eq('user_id', userId)
     .is('deleted_at', null)
   if (clearError) return { error: clearError }
   // Set the selected one
-  const { error } = await (supabase.from('tags') as any)
+  const { error } = await supabase.from('tags')
     .update({ is_default: true })
     .eq('id', id)
     .eq('user_id', userId)
@@ -96,7 +96,7 @@ export async function reorderTags(
 ): Promise<{ error: { message: string } | null }> {
   const supabase = await createClient()
   for (let i = 0; i < orderedIds.length; i++) {
-    const { error } = await (supabase.from('tags') as any)
+    const { error } = await supabase.from('tags')
       .update({ sort_order: i })
       .eq('id', orderedIds[i])
       .eq('user_id', userId)

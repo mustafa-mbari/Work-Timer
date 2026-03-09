@@ -11,11 +11,8 @@ export async function getUserAnalytics(userId: string, dateFrom?: string, dateTo
   if (dateTo)    args.p_date_to   = dateTo
   // Always pass p_timezone to avoid PostgREST ambiguity between 3-param and 4-param overloads
   args.p_timezone = timezone || 'UTC'
-  // supabase-js v2.95 cannot resolve RPC arg types from manual Database definition
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
-  const { data, error } = await (supabase.rpc as Function)('get_user_analytics', args)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if (error) throw new Error(`get_user_analytics failed: ${(error as any).message}`)
+  const { data, error } = await supabase.rpc('get_user_analytics', args)
+  if (error) throw new Error(`get_user_analytics failed: ${error.message}`)
   return data as {
     total_hours: number
     total_entries: number

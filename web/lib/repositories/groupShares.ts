@@ -172,8 +172,8 @@ export async function createGroupShare(
   const total_hours = Math.round((total_ms / 3_600_000) * 100) / 100
 
   // 5. Insert snapshot
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase.from('group_shares') as any)
+
+  const { data, error } = await supabase.from('group_shares')
     .insert({
       group_id:    groupId,
       user_id:     userId,
@@ -338,8 +338,8 @@ export async function autoCreateOpenShare(
 ): Promise<{ data: GroupShareListItem | null; error: { message: string } | null }> {
   const supabase = await createServiceClient()
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase.from('group_shares') as any)
+
+  const { data, error } = await supabase.from('group_shares')
     .insert({
       group_id:    groupId,
       user_id:     userId,
@@ -431,8 +431,8 @@ export async function adminBulkCreateOpenShares(
     due_date:    dueDate,
   }))
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('group_shares') as any).insert(rows)
+
+  const { error } = await supabase.from('group_shares').insert(rows)
 
   if (error) {
     // Unique constraint violation — some/all shares already exist
@@ -527,8 +527,8 @@ export async function submitShare(
   const total_hours = Math.round((total_ms / 3_600_000) * 100) / 100
 
   // 6. Update share with entries + submitted status
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('group_shares') as any)
+
+  const { error } = await supabase.from('group_shares')
     .update({
       entries,
       entry_count:  entries.length,
@@ -573,8 +573,8 @@ export async function reviewShare(
   }
 
   if (action === 'approve') {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase.from('group_shares') as any)
+  
+    const { error } = await supabase.from('group_shares')
       .update({
         status:      'approved',
         reviewed_at: new Date().toISOString(),
@@ -586,8 +586,8 @@ export async function reviewShare(
     if (error) return { error: { message: error.message } }
   } else {
     // Deny: reset to open, clear entries so member re-submits
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase.from('group_shares') as any)
+  
+    const { error } = await supabase.from('group_shares')
       .update({
         status:        'open',
         admin_comment: comment ?? null,

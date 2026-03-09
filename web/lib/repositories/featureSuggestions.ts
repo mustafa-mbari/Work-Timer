@@ -31,7 +31,7 @@ export async function createFeatureSuggestion(
   },
 ): Promise<{ data: DbFeatureSuggestion | null; error: { message: string } | null }> {
   const supabase = await createClient()
-  const { data: suggestion, error } = await (supabase.from('feature_suggestions') as any)
+  const { data: suggestion, error } = await supabase.from('feature_suggestions')
     .insert({
       user_id: userId,
       user_email: data.user_email,

@@ -31,7 +31,7 @@ export async function createSupportTicket(
   },
 ): Promise<{ data: DbSupportTicket | null; error: { message: string } | null }> {
   const supabase = await createClient()
-  const { data: ticket, error } = await (supabase.from('support_tickets') as any)
+  const { data: ticket, error } = await supabase.from('support_tickets')
     .insert({
       user_id: userId,
       user_email: data.user_email,

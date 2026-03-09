@@ -15,7 +15,7 @@ export function currentYearMonth(): string {
  */
 export async function getUserExportRole(userId: string): Promise<ExportRole> {
   const supabase = await createServiceClient()
-  const { data, error } = await (supabase.rpc as Function)('get_user_export_role', {
+  const { data, error } = await supabase.rpc('get_user_export_role', {
     p_user_id: userId,
   })
   if (error) return 'free'
@@ -31,8 +31,8 @@ export async function getUserExportQuota(userId: string): Promise<ExportQuota> {
   const ym = currentYearMonth()
 
   const [roleResult, quotaResult] = await Promise.all([
-    (supabase.rpc as Function)('get_user_export_role', { p_user_id: userId }),
-    (supabase.rpc as Function)('get_user_export_quota', {
+    supabase.rpc('get_user_export_role', { p_user_id: userId }),
+    supabase.rpc('get_user_export_quota', {
       p_user_id: userId,
       p_year_month: ym,
     }),
@@ -58,7 +58,7 @@ export async function trackExport(
   const supabase = await createServiceClient()
   const ym = currentYearMonth()
 
-  const { data, error } = await (supabase.rpc as Function)('track_export_usage', {
+  const { data, error } = await supabase.rpc('track_export_usage', {
     p_user_id:     userId,
     p_export_type: type,
     p_year_month:  ym,

@@ -5,8 +5,7 @@ type FeatureSuggestion = Database['public']['Tables']['feature_suggestions']['Ro
 
 export async function getAllSuggestions(filters?: { status?: string; importance?: string }) {
   const supabase = await createServiceClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- supabase-js v2.97+ type narrowing issue with chained .eq() after .returns()
-  let query: any = supabase
+  let query = supabase
     .from('feature_suggestions')
     .select('id, user_id, user_email, user_name, suggestion_type, title, description, importance, target_platform, notify_on_release, status, admin_notes, created_at, updated_at')
     .order('created_at', { ascending: false })
@@ -41,8 +40,7 @@ export async function updateSuggestionStatus(id: string, status: string, adminNo
   if (adminNotes !== undefined) {
     update.admin_notes = adminNotes
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- supabase-js v2.95 resolves Update type to `never`
-  return (supabase.from('feature_suggestions') as any).update(update).eq('id', id)
+  return supabase.from('feature_suggestions').update(update).eq('id', id)
 }
 
 export async function getSuggestionStats() {

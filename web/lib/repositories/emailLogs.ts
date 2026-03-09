@@ -8,7 +8,7 @@ export async function getRecentLogs(
 ): Promise<{ logs: DbEmailLog[]; total: number }> {
   const supabase = await createServiceClient()
 
-  let query = (supabase.from('email_logs') as any)
+  let query = supabase.from('email_logs')
     .select('*', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
@@ -41,10 +41,10 @@ export async function getEmailStats(): Promise<{
   const monthStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30).toISOString()
 
   const [todayRes, weekRes, monthRes, failedRes] = await Promise.all([
-    (supabase.from('email_logs') as any).select('id', { count: 'exact', head: true }).gte('created_at', todayStart),
-    (supabase.from('email_logs') as any).select('id', { count: 'exact', head: true }).gte('created_at', weekStart),
-    (supabase.from('email_logs') as any).select('id', { count: 'exact', head: true }).gte('created_at', monthStart),
-    (supabase.from('email_logs') as any).select('id', { count: 'exact', head: true }).eq('status', 'failed'),
+    supabase.from('email_logs').select('id', { count: 'exact', head: true }).gte('created_at', todayStart),
+    supabase.from('email_logs').select('id', { count: 'exact', head: true }).gte('created_at', weekStart),
+    supabase.from('email_logs').select('id', { count: 'exact', head: true }).gte('created_at', monthStart),
+    supabase.from('email_logs').select('id', { count: 'exact', head: true }).eq('status', 'failed'),
   ])
 
   return {

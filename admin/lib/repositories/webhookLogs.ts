@@ -67,8 +67,7 @@ export async function getRecentWebhookLogs(
   const from = (page - 1) * pageSize
   const to = from + pageSize - 1
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query = (supabase.from('webhook_logs') as any)
+  let query = supabase.from('webhook_logs')
     .select('*', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(from, to)

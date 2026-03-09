@@ -30,8 +30,7 @@ export async function getUserSettings(userId: string): Promise<UserSettingsFull 
 
 export async function upsertUserSettings(userId: string, update: SettingsUpdate) {
   const supabase = await createClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (supabase.from('user_settings') as any).upsert(
+  return supabase.from('user_settings').upsert(
     { user_id: userId, ...update },
     { onConflict: 'user_id' }
   )

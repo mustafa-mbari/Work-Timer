@@ -62,7 +62,7 @@ export async function getTodayTotalDuration(userId: string): Promise<number> {
   const now = new Date()
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 
-  const { data, error } = await (supabase.rpc as Function)(
+  const { data, error } = await supabase.rpc(
     'get_today_total_duration',
     { p_user_id: userId, p_date: today }
   )
@@ -103,8 +103,7 @@ export async function createTimeEntry(
   }
 ) {
   const supabase = await createClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (supabase.from('time_entries') as any).insert({
+  return supabase.from('time_entries').insert({
     ...entry,
     user_id: userId,
     description: entry.description ?? '',
@@ -129,8 +128,7 @@ export async function updateTimeEntry(
   }>
 ) {
   const supabase = await createClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (supabase.from('time_entries') as any)
+  return supabase.from('time_entries')
     .update(updates)
     .eq('id', entryId)
     .eq('user_id', userId)
@@ -139,8 +137,7 @@ export async function updateTimeEntry(
 
 export async function deleteTimeEntries(userId: string, ids: string[]) {
   const supabase = await createClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (supabase.from('time_entries') as any)
+  return supabase.from('time_entries')
     .update({
       deleted_at: new Date().toISOString(),
     })

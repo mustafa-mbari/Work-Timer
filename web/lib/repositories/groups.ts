@@ -133,7 +133,7 @@ export async function createGroup(name: string, ownerId: string) {
   const supabase = await createServiceClient()
 
   // Atomic: both group insert + owner-as-admin member insert in a single transaction
-  const { data, error } = await (supabase.rpc as Function)('create_group_atomic', {
+  const { data, error } = await supabase.rpc('create_group_atomic', {
     p_name: name,
     p_owner_id: ownerId,
   })
@@ -161,8 +161,7 @@ export async function updateGroup(groupId: string, userId: string, data: {
     return { error: { message: 'Not authorized to update this group' } }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('groups') as any)
+  const { error } = await supabase.from('groups')
     .update(data)
     .eq('id', groupId)
   return { error }
@@ -180,8 +179,7 @@ export async function deleteGroup(groupId: string, ownerId: string) {
 
 export async function addGroupMember(groupId: string, userId: string, role: string = 'member') {
   const supabase = await createServiceClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('group_members') as any)
+  const { error } = await supabase.from('group_members')
     .insert({ group_id: groupId, user_id: userId, role })
   return { error }
 }
@@ -198,8 +196,7 @@ export async function removeGroupMember(groupId: string, userId: string) {
 
 export async function updateMemberRole(groupId: string, userId: string, role: string) {
   const supabase = await createServiceClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('group_members') as any)
+  const { error } = await supabase.from('group_members')
     .update({ role })
     .eq('group_id', groupId)
     .eq('user_id', userId)
@@ -219,8 +216,7 @@ export async function getGroupByJoinCode(code: string) {
 export async function regenerateJoinCode(groupId: string, ownerId: string) {
   const supabase = await createServiceClient()
   const newCode = Math.random().toString(36).slice(2, 10)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('groups') as any)
+  const { error } = await supabase.from('groups')
     .update({ join_code: newCode })
     .eq('id', groupId)
     .eq('owner_id', ownerId)

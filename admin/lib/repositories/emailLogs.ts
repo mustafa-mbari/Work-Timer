@@ -8,7 +8,7 @@ export async function getEmailLogs(
 ): Promise<{ logs: DbEmailLog[]; total: number }> {
   const supabase = await createServiceClient()
 
-  let query = (supabase.from('email_logs') as any)
+  let query = supabase.from('email_logs')
     .select('*', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
@@ -41,10 +41,10 @@ export async function getEmailStats(): Promise<{
   const monthStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30).toISOString()
 
   const [todayRes, weekRes, monthRes, failedRes] = await Promise.all([
-    (supabase.from('email_logs') as any).select('id', { count: 'exact', head: true }).gte('created_at', todayStart),
-    (supabase.from('email_logs') as any).select('id', { count: 'exact', head: true }).gte('created_at', weekStart),
-    (supabase.from('email_logs') as any).select('id', { count: 'exact', head: true }).gte('created_at', monthStart),
-    (supabase.from('email_logs') as any).select('id', { count: 'exact', head: true }).eq('status', 'failed'),
+    supabase.from('email_logs').select('id', { count: 'exact', head: true }).gte('created_at', todayStart),
+    supabase.from('email_logs').select('id', { count: 'exact', head: true }).gte('created_at', weekStart),
+    supabase.from('email_logs').select('id', { count: 'exact', head: true }).gte('created_at', monthStart),
+    supabase.from('email_logs').select('id', { count: 'exact', head: true }).eq('status', 'failed'),
   ])
 
   return {
@@ -60,7 +60,7 @@ export async function getDailyEmailCounts(
 ): Promise<Array<{ date: string; sent: number; failed: number }>> {
   const supabase = await createServiceClient()
 
-  const { data, error } = await (supabase.rpc as Function)('get_daily_email_counts', { p_days: days })
+  const { data, error } = await supabase.rpc('get_daily_email_counts', { p_days: days })
 
   if (error || !data) return []
 
@@ -85,7 +85,7 @@ export async function getDailyEmailCounts(
 export async function getEmailCountByType(): Promise<Array<{ type: string; count: number }>> {
   const supabase = await createServiceClient()
 
-  const { data, error } = await (supabase.rpc as Function)('get_email_count_by_type')
+  const { data, error } = await supabase.rpc('get_email_count_by_type')
 
   if (error || !data) return []
 
@@ -98,7 +98,7 @@ export async function getEmailCountByType(): Promise<Array<{ type: string; count
 export async function getRecentFailures(limit = 5): Promise<DbEmailLog[]> {
   const supabase = await createServiceClient()
 
-  const { data, error } = await (supabase.from('email_logs') as any)
+  const { data, error } = await supabase.from('email_logs')
     .select('*')
     .eq('status', 'failed')
     .order('created_at', { ascending: false })

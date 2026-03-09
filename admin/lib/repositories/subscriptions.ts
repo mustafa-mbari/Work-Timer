@@ -56,8 +56,7 @@ export async function getAllSubscriptionsWithEmail(page = 1, pageSize = 50) {
 
 export async function upsertSubscription(sub: SubscriptionInsert) {
   const supabase = await createServiceClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (supabase.from('subscriptions') as any).upsert({
+  return supabase.from('subscriptions').upsert({
     ...sub,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'user_id' })

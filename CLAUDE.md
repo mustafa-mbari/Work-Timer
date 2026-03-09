@@ -219,13 +219,13 @@ Core types in `src/types/`:
 
 Supabase PostgreSQL with RLS. Tables: `profiles`, `subscriptions`, `projects`, `tags`, `time_entries`, `user_settings`, `sync_cursors`, `promo_codes`, `promo_redemptions`, `whitelisted_domains`, `stripe_events`, `webhook_logs`, `groups`, `group_members`, `group_invitations`, `group_sharing_settings`, `group_shares`, `support_tickets`, `feature_suggestions`, `email_logs`, `api_quota_limits`, `api_quota_usage`.
 
-Shared types in `shared/types.ts` define typed interfaces for all tables with a `Database` type map for the Supabase client. SQL migrations in `supabase/migrations/` — `040_consolidated_schema.sql` is the full fresh-DB schema; original incremental migrations 001–039 are in `supabase/migrations/archive/`. Live DB export at `supabase/schema.sql` (generated via pg_dump).
+Types are auto-generated from the live Supabase schema via `npx supabase gen types typescript --project-id <id> > shared/database.types.ts`. The `shared/types.ts` file re-exports the `Database` type and defines convenience `Db*` row interfaces (e.g., `DbProject`, `DbTag`). Copies live at `web/lib/shared/types.ts` and `admin/lib/shared/types.ts` (no `@shared/` path alias in web/admin). SQL migrations in `supabase/migrations/` — `040_consolidated_schema.sql` is the full fresh-DB schema; original incremental migrations 001–039 are in `supabase/migrations/archive/`. Live DB export at `supabase/schema.sql` (generated via pg_dump).
 
 **Subscription security migration** (`supabase/migrations/archive/033_subscription_security_fixes.sql`): Enables RLS on `subscriptions`, fixes `redeem_promo` to clear Stripe fields on 100% grants, auto-creates free subscription on user signup.
 
 ### Repository & Service Layer (`web/lib/`)
 
-**Repositories** (typed Supabase queries, no `as any` on selects):
+**Repositories** (typed Supabase queries, fully typed with auto-generated `Database` types — no `as any` casts):
 
 - `profiles.ts`, `subscriptions.ts`, `promoCodes.ts`, `domains.ts`, `syncCursors.ts` -- CRUD operations
 - `projects.ts` -- CRUD + reorder + default tag linking (`default_tag_id`)
@@ -678,13 +678,15 @@ Guest mode lets users try the extension without creating an account. 5-day trial
 
 ## Key Gotchas
 
-### Supabase Type System (v2.97+)
+### Supabase Type System
 
-- Hand-crafted `Database` types don't fully work with supabase-js type inference for mutations
+- **Auto-generated types**: Run `npx supabase gen types typescript --project-id <id> > shared/database.types.ts` to regenerate after schema changes
+- **Copies**: `shared/database.types.ts` is the source; `web/lib/shared/database.types.ts` and `admin/lib/shared/database.types.ts` are manual copies (keep in sync)
 - **Selects**: Use `.single<Pick<T, ...>>()` or `.returns<T[]>()` for typed results
-- **Mutations**: Use `(supabase.from('table') as any)` for insert/update/upsert operations
-- **RPC calls**: Use `(supabase.rpc as Function)('name', args)` pattern
-- `Relationships: []` required on all table definitions in Database type
+- **Mutations**: `supabase.from('table').insert(...)` / `.update(...)` / `.upsert(...)` work directly (no `as any` needed)
+- **RPC calls**: `supabase.rpc('name', args)` works directly (no `as Function` cast needed)
+- **Dynamic table names**: Use union type `table: 'time_entries' | 'projects' | 'tags'` instead of `string` (see `syncEngine.ts` `fetchAllSince`)
+- **Admin `callRpc` helper**: Uses `supabase.rpc(name as never, args as never)` since table name is a runtime string
 
 ### Supabase Service Role
 

@@ -25,8 +25,7 @@ export async function getProfile(userId: string): Promise<Pick<Profile, 'id' | '
 
 export async function updateProfileDisplayName(userId: string, displayName: string | null) {
   const supabase = await createServiceClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (supabase.from('profiles') as any)
+  return supabase.from('profiles')
     .update({ display_name: displayName })
     .eq('id', userId)
 }

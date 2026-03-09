@@ -38,7 +38,7 @@ export async function createProject(
   data: { id: string; name: string; color: string; target_hours?: number | null; hourly_rate?: number | null },
 ): Promise<{ error: { message: string } | null }> {
   const supabase = await createClient()
-  const { error } = await (supabase.from('projects') as any).insert({
+  const { error } = await supabase.from('projects').insert({
     id: data.id,
     user_id: userId,
     name: data.name,
@@ -59,7 +59,7 @@ export async function updateProject(
   data: { name?: string; color?: string; target_hours?: number | null; hourly_rate?: number | null; earnings_enabled?: boolean; default_tag_id?: string | null; archived?: boolean },
 ): Promise<{ error: { message: string } | null }> {
   const supabase = await createClient()
-  const { error } = await (supabase.from('projects') as any)
+  const { error } = await supabase.from('projects')
     .update(data)
     .eq('id', id)
     .eq('user_id', userId)
@@ -71,7 +71,7 @@ export async function deleteProject(
   id: string,
 ): Promise<{ error: { message: string } | null }> {
   const supabase = await createClient()
-  const { error } = await (supabase.from('projects') as any)
+  const { error } = await supabase.from('projects')
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', id)
     .eq('user_id', userId)
@@ -84,13 +84,13 @@ export async function setDefaultProject(
 ): Promise<{ error: { message: string } | null }> {
   const supabase = await createClient()
   // Clear all defaults for user
-  const { error: clearError } = await (supabase.from('projects') as any)
+  const { error: clearError } = await supabase.from('projects')
     .update({ is_default: false })
     .eq('user_id', userId)
     .is('deleted_at', null)
   if (clearError) return { error: clearError }
   // Set the selected one
-  const { error } = await (supabase.from('projects') as any)
+  const { error } = await supabase.from('projects')
     .update({ is_default: true })
     .eq('id', id)
     .eq('user_id', userId)
@@ -103,7 +103,7 @@ export async function reorderProjects(
 ): Promise<{ error: { message: string } | null }> {
   const supabase = await createClient()
   for (let i = 0; i < orderedIds.length; i++) {
-    const { error } = await (supabase.from('projects') as any)
+    const { error } = await supabase.from('projects')
       .update({ sort_order: i })
       .eq('id', orderedIds[i])
       .eq('user_id', userId)

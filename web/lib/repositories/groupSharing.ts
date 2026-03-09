@@ -23,8 +23,7 @@ export async function upsertSharingSettings(
   settings: { sharing_enabled: boolean; shared_project_ids: string[] | null },
 ): Promise<{ error: { message: string } | null }> {
   const supabase = await createServiceClient()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.from('group_sharing_settings') as any)
+  const { error } = await supabase.from('group_sharing_settings')
     .upsert({
       group_id: groupId,
       user_id: userId,
@@ -44,7 +43,7 @@ export interface OwnStats {
 
 export async function getUserOwnStats(userId: string): Promise<OwnStats> {
   const supabase = await createServiceClient()
-  const { data, error } = await (supabase.rpc as Function)('get_user_own_stats', {
+  const { data, error } = await supabase.rpc('get_user_own_stats', {
     p_user_id: userId,
   })
   
@@ -65,7 +64,7 @@ export async function getGroupMembersSummary(
   adminId: string,
 ): Promise<MemberSummary> {
   const supabase = await createServiceClient()
-  const { data, error } = await (supabase.rpc as Function)('get_group_members_summary', {
+  const { data, error } = await supabase.rpc('get_group_members_summary', {
     p_group_id: groupId,
     p_admin_id: adminId,
   })
@@ -83,7 +82,7 @@ export async function getGroupMemberEntries(
   dateTo?: string,
 ): Promise<MemberEntries> {
   const supabase = await createServiceClient()
-  const { data, error } = await (supabase.rpc as Function)('get_group_member_entries', {
+  const { data, error } = await supabase.rpc('get_group_member_entries', {
     p_group_id: groupId,
     p_admin_id: adminId,
     p_member_id: memberId,
