@@ -11,6 +11,7 @@ import { WEBSITE_URL, GUEST_SESSION_MAX_MS } from '@shared/constants'
 import { generateId } from '../utils/id'
 import { getLocalUserId, setLocalUserId, hasAnyLocalData, clearAllLocalData, getGuestStartedAt, clearGuestMode } from '../storage'
 import { applyExternalSession, signOut as authSignOut, refreshSubscription, getSession, stampLoginTime, checkFreeSessionExpiry } from '../auth/authState'
+import { supabase } from '../auth/supabaseClient'
 import { syncAll, getSyncState, uploadAllLocalData, diagnoseSyncState } from '../sync/syncEngine'
 import { setupRealtime, teardownRealtime } from '../sync/realtimeSubscription'
 import { pushUserStats } from '../sync/statsSync'
@@ -384,7 +385,20 @@ chrome.runtime.onStartup.addListener(async () => {
     }
   }
 
-  const session = await getSession()
+  let session = await getSession()
+  if (!session) {
+    // Session may have expired while service worker was suspended — try one refresh
+    const { data: { session: recovered } } = await supabase.auth.refreshSession()
+    if (recovered) {
+      session = {
+        userId: recovered.user.id,
+        email: recovered.user.email ?? '',
+        accessToken: recovered.access_token,
+        refreshToken: recovered.refresh_token ?? '',
+        expiresAt: recovered.expires_at ?? 0,
+      }
+    }
+  }
   if (session) {
     // Auto-logout free users after 7 days
     const loggedOut = await checkFreeSessionExpiry()

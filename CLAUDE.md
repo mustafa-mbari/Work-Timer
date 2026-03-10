@@ -579,6 +579,10 @@ Two user-facing pages + admin management pages for collecting support tickets an
 ### Auth Session Hardening
 
 - **Proactive token refresh**: `SUBSCRIPTION_ALARM` (every 60 min) calls `supabase.auth.refreshSession()` with 120-second buffer before expiry, preventing `auth.uid()` NULL errors on server-side RLS
+- **Resilient `onAuthStateChange`**: Popup's `useAuth` hook only clears session on explicit `SIGNED_OUT` events — ignores transient `null` sessions from failed token refreshes or chrome.storage race conditions
+- **Background session fallback**: On popup open, if the popup's Supabase instance has no session, falls back to `AUTH_STATE` message to background (which may have refreshed successfully)
+- **Graceful refresh failure**: `getSession()` in `authState.ts` returns the existing (still-valid) session when `refreshSession()` fails within the 120s window, instead of returning `null` and triggering logout cascades
+- **Startup recovery**: Background service worker tries `supabase.auth.refreshSession()` as recovery if `getSession()` returns `null` on startup (handles expired tokens after SW suspension)
 - **Free user auto-logout**: Free users are automatically signed out 7 days after their last login. Tracked via `lastLoginAt` timestamp in `chrome.storage.local`. Checked on startup and every `SUBSCRIPTION_ALARM` cycle
 - **Login stamp**: `stampLoginTime()` called in both `AUTH_LOGIN` handlers (`onMessage` internal + `onMessageExternal` external) in `src/background/background.ts`
 - **Session expiry check**: `checkFreeSessionExpiry()` in `src/auth/authState.ts` — reads cached subscription, skips premium users, compares `lastLoginAt` against 7-day window

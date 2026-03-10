@@ -291,7 +291,7 @@ pnpm run lint
 - **Groups performance**: Batch member count queries (no N+1), parallel data fetching, debounced preview requests, granular refresh (member-only vs full). List API excludes entries JSONB (fetched on-demand via detail endpoint).
 - **Groups security**: Atomic group creation via `SECURITY DEFINER` RPC (prevents orphan groups), unique partial index on active shares (prevents race condition duplicates), granular RLS policies per operation (select/insert/update/delete), defense-in-depth membership and admin role checks in repository layer, `.range(0, 4999)` caps on entry fetches.
 - **Modular service worker**: Background split into 7 focused modules (timer, pomodoro, idle, context menus, reminders, storage, UI) instead of a single monolithic file.
-- **Auth session hardening**: Proactive token refresh every 60 minutes; free users auto-logged out after 7 days of inactivity.
+- **Auth session resilience**: Proactive token refresh every 60 minutes. Popup guards against transient logout from failed token refreshes (only clears on explicit `SIGNED_OUT`). Falls back to background session on popup open. `getSession()` returns existing session on refresh failure instead of null. Background startup recovers expired sessions via `refreshSession()`. Free users auto-logged out after 7 days of inactivity only.
 - **Free plan limit enforcement**: Projects and tags capped at 5 total (active + archived) to prevent archive-then-create bypass.
 - **WCAG AA compliant**: All 6 themes verified for color contrast ratios (4.5:1+ for text).
 - **Guest mode**: 5-day trial with restricted limits (3 projects, 3 tags, 5-day history), automatic data expiry via `chrome.alarms`, and seamless data merge on signup.

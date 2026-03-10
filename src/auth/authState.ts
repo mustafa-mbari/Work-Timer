@@ -17,14 +17,19 @@ export async function getSession(): Promise<AuthSession | null> {
   const now = Math.floor(Date.now() / 1000)
   if ((session.expires_at ?? 0) - now < 120) {
     const { data: { session: refreshed } } = await supabase.auth.refreshSession()
-    if (!refreshed) return null
-    return {
-      userId: refreshed.user.id,
-      email: refreshed.user.email ?? '',
-      accessToken: refreshed.access_token,
-      refreshToken: refreshed.refresh_token ?? '',
-      expiresAt: refreshed.expires_at ?? 0,
+    if (refreshed) {
+      return {
+        userId: refreshed.user.id,
+        email: refreshed.user.email ?? '',
+        accessToken: refreshed.access_token,
+        refreshToken: refreshed.refresh_token ?? '',
+        expiresAt: refreshed.expires_at ?? 0,
+      }
     }
+    // Refresh failed — return existing session instead of null.
+    // The token may still be valid for a few more seconds, and returning null
+    // would trigger unnecessary logout cascades.
+    console.warn('[work-timer] Token refresh failed, using existing session')
   }
 
   return {
