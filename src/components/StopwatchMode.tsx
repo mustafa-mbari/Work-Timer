@@ -10,7 +10,6 @@ type InputTab = 'description' | 'tag' | 'link'
 
 interface StopwatchModeProps {
   timerState: TimerState
-  stateDescription: string
   description: string
   selectedProjectId: string | null
   selectedTagId: string
@@ -30,7 +29,7 @@ interface StopwatchModeProps {
 }
 
 export default memo(function StopwatchMode({
-  timerState, stateDescription,
+  timerState,
   description, selectedProjectId, selectedTagId, link, activeTab,
   projects, tags,
   onDescriptionChange, onProjectChange, onTagChange, onLinkChange, onTabChange,
@@ -61,12 +60,11 @@ export default memo(function StopwatchMode({
         )}
       </div>
 
-      {/* Project Selector */}
+      {/* Project Selector — editable even while running */}
       <ProjectSelector
         projects={projects}
         selectedId={selectedProjectId}
         onChange={onProjectChange}
-        disabled={isActive}
       />
 
       {/* Input Tabs */}
@@ -75,12 +73,11 @@ export default memo(function StopwatchMode({
           <button
             key={tab}
             onClick={() => onTabChange(tab)}
-            disabled={isActive}
             className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-all ${
               activeTab === tab
                 ? 'bg-white dark:bg-dark-elevated text-stone-900 dark:text-stone-100 shadow-sm'
                 : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
-            } ${isActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+            }`}
             aria-label={`${tab} input`}
           >
             {tab === 'description' ? 'Description' : tab === 'tag' ? 'Tag' : 'Link'}
@@ -88,20 +85,19 @@ export default memo(function StopwatchMode({
         ))}
       </div>
 
-      {/* Input Fields */}
+      {/* Input Fields — editable even while running */}
       {activeTab === 'description' && (
         <input
           type="text"
           placeholder="What are you working on?"
-          value={isActive ? stateDescription : description}
+          value={description}
           onChange={(e) => onDescriptionChange(e.target.value)}
-          disabled={isActive}
-          className="border border-stone-300 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-500 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400 disabled:opacity-50"
+          className="border border-stone-300 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-500 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
           aria-label="Task description"
         />
       )}
       {activeTab === 'tag' && (
-        <TagSelect tags={tags} value={selectedTagId} onChange={onTagChange} disabled={isActive} />
+        <TagSelect tags={tags} value={selectedTagId} onChange={onTagChange} />
       )}
       {activeTab === 'link' && (
         <input
@@ -109,8 +105,7 @@ export default memo(function StopwatchMode({
           placeholder="https://..."
           value={link}
           onChange={(e) => onLinkChange(e.target.value)}
-          disabled={isActive}
-          className="border border-stone-300 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-500 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400 disabled:opacity-50"
+          className="border border-stone-300 dark:border-dark-border bg-white dark:bg-dark-card text-stone-900 dark:text-stone-100 dark:placeholder-stone-500 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 dark:focus:ring-indigo-400/40 dark:focus:border-indigo-400"
           aria-label="Link URL"
         />
       )}

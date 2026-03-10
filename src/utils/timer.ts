@@ -9,6 +9,9 @@ export const DEFAULT_TIMER_STATE: TimerState = {
   elapsed: 0,
   pausedAt: null,
   continuingEntryId: null,
+  tags: [],
+  link: '',
+  dateStarted: '',
 }
 
 /**

@@ -13,6 +13,9 @@ const DEFAULT_STATE: TimerState = {
   elapsed: 0,
   pausedAt: null,
   continuingEntryId: null,
+  tags: [],
+  link: '',
+  dateStarted: '',
 }
 
 const DEFAULT_IDLE: IdleInfo = {
@@ -98,6 +101,20 @@ export function useTimer() {
     return response
   }, [])
 
+  const updateMeta = useCallback(async (updates: {
+    tags?: string[]
+    link?: string
+    description?: string
+    projectId?: string | null
+  }) => {
+    const response = await sendMessage({
+      action: 'UPDATE_TIMER_META',
+      payload: updates,
+    })
+    if (response.success && response.state) setState(response.state)
+    return response
+  }, [])
+
   // Idle actions
   const idleKeep = useCallback(async () => {
     const response = await sendMessage({ action: 'IDLE_KEEP' })
@@ -150,7 +167,7 @@ export function useTimer() {
 
   return {
     state,
-    start, pause, resume, stop,
+    start, pause, resume, stop, updateMeta,
     idleInfo, idleKeep, idleDiscard,
     pomodoroState, startPomodoro, stopPomodoro, skipPhase,
     refetch: fetchState,

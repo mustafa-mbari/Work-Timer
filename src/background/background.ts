@@ -23,7 +23,7 @@ import {
   GUEST_EXPIRY_ALARM,
 } from './storage'
 import { broadcastTimerSync, updateBadge, activeContentTabs, registerContentTab, unregisterContentTab } from './ui'
-import { startTimer, pauseTimer, resumeTimer, stopTimer } from './timerEngine'
+import { startTimer, pauseTimer, resumeTimer, stopTimer, updateTimerMeta } from './timerEngine'
 import { startPomodoro, stopPomodoro, skipPomodoroPhase, advancePomodoroPhase } from './pomodoroEngine'
 import { idleKeep, idleDiscard } from './idleDetection'
 import { scheduleReminder } from './reminders'
@@ -65,6 +65,13 @@ chrome.runtime.onMessage.addListener(
             return resumeTimer()
           case 'STOP_TIMER':
             return stopTimer()
+          case 'UPDATE_TIMER_META':
+            return updateTimerMeta({
+              tags: message.payload?.tags,
+              link: message.payload?.link,
+              description: message.payload?.description,
+              projectId: message.payload?.projectId,
+            })
           case 'GET_TIMER_STATE': {
             const state = await getTimerState()
             const idleInfo = await getIdleInfo()

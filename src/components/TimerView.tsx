@@ -60,7 +60,7 @@ const LiveSummary = memo(function LiveSummary({
 
 export default function TimerView() {
   const {
-    state, start, pause, resume, stop,
+    state, start, pause, resume, stop, updateMeta,
     idleInfo, idleKeep, idleDiscard,
     pomodoroState, startPomodoro, stopPomodoro, skipPhase,
   } = useTimer()
@@ -96,11 +96,27 @@ export default function TimerView() {
   const isPaused = state.status === 'paused'
   const isActive = isRunning || isPaused
 
+  // Debounce timer for description updates to background
+  const descDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   useEffect(() => {
     if (pomodoroState.active) {
       setMode('pomodoro') // eslint-disable-line react-hooks/set-state-in-effect
     }
   }, [pomodoroState.active])
+
+  // Restore popup-local state from background when popup opens with active timer
+  const initialSyncDone = useRef(false)
+  useEffect(() => {
+    if (!initialSyncDone.current && isActive && state.startTime) {
+      initialSyncDone.current = true
+      // Restore metadata from background state
+      if (state.tags?.length) setSelectedTagId(state.tags[0]) // eslint-disable-line react-hooks/set-state-in-effect
+      if (state.link) setLink(state.link) // eslint-disable-line react-hooks/set-state-in-effect
+      if (state.description) setDescription(state.description) // eslint-disable-line react-hooks/set-state-in-effect
+      if (state.projectId !== undefined) setSelectedProjectId(state.projectId) // eslint-disable-line react-hooks/set-state-in-effect
+    }
+  }, [isActive, state]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Resolve the best default tag: project-linked tag first, then global default tag
   const getDefaultTagId = useCallback((projectId: string | null): string => {
@@ -115,8 +131,12 @@ export default function TimerView() {
   // Auto-select linked tag when project changes
   const handleProjectChange = useCallback((projectId: string | null) => {
     setSelectedProjectId(projectId)
-    setSelectedTagId(getDefaultTagId(projectId))
-  }, [getDefaultTagId])
+    const newTag = getDefaultTagId(projectId)
+    setSelectedTagId(newTag)
+    if (isActive) {
+      void updateMeta({ projectId, tags: newTag ? [newTag] : [] })
+    }
+  }, [getDefaultTagId, isActive, updateMeta])
 
   // Auto-select default project + tag when not running and no project chosen yet
   useEffect(() => {
@@ -131,13 +151,45 @@ export default function TimerView() {
     }
   }, [activeProjects, isActive, selectedProjectId, getDefaultTagId])
 
+  // Description change with debounced background sync
+  const handleDescriptionChange = useCallback((v: string) => {
+    setDescription(v)
+    if (isActive) {
+      if (descDebounceRef.current) clearTimeout(descDebounceRef.current)
+      descDebounceRef.current = setTimeout(() => {
+        void updateMeta({ description: v })
+      }, 300)
+    }
+  }, [isActive, updateMeta])
+
+  // Tag change — immediate sync to background
+  const handleTagChange = useCallback((tagId: string) => {
+    setSelectedTagId(tagId)
+    if (isActive) {
+      void updateMeta({ tags: tagId ? [tagId] : [] })
+    }
+  }, [isActive, updateMeta])
+
+  // Link change — immediate sync to background
+  const handleLinkChange = useCallback((v: string) => {
+    setLink(v)
+    if (isActive) {
+      void updateMeta({ link: v.trim() })
+    }
+  }, [isActive, updateMeta])
+
   const handleStart = useCallback(async () => {
     if (mode === 'pomodoro') {
       await startPomodoro(selectedProjectId, description)
     } else {
       await start(selectedProjectId, description)
     }
-  }, [mode, selectedProjectId, description, startPomodoro, start])
+    // Push tags/link to background immediately after start
+    const tagsArray = selectedTagId ? [selectedTagId] : []
+    if (tagsArray.length > 0 || link.trim()) {
+      void updateMeta({ tags: tagsArray, link: link.trim() })
+    }
+  }, [mode, selectedProjectId, description, startPomodoro, start, selectedTagId, link, updateMeta])
 
   const scrollToEntries = useCallback((entryId: string) => {
     setHighlightEntryId(entryId)
@@ -146,18 +198,14 @@ export default function TimerView() {
     })
   }, [])
 
+  // BUG 1 FIX: Tags/link are now included by background in the entry.
+  // No need to patch entry with popup-local state after stop.
   const processStopResponse = useCallback(async (response: { success: boolean; discarded?: boolean; entry?: import('@/types').TimeEntry }) => {
     if (response.discarded) {
       showDiscardAlert(`Entry discarded \u2014 duration was less than ${entrySaveTimeSecs}s. Change in Settings \u2192 Timer.`)
       return
     }
     if (response.success && response.entry) {
-      const tagsArray = selectedTagId ? [selectedTagId] : []
-      await update({
-        ...response.entry,
-        tags: tagsArray,
-        link: link.trim() || undefined,
-      })
       setDescription('')
       setLink('')
       setSelectedTagId(getDefaultTagId(selectedProjectId))
@@ -165,7 +213,7 @@ export default function TimerView() {
       refetchEntries()
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTagId, link, selectedProjectId, getDefaultTagId, update, refetchEntries, scrollToEntries, entrySaveTimeSecs])
+  }, [selectedProjectId, getDefaultTagId, refetchEntries, scrollToEntries, entrySaveTimeSecs])
 
   const handleStop = useCallback(async () => {
     const response = pomodoroState.active ? await stopPomodoro() : await stop()
@@ -287,12 +335,11 @@ export default function TimerView() {
         <PomodoroMode
           pomodoroState={pomodoroState}
           isActive={isActive}
-          stateDescription={state.description}
           description={description}
           selectedProjectId={selectedProjectId}
           projects={activeProjects}
           settings={settings}
-          onDescriptionChange={setDescription}
+          onDescriptionChange={handleDescriptionChange}
           onProjectChange={handleProjectChange}
           onStart={handleStart}
           onSkip={skipPhase}
@@ -301,7 +348,6 @@ export default function TimerView() {
       ) : (
         <StopwatchMode
           timerState={state}
-          stateDescription={state.description}
           description={description}
           selectedProjectId={selectedProjectId}
           selectedTagId={selectedTagId}
@@ -309,10 +355,10 @@ export default function TimerView() {
           activeTab={activeTab}
           projects={activeProjects}
           tags={tags}
-          onDescriptionChange={setDescription}
+          onDescriptionChange={handleDescriptionChange}
           onProjectChange={handleProjectChange}
-          onTagChange={setSelectedTagId}
-          onLinkChange={setLink}
+          onTagChange={handleTagChange}
+          onLinkChange={handleLinkChange}
           onTabChange={setActiveTab}
           onStart={handleStart}
           onPause={pause}

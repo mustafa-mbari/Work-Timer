@@ -6,13 +6,18 @@ import { getTimerState, setTimerState, setIdleInfo, getSettings, getTimeEntry, s
 import { broadcastTimerSync, updateBadge } from './ui'
 import { getElapsed, DEFAULT_TIMER_STATE } from '../utils/timer'
 import { generateId } from '../utils/id'
-import { getToday } from '../utils/date'
+import { getToday, getYesterday } from '../utils/date'
 
 export async function startTimer(projectId: string | null, description: string, continuingEntryId: string | null = null): Promise<TimerResponse> {
   // If continuing an existing entry, load its duration as the starting elapsed time
+  const today = getToday()
   let initialElapsed = 0
   if (continuingEntryId) {
-    const existingEntry = await getTimeEntry(continuingEntryId, getToday())
+    // BUG 2 FIX: Try today first, then yesterday (entry might span midnight)
+    let existingEntry = await getTimeEntry(continuingEntryId, today)
+    if (!existingEntry) {
+      existingEntry = await getTimeEntry(continuingEntryId, getYesterday())
+    }
     if (existingEntry) {
       initialElapsed = existingEntry.duration
     }
@@ -26,6 +31,9 @@ export async function startTimer(projectId: string | null, description: string, 
     elapsed: initialElapsed,
     pausedAt: null,
     continuingEntryId,
+    tags: [],
+    link: '',
+    dateStarted: today,
   }
   await setTimerState(state)
   await setIdleInfo(DEFAULT_IDLE_INFO)
@@ -107,13 +115,20 @@ export async function stopTimer(): Promise<TimerResponse> {
   }
 
   let entry: TimeEntry
+  const tags = state.tags ?? []
+  const link = (state.link ?? '').trim() || undefined
 
   // Check if continuing an existing entry
   if (state.continuingEntryId) {
-    const existingEntry = await getTimeEntry(state.continuingEntryId, getToday())
+    // BUG 2 FIX: Use dateStarted for lookup, fallback to today
+    const lookupDate = state.dateStarted || getToday()
+    let existingEntry = await getTimeEntry(state.continuingEntryId, lookupDate)
+    if (!existingEntry && lookupDate !== getToday()) {
+      existingEntry = await getTimeEntry(state.continuingEntryId, getToday())
+    }
     if (existingEntry) {
       const newEndTime = now
-      await updateTimeEntry(state.continuingEntryId, getToday(), {
+      await updateTimeEntry(state.continuingEntryId, existingEntry.date, {
         endTime: newEndTime,
         duration: elapsed,
       })
@@ -137,13 +152,14 @@ export async function stopTimer(): Promise<TimerResponse> {
         taskId: null,
         description: state.description,
         type: 'stopwatch',
-        tags: [],
+        tags,
+        link,
       }
       await saveTimeEntry(entry)
       debouncedSync()
     }
   } else {
-    // Create new entry
+    // Create new entry — BUG 1 FIX: use tags/link from TimerState
     const startTimestamp = now - elapsed
     entry = {
       id: generateId(),
@@ -155,7 +171,8 @@ export async function stopTimer(): Promise<TimerResponse> {
       taskId: null,
       description: state.description,
       type: 'stopwatch',
-      tags: [],
+      tags,
+      link,
     }
     await saveTimeEntry(entry)
     debouncedSync()
@@ -172,4 +189,25 @@ export async function stopTimer(): Promise<TimerResponse> {
   void broadcastTimerSync(DEFAULT_TIMER_STATE, hadActivePomodoro ? DEFAULT_POMODORO_STATE : undefined)
 
   return { success: true, state: DEFAULT_TIMER_STATE, entry }
+}
+
+export async function updateTimerMeta(updates: {
+  tags?: string[]
+  link?: string
+  description?: string
+  projectId?: string | null
+}): Promise<TimerResponse> {
+  const state = await getTimerState()
+  if (state.status === 'idle') return { success: false, error: 'Timer is not active' }
+
+  const updated: TimerState = {
+    ...state,
+    ...(updates.tags !== undefined && { tags: updates.tags }),
+    ...(updates.link !== undefined && { link: updates.link }),
+    ...(updates.description !== undefined && { description: updates.description }),
+    ...(updates.projectId !== undefined && { projectId: updates.projectId }),
+  }
+  await setTimerState(updated)
+  void broadcastTimerSync(updated)
+  return { success: true, state: updated }
 }

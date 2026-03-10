@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { addWeeks, format, isSameDay } from 'date-fns'
 import { useEntriesRange } from '@/hooks/useEntries'
 import { useProjects } from '@/hooks/useProjects'
+import { useTimer } from '@/hooks/useTimer'
 import { getWeekDays, getWeekRange, formatDurationShort, formatDate, msToHours } from '@/utils/date'
 import { useSettings } from '@/hooks/useSettings'
 import { updateEntry, deleteEntry } from '@/storage'
@@ -9,7 +10,7 @@ import GoalProgress from './GoalProgress'
 import ExportMenu from './ExportMenu'
 import EntryEditModal from './EntryEditModal'
 import AddEntryModal from './AddEntryModal'
-import { ChevronLeftIcon, ChevronRightIcon, PlusIcon } from './Icons'
+import { ChevronLeftIcon, ChevronRightIcon, PlusIcon, PlayIcon } from './Icons'
 import { LoadingState } from './Spinner'
 import type { TimeEntry } from '@/types'
 
@@ -18,6 +19,8 @@ export default function WeekView() {
   const currentDate = useMemo(() => addWeeks(new Date(), weekOffset), [weekOffset])
 
   const { activeProjects } = useProjects()
+  const { state: timerState, start: startTimer } = useTimer()
+  const isTimerActive = timerState.status !== 'idle'
   const { settings } = useSettings()
   const weekStartsOn = (settings?.weekStartDay ?? 1) as 0 | 1
   const workingDays = settings?.workingDays ?? 5
@@ -182,15 +185,27 @@ export default function WeekView() {
                   {dayEntries.map((entry) => {
                     const project = activeProjects.find(p => p.id === entry.projectId)
                     return (
-                      <button
-                        key={entry.id}
-                        onClick={() => setEditingEntry(entry)}
-                        className="text-[10px] font-medium px-2 py-0.5 rounded-full text-white truncate max-w-[100px] hover:opacity-75 transition-opacity"
-                        style={{ backgroundColor: project?.color ?? '#A8A29E' }}
-                        title={`${entry.description || project?.name || 'No project'} (${formatDurationShort(entry.duration)}) — click to edit`}
-                      >
-                        {formatDurationShort(entry.duration)}
-                      </button>
+                      <span key={entry.id} className="inline-flex items-center group">
+                        <button
+                          onClick={() => setEditingEntry(entry)}
+                          className={`text-[10px] font-medium px-2 py-0.5 text-white truncate max-w-[100px] hover:opacity-75 transition-opacity ${isTimerActive ? 'rounded-full' : 'rounded-l-full'}`}
+                          style={{ backgroundColor: project?.color ?? '#A8A29E' }}
+                          title={`${entry.description || project?.name || 'No project'} (${formatDurationShort(entry.duration)}) — click to edit`}
+                        >
+                          {formatDurationShort(entry.duration)}
+                        </button>
+                        {!isTimerActive && (
+                          <button
+                            onClick={() => startTimer(entry.projectId, entry.description, entry.id)}
+                            className="hidden group-hover:flex items-center justify-center w-4 h-4 rounded-r-full text-white hover:opacity-90 transition-all"
+                            style={{ backgroundColor: project?.color ?? '#A8A29E' }}
+                            title="Continue this entry"
+                            aria-label={`Continue entry: ${entry.description || 'untitled'}`}
+                          >
+                            <PlayIcon className="w-2.5 h-2.5" />
+                          </button>
+                        )}
+                      </span>
                     )
                   })}
                 </div>

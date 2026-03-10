@@ -54,7 +54,7 @@ beforeEach(() => {
 })
 
 // Import after all mocks are in place
-import { startTimer, pauseTimer, resumeTimer, stopTimer } from './timerEngine'
+import { startTimer, pauseTimer, resumeTimer, stopTimer, updateTimerMeta } from './timerEngine'
 
 // ── Tests ──
 
@@ -271,5 +271,80 @@ describe('Timer Engine — full start→pause→resume→stop cycle', () => {
     // Total elapsed: 10s + 20s = 30s (pause gap not counted)
     expect(result.entry?.duration).toBe(30000)
     vi.restoreAllMocks()
+  })
+})
+
+describe('Timer Engine — metadata in TimerState (BUG 1 fix)', () => {
+  it('startTimer initializes tags, link, dateStarted', async () => {
+    const result = await startTimer('proj-1', 'Test')
+    expect(result.state?.tags).toEqual([])
+    expect(result.state?.link).toBe('')
+    expect(result.state?.dateStarted).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  })
+
+  it('stopTimer includes tags and link from TimerState in saved entry', async () => {
+    const now = Date.now()
+    vi.spyOn(Date, 'now').mockReturnValue(now)
+    await startTimer(null, 'Tagged task')
+
+    // Update metadata (simulates popup sending UPDATE_TIMER_META)
+    await updateTimerMeta({ tags: ['tag-1', 'tag-2'], link: 'https://example.com' })
+
+    vi.spyOn(Date, 'now').mockReturnValue(now + 30000)
+    const result = await stopTimer()
+
+    expect(result.entry?.tags).toEqual(['tag-1', 'tag-2'])
+    expect(result.entry?.link).toBe('https://example.com')
+    vi.restoreAllMocks()
+  })
+
+  it('stopTimer saves entry with empty tags when no metadata set', async () => {
+    const now = Date.now()
+    vi.spyOn(Date, 'now').mockReturnValue(now)
+    await startTimer(null, 'No tags')
+
+    vi.spyOn(Date, 'now').mockReturnValue(now + 30000)
+    const result = await stopTimer()
+
+    expect(result.entry?.tags).toEqual([])
+    expect(result.entry?.link).toBeUndefined()
+    vi.restoreAllMocks()
+  })
+})
+
+describe('Timer Engine — updateTimerMeta', () => {
+  it('updates tags and link in active state', async () => {
+    await startTimer(null, 'Test')
+    const result = await updateTimerMeta({ tags: ['tag-1'], link: 'https://test.com' })
+
+    expect(result.success).toBe(true)
+    expect(result.state?.tags).toEqual(['tag-1'])
+    expect(result.state?.link).toBe('https://test.com')
+  })
+
+  it('updates description and projectId', async () => {
+    await startTimer(null, 'Original')
+    const result = await updateTimerMeta({ description: 'Updated', projectId: 'proj-2' })
+
+    expect(result.success).toBe(true)
+    expect(result.state?.description).toBe('Updated')
+    expect(result.state?.projectId).toBe('proj-2')
+  })
+
+  it('fails when timer is idle', async () => {
+    const result = await updateTimerMeta({ tags: ['tag-1'] })
+    expect(result.success).toBe(false)
+    expect(result.error).toBeDefined()
+  })
+
+  it('preserves fields not included in update', async () => {
+    await startTimer('proj-1', 'Original desc')
+    await updateTimerMeta({ tags: ['tag-1'] })
+    const result = await updateTimerMeta({ link: 'https://test.com' })
+
+    expect(result.state?.tags).toEqual(['tag-1'])
+    expect(result.state?.link).toBe('https://test.com')
+    expect(result.state?.description).toBe('Original desc')
+    expect(result.state?.projectId).toBe('proj-1')
   })
 })

@@ -12,13 +12,16 @@ chrome.idle.onStateChanged.addListener(async (newState) => {
   if (timerState.status !== 'running') return
 
   if (newState === 'idle' || newState === 'locked') {
-    // User went idle — record when it started
-    const idleInfo = {
-      idleStartedAt: Date.now(),
-      idleDuration: 0,
-      pending: false,
+    // BUG 4 FIX: Only set idleStartedAt if not already tracking idle.
+    // Prevents 'locked' from overwriting an earlier 'idle' timestamp.
+    const existingIdle = await getIdleInfo()
+    if (existingIdle.idleStartedAt === null) {
+      await setIdleInfo({
+        idleStartedAt: Date.now(),
+        idleDuration: 0,
+        pending: false,
+      })
     }
-    await setIdleInfo(idleInfo)
   } else if (newState === 'active') {
     // User came back — check if we were tracking idle
     const idleInfo = await getIdleInfo()

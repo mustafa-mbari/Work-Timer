@@ -298,6 +298,33 @@ export async function pullDelta(): Promise<void> {
 
       const dirtyDates = new Set<string>()
 
+      // BUG 3 FIX: Remove stale copies of entries that moved to a different date.
+      // When Device A changes an entry's date and syncs, Device B's pullDelta only
+      // touches the new date key. The old date key still has the stale copy.
+      const movedEntryIds = new Set(
+        (remoteEntries as DbTimeEntry[])
+          .filter(r => !pendingIds.has(r.id) && !r.deleted_at)
+          .map(r => r.id)
+      )
+      if (movedEntryIds.size > 0) {
+        const allKeys = Object.keys(await chrome.storage.local.get(null))
+          .filter(k => k.startsWith('entries_') && !dateKeys.includes(k))
+        if (allKeys.length > 0) {
+          const otherData = await chrome.storage.local.get(allKeys)
+          const cleanups: Record<string, unknown> = {}
+          for (const key of allKeys) {
+            const entries = (otherData[key] as import('@/types').TimeEntry[] | undefined) ?? []
+            const filtered = entries.filter(e => !movedEntryIds.has(e.id))
+            if (filtered.length !== entries.length) {
+              cleanups[key] = filtered
+            }
+          }
+          if (Object.keys(cleanups).length > 0) {
+            await chrome.storage.local.set(cleanups)
+          }
+        }
+      }
+
       for (const remote of remoteEntries as DbTimeEntry[]) {
         if (pendingIds.has(remote.id)) continue
 

@@ -78,6 +78,9 @@ export interface TimerState {
   elapsed: number // Accumulated elapsed time in ms (from previous pauses)
   pausedAt: number | null // Timestamp when paused
   continuingEntryId: string | null // Entry ID being continued (to extend instead of creating new)
+  tags: string[] // Tag IDs — persisted in background so external stop (shortcut/widget) preserves them
+  link: string // Link URL — persisted in background for same reason
+  dateStarted: string // YYYY-MM-DD when timer was started — for midnight-crossing entry lookups
 }
 
 // Idle detection
@@ -189,6 +192,7 @@ export type MessageAction =
   | 'ACCOUNT_SWITCH_CHOICE'
   | 'DIAGNOSE_SYNC'
   | 'CLEAR_AND_RESYNC'
+  | 'UPDATE_TIMER_META'
   | 'POPUP_OPENED'
   | 'CONTENT_SCRIPT_READY'
 
@@ -198,6 +202,8 @@ export interface TimerMessage {
     projectId?: string | null
     description?: string
     continuingEntryId?: string | null
+    tags?: string[]
+    link?: string
   }
   accessToken?: string
   refreshToken?: string

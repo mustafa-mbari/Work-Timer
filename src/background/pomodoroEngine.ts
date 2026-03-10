@@ -35,6 +35,9 @@ export async function startPomodoro(projectId: string | null, description: strin
     elapsed: 0,
     pausedAt: null,
     continuingEntryId: null,
+    tags: [],
+    link: '',
+    dateStarted: getToday(),
   }
   await setTimerState(timerState)
   // Create one-shot alarm for when phase should end
@@ -57,6 +60,9 @@ export async function stopPomodoro(): Promise<TimerResponse> {
   const settings = await getSettings()
   const saveThresholdMs = Math.max(5, Math.min(240, settings.entrySaveTime ?? 10)) * 1000
 
+  const tags = timerState.tags ?? []
+  const link = (timerState.link ?? '').trim() || undefined
+
   if (pomState.phase === 'work') {
     // Stopped during work — save accumulated + current segment
     const currentSegment = getElapsed(timerState)
@@ -72,7 +78,8 @@ export async function stopPomodoro(): Promise<TimerResponse> {
         taskId: null,
         description: timerState.description,
         type: 'pomodoro',
-        tags: [],
+        tags,
+        link,
       }
       await saveTimeEntry(entry)
       debouncedSync()
@@ -93,7 +100,8 @@ export async function stopPomodoro(): Promise<TimerResponse> {
         taskId: null,
         description: timerState.description,
         type: 'pomodoro',
-        tags: [],
+        tags,
+        link,
       }
       await saveTimeEntry(entry)
       debouncedSync()
@@ -157,7 +165,8 @@ export async function advancePomodoroPhase(pomState: PomodoroState): Promise<voi
           taskId: null,
           description: timerState.description,
           type: 'pomodoro',
-          tags: [],
+          tags: timerState.tags ?? [],
+          link: (timerState.link ?? '').trim() || undefined,
         }
         await saveTimeEntry(entry)
         debouncedSync()

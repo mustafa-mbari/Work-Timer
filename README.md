@@ -276,6 +276,7 @@ pnpm run lint
 
 - **Offline-first**: Extension works 100% without internet. Cloud sync is additive.
 - **Event-driven timer**: Popup receives `TIMER_SYNC` broadcasts from background (no polling).
+- **Timer metadata in background**: Tags, link, and dateStarted are stored in background `TimerState` (not just popup React state). Popup syncs metadata changes via `UPDATE_TIMER_META` messages. Ensures metadata is preserved when timer is stopped externally (keyboard shortcut, floating widget, context menu). Midnight-crossing lookups use `dateStarted` for correct date key resolution.
 - **Render-pure timer hooks**: All timer display hooks use `useRef` for `Date.now()` captures inside `setInterval` callbacks — no impure `Date.now()` calls during React render phase. Timer, pomodoro countdown, and daily goal gauge all read from the same ref within a render for consistency.
 - **Code splitting**: Heavy libraries (recharts, xlsx, supabase) in separate chunks, lazy loaded.
 - **Repository pattern**: All database queries centralized in `web/lib/repositories/` with typed Supabase calls.
@@ -304,7 +305,7 @@ pnpm run lint
 - **Error tracking**: Sentry integration for both extension (`@sentry/browser`) and website (`@sentry/nextjs`). Logger auto-reports errors; sync failures captured with component tags.
 - **Chunked sync pull**: Delta pull fetches in 1000-row chunks instead of single 50K-row requests, preventing timeouts on large datasets.
 - **Pomodoro resilience**: `phaseTargetEndTime` absolute timestamp enables accurate phase remaining calculation after service worker restarts, with backward compatibility for old state format.
-- **Test coverage**: 182 tests across storage, sync queue, timer engine, feature gating, guest mode, storage lock, and utility functions via Vitest with chrome.storage.local mock.
+- **Test coverage**: 189 tests across storage, sync queue, timer engine, feature gating, guest mode, storage lock, and utility functions via Vitest with chrome.storage.local mock.
 
 ---
 

@@ -180,7 +180,7 @@ admin/
 
 Message passing via `chrome.runtime` with action types:
 
-- Timer: `START_TIMER`, `PAUSE_TIMER`, `RESUME_TIMER`, `STOP_TIMER`, `GET_TIMER_STATE`
+- Timer: `START_TIMER`, `PAUSE_TIMER`, `RESUME_TIMER`, `STOP_TIMER`, `GET_TIMER_STATE`, `UPDATE_TIMER_META`
 - Sync: `TIMER_SYNC` (broadcast from background to popup/tabs)
 - Pomodoro: `START_POMODORO`, `STOP_POMODORO`, `SKIP_POMODORO_PHASE`
 - Auth: `AUTH_LOGIN` (handled in both `onMessage` and `onMessageExternal`), `AUTH_LOGOUT`, `AUTH_STATE`, `POPUP_OPENED`
@@ -214,6 +214,18 @@ Core types in `src/types/`:
 - **Project** -- id, name, color (hex), targetHours, archived, createdAt, defaultTagId
 - **Tag** -- id, name, color (hex)
 - **Settings** -- workingDays, weekStartDay, idleTimeout, theme, language, notifications, dailyTarget, weeklyTarget, pomodoroConfig
+
+### Timer Metadata Architecture
+
+Timer metadata (tags, link, description, projectId) is stored in the background `TimerState` — not just in popup React state. This ensures metadata is preserved when the timer is stopped externally (keyboard shortcut, floating widget, context menu).
+
+- **`TimerState` fields**: `tags: string[]`, `link: string`, `dateStarted: string` (YYYY-MM-DD)
+- **`UPDATE_TIMER_META` message**: Popup sends metadata changes to background in real-time (description debounced 300ms, tags/link/project immediate)
+- **`updateTimerMeta()`**: Background function that updates `TimerState` in storage and broadcasts `TIMER_SYNC`
+- **Entry creation**: `stopTimer()` and `advancePomodoroPhase()` use `state.tags` and `state.link` from `TimerState` (not popup state)
+- **Midnight crossing**: `dateStarted` stored in `TimerState`; entry lookup tries `dateStarted` date first, then `getToday()` as fallback
+- **Backward compat**: All reads use fallbacks: `state.tags ?? []`, `state.link ?? ''`, `state.dateStarted || getToday()`
+- **Popup restore**: On mount with active timer, popup restores local state from `TimerState` (tags, link, description, projectId)
 
 ### Database
 
@@ -776,7 +788,7 @@ Guest mode lets users try the extension without creating an account. 5-day trial
 - **Framework:** Vitest (config in `vitest.config.ts`)
 - **Setup:** `src/__tests__/setup.ts` — in-memory `chrome.storage.local` mock with `onChanged` listener support, `self` global mock for service worker context
 - **Test files:** Co-located with source (`*.test.ts`), excluded from build via `tsconfig.app.json`
-- **Coverage:** Storage layer (45 tests), sync queue (13 tests), date utils (13 tests), timer utils (5 tests), timer engine integration (18 tests), feature gating (16 tests), guest mode (14 tests), email templates (53 tests), storage lock (5 tests) — 182 total
+- **Coverage:** Storage layer (45 tests), sync queue (13 tests), date utils (13 tests), timer utils (5 tests), timer engine integration (25 tests), feature gating (16 tests), guest mode (14 tests), email templates (53 tests), storage lock (5 tests) — 189 total
 - **Run:** `pnpm test` (single run) or `pnpm test:watch` (watch mode)
 
 ## Storage Atomicity

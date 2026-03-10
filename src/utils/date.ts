@@ -4,6 +4,12 @@ export function getToday(): string {
   return format(new Date(), 'yyyy-MM-dd')
 }
 
+export function getYesterday(): string {
+  const d = new Date()
+  d.setDate(d.getDate() - 1)
+  return format(d, 'yyyy-MM-dd')
+}
+
 export function formatDate(date: Date | string): string {
   const d = typeof date === 'string' ? parseISO(date) : date
   return format(d, 'yyyy-MM-dd')
