@@ -421,7 +421,7 @@ window.addEventListener('message', (event) => {
 
   // Lightweight ping — allowed from any origin (no sensitive data)
   if (event.data?.type === 'WORK_TIMER_PING') {
-    window.postMessage({ type: 'WORK_TIMER_PONG' }, '*')
+    window.postMessage({ type: 'WORK_TIMER_PONG' }, location.origin)
     return
   }
 

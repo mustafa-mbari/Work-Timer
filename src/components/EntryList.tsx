@@ -76,7 +76,14 @@ export default memo(function EntryList({ entries, projects, onUpdate, onDelete, 
               </span>
               {entry.link && (
                 <button
-                  onClick={() => chrome.tabs.create({ url: entry.link! })}
+                  onClick={() => {
+                    try {
+                      const url = new URL(entry.link!)
+                      if (['http:', 'https:'].includes(url.protocol)) {
+                        chrome.tabs.create({ url: entry.link! })
+                      }
+                    } catch { /* invalid URL */ }
+                  }}
                   className="p-1.5 rounded-lg text-stone-400 hover:text-indigo-500 hover:bg-indigo-50 dark:text-stone-400 dark:hover:text-indigo-400 dark:hover:bg-indigo-500/10 flex-shrink-0 transition-colors"
                   aria-label="Open link"
                   title={entry.link}

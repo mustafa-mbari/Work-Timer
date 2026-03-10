@@ -224,10 +224,9 @@ export default function SettingsView() {
   const archivedTags = tags.filter(t => t.archived)
 
   const toggleButton = (isActive: boolean) =>
-    `flex-1 py-2 text-sm font-medium rounded-lg border transition-all ${
-      isActive
-        ? 'bg-indigo-500 text-white border-indigo-500 shadow-sm shadow-indigo-500/20'
-        : 'border-stone-200 dark:border-dark-border text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-dark-hover'
+    `flex-1 py-2 text-sm font-medium rounded-lg border transition-all ${isActive
+      ? 'bg-indigo-500 text-white border-indigo-500 shadow-sm shadow-indigo-500/20'
+      : 'border-stone-200 dark:border-dark-border text-stone-500 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-dark-hover'
     }`
 
   return (
@@ -239,11 +238,10 @@ export default function SettingsView() {
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`flex-1 text-xs font-medium py-1.5 rounded-lg transition-all capitalize ${
-                tab === t
+              className={`flex-1 text-xs font-medium py-1.5 rounded-lg transition-all capitalize ${tab === t
                   ? 'bg-white dark:bg-dark-elevated text-stone-900 dark:text-stone-100 shadow-sm'
                   : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
-              }`}
+                }`}
             >
               {t}
             </button>
@@ -269,11 +267,10 @@ export default function SettingsView() {
                       onClick={() => setTheme(id)}
                       aria-label={`Set theme to ${label}`}
                       title={label}
-                      className={`flex flex-col items-center gap-1 py-2 rounded-xl border-2 transition-all ${
-                        isActive
+                      className={`flex flex-col items-center gap-1 py-2 rounded-xl border-2 transition-all ${isActive
                           ? 'border-indigo-500 dark:border-indigo-400 shadow-sm shadow-indigo-500/20'
                           : 'border-stone-200 dark:border-dark-border hover:border-stone-300 dark:hover:border-dark-hover'
-                      }`}
+                        }`}
                     >
                       <span
                         className="w-6 h-6 rounded-full border relative flex items-center justify-center"
@@ -289,11 +286,10 @@ export default function SettingsView() {
                   onClick={() => setTheme('system')}
                   aria-label="Set theme to system"
                   title="System (follows OS)"
-                  className={`flex flex-col items-center gap-1 py-2 rounded-xl border-2 transition-all ${
-                    theme === 'system'
+                  className={`flex flex-col items-center gap-1 py-2 rounded-xl border-2 transition-all ${theme === 'system'
                       ? 'border-indigo-500 dark:border-indigo-400 shadow-sm shadow-indigo-500/20'
                       : 'border-stone-200 dark:border-dark-border hover:border-stone-300 dark:hover:border-dark-hover'
-                  }`}
+                    }`}
                 >
                   <span className="w-6 h-6 flex items-center justify-center">
                     <MonitorIcon className="w-4 h-4 text-stone-400 dark:text-stone-400" />
@@ -486,13 +482,11 @@ export default function SettingsView() {
                       ...(settings.reminder ?? { enabled: true, dayOfWeek: 5, hour: 14, minute: 0 }),
                       enabled: !(settings.reminder?.enabled ?? true),
                     })}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                      (settings.reminder?.enabled ?? true) ? 'bg-indigo-500' : 'bg-stone-300 dark:bg-dark-border'
-                    }`}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${(settings.reminder?.enabled ?? true) ? 'bg-indigo-500' : 'bg-stone-300 dark:bg-dark-border'
+                      }`}
                   >
-                    <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${
-                      (settings.reminder?.enabled ?? true) ? 'translate-x-[18px]' : 'translate-x-[3px]'
-                    }`} />
+                    <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${(settings.reminder?.enabled ?? true) ? 'translate-x-[18px]' : 'translate-x-[3px]'
+                      }`} />
                   </button>
                 </div>
 
@@ -575,11 +569,10 @@ export default function SettingsView() {
                 <button
                   key={t}
                   onClick={() => setDataTab(t)}
-                  className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-all capitalize ${
-                    dataTab === t
+                  className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-all capitalize ${dataTab === t
                       ? 'bg-white dark:bg-dark-elevated text-stone-900 dark:text-stone-100 shadow-sm'
                       : 'text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300'
-                  }`}
+                    }`}
                 >
                   {t}
                 </button>
@@ -631,11 +624,10 @@ export default function SettingsView() {
                       onDragEnd={() => { setDraggingId(null); setDragOverId(null) }}
                       onDragOver={(e) => { e.preventDefault(); setDragOverId(project.id) }}
                       onDrop={() => handleDrop(project.id)}
-                      className={`flex flex-col rounded-xl border bg-white dark:bg-dark-card transition-colors ${
-                        dragOverId === project.id
+                      className={`flex flex-col rounded-xl border bg-white dark:bg-dark-card transition-colors ${dragOverId === project.id
                           ? 'border-indigo-400 dark:border-indigo-500'
                           : 'border-stone-100 dark:border-dark-border'
-                      } ${draggingId === project.id ? 'opacity-50' : ''}`}
+                        } ${draggingId === project.id ? 'opacity-50' : ''}`}
                     >
                       <div className="flex items-center gap-2 p-2.5">
                         <span
@@ -857,11 +849,10 @@ export default function SettingsView() {
                       onDragEnd={() => { setDraggingTagId(null); setDragOverTagId(null) }}
                       onDragOver={(e) => { e.preventDefault(); setDragOverTagId(tag.id) }}
                       onDrop={() => handleTagDrop(tag.id)}
-                      className={`flex flex-col rounded-xl border bg-white dark:bg-dark-card transition-colors ${
-                        dragOverTagId === tag.id
+                      className={`flex flex-col rounded-xl border bg-white dark:bg-dark-card transition-colors ${dragOverTagId === tag.id
                           ? 'border-indigo-400 dark:border-indigo-500'
                           : 'border-stone-100 dark:border-dark-border'
-                      } ${draggingTagId === tag.id ? 'opacity-50' : ''}`}
+                        } ${draggingTagId === tag.id ? 'opacity-50' : ''}`}
                     >
                       <div className="flex items-center gap-2 p-2.5">
                         <span
@@ -1124,13 +1115,11 @@ export default function SettingsView() {
                               setSyncPrefs(updated)
                               updateSyncPreferences(updated)
                             }}
-                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                              syncPrefs[key] ? 'bg-indigo-500' : 'bg-stone-300 dark:bg-dark-border'
-                            }`}
+                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${syncPrefs[key] ? 'bg-indigo-500' : 'bg-stone-300 dark:bg-dark-border'
+                              }`}
                           >
-                            <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${
-                              syncPrefs[key] ? 'translate-x-[18px]' : 'translate-x-[3px]'
-                            }`} />
+                            <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${syncPrefs[key] ? 'translate-x-[18px]' : 'translate-x-[3px]'
+                              }`} />
                           </button>
                         </div>
                       ))}
@@ -1181,11 +1170,10 @@ export default function SettingsView() {
                       onClick={handleClearAndResync}
                       onBlur={() => setConfirmClear(false)}
                       disabled={clearingLocal || syncing || uploading || diagnosing}
-                      className={`w-full border py-2 rounded-lg text-xs font-medium disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5 ${
-                        confirmClear
+                      className={`w-full border py-2 rounded-lg text-xs font-medium disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5 ${confirmClear
                           ? 'border-rose-400 bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400'
                           : 'border-stone-200 dark:border-dark-border text-stone-500 dark:text-stone-400 hover:border-rose-300 hover:text-rose-500 dark:hover:text-rose-400'
-                      }`}
+                        }`}
                     >
                       {clearingLocal && <span className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />}
                       {clearingLocal ? 'Clearing…' : confirmClear ? 'Confirm — this will erase local data!' : 'Drop local data & sync fresh'}
@@ -1226,13 +1214,13 @@ export default function SettingsView() {
                           <span className="text-stone-400">Token</span>
                           <span className={
                             diagnostics.tokenExpiresInSeconds === null ? 'text-stone-400'
-                            : diagnostics.tokenExpiresInSeconds < 0 ? 'text-rose-500'
-                            : diagnostics.tokenExpiresInSeconds < 120 ? 'text-amber-500'
-                            : 'text-emerald-500'
+                              : diagnostics.tokenExpiresInSeconds < 0 ? 'text-rose-500'
+                                : diagnostics.tokenExpiresInSeconds < 120 ? 'text-amber-500'
+                                  : 'text-emerald-500'
                           }>
                             {diagnostics.tokenExpiresInSeconds === null ? '—'
                               : diagnostics.tokenExpiresInSeconds < 0 ? `✗ expired ${Math.abs(Math.round(diagnostics.tokenExpiresInSeconds / 60))}m ago`
-                              : `✓ ${Math.round(diagnostics.tokenExpiresInSeconds / 60)}m remaining`}
+                                : `✓ ${Math.round(diagnostics.tokenExpiresInSeconds / 60)}m remaining`}
                           </span>
                         </div>
                         <div className="flex justify-between">
@@ -1344,6 +1332,32 @@ export default function SettingsView() {
             )}
           </>
         )}
+
+        {/* Logo & support contact */}
+        <div className="flex flex-col items-center gap-2 pt-5 mt-3 border-t border-stone-200 dark:border-dark-border">
+          <img
+            src="/logos/WT_logoWithText.png"
+            alt="Work Timer"
+            className="h-20 opacity-70 dark:opacity-50"
+          />
+          <p className="text-xs text-stone-400 dark:text-stone-500">
+            Need help? Contact us
+          </p>
+          <div className="flex flex-col items-center gap-0.5">
+            <a
+              href="mailto:support@w-timer.com"
+              className="text-xs text-stone-500 dark:text-stone-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+            >
+              support@w-timer.com
+            </a>
+            <a
+              href="mailto:info@w-timer.com"
+              className="text-xs text-stone-500 dark:text-stone-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+            >
+              info@w-timer.com
+            </a>
+          </div>
+        </div>
 
       </div>
 

@@ -606,6 +606,8 @@ Guest mode lets users try the extension without creating an account. 5-day trial
 - `getGuestStartedAt()` — returns timestamp or `null`
 - `getGuestDaysRemaining()` — computes days left from `guestStartedAt` using `Math.ceil()`
 - `clearAllLocalData()` does NOT remove `guestStartedAt` — guest flag persists through data clears
+- `getGuestBannerDismissCount()` / `setGuestBannerDismissCount()` — tracks entry count at last banner dismiss
+- `countGuestEntries()` — counts all entries across `entries_*` keys
 
 **Limit enforcement** (`src/premium/featureGate.ts`):
 
@@ -629,12 +631,12 @@ Guest mode lets users try the extension without creating an account. 5-day trial
 **UI components**:
 
 - `AuthGate.tsx` — "Try as Guest — Limited features" dashed-border button + logo image
-- `GuestBanner.tsx` — persistent thin banner: "X days left — Sign up free to keep your data" (indigo > 2 days, amber <= 2 days)
+- `GuestBanner.tsx` — dismissible thin banner with cloud-upload icon (indigo, "Sync your progress & unlock more") or warning icon (amber, "X days left") when ≤2 days. Appears after 3 entries; re-shown after 3 more post-dismiss. `onDismiss` saves current entry count as threshold via `guestBannerDismissCount` in storage
 - `GuestExpiryAlert.tsx` — modal on popup open when `isNearExpiry` (day 4-5) with free plan benefits
-- `App.tsx` — renders main app when `session || isGuest`; shows `GuestBanner` + `GuestExpiryAlert` for guests; skips `POPUP_OPENED` sync when guest
-- `SettingsView.tsx` — account tab shows guest info card with days remaining, "Create Free Account" + "Visit Website" + "Log out" buttons
+- `App.tsx` — renders main app when `session || isGuest`; shows `GuestBanner` conditionally (entry-count + dismiss logic) + `GuestExpiryAlert` for guests; skips `POPUP_OPENED` sync when guest
+- `SettingsView.tsx` — account tab shows guest info card with days remaining, "Create Free Account" + "Visit Website" + "Log out" buttons. Footer shows logo + support/info email links
 - `StatsView.tsx` — monthly overview shows "Log in to unlock" instead of "Available with Premium" for guests
-- `UpgradePrompt.tsx` — shows "Create a free account to access [feature]" for guests instead of "Upgrade to Premium"
+- `UpgradePrompt.tsx` — shows "Create a free account to access [feature]" for guests; "available on Work Timer Pro starting at $1.99/mo" for free users (billing page link for details)
 - `ExportMenu.tsx` — passes `isGuest` through to UpgradePrompt
 
 **`usePremium` hook** (`src/hooks/usePremium.ts`):

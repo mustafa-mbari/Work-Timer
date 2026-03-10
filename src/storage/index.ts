@@ -377,7 +377,8 @@ export async function clearAllLocalData(): Promise<void> {
     k === KEYS.settings ||
     k === KEYS.timerState ||
     k === 'syncQueue' ||
-    k === 'syncCursor'
+    k === 'syncCursor' ||
+    k === 'guestBannerDismissCount'
   )
   if (keysToRemove.length > 0) {
     await chrome.storage.local.remove(keysToRemove)
@@ -425,4 +426,26 @@ export async function getGuestDaysRemaining(): Promise<number | null> {
   if (startedAt === null) return null
   const remaining = GUEST_SESSION_MAX_MS - (Date.now() - startedAt)
   return Math.max(0, Math.ceil(remaining / (24 * 60 * 60 * 1000)))
+}
+
+// --- Guest Banner Dismiss ---
+
+const GUEST_BANNER_DISMISS_KEY = 'guestBannerDismissCount'
+
+export async function getGuestBannerDismissCount(): Promise<number> {
+  const result = await chrome.storage.local.get(GUEST_BANNER_DISMISS_KEY)
+  return (result[GUEST_BANNER_DISMISS_KEY] as number | undefined) ?? 0
+}
+
+export async function setGuestBannerDismissCount(count: number): Promise<void> {
+  await chrome.storage.local.set({ [GUEST_BANNER_DISMISS_KEY]: count })
+}
+
+export async function countGuestEntries(): Promise<number> {
+  const all = await chrome.storage.local.get(null)
+  let count = 0
+  for (const [key, value] of Object.entries(all)) {
+    if (key.startsWith('entries_')) count += (value as unknown[]).length
+  }
+  return count
 }

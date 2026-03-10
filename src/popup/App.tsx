@@ -19,7 +19,7 @@ import { useToast } from '@/components/Toast'
 import { useAuth } from '@/hooks/useAuth'
 import { usePremium } from '@/hooks/usePremium'
 import { useGuest } from '@/hooks/useGuest'
-import { clearAllLocalData } from '@/storage'
+import { clearAllLocalData, countGuestEntries, getGuestBannerDismissCount, setGuestBannerDismissCount } from '@/storage'
 
 export default function App() {
   const [view, setView] = useState<View>('timer')
@@ -35,6 +35,39 @@ export default function App() {
   const [localProjectCount, setLocalProjectCount] = useState(0)
   const [showAccountSwitch, setShowAccountSwitch] = useState(false)
   const [showExpiryAlert, setShowExpiryAlert] = useState(false)
+  const [guestBannerVisible, setGuestBannerVisible] = useState(false)
+  const [guestEntryCount, setGuestEntryCount] = useState(0)
+
+  // Evaluate guest banner visibility based on entry count + dismiss threshold
+  useEffect(() => {
+    if (!isGuest) return
+
+    const evaluate = async () => {
+      const [entryCount, dismissCount] = await Promise.all([
+        countGuestEntries(),
+        getGuestBannerDismissCount(),
+      ])
+      setGuestEntryCount(entryCount)
+      // Always show when urgent (≤2 days), otherwise require 3 entries since last dismiss
+      const shouldShow = (daysRemaining !== null && daysRemaining <= 2) || entryCount >= dismissCount + 3
+      setGuestBannerVisible(shouldShow) // eslint-disable-line react-hooks/set-state-in-effect
+    }
+
+    void evaluate()
+
+    // Re-evaluate when entries change (e.g. user creates a new entry mid-session)
+    const listener = (changes: { [key: string]: chrome.storage.StorageChange }) => {
+      const hasEntryChange = Object.keys(changes).some(k => k.startsWith('entries_'))
+      if (hasEntryChange) void evaluate()
+    }
+    chrome.storage.onChanged.addListener(listener)
+    return () => chrome.storage.onChanged.removeListener(listener)
+  }, [isGuest, daysRemaining])
+
+  const handleBannerDismiss = useCallback(async () => {
+    setGuestBannerVisible(false)
+    await setGuestBannerDismissCount(guestEntryCount)
+  }, [guestEntryCount])
 
   // Show expiry alert on popup open when near expiry
   useEffect(() => {
@@ -149,11 +182,12 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-[520px] bg-stone-50 dark:bg-dark">
-      {/* Guest Banner — persistent at top */}
-      {isGuest && (
+      {/* Guest Banner — shown after 3 entries, re-shown after 3 more post-dismiss */}
+      {isGuest && guestBannerVisible && (
         <GuestBanner
           daysRemaining={daysRemaining ?? 0}
           onSignUp={handleGuestSignUp}
+          onDismiss={handleBannerDismiss}
         />
       )}
       <main className="flex-1 overflow-y-auto">

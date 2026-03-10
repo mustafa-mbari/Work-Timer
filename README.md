@@ -66,7 +66,7 @@ Try Work Timer instantly -- no sign-up required:
 
 - **Instant access** -- Click "Try as Guest" and start tracking immediately
 - **5-day trial** -- All core timer features with limited projects (3), tags (3), and 5-day history
-- **Expiry warnings** -- Banner shows days remaining; modal alert on days 4-5
+- **Smart nudges** -- Dismissible banner appears after 3 entries (cloud icon + soft CTA); re-shows after 3 more; urgent amber style when ≤2 days remain
 - **Seamless upgrade** -- Create a free account anytime to keep all your data
 - **Auto-cleanup** -- Data automatically removed after 5 days if no account created
 
@@ -329,5 +329,6 @@ Contributions welcome!
 
 ## Support
 
+- **Email:** [support@w-timer.com](mailto:support@w-timer.com) / [info@w-timer.com](mailto:info@w-timer.com)
 - **Issues:** [GitHub Issues](https://github.com/mustafa-mbari/Work-Timer/issues)
 - **Discussions:** [GitHub Discussions](https://github.com/mustafa-mbari/Work-Timer/discussions)

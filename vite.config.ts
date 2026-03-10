@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => ({
     tailwindcss(),
     replace({
       'https://cdnjs.cloudflare.com/ajax/libs/pdfobject/2.1.1/pdfobject.min.js': '',
+      'https://browser.sentry-cdn.com': '',
       delimiters: ['', ''],
       preventAssignment: false,
     }),

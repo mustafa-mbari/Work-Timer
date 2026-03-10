@@ -56,8 +56,7 @@ export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[keyof typeof SUB
 
 export const PRICING = {
   monthly: 1.99,
-  yearly: 9.99,
-  lifetime: 29.99,
+  yearly: 17.99,
 } as const
 
 export const ENTRY_SAVE_TIME = {

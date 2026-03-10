@@ -65,8 +65,8 @@ export default function UpgradePrompt({ isOpen, feature, onClose, isGuest }: Upg
             </>
           ) : (
             <>
-              <span className="font-medium text-stone-700 dark:text-stone-300">{feature}</span> is available on Work Timer Premium.
-              Upgrade for ${PRICING.monthly}/mo, ${PRICING.yearly}/yr, or ${PRICING.lifetime} lifetime.
+              <span className="font-medium text-stone-700 dark:text-stone-300">{feature}</span> is available on Work Timer Pro starting at ${PRICING.monthly}/mo.
+              Visit the billing page for more details.
             </>
           )}
         </p>
