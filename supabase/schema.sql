@@ -1894,6 +1894,7 @@ CREATE TABLE public.promo_redemptions (
     redeemed_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
+ALTER TABLE public.promo_redemptions ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: role_export_limits; Type: TABLE; Schema: public; Owner: -
@@ -1918,6 +1919,7 @@ CREATE TABLE public.stripe_events (
     processed_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
+ALTER TABLE public.stripe_events ENABLE ROW LEVEL SECURITY;
 
 --
 -- Name: subscriptions; Type: TABLE; Schema: public; Owner: -
@@ -2117,6 +2119,8 @@ CREATE TABLE public.whitelisted_domains (
     created_by uuid,
     CONSTRAINT whitelisted_domains_plan_check CHECK ((plan = ANY (ARRAY['premium_monthly'::text, 'premium_yearly'::text, 'premium_lifetime'::text])))
 );
+
+ALTER TABLE public.whitelisted_domains ENABLE ROW LEVEL SECURITY;
 
 
 --
