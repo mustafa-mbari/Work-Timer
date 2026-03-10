@@ -125,5 +125,5 @@ export async function getTimeEntry(entryId: string, date: string): Promise<TimeE
 
 export function debouncedSync(): void {
   // Recreating the alarm with the same name cancels any previous pending alarm
-  void chrome.alarms.create(SYNC_DEBOUNCE_ALARM, { delayInMinutes: 10 / 60 }) // 10s debounce
+  chrome.alarms.create(SYNC_DEBOUNCE_ALARM, { delayInMinutes: 10 / 60 }).catch(() => null) // 10s debounce
 }

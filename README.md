@@ -305,6 +305,7 @@ pnpm run lint
 - **Error tracking**: Sentry integration for both extension (`@sentry/browser`) and website (`@sentry/nextjs`). Logger auto-reports errors; sync failures captured with component tags.
 - **Chunked sync pull**: Delta pull fetches in 1000-row chunks instead of single 50K-row requests, preventing timeouts on large datasets.
 - **Pomodoro resilience**: `phaseTargetEndTime` absolute timestamp enables accurate phase remaining calculation after service worker restarts, with backward compatibility for old state format.
+- **Runtime hardening**: All Chrome API calls (`alarms.create`, `tabs.create`, `storage.local.set`) wrapped with `.catch()` to prevent unhandled rejections crashing the service worker. Content script Shadow DOM uses null guards in async callbacks. Context menus wrapped in try-catch with `lastError` checks.
 - **Test coverage**: 189 tests across storage, sync queue, timer engine, feature gating, guest mode, storage lock, and utility functions via Vitest with chrome.storage.local mock.
 
 ---

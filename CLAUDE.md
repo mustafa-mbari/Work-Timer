@@ -670,7 +670,7 @@ Guest mode lets users try the extension without creating an account. 5-day trial
 - Default free subscription auto-created on user signup via `handle_new_user_subscription` trigger
 - Upgrade route returns generic error messages (no Stripe internals leaked to client)
 - Service role client uses `createClient` from `@supabase/supabase-js` (NOT `createServerClient` from `@supabase/ssr`) to properly bypass RLS
-- `externally_connectable` restricts extension messaging to allowed origins
+- `externally_connectable` restricts extension messaging to allowed origins; `onMessageExternal` handler validates sender origin (`https://w-timer.com`, `https://www.w-timer.com`) as defense-in-depth
 - All auth flows use server-side API routes (no browser-to-Supabase calls that corporate proxies block)
 - Static assets served from trusted CDN domain via `assetPrefix` to bypass corporate proxy site-reputation blocks
 - Webhook event logging to `webhook_logs` table (event type, status, duration, error details) — admin Webhooks page for monitoring
@@ -792,7 +792,7 @@ Guest mode lets users try the extension without creating an account. 5-day trial
 ## Test Infrastructure
 
 - **Framework:** Vitest (config in `vitest.config.ts`)
-- **Setup:** `src/__tests__/setup.ts` — in-memory `chrome.storage.local` mock with `onChanged` listener support, `self` global mock for service worker context
+- **Setup:** `src/__tests__/setup.ts` — in-memory `chrome.storage.local` mock with `onChanged` listener support, `chrome.alarms` mock (Promise-returning), `self` global mock for service worker context
 - **Test files:** Co-located with source (`*.test.ts`), excluded from build via `tsconfig.app.json`
 - **Coverage:** Storage layer (45 tests), sync queue (13 tests), date utils (13 tests), timer utils (5 tests), timer engine integration (25 tests), feature gating (16 tests), guest mode (14 tests), email templates (53 tests), storage lock (5 tests) — 189 total
 - **Run:** `pnpm test` (single run) or `pnpm test:watch` (watch mode)

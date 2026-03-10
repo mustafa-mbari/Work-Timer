@@ -48,9 +48,21 @@ const storageMock = {
   },
 }
 
+const alarmsMock = {
+  create: vi.fn(async () => {}),
+  clear: vi.fn(async () => true),
+  get: vi.fn(async () => undefined),
+  getAll: vi.fn(async () => []),
+  onAlarm: {
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+  },
+}
+
 // Install mock globally
 ;(globalThis as Record<string, unknown>).chrome = {
   storage: storageMock,
+  alarms: alarmsMock,
 }
 
 // Mock `self` (service worker global) for storageSet quota event dispatch

@@ -86,12 +86,12 @@ function savePosition(): void {
   chrome.storage.local.set({
     [POS_KEY]: { x: right, y: bottom },
     [MIN_KEY]: isMinimized,
-  })
+  }).catch(() => {})
 }
 
 function persistHidden(value: boolean): void {
   isHidden = value
-  chrome.storage.local.set({ [HIDDEN_KEY]: value })
+  chrome.storage.local.set({ [HIDDEN_KEY]: value }).catch(() => {})
 }
 
 // ---- Host Element Styling ----
@@ -205,7 +205,8 @@ function setupDrag(): void {
   dragAbortController = new AbortController()
   const { signal } = dragAbortController
 
-  const handle = shadow.getElementById('drag-handle')!
+  const handle = shadow.getElementById('drag-handle')
+  if (!handle) return
   let isDragging = false
   let startMouseX = 0
   let startMouseY = 0
@@ -249,11 +250,12 @@ function updateWidget(state: TimerState, projs: Project[]): void {
 
   currentState = state
 
-  const widget = shadow.getElementById('widget')!
-  const pulse = shadow.getElementById('pulse')!
-  const timerEl = shadow.getElementById('timer')!
-  const projectEl = shadow.getElementById('project-name')!
-  const btnPause = shadow.getElementById('btn-pause')!
+  const widget = shadow.getElementById('widget')
+  const pulse = shadow.getElementById('pulse')
+  const timerEl = shadow.getElementById('timer')
+  const projectEl = shadow.getElementById('project-name')
+  const btnPause = shadow.getElementById('btn-pause')
+  if (!widget || !pulse || !timerEl || !projectEl || !btnPause) return
 
   if (state.status === 'idle') {
     removeWidget()

@@ -15,8 +15,8 @@ const chromeMock = globalThis.chrome as Record<string, unknown>
 
 // chrome.alarms
 chromeMock.alarms = {
-  create: vi.fn(),
-  clear: vi.fn(),
+  create: vi.fn().mockResolvedValue(undefined),
+  clear: vi.fn().mockResolvedValue(true),
 }
 
 // chrome.idle
@@ -43,8 +43,8 @@ chromeMock.tabs = {
 
 // Reset all Chrome API mocks between tests
 beforeEach(() => {
-  vi.mocked(chromeMock.alarms as { create: ReturnType<typeof vi.fn>; clear: ReturnType<typeof vi.fn> }).create.mockReset()
-  vi.mocked(chromeMock.alarms as { create: ReturnType<typeof vi.fn>; clear: ReturnType<typeof vi.fn> }).clear.mockReset()
+  vi.mocked(chromeMock.alarms as { create: ReturnType<typeof vi.fn>; clear: ReturnType<typeof vi.fn> }).create.mockReset().mockResolvedValue(undefined)
+  vi.mocked(chromeMock.alarms as { create: ReturnType<typeof vi.fn>; clear: ReturnType<typeof vi.fn> }).clear.mockReset().mockResolvedValue(true)
   vi.mocked(chromeMock.idle as { setDetectionInterval: ReturnType<typeof vi.fn> }).setDetectionInterval.mockReset()
   vi.mocked(chromeMock.action as { setBadgeText: ReturnType<typeof vi.fn> }).setBadgeText.mockReset()
   vi.mocked(chromeMock.action as { setBadgeBackgroundColor: ReturnType<typeof vi.fn> }).setBadgeBackgroundColor.mockReset()

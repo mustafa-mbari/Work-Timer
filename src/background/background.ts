@@ -41,7 +41,7 @@ function maybeOpenDashboard() {
   const now = Date.now()
   if (now - lastDashboardOpenMs > 5000) {
     lastDashboardOpenMs = now
-    void chrome.tabs.create({ url: `${WEBSITE_URL}/dashboard` })
+    chrome.tabs.create({ url: `${WEBSITE_URL}/dashboard` }).catch(() => null)
   }
 }
 
@@ -578,6 +578,13 @@ chrome.commands.onCommand.addListener(async (command) => {
 
 chrome.runtime.onMessageExternal.addListener(
   (message: { action: string; accessToken?: string; refreshToken?: string }, sender, sendResponse) => {
+    // Defense-in-depth: validate sender origin (manifest externally_connectable also enforces this)
+    const senderOrigin = sender.url ? new URL(sender.url).origin : ''
+    if (!['https://w-timer.com', 'https://www.w-timer.com'].includes(senderOrigin)) {
+      sendResponse({ success: false, error: 'Origin not allowed' })
+      return
+    }
+
     const handle = async () => {
       if (message.action === 'AUTH_LOGIN' && message.accessToken && message.refreshToken) {
         const session = await applyExternalSession(message.accessToken, message.refreshToken)
