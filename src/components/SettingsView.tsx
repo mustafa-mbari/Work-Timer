@@ -4,7 +4,7 @@ import { getSettings, updateSettings, getSyncPreferences, updateSyncPreferences,
 import { useProjects, ProjectLimitError } from '@/hooks/useProjects'
 import { useTags, TagLimitError } from '@/hooks/useTags'
 import { useTheme, THEMES } from '@/hooks/useTheme'
-import { MonitorIcon, PlusIcon, XIcon, PencilIcon, DotsIcon, DragHandleIcon, StarIcon, CloudDownloadIcon } from './Icons'
+import { MonitorIcon, XIcon, PencilIcon, DotsIcon, DragHandleIcon, StarIcon, CloudDownloadIcon } from './Icons'
 import { PROJECT_COLORS } from '@/constants/colors'
 import { inputClass, labelClass } from '@/constants/styles'
 import ConfirmDialog from './ConfirmDialog'
@@ -770,37 +770,41 @@ export default function SettingsView() {
               </div>
 
               {/* New Project */}
-              <div className="flex gap-2 items-end">
-                <div className="flex-1">
+              <div
+                className="rounded-xl border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card overflow-hidden"
+                style={{ borderLeftWidth: 3, borderLeftColor: newProjectColor }}
+              >
+                <div className="flex items-center gap-2 p-2.5">
+                  <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: newProjectColor }} aria-hidden="true" />
                   <input
                     type="text"
                     placeholder="New project name"
                     value={newProjectName}
                     onChange={(e) => setNewProjectName(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleCreateProject()}
-                    className={`${inputClass} dark:placeholder-stone-500`}
+                    className="flex-1 bg-transparent text-sm text-stone-700 dark:text-stone-200 placeholder-stone-400 dark:placeholder-stone-500 outline-none"
                     aria-label="New project name"
                   />
+                  <button
+                    onClick={handleCreateProject}
+                    disabled={!newProjectName.trim()}
+                    className="bg-indigo-500 text-white px-3 py-1 rounded-lg text-xs font-medium hover:bg-indigo-600 disabled:opacity-40 transition-colors shadow-sm shadow-indigo-500/20"
+                    aria-label="Add project"
+                  >
+                    Add
+                  </button>
                 </div>
-                <div className="flex gap-1">
-                  {PROJECT_COLORS.slice(0, 5).map((color) => (
+                <div className="flex gap-1.5 flex-wrap px-2.5 pb-2.5">
+                  {PROJECT_COLORS.map((color) => (
                     <button
                       key={color}
                       onClick={() => setNewProjectColor(color)}
-                      className={`w-5 h-5 rounded-full border-2 transition-all ${newProjectColor === color ? 'border-stone-800 dark:border-stone-200 scale-110' : 'border-transparent'}`}
+                      className={`w-5 h-5 rounded-full border-2 transition-all ${newProjectColor === color ? 'border-stone-800 dark:border-stone-200 scale-110' : 'border-transparent hover:scale-105'}`}
                       style={{ backgroundColor: color }}
                       aria-label={`Select color ${color}`}
                     />
                   ))}
                 </div>
-                <button
-                  onClick={handleCreateProject}
-                  disabled={!newProjectName.trim()}
-                  className="bg-indigo-500 text-white p-2 rounded-lg hover:bg-indigo-600 disabled:opacity-40 transition-colors shadow-sm shadow-indigo-500/20"
-                  aria-label="Add project"
-                >
-                  <PlusIcon className="w-4 h-4" />
-                </button>
               </div>
             </div>}
 
@@ -959,37 +963,42 @@ export default function SettingsView() {
                 ))}
               </div>
 
-              <div className="flex gap-1.5 flex-wrap mb-2">
-                {PROJECT_COLORS.map((color) => (
-                  <button
-                    key={color}
-                    onClick={() => setNewTagColor(color)}
-                    className={`w-5 h-5 rounded-full border-2 transition-all ${newTagColor === color ? 'border-stone-800 dark:border-stone-200 scale-110' : 'border-transparent'}`}
-                    style={{ backgroundColor: color }}
-                    aria-label={`Select color ${color}`}
-                  />
-                ))}
-              </div>
-              <div className="flex gap-2 items-end">
-                <div className="flex-1">
+              {/* New Tag */}
+              <div
+                className="rounded-xl border border-stone-200 dark:border-dark-border bg-white dark:bg-dark-card overflow-hidden"
+                style={{ borderLeftWidth: 3, borderLeftColor: newTagColor }}
+              >
+                <div className="flex items-center gap-2 p-2.5">
+                  <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: newTagColor }} aria-hidden="true" />
                   <input
                     type="text"
                     placeholder="New tag name"
                     value={newTagName}
                     onChange={(e) => setNewTagName(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}
-                    className={`${inputClass} dark:placeholder-stone-500`}
+                    className="flex-1 bg-transparent text-sm text-stone-700 dark:text-stone-200 placeholder-stone-400 dark:placeholder-stone-500 outline-none"
                     aria-label="New tag name"
                   />
+                  <button
+                    onClick={handleCreateTag}
+                    disabled={!newTagName.trim()}
+                    className="bg-indigo-500 text-white px-3 py-1 rounded-lg text-xs font-medium hover:bg-indigo-600 disabled:opacity-40 transition-colors shadow-sm shadow-indigo-500/20"
+                    aria-label="Add tag"
+                  >
+                    Add
+                  </button>
                 </div>
-                <button
-                  onClick={handleCreateTag}
-                  disabled={!newTagName.trim()}
-                  className="bg-indigo-500 text-white p-2 rounded-lg hover:bg-indigo-600 disabled:opacity-40 transition-colors shadow-sm shadow-indigo-500/20"
-                  aria-label="Add tag"
-                >
-                  <PlusIcon className="w-4 h-4" />
-                </button>
+                <div className="flex gap-1.5 flex-wrap px-2.5 pb-2.5">
+                  {PROJECT_COLORS.map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => setNewTagColor(color)}
+                      className={`w-5 h-5 rounded-full border-2 transition-all ${newTagColor === color ? 'border-stone-800 dark:border-stone-200 scale-110' : 'border-transparent hover:scale-105'}`}
+                      style={{ backgroundColor: color }}
+                      aria-label={`Select color ${color}`}
+                    />
+                  ))}
+                </div>
               </div>
             </div>}
           </>
