@@ -1,10 +1,19 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import replace from '@rollup/plugin-replace'
 import { resolve } from 'path'
 
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    replace({
+      'https://cdnjs.cloudflare.com/ajax/libs/pdfobject/2.1.1/pdfobject.min.js': '',
+      delimiters: ['', ''],
+      preventAssignment: false,
+    }),
+  ],
   build: {
     outDir: 'dist',
     minify: 'esbuild',
