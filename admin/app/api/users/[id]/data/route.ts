@@ -48,7 +48,7 @@ export async function DELETE(
         await resetUserQuotas(id)
         result.reset = true
         break
-      case 'all':
+      case 'all': {
         const [entries, projects, tags] = await Promise.all([
           clearUserEntries(id),
           clearUserProjects(id),
@@ -63,6 +63,7 @@ export async function DELETE(
         result.projects = projects
         result.tags = tags
         break
+      }
     }
 
     return NextResponse.json({ success: true, ...result })

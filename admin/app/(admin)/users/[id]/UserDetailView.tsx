@@ -47,6 +47,7 @@ const STATUS_COLORS: Record<string, string> = {
   active: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800',
   trialing: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800',
   past_due: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800',
+  unpaid: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800',
   expired: 'text-stone-500 dark:text-stone-400 bg-stone-50 dark:bg-stone-900 border-stone-200 dark:border-stone-700',
   free: 'text-stone-500 dark:text-stone-400 bg-stone-50 dark:bg-stone-900 border-stone-200 dark:border-stone-700',
 }
@@ -118,28 +119,34 @@ export default function UserDetailView({ details: initialDetails, userId }: Prop
     path: string,
     method: string,
     body?: unknown
-  ): Promise<T | null> {
-    try {
-      const res = await fetch(`/api/users/${userId}${path}`, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: body !== undefined ? JSON.stringify(body) : undefined,
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Request failed')
-      return data as T
-    } catch (err) {
-      throw err
-    }
+  ): Promise<T> {
+    const res = await fetch(`/api/users/${userId}${path}`, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`)
+    return data as T
   }
 
   async function refreshDetails() {
     try {
       const data = await apiCall<UserDetails>('', 'GET')
-      if (data) setDetails(data)
+      setDetails(data)
     } catch {
-      // silent — already showing stale data
+      // silent — keep showing current data
     }
+  }
+
+  const DATA_TYPE_LABELS: Record<string, string> = {
+    entries: 'Time entries deleted',
+    projects: 'Projects deleted',
+    tags: 'Tags deleted',
+    settings: 'Settings reset to defaults',
+    sync_cursors: 'Sync state cleared',
+    quotas: 'Usage quotas reset',
+    all: 'All user data cleared',
   }
 
   async function handleDeleteData(type: string, extra?: { dateFrom?: string; dateTo?: string }) {
@@ -149,7 +156,7 @@ export default function UserDetailView({ details: initialDetails, userId }: Prop
       if (extra?.dateFrom) body.dateFrom = extra.dateFrom
       if (extra?.dateTo) body.dateTo = extra.dateTo
       await apiCall('/data', 'DELETE', body)
-      toast.success(type === 'all' ? 'All user data cleared' : `${type} cleared successfully`)
+      toast.success(DATA_TYPE_LABELS[type] ?? `${type} cleared`)
       await refreshDetails()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to clear data')
