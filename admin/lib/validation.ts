@@ -100,6 +100,24 @@ export const updateQuotaLimitSchema = z.object({
   monthly_limit: z.number().int().min(0).max(1_000_000),
 })
 
+// --- Admin User Management ---
+export const updateUserSchema = z.object({
+  role: z.enum(['admin', 'user']).optional(),
+  display_name: z.string().min(1).max(100).optional(),
+})
+
+export const deleteUserDataSchema = z.object({
+  type: z.enum(['entries', 'projects', 'tags', 'settings', 'sync_cursors', 'quotas', 'all']),
+  dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+})
+
+export const grantUserSubscriptionSchema = z.object({
+  plan: z.enum(['free', 'premium_monthly', 'premium_yearly', 'allin_monthly', 'allin_yearly', 'team_10_monthly', 'team_10_yearly', 'team_20_monthly', 'team_20_yearly']),
+  status: z.enum(['active', 'trialing', 'free', 'expired', 'past_due', 'unpaid']),
+  current_period_end: z.string().nullable().optional(),
+})
+
 // Helper to parse and return a typed result or a 400 response
 export function parseBody<T extends z.ZodType>(schema: T, data: unknown):
   { success: true; data: z.infer<T> } | { success: false; error: string } {

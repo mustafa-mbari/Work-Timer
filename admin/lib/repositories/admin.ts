@@ -167,3 +167,129 @@ export async function updateGroupMaxMembers(groupId: string, maxMembers: number)
   })
   if (error) throw new Error(`admin_update_group failed: ${error.message}`)
 }
+
+// --- User Detail Management ---
+
+export interface UserDetails {
+  profile: {
+    id: string
+    email: string
+    display_name: string | null
+    role: string
+    created_at: string
+  }
+  subscription: {
+    plan: string
+    status: string
+    current_period_end: string | null
+    granted_by: string | null
+    stripe_subscription_id: string | null
+    stripe_customer_id: string | null
+    cancel_at_period_end: boolean
+  } | null
+  stats: {
+    total_entries: number
+    total_projects: number
+    total_tags: number
+    last_active_date: string | null
+  }
+}
+
+export async function getUserDetails(userId: string): Promise<UserDetails> {
+  const supabase = await createServiceClient()
+
+  const [profileRes, subRes, entryCountRes, projectCountRes, tagCountRes, statsRes] = await Promise.all([
+    supabase.from('profiles').select('id, email, display_name, role, created_at').eq('id', userId).single(),
+    supabase.from('subscriptions').select('plan, status, current_period_end, granted_by, stripe_subscription_id, stripe_customer_id, cancel_at_period_end').eq('user_id', userId).maybeSingle(),
+    supabase.from('time_entries').select('*', { count: 'exact', head: true }).eq('user_id', userId).is('deleted_at', null),
+    supabase.from('projects').select('*', { count: 'exact', head: true }).eq('user_id', userId).is('deleted_at', null),
+    supabase.from('tags').select('*', { count: 'exact', head: true }).eq('user_id', userId).is('deleted_at', null),
+    supabase.from('user_stats').select('last_active_date').eq('user_id', userId).maybeSingle(),
+  ])
+
+  if (profileRes.error) throw new Error(`getUserDetails profile failed: ${profileRes.error.message}`)
+
+  return {
+    profile: profileRes.data as UserDetails['profile'],
+    subscription: subRes.data as UserDetails['subscription'] | null,
+    stats: {
+      total_entries: entryCountRes.count ?? 0,
+      total_projects: projectCountRes.count ?? 0,
+      total_tags: tagCountRes.count ?? 0,
+      last_active_date: (statsRes.data as { last_active_date: string | null } | null)?.last_active_date ?? null,
+    },
+  }
+}
+
+export async function deleteUser(userId: string): Promise<void> {
+  const supabase = await createServiceClient()
+  const { error } = await supabase.auth.admin.deleteUser(userId)
+  if (error) throw new Error(`deleteUser failed: ${error.message}`)
+}
+
+export async function clearUserEntries(userId: string, dateFrom?: string, dateTo?: string): Promise<number> {
+  const supabase = await createServiceClient()
+  let query = supabase.from('time_entries').delete({ count: 'exact' }).eq('user_id', userId)
+  if (dateFrom) query = query.gte('date', dateFrom)
+  if (dateTo) query = query.lte('date', dateTo)
+  const { count, error } = await query
+  if (error) throw new Error(`clearUserEntries failed: ${error.message}`)
+  return count ?? 0
+}
+
+export async function clearUserProjects(userId: string): Promise<number> {
+  const supabase = await createServiceClient()
+  const { count, error } = await supabase.from('projects').delete({ count: 'exact' }).eq('user_id', userId)
+  if (error) throw new Error(`clearUserProjects failed: ${error.message}`)
+  return count ?? 0
+}
+
+export async function clearUserTags(userId: string): Promise<number> {
+  const supabase = await createServiceClient()
+  const { count, error } = await supabase.from('tags').delete({ count: 'exact' }).eq('user_id', userId)
+  if (error) throw new Error(`clearUserTags failed: ${error.message}`)
+  return count ?? 0
+}
+
+export async function resetUserSettings(userId: string): Promise<void> {
+  const supabase = await createServiceClient()
+  const { error } = await supabase.from('user_settings').delete().eq('user_id', userId)
+  if (error) throw new Error(`resetUserSettings failed: ${error.message}`)
+}
+
+export async function clearUserSyncCursors(userId: string): Promise<void> {
+  const supabase = await createServiceClient()
+  const { error } = await supabase.from('sync_cursors').delete().eq('user_id', userId)
+  if (error) throw new Error(`clearUserSyncCursors failed: ${error.message}`)
+}
+
+export async function resetUserQuotas(userId: string): Promise<void> {
+  const supabase = await createServiceClient()
+  const [r1, r2] = await Promise.all([
+    supabase.from('api_quota_usage').delete().eq('user_id', userId),
+    supabase.from('export_usage').delete().eq('user_id', userId),
+  ])
+  if (r1.error) throw new Error(`resetUserQuotas api_quota failed: ${r1.error.message}`)
+  if (r2.error) throw new Error(`resetUserQuotas export_usage failed: ${r2.error.message}`)
+}
+
+export async function updateUserRole(userId: string, role: 'admin' | 'user'): Promise<void> {
+  const supabase = await createServiceClient()
+  const { error } = await supabase.from('profiles').update({ role }).eq('id', userId)
+  if (error) throw new Error(`updateUserRole failed: ${error.message}`)
+}
+
+export async function updateUserDisplayName(userId: string, displayName: string): Promise<void> {
+  const supabase = await createServiceClient()
+  const { error } = await supabase.from('profiles').update({ display_name: displayName }).eq('id', userId)
+  if (error) throw new Error(`updateUserDisplayName failed: ${error.message}`)
+}
+
+export async function sendPasswordResetEmail(email: string): Promise<void> {
+  const supabase = await createServiceClient()
+  const { error } = await supabase.auth.admin.generateLink({
+    type: 'recovery',
+    email,
+  })
+  if (error) throw new Error(`sendPasswordResetEmail failed: ${error.message}`)
+}

@@ -150,6 +150,10 @@ admin/
     (admin)/            # Route group (layout with AdminSidebar)
       page.tsx          # Overview (user counts, premium breakdown, recent sign-ups)
       users/            # User table with search + pagination
+        UsersTable.tsx  #   Client component; each row has "Manage →" button linking to /users/[id]
+        [id]/           #   Per-user detail page
+          page.tsx      #     Server component (requireAdmin + getUserDetails)
+          UserDetailView.tsx # 'use client' 4-tab UI (Overview, Data, Subscription, Danger Zone)
       stats/            # Full platform stats
       domains/          # Whitelist domain management
       promos/           # Promo code management
@@ -161,6 +165,11 @@ admin/
       quotas/           # API quota management (editable limits per role x resource type)
       ui-test/          # UITestLab (admin-only design prototyping)
     api/                # Admin API routes (domains, promos, subscriptions, webhooks, groups, tickets, suggestions, quotas)
+      users/[id]/       #   Per-user management API
+        route.ts        #     GET (details+stats), PATCH (role/displayName), DELETE (full account)
+        data/route.ts   #     DELETE selective data (entries/projects/tags/settings/sync_cursors/quotas/all)
+        subscription/route.ts # POST grant/change plan
+        password-reset/route.ts # POST send reset email
     login/              # Admin login (role check: profiles.role === 'admin')
     globals.css         # Design tokens + dark mode
   components/
@@ -175,6 +184,50 @@ admin/
     shared/             # types.ts + constants.ts (copied from shared/)
   middleware.ts         # Protects all routes; checks auth + admin role
 ```
+
+### Admin User Management (`/users/[id]`)
+
+Per-user management page accessible from the Users list via the "Manage →" button on each row. Navigates to `/users/[id]` with a 4-tab layout.
+
+**Tab 1 — Overview:**
+- Avatar with initials, display name, email, role/plan badges, joined date, last active
+- Stats row: total entries, projects, tags (live counts from DB)
+- Profile card + Subscription card side-by-side; copyable user ID and Stripe sub ID
+
+**Tab 2 — Data Management (all actions use AlertDialog confirmation):**
+- Delete all time entries (hard delete, not soft-delete)
+- Delete entries by date range (from/to date pickers)
+- Delete all projects (entries lose project association via ON DELETE SET NULL)
+- Delete all tags
+- Reset user settings (DELETE row; defaults restored on next login)
+- Clear sync cursors (forces full re-sync on next extension login)
+- Reset monthly quotas (clears `api_quota_usage` + `export_usage` rows for this user)
+- "Clear Everything" card — all of the above in one action
+
+**Tab 3 — Subscription:**
+- Current plan/status/source display with Stripe-managed warning if `stripe_subscription_id` present
+- Change plan form: `Select` dropdown (all plans), status dropdown, expiry date picker → "Apply Plan"
+- "Extend 30 Days" quick action (extends from current expiry or today)
+- "Revoke Premium" resets to `free/free` with AlertDialog confirmation
+
+**Tab 4 — Danger Zone:**
+- Edit display name (inline Input + Save)
+- Change role: "Promote to Admin" or "Demote to User" (each with AlertDialog)
+- Send password reset email (`supabase.auth.admin.generateLink({ type: 'recovery', email })`)
+- Delete account: two-step — type user email to enable → AlertDialog → `supabase.auth.admin.deleteUser(userId)` → cascades all DB data → redirect to `/users`
+
+**Repository functions** (in `admin/lib/repositories/admin.ts`):
+- `getUserDetails(userId)` → `{ profile, subscription, stats }` — parallel Supabase queries
+- `deleteUser(userId)` → `supabase.auth.admin.deleteUser()` (cascade deletes ~15 related tables)
+- `clearUserEntries(userId, dateFrom?, dateTo?)` → hard DELETE with optional date filter
+- `clearUserProjects(userId)`, `clearUserTags(userId)` → hard DELETE
+- `resetUserSettings(userId)`, `clearUserSyncCursors(userId)`, `resetUserQuotas(userId)`
+- `updateUserRole(userId, role)`, `updateUserDisplayName(userId, name)`
+- `sendPasswordResetEmail(email)` → `supabase.auth.admin.generateLink()`
+
+**Self-deletion guard:** `DELETE /api/users/[id]` returns 400 if `id === admin.user.id`
+
+**Hard vs soft deletes:** Admin data operations use hard DELETE (no `deleted_at`). The extension uses soft-delete for user-facing operations; admin bypasses this for clean data removal.
 
 ### Popup <-> Background Communication
 

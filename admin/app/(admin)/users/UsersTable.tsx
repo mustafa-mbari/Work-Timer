@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState, useTransition } from 'react'
+import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -9,7 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
-import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, ChevronLeft, ChevronRight, Settings2 } from 'lucide-react'
 
 interface User {
   id: string
@@ -132,6 +133,7 @@ export default function UsersTable({ users, totalCount, page, pageSize, search }
                 <TableHead>Plan</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead className="text-right">Joined</TableHead>
+                <TableHead className="w-[90px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -163,12 +165,20 @@ export default function UsersTable({ users, totalCount, page, pageSize, search }
                           year: 'numeric',
                         })}
                       </TableCell>
+                      <TableCell>
+                        <Button asChild variant="ghost" size="sm" className="h-7 gap-1 text-xs text-stone-500 hover:text-indigo-600 dark:hover:text-indigo-400">
+                          <Link href={`/users/${u.id}`}>
+                            <Settings2 className="h-3.5 w-3.5" />
+                            Manage
+                          </Link>
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   )
                 })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-stone-500 dark:text-stone-400">
+                  <TableCell colSpan={5} className="text-center py-8 text-stone-500 dark:text-stone-400">
                     No users found.
                   </TableCell>
                 </TableRow>

@@ -92,7 +92,7 @@ See [HowToDoPlan.md](HowToDoPlan.md) for the full Stripe setup guide (creating p
 - **Support** -- Submit support tickets (bug reports, account/billing/sync issues) with priority and platform selection; view ticket history and status updates
 - **Suggestions** -- Submit feature ideas and improvements with importance level and target platform; opt-in to release notifications; view suggestion history
 - **Billing** -- Subscription management, promo codes, Stripe checkout
-- **Admin Panel** -- Separate app at `admin/` (port 3001). User management, platform stats, domain whitelisting, promo codes, group management, support ticket triage, feature suggestion review
+- **Admin Panel** -- Separate app at `admin/` (port 3001). User management with per-user detail pages (overview, data management, subscription control, danger zone), platform stats, domain whitelisting, promo codes, group management, support ticket triage, feature suggestion review
 - **UI Test Lab** -- Admin-only page (`/ui-test`) for prototyping alternative UI designs across Entries, Timer, Quick Add, Dashboard, Project Picker, and Daily Goal tabs; each tab has multiple design variants for side-by-side comparison
 
 ---
