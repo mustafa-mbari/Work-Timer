@@ -69,10 +69,11 @@ export default async function AnalyticsPage({
 }: {
   searchParams: Promise<{ dateFrom?: string; dateTo?: string }>
 }) {
-  const t = await getTranslations('analytics')
   const user = await requireAuth()
-
-  const premium = await isPremiumUser(user.id)
+  const [t, premium] = await Promise.all([
+    getTranslations('analytics'),
+    isPremiumUser(user.id),
+  ])
 
   // Free users see a blurred preview with an upgrade prompt
   if (!premium) {
@@ -137,7 +138,8 @@ export default async function AnalyticsPage({
   }
 
   // Rate limit analytics queries (expensive RPC)
-  if (await isRateLimited(user.id, await getUserTier(user.id))) {
+  const tier = await getUserTier(user.id)
+  if (await isRateLimited(user.id, tier)) {
     return (
       <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col items-center justify-center py-24 text-center gap-4">

@@ -138,12 +138,27 @@ export default async function EntriesPage({ searchParams }: Props) {
     pageSize: 25,
   }
 
-  const [entriesPage, projects, tags, settings, todayTotalMs] = await Promise.all([
+  // Pre-compute a wide date range for week entries (covers any weekStartDay 0 or 1).
+  // This eliminates the sequential second query that previously depended on settings.
+  const fmtDate = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const now = new Date()
+  const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const wideFrom = new Date(todayDate)
+  wideFrom.setDate(todayDate.getDate() - 8) // 7 days + 1 midnight buffer
+  const todayStr = fmtDate(todayDate)
+
+  const [entriesPage, projects, tags, settings, todayTotalMs, weekEntriesResult] = await Promise.all([
     getUserTimeEntries(user.id, filters),
     getUserProjects(user.id),
     getUserTags(user.id),
     getUserSettings(user.id),
     getTodayTotalDuration(user.id),
+    getUserTimeEntries(user.id, {
+      dateFrom: fmtDate(wideFrom),
+      dateTo: todayStr,
+      pageSize: 500,
+    }),
   ])
 
   const pomodoroConfig = settings?.pomodoro_config ?? {
@@ -156,29 +171,19 @@ export default async function EntriesPage({ searchParams }: Props) {
   const dailyTargetHours = settings?.daily_target ?? 8
   const entrySaveTime = (settings as Record<string, unknown> | null)?.entry_save_time as number | undefined ?? 10
 
-  // Fetch this week's entries for the "This week" bars in the Daily Goal card
+  // Filter the wide-range week entries to the exact week using settings
   const weekStartDay = (settings?.week_start_day ?? 1) as 0 | 1
   const workingDays = settings?.working_days ?? 5
-  const fmtDate = (d: Date) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-  const now = new Date()
-  const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const diff = (todayDate.getDay() - weekStartDay + 7) % 7
   const weekStart = new Date(todayDate)
   weekStart.setDate(todayDate.getDate() - diff)
-  const fetchFrom = new Date(weekStart)
-  fetchFrom.setDate(weekStart.getDate() - 1) // 1 day before to catch midnight-crossing entries
-  const todayStr = fmtDate(todayDate)
-
-  const weekEntriesResult = await getUserTimeEntries(user.id, {
-    dateFrom: fmtDate(fetchFrom),
-    dateTo: todayStr,
-    pageSize: 500,
-  })
+  const weekFromStr = fmtDate(new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() - 1))
 
   const dayTotalsMap: Record<string, number> = {}
   for (const entry of weekEntriesResult.data) {
-    dayTotalsMap[entry.date] = (dayTotalsMap[entry.date] ?? 0) + entry.duration
+    if (entry.date >= weekFromStr && entry.date <= todayStr) {
+      dayTotalsMap[entry.date] = (dayTotalsMap[entry.date] ?? 0) + entry.duration
+    }
   }
 
   const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']

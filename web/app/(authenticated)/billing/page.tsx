@@ -32,11 +32,13 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function BillingPage() {
-  const t = await getTranslations('billing')
   const user = await requireAuth()
-  const { data: subscription } = await getUserSubscriptionForBilling(user.id)
+  const [t, { data: subscription }, headersList] = await Promise.all([
+    getTranslations('billing'),
+    getUserSubscriptionForBilling(user.id),
+    headers(),
+  ])
 
-  const headersList = await headers()
   const country = headersList.get('x-vercel-ip-country') ?? ''
   const currencySymbol = EU_COUNTRIES.has(country) ? '€' : '$'
 
@@ -88,7 +90,7 @@ export default async function BillingPage() {
     if (!isPremium) return null
     if (!subscription?.current_period_end) return null
     const date = new Date(subscription.current_period_end).toLocaleDateString()
-    return subscription.cancel_at_period_end ? `${t('cancels')} ${date}` : `${t('renews')} ${date}`
+    return subscription.cancel_at_period_end ? `${t('plan.cancels')} ${date}` : `${t('plan.renews')} ${date}`
   })()
 
   const planDisplayName: Record<string, string> = {

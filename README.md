@@ -281,6 +281,7 @@ pnpm run lint
 - **Code splitting**: Heavy libraries (recharts, xlsx, supabase) in separate chunks, lazy loaded.
 - **Repository pattern**: All database queries centralized in `web/lib/repositories/` with typed Supabase calls.
 - **Server-side aggregation**: Admin stats and user analytics computed via PostgreSQL RPC functions (not client-side JS). Admin overview uses `get_admin_overview()` RPC (no more loading all auth users into memory). `get_platform_stats()` uses single-scan `FILTER` optimization.
+- **Parallel data fetching**: All authenticated pages use `Promise.all` for independent queries. Middleware skips Supabase auth for API routes and static files. Entries page fetches 6 queries in parallel (filtered entries, week entries, projects, tags, settings, daily goal). Earnings page parallelizes tags, projects, and report fetch. Wide date ranges pre-computed to avoid settings-dependent sequential queries.
 - **Selective sync controls**: Premium users can disable cloud sync per category (entries, statistics, projects, tags) via Settings. Preferences stored locally, never synced.
 - **Sync conflict resolution**: Queue-based -- local changes win over remote when pending in sync queue.
 - **Optimized sync**: Conditional pull via `has_changes_since()` RPC, single multiplexed Realtime channel (1 connection per user), 15-minute periodic sync with debounced entry saves (~150-300 queries/user/day, ~97 KB egress/day).

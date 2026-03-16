@@ -332,14 +332,17 @@ Types are auto-generated from the live Supabase schema via `npx supabase gen typ
 
 **Website:**
 
-- Middleware skips auth for public routes (`/`, `/login`, `/register`, `/terms`, `/privacy`, `/api/webhooks`, `/auth`)
+- Middleware skips auth for public routes and all API routes (`/api/*`) — API routes handle their own auth via `requireAuthApi()`. All non-public page routes are protected (redirect to `/login`). Eliminates unnecessary Supabase round-trips for API calls, static files (`/sitemap.xml`, `/robots.txt`), and already-protected pages
 - `React.cache()` on `getUser()` for request-level dedup
 - Admin pages use `revalidate = 60` (1-minute cache)
 - Server-side SQL aggregation via RPC functions (replaces client-side JS)
 - Error boundaries for `(authenticated)/` and `admin/` route groups
 - `getSubscriptionFlags()` deduplicates premium + allIn checks in layout (1 query instead of 2)
 - Dashboard `page.tsx` uses single `Promise.all` with wide date range (today-8 to today) to avoid sequential waterfall; filters client-side after settings resolve. `pageSize: 200` for week entries (reduced from 500)
-- Analytics `page.tsx` rate-limited via `isRateLimited()` before executing expensive RPC
+- Entries `page.tsx` fetches all 6 queries (filtered entries, week entries, projects, tags, settings, daily goal) in a single `Promise.all` using a pre-computed wide date range; filters week entries client-side after settings resolve
+- Earnings `page.tsx` fetches tags, projects, and earnings report in a single `Promise.all` (all independent)
+- Billing `page.tsx` parallelizes translations, subscription fetch, and headers in `Promise.all`
+- Analytics `page.tsx` parallelizes translations and premium check; rate-limited via `isRateLimited()` before executing expensive RPC
 - `TimerWidget.tsx` uses `swNowRef`/`pomNowRef` refs updated in tick intervals (no `Date.now()` in render phase; gauge and stopwatch always agree within same render)
 - `ThemeProvider.tsx` uses functional updater to skip no-op re-renders on mount
 - Landing page (`web/app/(public)/page.tsx`) is static — no server-side auth check (passes `isLoggedIn={false}`)

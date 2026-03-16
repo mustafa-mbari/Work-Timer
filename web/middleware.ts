@@ -4,21 +4,23 @@ import { NextResponse, type NextRequest } from 'next/server'
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Skip auth entirely for public routes — avoids a Supabase round-trip
-  const publicPaths = [
-    '/',
-    '/login',
-    '/register',
-    '/terms',
-    '/privacy',
-    '/api/webhooks',
-    '/auth',
-    '/forgot-password',
-    '/reset-password',
-    '/verify-email',
-    '/api/auth',
-  ]
-  if (publicPaths.some(p => pathname === p || pathname.startsWith(p + '/'))) {
+  // Skip auth entirely for public routes and API routes — avoids a Supabase round-trip.
+  // API routes handle their own auth via requireAuthApi() and return JSON errors,
+  // so redirecting them to /login would break clients expecting JSON.
+  if (
+    pathname === '/' ||
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/register') ||
+    pathname.startsWith('/terms') ||
+    pathname.startsWith('/privacy') ||
+    pathname.startsWith('/auth') ||
+    pathname.startsWith('/forgot-password') ||
+    pathname.startsWith('/reset-password') ||
+    pathname.startsWith('/verify-email') ||
+    pathname.startsWith('/api/') ||
+    pathname === '/sitemap.xml' ||
+    pathname === '/robots.txt'
+  ) {
     return NextResponse.next({ request })
   }
 
@@ -55,12 +57,8 @@ export async function middleware(request: NextRequest) {
     // Network error (e.g., Supabase blocked by corporate proxy) — treat as unauthenticated
   }
 
-  // Protect authenticated routes
-  const protectedPaths = ['/dashboard', '/billing', '/analytics']
-
-  const isProtected = protectedPaths.some(p => pathname.startsWith(p))
-
-  if (isProtected && !user) {
+  // All non-public routes are protected — redirect unauthenticated users
+  if (!user) {
     const loginUrl = request.nextUrl.clone()
     loginUrl.pathname = '/login'
     loginUrl.searchParams.set('redirectTo', pathname)

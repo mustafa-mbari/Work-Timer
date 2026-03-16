@@ -98,9 +98,11 @@ export default async function EarningsPage({
   const dateTo = rawTo && ISO_DATE.test(rawTo) ? rawTo : undefined
   const groupBy: 'tag' | 'project' = rawGroupBy === 'project' ? 'project' : 'tag'
 
-  const [allTags, allProjects] = await Promise.all([
+  // Fetch tags, projects, and earnings report in parallel (all independent)
+  const [allTags, allProjects, earningsResult] = await Promise.all([
     getUserTags(user.id),
     getUserProjects(user.id),
+    getEarningsReport(user.id, dateFrom, dateTo, groupBy).then(d => ({ data: d, error: null })).catch(err => ({ data: null, error: err instanceof Error ? err.message : 'Failed to load earnings' })),
   ])
 
   const managerItems = groupBy === 'tag'
@@ -119,14 +121,8 @@ export default async function EarningsPage({
         earnings_enabled: p.earnings_enabled as boolean,
       }))
 
-  let data: Awaited<ReturnType<typeof getEarningsReport>> | null = null
-  let fetchError: string | null = null
-
-  try {
-    data = await getEarningsReport(user.id, dateFrom, dateTo, groupBy)
-  } catch (err) {
-    fetchError = err instanceof Error ? err.message : 'Failed to load earnings'
-  }
+  const data = earningsResult.data
+  const fetchError = earningsResult.error
 
   if (fetchError || !data) {
     return (
